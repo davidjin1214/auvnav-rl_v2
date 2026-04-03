@@ -50,8 +50,8 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
 
-from auv_nav.envs import PlanarRemusEnv, PlanarRemusEnvConfig
-from auv_nav.policies import (
+from auv_nav.env import PlanarRemusEnv, PlanarRemusEnvConfig
+from auv_nav.baselines import (
     CrossCurrentCompensationPolicy,
     GoalSeekPolicy,
     PrivilegedCorridorPolicy,
@@ -68,7 +68,7 @@ _POLICY_STYLES: dict[str, dict] = {
     "goal":             {"color": "#E69F00", "lw": 1.6, "ls": "-",  "label": "Goal-Seek"},
     "world_compensate": {"color": "#56B4E9", "lw": 1.6, "ls": "--", "label": "World-Compensate"},
     "corridor":         {"color": "#009E73", "lw": 1.6, "ls": "-.", "label": "Privileged-Corridor"},
-    "rl":               {"color": "#CC79A7", "lw": 2.4, "ls": "-",  "label": "GRU-Res-SAC (ours)"},
+    "rl":               {"color": "#CC79A7", "lw": 2.4, "ls": "-",  "label": "SAC (ours)"},
 }
 
 _BASELINE_POLICIES = ["goal", "world_compensate", "corridor"]
@@ -179,44 +179,24 @@ def run_rl_agent(
     reset_options: dict[str, Any],
     device: str = "cpu",
 ) -> dict[str, Any]:
-    """Load a GRU-Residual-SAC checkpoint and collect one episode."""
-    from auv_nav.algorithms import GRUResidualSACAgent, GRUResidualSACConfig, require_torch
-    from auv_nav.policies import CrossCurrentResidualPrior, ResidualPriorConfig
-
-    require_torch()
+    """Load a SAC checkpoint and collect one episode."""
+    from auv_nav.sac import SACAgent, SACConfig
 
     ckpt_root = Path(checkpoint_dir)
     meta_path = ckpt_root / "trainer_state.json" if ckpt_root.is_dir() else ckpt_root
     with meta_path.open() as fp:
         state = json.load(fp)
 
-    agent_cfg = GRUResidualSACConfig(**state["agent_config"])
-
-    # Build residual prior (mirrors train script).
-    merged_options = dict(state.get("reset_options", {}))
-    merged_options.update(reset_options)
-    resolved_geometry   = env.task_sampler.resolve_task_geometry(merged_options)
-    resolved_action_mode = env.task_sampler.resolve_action_mode(merged_options, resolved_geometry)
-
-    layout = env.get_observation_layout()
-    prior = CrossCurrentResidualPrior(ResidualPriorConfig(
-        action_mode             = resolved_action_mode,
-        heading_offset_limit_rad= env.config.heading_offset_limit_rad,
-        heading_cos_index       = layout.heading_cos_index,
-        heading_sin_index       = layout.heading_sin_index,
-        goal_x_index            = layout.goal_x_index,
-        goal_y_index            = layout.goal_y_index,
-        center_probe_v_index    = layout.center_probe_v_index,
-    ))
-    agent = GRUResidualSACAgent(agent_cfg, prior=prior, device=device)
+    agent = SACAgent(SACConfig(**state["agent_config"]), device=device)
     agent_path = (
         ckpt_root / state["agent_path"] if ckpt_root.is_dir()
         else ckpt_root.parent / state["agent_path"]
     )
     agent.load(str(agent_path))
 
+    merged_options = {**state.get("reset_options", {}), **reset_options}
     obs, info = env.reset(seed=seed, options=merged_options)
-    hidden = agent.reset_hidden()
+    policy_state = agent.reset_policy_state()
 
     positions      = [info["position_xy_m"].copy()]
     headings       = [float(info["psi_rad"])]
@@ -229,7 +209,7 @@ def run_rl_agent(
 
     done = False
     while not done:
-        action, hidden = agent.act(obs, hidden, deterministic=True)
+        action, policy_state = agent.act(obs, policy_state, deterministic=True)
         obs, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         positions.append(info["position_xy_m"].copy())
@@ -647,7 +627,7 @@ def main() -> None:
                         choices=["easy", "medium", "hard"],
                         default=None)
     parser.add_argument("--checkpoint", type=str, default=None,
-                        help="GRU-Res-SAC checkpoint dir/file.  Adds RL to the comparison.")
+                        help="SAC checkpoint dir/file.  Adds RL to the comparison.")
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--outdir", type=Path, default=Path("."),
                         help="Output directory for PDF figures.")

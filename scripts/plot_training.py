@@ -32,7 +32,7 @@ def load_eval_log(path: Path) -> list[dict]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Plot GRU Residual SAC training logs.")
+    parser = argparse.ArgumentParser(description="Plot SAC training logs.")
     # TODO: Add multi-run aggregation with mean/std envelopes so repeated-seed
     # experiments can be visualized directly from a parent directory.
     parser.add_argument("--run-dir", type=str, required=True,

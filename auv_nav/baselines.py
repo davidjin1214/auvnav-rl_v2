@@ -6,11 +6,11 @@ These serve two purposes:
   2. Provide performance references for RL agents.
 
 Policies:
-  - GoalSeekPolicy:              always point at goal, fixed throttle.
-  - CrossCurrentCompensationPolicy: offset heading against lateral flow.
-  - StillWaterStraightLine:      heading = straight to goal, no flow awareness.
-  - WorldFrameCurrentCompensationPolicy: local current compensation in world frame.
-  - PrivilegedCorridorPolicy:    route selection with privileged flow-field access.
+  GoalSeekPolicy              -- always point at goal, fixed throttle.
+  CrossCurrentCompensationPolicy -- offset heading against lateral flow.
+  StillWaterStraightLine      -- heading = straight to goal, no flow awareness.
+  WorldFrameCurrentCompensationPolicy -- local current compensation in world frame.
+  PrivilegedCorridorPolicy    -- route selection with privileged flow-field access.
 """
 
 from __future__ import annotations
@@ -306,80 +306,3 @@ class PrivilegedCorridorPolicy:
         return float(cost)
 
 
-# ---------------------------------------------------------------------------
-# From policies/residual_prior.py
-# ---------------------------------------------------------------------------
-
-try:
-    import torch
-except ImportError:
-    torch = None
-
-
-@dataclass(slots=True)
-class ResidualPriorConfig:
-    throttle: float = 0.7
-    lateral_gain: float = 0.8
-    heading_cos_index: int | None = None
-    heading_sin_index: int | None = None
-    goal_x_index: int | None = None
-    goal_y_index: int | None = None
-    center_probe_v_index: int | None = None
-    action_mode: str = "absolute_heading"
-    heading_offset_limit_rad: float = np.deg2rad(60.0)
-
-
-class CrossCurrentResidualPrior:
-    """Analytic heading/throttle prior used by the residual policy."""
-
-    def __init__(self, config: ResidualPriorConfig | None = None) -> None:
-        self.config = config or ResidualPriorConfig()
-
-    def _get_index(self, name: str) -> int:
-        value = getattr(self.config, name)
-        if value is None:
-            raise ValueError(f"Residual prior requires `{name}` to be configured explicitly.")
-        return int(value)
-
-    def action_np(self, obs: np.ndarray) -> np.ndarray:
-        obs = np.asarray(obs, dtype=np.float32)
-        v_body = 0.0
-        center_probe_v_index = self._get_index("center_probe_v_index")
-        if obs.shape[-1] > center_probe_v_index:
-            v_body = float(obs[center_probe_v_index])
-        heading_offset = float(np.clip(-self.config.lateral_gain * v_body, -1.0, 1.0))
-        heading_action = heading_offset
-        if self.config.action_mode == "absolute_heading":
-            heading_sin_index = self._get_index("heading_sin_index")
-            heading_cos_index = self._get_index("heading_cos_index")
-            goal_y_index = self._get_index("goal_y_index")
-            goal_x_index = self._get_index("goal_x_index")
-            psi = float(np.arctan2(obs[heading_sin_index], obs[heading_cos_index]))
-            goal_bearing_body = float(np.arctan2(obs[goal_y_index], obs[goal_x_index]))
-            desired_heading = psi + goal_bearing_body
-            desired_heading += heading_offset * self.config.heading_offset_limit_rad
-            desired_heading = float(np.arctan2(np.sin(desired_heading), np.cos(desired_heading)))
-            heading_action = float(np.clip(desired_heading / np.pi, -1.0, 1.0))
-        throttle_action = float(np.clip(2.0 * self.config.throttle - 1.0, -1.0, 1.0))
-        return np.array([heading_action, throttle_action], dtype=np.float32)
-
-    def action_tensor(self, obs: "torch.Tensor") -> "torch.Tensor":
-        v_body = torch.zeros_like(obs[..., 0])
-        center_probe_v_index = self._get_index("center_probe_v_index")
-        if obs.shape[-1] > center_probe_v_index:
-            v_body = obs[..., center_probe_v_index]
-        heading_offset = torch.clamp(-self.config.lateral_gain * v_body, -1.0, 1.0)
-        heading_action = heading_offset
-        if self.config.action_mode == "absolute_heading":
-            heading_sin_index = self._get_index("heading_sin_index")
-            heading_cos_index = self._get_index("heading_cos_index")
-            goal_y_index = self._get_index("goal_y_index")
-            goal_x_index = self._get_index("goal_x_index")
-            psi = torch.atan2(obs[..., heading_sin_index], obs[..., heading_cos_index])
-            goal_bearing_body = torch.atan2(obs[..., goal_y_index], obs[..., goal_x_index])
-            desired_heading = psi + goal_bearing_body
-            desired_heading = desired_heading + heading_offset * self.config.heading_offset_limit_rad
-            desired_heading = torch.atan2(torch.sin(desired_heading), torch.cos(desired_heading))
-            heading_action = torch.clamp(desired_heading / np.pi, -1.0, 1.0)
-        throttle_action = torch.full_like(heading_offset, 2.0 * self.config.throttle - 1.0)
-        return torch.stack([heading_action, throttle_action], dim=-1)

@@ -14,9 +14,6 @@ import numpy as np
 _METHOD_ORDER = [
     "sac",
     "sac_stack4",
-    "gru_sac",
-    "gru_residual_sac",
-    "full",
 ]
 
 _METHOD_STYLE = {
@@ -27,18 +24,6 @@ _METHOD_STYLE = {
     "sac_stack4": {
         "label": "SAC + Stack",
         "color": "#4C78A8",
-    },
-    "gru_sac": {
-        "label": "GRU-SAC",
-        "color": "#72B7B2",
-    },
-    "gru_residual_sac": {
-        "label": "GRU-Residual-SAC",
-        "color": "#F2CF5B",
-    },
-    "full": {
-        "label": "Full Method",
-        "color": "#E45756",
     },
 }
 

@@ -1,9 +1,4 @@
-"""Evaluate a saved SAC or GRU-Residual-SAC checkpoint.
-
-Auto-detects the algorithm from the saved trainer_state.json.
-SAC checkpoints contain a flat agent_config (obs_dim, hidden_dim, ...).
-GRU-SAC checkpoints additionally contain encoder_dim in agent_config.
-"""
+"""Evaluate a saved SAC checkpoint."""
 
 from __future__ import annotations
 
@@ -13,16 +8,12 @@ from pathlib import Path
 
 import numpy as np
 
-from auv_nav.networks import require_torch
-from .train_utils import build_residual_prior, load_trainer_state, make_planar_env
-
-
-def _is_gru_checkpoint(trainer_state: dict) -> bool:
-    return "encoder_dim" in trainer_state.get("agent_config", {})
+from auv_nav.sac import SACAgent, SACConfig
+from .train_utils import load_trainer_state, make_planar_env, make_reset_options
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate a saved SAC or GRU-SAC checkpoint.")
+    parser = argparse.ArgumentParser(description="Evaluate a saved SAC checkpoint.")
     parser.add_argument("--checkpoint", type=str, required=True,
                         help="Run directory or trainer_state.json path.")
     parser.add_argument("--episodes", type=int, default=10)
@@ -38,56 +29,29 @@ def main() -> None:
     parser.add_argument("--speed-ratio", type=float, default=None)
     parser.add_argument("--target-speed", type=float, default=None)
     parser.add_argument("--history-length", type=int, default=None,
-                        help="Override for stacked-obs evaluation (SAC only).")
+                        help="Override stacked-observation history length.")
     args = parser.parse_args()
 
-    require_torch()
     trainer_state = load_trainer_state(args.checkpoint)
     agent_cfg_dict = trainer_state["agent_config"]
 
-    reset_options = dict(trainer_state.get("reset_options", {}))
-    if args.difficulty is not None:
-        reset_options["task_difficulty"] = args.difficulty
-    if args.task_geometry is not None:
-        reset_options["task_geometry"] = args.task_geometry
-    if args.action_mode is not None:
-        reset_options["action_mode"] = args.action_mode
-    if args.target_speed is not None:
-        reset_options["target_auv_max_speed_mps"] = args.target_speed
-    elif args.speed_ratio is not None:
-        reset_options["target_speed_ratio"] = args.speed_ratio
+    reset_options = {**trainer_state.get("reset_options", {}), **make_reset_options(args)}
 
     flow_path = args.flow or trainer_state.get("flow_path", "wake_data/wake_test_roi.npy")
+    history_length = (
+        args.history_length
+        if args.history_length is not None
+        else int(trainer_state.get("history_length", 1))
+    )
+    env = make_planar_env(flow_path, history_length=history_length)
+    agent = SACAgent(SACConfig(**agent_cfg_dict), device=args.device)
+
     checkpoint_root = Path(args.checkpoint)
     agent_file = (
         checkpoint_root / trainer_state["agent_path"]
         if checkpoint_root.is_dir()
         else checkpoint_root.parent / trainer_state["agent_path"]
     )
-
-    if _is_gru_checkpoint(trainer_state):
-        from auv_nav.env import PlanarRemusEnv, PlanarRemusEnvConfig
-        from auv_nav.gru_sac import GRUResidualSACAgent, GRUResidualSACConfig
-        env = PlanarRemusEnv(PlanarRemusEnvConfig(flow_path=flow_path))
-        resolved_geometry = env.task_sampler.resolve_task_geometry(reset_options)
-        resolved_mode = env.task_sampler.resolve_action_mode(reset_options, resolved_geometry)
-        agent = GRUResidualSACAgent(
-            GRUResidualSACConfig(**agent_cfg_dict),
-            prior=build_residual_prior(env, resolved_mode),
-            device=args.device,
-        )
-        gru_mode = True
-    else:
-        history_length = (
-            args.history_length
-            if args.history_length is not None
-            else int(trainer_state.get("history_length", 1))
-        )
-        env = make_planar_env(flow_path, history_length=history_length)
-        from auv_nav.sac import SACAgent, SACConfig
-        agent = SACAgent(SACConfig(**agent_cfg_dict), device=args.device)
-        gru_mode = False
-
     agent.load(str(agent_file))
 
     returns = []
@@ -97,7 +61,7 @@ def main() -> None:
     reasons: dict[str, int] = {}
     for idx in range(args.episodes):
         obs, info = env.reset(seed=args.seed + idx, options=reset_options)
-        policy_state = agent.reset_policy_state() if not gru_mode else agent.reset_hidden()
+        policy_state = agent.reset_policy_state()
         total_reward = 0.0
         total_cost = 0.0
         done = False

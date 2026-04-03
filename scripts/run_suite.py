@@ -38,24 +38,6 @@ METHOD_SPECS: dict[str, MethodSpec] = {
         extra_args=("--history-length", "4"),
         description="Feedforward SAC with 4-step observation history.",
     ),
-    "gru_sac": MethodSpec(
-        key="gru_sac",
-        train_module="scripts.train_gru_residual_sac",
-        extra_args=("--disable-residual-prior", "--disable-safety-critic"),
-        description="Recurrent SAC without residual prior or safety critic.",
-    ),
-    "gru_residual_sac": MethodSpec(
-        key="gru_residual_sac",
-        train_module="scripts.train_gru_residual_sac",
-        extra_args=("--disable-safety-critic",),
-        description="Recurrent residual SAC without safety critic.",
-    ),
-    "full": MethodSpec(
-        key="full",
-        train_module="scripts.train_gru_residual_sac",
-        extra_args=(),
-        description="Full GRU residual SAC with safety critic.",
-    ),
 }
 
 
@@ -63,12 +45,12 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
     "medium_formal_v1": SuitePreset(
         name="medium_formal_v1",
         description=(
-            "Recommended formal benchmark on medium difficulty "
-            "(cross-stream) with 5 seeds and a common 200k-step budget."
+            "Formal benchmark on medium difficulty "
+            "(cross-stream) with 5 seeds and a 200k-step budget."
         ),
         values={
             "difficulty": "medium",
-            "methods": "sac,sac_stack4,gru_sac,gru_residual_sac,full",
+            "methods": "sac,sac_stack4",
             "seeds": "42,43,44,45,46",
             "total_steps": 200_000,
             "random_steps": 5_000,
@@ -79,30 +61,17 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "eval_episodes": 30,
             "checkpoint_every": 10_000,
             "log_every_episodes": 10,
-            "sac_batch_size": 256,
-            "sac_replay_capacity": 1_000_000,
-            "sac_hidden_dim": 256,
-            "gru_batch_size": 32,
-            "burn_in": 8,
-            "train_seq_len": 32,
-            "replay_max_episodes": 5_000,
-            "residual_l2_weight": 1e-3,
-            "bc_weight": 0.0,
-            "bc_decay_steps": 50_000,
-            "offline_policy": "world_compensate",
-            "offline_episodes": 0,
-            "pretrain_updates": 0,
-            "cost_limit": 0.02,
+            "batch_size": 256,
+            "replay_capacity": 1_000_000,
+            "hidden_dim": 256,
         },
     ),
     "medium_pilot_v1": SuitePreset(
         name="medium_pilot_v1",
-        description=(
-            "Smaller pilot version for quick checks before the formal suite."
-        ),
+        description="Smaller pilot version for quick checks before the formal suite.",
         values={
             "difficulty": "medium",
-            "methods": "sac,sac_stack4,gru_sac,gru_residual_sac,full",
+            "methods": "sac,sac_stack4",
             "seeds": "42,43",
             "total_steps": 50_000,
             "random_steps": 2_000,
@@ -113,20 +82,9 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "eval_episodes": 10,
             "checkpoint_every": 5_000,
             "log_every_episodes": 5,
-            "sac_batch_size": 256,
-            "sac_replay_capacity": 1_000_000,
-            "sac_hidden_dim": 256,
-            "gru_batch_size": 32,
-            "burn_in": 8,
-            "train_seq_len": 32,
-            "replay_max_episodes": 5_000,
-            "residual_l2_weight": 1e-3,
-            "bc_weight": 0.0,
-            "bc_decay_steps": 50_000,
-            "offline_policy": "world_compensate",
-            "offline_episodes": 0,
-            "pretrain_updates": 0,
-            "cost_limit": 0.02,
+            "batch_size": 256,
+            "replay_capacity": 1_000_000,
+            "hidden_dim": 256,
         },
     ),
 }
@@ -179,28 +137,14 @@ def build_command(
     append_optional_arg(cmd, "--checkpoint-every", cli_args.checkpoint_every)
     append_optional_arg(cmd, "--seed", seed)
     append_optional_arg(cmd, "--save-dir", save_dir)
-
-    if method.train_module == "scripts.train_sac":
-        append_optional_arg(cmd, "--batch-size", cli_args.sac_batch_size)
-        append_optional_arg(cmd, "--replay-capacity", cli_args.sac_replay_capacity)
-        append_optional_arg(cmd, "--hidden-dim", cli_args.sac_hidden_dim)
-    else:
-        append_optional_arg(cmd, "--batch-size", cli_args.gru_batch_size)
-        append_optional_arg(cmd, "--burn-in", cli_args.burn_in)
-        append_optional_arg(cmd, "--train-seq-len", cli_args.train_seq_len)
-        append_optional_arg(cmd, "--replay-max-episodes", cli_args.replay_max_episodes)
-        append_optional_arg(cmd, "--residual-l2-weight", cli_args.residual_l2_weight)
-        append_optional_arg(cmd, "--bc-weight", cli_args.bc_weight)
-        append_optional_arg(cmd, "--bc-decay-steps", cli_args.bc_decay_steps)
-        append_optional_arg(cmd, "--offline-policy", cli_args.offline_policy)
-        append_optional_arg(cmd, "--offline-episodes", cli_args.offline_episodes)
-        append_optional_arg(cmd, "--pretrain-updates", cli_args.pretrain_updates)
-        append_optional_arg(cmd, "--cost-limit", cli_args.cost_limit)
+    append_optional_arg(cmd, "--batch-size", cli_args.batch_size)
+    append_optional_arg(cmd, "--replay-capacity", cli_args.replay_capacity)
+    append_optional_arg(cmd, "--hidden-dim", cli_args.hidden_dim)
     return cmd
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the RL ablation ladder over multiple seeds.")
+    parser = argparse.ArgumentParser(description="Run SAC ablation suite over multiple seeds.")
     parser.add_argument(
         "--preset",
         type=str,
@@ -250,20 +194,9 @@ def main() -> None:
     parser.add_argument("--log-every-episodes", type=int, default=None)
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--checkpoint-every", type=int, default=None)
-    parser.add_argument("--sac-batch-size", type=int, default=None)
-    parser.add_argument("--sac-replay-capacity", type=int, default=None)
-    parser.add_argument("--sac-hidden-dim", type=int, default=None)
-    parser.add_argument("--gru-batch-size", type=int, default=None)
-    parser.add_argument("--burn-in", type=int, default=None)
-    parser.add_argument("--train-seq-len", type=int, default=None)
-    parser.add_argument("--replay-max-episodes", type=int, default=None)
-    parser.add_argument("--residual-l2-weight", type=float, default=None)
-    parser.add_argument("--bc-weight", type=float, default=None)
-    parser.add_argument("--bc-decay-steps", type=int, default=None)
-    parser.add_argument("--offline-policy", type=str, default=None)
-    parser.add_argument("--offline-episodes", type=int, default=None)
-    parser.add_argument("--pretrain-updates", type=int, default=None)
-    parser.add_argument("--cost-limit", type=float, default=None)
+    parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--replay-capacity", type=int, default=None)
+    parser.add_argument("--hidden-dim", type=int, default=None)
     parser.add_argument("--skip-existing", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -275,7 +208,7 @@ def main() -> None:
         else:
             args.suite_root = "experiments/ablation_suite"
     if args.methods is None:
-        args.methods = "sac,sac_stack4,gru_sac,gru_residual_sac,full"
+        args.methods = "sac,sac_stack4"
     if args.seeds is None:
         args.seeds = "42,43,44"
     if args.total_steps is None:
@@ -296,34 +229,12 @@ def main() -> None:
         args.log_every_episodes = 5
     if args.checkpoint_every is None:
         args.checkpoint_every = 5_000
-    if args.sac_batch_size is None:
-        args.sac_batch_size = 256
-    if args.sac_replay_capacity is None:
-        args.sac_replay_capacity = 1_000_000
-    if args.sac_hidden_dim is None:
-        args.sac_hidden_dim = 256
-    if args.gru_batch_size is None:
-        args.gru_batch_size = 32
-    if args.burn_in is None:
-        args.burn_in = 8
-    if args.train_seq_len is None:
-        args.train_seq_len = 32
-    if args.replay_max_episodes is None:
-        args.replay_max_episodes = 5_000
-    if args.residual_l2_weight is None:
-        args.residual_l2_weight = 1e-3
-    if args.bc_weight is None:
-        args.bc_weight = 0.0
-    if args.bc_decay_steps is None:
-        args.bc_decay_steps = 50_000
-    if args.offline_policy is None:
-        args.offline_policy = "world_compensate"
-    if args.offline_episodes is None:
-        args.offline_episodes = 0
-    if args.pretrain_updates is None:
-        args.pretrain_updates = 0
-    if args.cost_limit is None:
-        args.cost_limit = 0.02
+    if args.batch_size is None:
+        args.batch_size = 256
+    if args.replay_capacity is None:
+        args.replay_capacity = 1_000_000
+    if args.hidden_dim is None:
+        args.hidden_dim = 256
 
     method_keys = [item.strip() for item in args.methods.split(",") if item.strip()]
     unknown = [key for key in method_keys if key not in METHOD_SPECS]

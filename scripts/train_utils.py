@@ -9,31 +9,12 @@ from typing import Any
 
 import numpy as np
 
-from auv_nav.networks import require_torch
 from auv_nav.env import ObservationHistoryWrapper, PlanarRemusEnv, PlanarRemusEnvConfig
-from auv_nav.baselines import (
-    CrossCurrentCompensationPolicy,
-    CrossCurrentResidualPrior,
-    GoalSeekPolicy,
-    PrivilegedCorridorPolicy,
-    ResidualPriorConfig,
-    StillWaterStraightLine,
-    WorldFrameCurrentCompensationPolicy,
-)
 
 try:
     import torch
 except ImportError:
     torch = None
-
-
-OFFLINE_POLICY_REGISTRY = {
-    "goal": GoalSeekPolicy,
-    "compensate": CrossCurrentCompensationPolicy,
-    "still_water": StillWaterStraightLine,
-    "world_compensate": WorldFrameCurrentCompensationPolicy,
-    "corridor": PrivilegedCorridorPolicy,
-}
 
 
 def discover_flow_path() -> Path:
@@ -73,21 +54,6 @@ def make_reset_options(args: Any) -> dict[str, Any]:
     elif getattr(args, "speed_ratio", None) is not None:
         options["target_speed_ratio"] = args.speed_ratio
     return options
-
-
-def build_residual_prior(env: PlanarRemusEnv, action_mode: str) -> CrossCurrentResidualPrior:
-    layout = env.get_observation_layout()
-    return CrossCurrentResidualPrior(
-        ResidualPriorConfig(
-            action_mode=action_mode,
-            heading_offset_limit_rad=env.config.heading_offset_limit_rad,
-            heading_cos_index=layout.heading_cos_index,
-            heading_sin_index=layout.heading_sin_index,
-            goal_x_index=layout.goal_x_index,
-            goal_y_index=layout.goal_y_index,
-            center_probe_v_index=layout.center_probe_v_index,
-        )
-    )
 
 
 def load_trainer_state(path: str) -> dict[str, Any]:
@@ -247,59 +213,3 @@ def evaluate_agent(
         "eval_success_rate": float(successes / max(1, num_episodes)),
         "eval_time_s": float(np.mean(times)),
     }
-
-
-def collect_offline_episodes(
-    env: PlanarRemusEnv,
-    replay: Any,
-    reset_options: dict[str, Any],
-    num_episodes: int,
-    policy_name: str,
-    seed: int,
-) -> None:
-    if policy_name not in OFFLINE_POLICY_REGISTRY:
-        raise ValueError(f"Unknown offline policy: {policy_name}")
-    policy = OFFLINE_POLICY_REGISTRY[policy_name]()
-    for idx in range(num_episodes):
-        obs, _ = env.reset(seed=seed + idx, options=reset_options)
-        observations = [obs.copy()]
-        actions: list[np.ndarray] = []
-        rewards: list[float] = []
-        costs: list[float] = []
-        dones: list[float] = []
-        done = False
-        while not done:
-            action = policy.act(env, obs)
-            next_obs, reward, terminated, truncated, info = env.step(action)
-            done = terminated or truncated
-            actions.append(np.asarray(action, dtype=np.float32))
-            rewards.append(float(reward))
-            costs.append(float(info["step_safety_cost"]))
-            dones.append(float(done))
-            observations.append(next_obs.copy())
-            obs = next_obs
-        replay.add_episode(
-            observations=np.asarray(observations, dtype=np.float32),
-            actions=np.asarray(actions, dtype=np.float32),
-            rewards=np.asarray(rewards, dtype=np.float32),
-            costs=np.asarray(costs, dtype=np.float32),
-            dones=np.asarray(dones, dtype=np.float32),
-        )
-
-
-def pretrain_from_replay(
-    agent: Any,
-    replay: Any,
-    updates: int,
-    batch_size: int,
-) -> dict[str, float]:
-    require_torch()
-    last_metrics: dict[str, float] = {}
-    if updates <= 0:
-        return last_metrics
-    if not replay.ready(batch_size):
-        return last_metrics
-    for _ in range(updates):
-        batch = replay.sample_batch(batch_size, agent.device)
-        last_metrics = agent.update(batch)
-    return last_metrics

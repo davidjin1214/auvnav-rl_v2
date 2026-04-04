@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Sequence
 
@@ -105,6 +105,14 @@ class PhysicsConfig:
     roi_y_half_D: float = 3.5
     # Spatial downsample factor applied to ROI output (1 = full resolution).
     roi_downsample: int = 1
+    # Extra cylinders beyond the primary: list of (x_phys, y_phys, D_phys) tuples.
+    # Default empty list → single-cylinder behaviour unchanged.
+    extra_cylinders: list = field(default_factory=list)
+    # Override the ROI y-centre (metres). None → use cyl_y_center.
+    # Set to domain midpoint for side-by-side configs.
+    roi_y_center_override: float | None = None
+    # Short prefix tag embedded in output filename, e.g. "tandem_G35_".
+    case_tag: str = ""
 
 
 @dataclass(frozen=True)
@@ -179,6 +187,7 @@ class LatticeConfig:
     output_roi_nx: int
     output_roi_ny: int
     dx_out: float
+    cylinders_lat: tuple = ()   # NEW: all cylinders as (cx_lat, cy_lat, r_lat)
 
     @property
     def roi_nx(self) -> int:
@@ -223,8 +232,13 @@ class LatticeConfig:
         actual_record_interval = steps_per_frame * p.dt
         roi_x0 = max(0, cx_lat + int(round(p.roi_x_start_D * D_lat)))
         roi_x1 = min(Nx, cx_lat + int(round(p.roi_x_end_D * D_lat)))
-        roi_y0 = max(0, cy_lat - int(round(p.roi_y_half_D * D_lat)))
-        roi_y1 = min(Ny, cy_lat + int(round(p.roi_y_half_D * D_lat)))
+        roi_cy_lat = (
+            int(round(p.roi_y_center_override / p.dx))
+            if p.roi_y_center_override is not None
+            else cy_lat
+        )
+        roi_y0 = max(0, roi_cy_lat - int(round(p.roi_y_half_D * D_lat)))
+        roi_y1 = min(Ny, roi_cy_lat + int(round(p.roi_y_half_D * D_lat)))
 
         if Nx < 2 or Ny < 2:
             raise ValueError("Domain resolution is too small.")
@@ -252,6 +266,17 @@ class LatticeConfig:
         output_roi_ny = roi_ny // ds
         dx_out = p.dx * ds
 
+        # Build cylinders_lat: primary cylinder + any extra cylinders.
+        r_lat = int(round(D_lat / 2))
+        _cyls = [(cx_lat, cy_lat, r_lat)]
+        for x_e, y_e, d_e in p.extra_cylinders:
+            _cyls.append((
+                int(round(x_e / p.dx)),
+                int(round(y_e / p.dx)),
+                int(round(d_e / (2.0 * p.dx))),
+            ))
+        cylinders_lat = tuple(_cyls)
+
         # Stability checks.
         cs = 1.0 / np.sqrt(3.0)
         ma = U_lat / cs
@@ -272,6 +297,7 @@ class LatticeConfig:
             roi_x0=roi_x0, roi_x1=roi_x1, roi_y0=roi_y0, roi_y1=roi_y1,
             roi_downsample=ds, output_roi_nx=output_roi_nx,
             output_roi_ny=output_roi_ny, dx_out=dx_out,
+            cylinders_lat=cylinders_lat,
         )
 
 
@@ -308,10 +334,12 @@ class TRTSolver:
         self._f_opp_buf = xp.empty(shape9, dtype=f32)
         self._feq_opp_buf = xp.empty(shape9, dtype=f32)
 
-        # Cylinder obstacle mask.
+        # Cylinder obstacle mask (OR-combined for all cylinders).
         x = xp.arange(lc.Nx, dtype=f32)[:, None]
         y = xp.arange(lc.Ny, dtype=f32)[None, :]
-        self._cylinder = (x - lc.cx_lat) ** 2 + (y - lc.cy_lat) ** 2 <= (lc.D_lat / 2.0) ** 2
+        self._cylinder = xp.zeros((lc.Nx, lc.Ny), dtype=bool)
+        for _cx, _cy, _r in lc.cylinders_lat:
+            self._cylinder |= (x - _cx) ** 2 + (y - _cy) ** 2 <= xp.float32(_r) ** 2
 
         # Relaxation rates.
         self._omega_s = lc.omega_s
@@ -602,6 +630,118 @@ def stable_dt_for_case(
     return float(dt)
 
 
+def make_tandem_physics_config(
+    Re: float = 150.0,
+    U_phys: float = 1.0,
+    gap_ratio: float = 3.5,
+) -> PhysicsConfig:
+    """Return a PhysicsConfig for tandem (串联) dual-cylinder flow.
+
+    Two identical cylinders of diameter D are aligned along the stream-wise
+    direction with a surface-to-surface gap of gap_ratio * D.  The ROI starts
+    1D upstream of the first cylinder so the agent can learn gap-traversal
+    strategies (Option A from the design spec).
+
+    Parameters
+    ----------
+    Re : float
+        Reynolds number (default 150).
+    U_phys : float
+        Free-stream velocity in m/s (default 1.0).
+    gap_ratio : float
+        Surface-to-surface gap normalised by D (default 3.5 — critical spacing).
+    """
+    D = 12.0          # cylinder diameter [m], consistent with navigation profile
+    dx = 0.3          # grid spacing [m]
+    cyl1_x = 96.0     # upstream cylinder x-position [m]
+    center_y = 90.0   # domain y-midline [m]
+    gap_phys = gap_ratio * D
+    cyl2_x = cyl1_x + D + gap_phys  # centre-to-centre = (1 + gap_ratio) * D
+
+    dt = stable_dt_for_case(Re=Re, U_phys=U_phys, D_phys=D, dx=dx, base_dt=0.015)
+
+    return PhysicsConfig(
+        Re=Re,
+        U_phys=U_phys,
+        D_phys=D,
+        Lx_phys=540.0,        # longer domain to accommodate two cylinders
+        Ly_phys=180.0,
+        dx=dx,
+        dt=dt,
+        cyl_x_phys=cyl1_x,
+        cyl_y_center=center_y,
+        extra_cylinders=[(cyl2_x, center_y, D)],
+        turbulence_intensity=0.05,
+        turbulence_length_scale=20,
+        T_spinup_phys=720.0,
+        T_record_phys=360.0,
+        record_interval=0.3,
+        roi_x_start_D=-1.0,   # 1D before upstream cylinder (covers gap region)
+        roi_x_end_D=24.5,     # 20D past downstream cylinder from upstream origin
+        roi_y_half_D=3.0,
+        roi_downsample=2,
+        case_tag="tandem_G35_",
+    )
+
+
+def make_side_by_side_physics_config(
+    Re: float = 150.0,
+    U_phys: float = 1.0,
+    gap_ratio: float = 3.5,
+) -> PhysicsConfig:
+    """Return a PhysicsConfig for side-by-side (并排) dual-cylinder flow.
+
+    Two identical cylinders of diameter D are placed at the same x-position,
+    separated by a surface-to-surface gap of gap_ratio * D in the y-direction.
+    The domain is taller than the single-cylinder case to avoid wall interference.
+    The ROI y-centre is overridden to the domain midline so both wakes are
+    captured symmetrically.
+
+    Parameters
+    ----------
+    Re : float
+        Reynolds number (default 150).
+    U_phys : float
+        Free-stream velocity in m/s (default 1.0).
+    gap_ratio : float
+        Surface-to-surface gap normalised by D (default 3.5).
+    """
+    D = 12.0
+    dx = 0.3
+    cyl_x = 96.0
+    domain_center_y = 120.0   # taller domain (Ly=240m), centre at 120m
+    gap_phys = gap_ratio * D
+    half_cc = (D + gap_phys) / 2.0   # half of centre-to-centre distance
+    cyl1_y = domain_center_y + half_cc   # upper cylinder
+    cyl2_y = domain_center_y - half_cc   # lower cylinder
+
+    dt = stable_dt_for_case(Re=Re, U_phys=U_phys, D_phys=D, dx=dx, base_dt=0.015)
+
+    return PhysicsConfig(
+        Re=Re,
+        U_phys=U_phys,
+        D_phys=D,
+        Lx_phys=480.0,
+        Ly_phys=240.0,         # taller domain: ±6D clearance from each cylinder
+        dx=dx,
+        dt=dt,
+        cyl_x_phys=cyl_x,
+        cyl_y_center=cyl1_y,  # primary cylinder (upper)
+        extra_cylinders=[(cyl_x, cyl2_y, D)],
+        turbulence_intensity=0.05,
+        turbulence_length_scale=20,
+        T_spinup_phys=720.0,
+        T_record_phys=360.0,
+        record_interval=0.3,
+        roi_x_start_D=2.0,
+        roi_x_end_D=25.0,
+        roi_y_half_D=6.0,      # ±6D about override centre covers both wakes
+        roi_y_center_override=domain_center_y,
+        roi_downsample=2,
+        case_tag="sbs_G35_",
+    )
+
+
 def estimate_case_storage_bytes(pc: PhysicsConfig) -> int:
     """Estimate output file size (float16, 3 channels, after downsampling)."""
     lc = LatticeConfig.from_physics(pc)
@@ -649,6 +789,7 @@ def run_simulation(
     # --- Output files ---
     ds = lc.roi_downsample
     tag = (
+        f"{pc.case_tag}"          # empty string for single-cylinder cases
         f"v8_U{_tag_float(pc.U_phys)}_"
         f"Re{pc.Re:.0f}_"
         f"D{_tag_float(pc.D_phys)}_"
@@ -856,6 +997,28 @@ def make_training_configs(
             roi_downsample=2,
         ),
     }
+    # --- multi-cylinder profiles (built from preset functions) ---
+    _MULTI_CYL_RE = (150.0, 200.0)
+    _MULTI_CYL_U  = (0.8, 1.0, 1.2)
+
+    if profile == "tandem_G35_nav":
+        actual_re = tuple(re_values) if re_values is not None else _MULTI_CYL_RE
+        actual_u  = tuple(u_values)  if u_values  is not None else _MULTI_CYL_U
+        return [
+            make_tandem_physics_config(Re=Re, U_phys=U)
+            for U in actual_u
+            for Re in actual_re
+        ]
+
+    if profile == "side_by_side_G35_nav":
+        actual_re = tuple(re_values) if re_values is not None else _MULTI_CYL_RE
+        actual_u  = tuple(u_values)  if u_values  is not None else _MULTI_CYL_U
+        return [
+            make_side_by_side_physics_config(Re=Re, U_phys=U)
+            for U in actual_u
+            for Re in actual_re
+        ]
+
     if profile not in profiles:
         raise ValueError(f"Unknown training profile: {profile}")
 
@@ -912,7 +1075,14 @@ def main(
 
 def cli() -> None:
     parser = argparse.ArgumentParser(description="TRT-LBM wake generator v8.0")
-    parser.add_argument("--profile", default="navigation", help="Training profile name (default: navigation)")
+    parser.add_argument(
+        "--profile",
+        default="navigation",
+        help=(
+            "Training profile name. Available: navigation, "
+            "tandem_G35_nav, side_by_side_G35_nav (default: navigation)"
+        ),
+    )
     parser.add_argument("--gpu", action="store_true", help="Use GPU acceleration via CuPy")
     parser.add_argument("--re", type=float, nargs="*", default=None, metavar="RE",
                         help="Reynolds number(s), e.g. --re 150 250. Defaults to profile values.")

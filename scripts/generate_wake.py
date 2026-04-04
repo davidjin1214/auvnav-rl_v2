@@ -55,6 +55,10 @@ except ImportError:
 MIN_TAU_S = 0.52
 MAX_MA = 0.15
 
+# Default Re and U sweeps for multi-cylinder training profiles.
+_MULTI_CYL_RE = (150.0, 200.0)
+_MULTI_CYL_U  = (0.8, 1.0, 1.2)
+
 # Number of inlet profiles generated per batch (amortises CPU→GPU transfer).
 INLET_BATCH_SIZE = 2000
 
@@ -107,7 +111,7 @@ class PhysicsConfig:
     roi_downsample: int = 1
     # Extra cylinders beyond the primary: list of (x_phys, y_phys, D_phys) tuples.
     # Default empty list → single-cylinder behaviour unchanged.
-    extra_cylinders: list = field(default_factory=list)
+    extra_cylinders: list[tuple[float, float, float]] = field(default_factory=list)
     # Override the ROI y-centre (metres). None → use cyl_y_center.
     # Set to domain midpoint for side-by-side configs.
     roi_y_center_override: float | None = None
@@ -187,7 +191,7 @@ class LatticeConfig:
     output_roi_nx: int
     output_roi_ny: int
     dx_out: float
-    cylinders_lat: tuple = ()   # NEW: all cylinders as (cx_lat, cy_lat, r_lat)
+    cylinders_lat: tuple[tuple[int, int, int], ...] = ()
 
     @property
     def roi_nx(self) -> int:
@@ -789,7 +793,7 @@ def run_simulation(
     # --- Output files ---
     ds = lc.roi_downsample
     tag = (
-        f"{pc.case_tag}"          # empty string for single-cylinder cases
+        f"{pc.case_tag}"
         f"v8_U{_tag_float(pc.U_phys)}_"
         f"Re{pc.Re:.0f}_"
         f"D{_tag_float(pc.D_phys)}_"
@@ -997,27 +1001,15 @@ def make_training_configs(
             roi_downsample=2,
         ),
     }
-    # --- multi-cylinder profiles (built from preset functions) ---
-    _MULTI_CYL_RE = (150.0, 200.0)
-    _MULTI_CYL_U  = (0.8, 1.0, 1.2)
-
-    if profile == "tandem_G35_nav":
+    _multi_cyl_presets = {
+        "tandem_G35_nav": make_tandem_physics_config,
+        "side_by_side_G35_nav": make_side_by_side_physics_config,
+    }
+    if profile in _multi_cyl_presets:
         actual_re = tuple(re_values) if re_values is not None else _MULTI_CYL_RE
         actual_u  = tuple(u_values)  if u_values  is not None else _MULTI_CYL_U
-        return [
-            make_tandem_physics_config(Re=Re, U_phys=U)
-            for U in actual_u
-            for Re in actual_re
-        ]
-
-    if profile == "side_by_side_G35_nav":
-        actual_re = tuple(re_values) if re_values is not None else _MULTI_CYL_RE
-        actual_u  = tuple(u_values)  if u_values  is not None else _MULTI_CYL_U
-        return [
-            make_side_by_side_physics_config(Re=Re, U_phys=U)
-            for U in actual_u
-            for Re in actual_re
-        ]
+        preset_fn = _multi_cyl_presets[profile]
+        return [preset_fn(Re=Re, U_phys=U) for U in actual_u for Re in actual_re]
 
     if profile not in profiles:
         raise ValueError(f"Unknown training profile: {profile}")

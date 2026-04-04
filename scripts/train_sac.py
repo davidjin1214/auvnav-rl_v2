@@ -154,12 +154,18 @@ def train(args: argparse.Namespace) -> None:
         hidden_dim=args.hidden_dim,
         batch_size=train_cfg.batch_size,
         updates_per_step=train_cfg.updates_per_step,
+        use_layernorm=args.use_layernorm,
+        dropout_rate=args.dropout_rate,
+        privileged_obs_dim=2 if args.use_asymmetric_critic else 0,
     )
     agent = SACAgent(config=agent_cfg, device=train_cfg.device)
     replay = TransitionReplay(
         obs_dim=agent_cfg.obs_dim,
         action_dim=agent_cfg.action_dim,
-        config=TransitionReplayConfig(capacity=train_cfg.replay_capacity),
+        config=TransitionReplayConfig(
+            capacity=train_cfg.replay_capacity,
+            privileged_obs_dim=agent_cfg.privileged_obs_dim,
+        ),
     )
 
     save_dir = Path(train_cfg.save_dir)
@@ -198,6 +204,7 @@ def train(args: argparse.Namespace) -> None:
             has_final_obs = "final_observation" in info
             has_final_info = "final_info" in info
             has_step_cost = "step_safety_cost" in info
+            has_priv_obs = "privileged_obs" in info
             has_success = "success" in info
             has_elapsed = "elapsed_time_s" in info
             has_geom = "task_geometry" in info
@@ -213,6 +220,7 @@ def train(args: argparse.Namespace) -> None:
                     real_next_obs = next_obs[i]
 
                 step_cost = float(info["step_safety_cost"][i]) if has_step_cost else 0.0
+                priv_obs = info["privileged_obs"][i] if has_priv_obs else None
 
                 replay.add(
                     obs=obs[i],
@@ -221,6 +229,7 @@ def train(args: argparse.Namespace) -> None:
                     cost=step_cost,
                     next_obs=real_next_obs,
                     done=bool(terminated[i]),
+                    privileged_obs=priv_obs,
                 )
                 episode_return[i] += float(reward[i])
                 episode_cost[i] += step_cost
@@ -286,6 +295,7 @@ def train(args: argparse.Namespace) -> None:
                 cost=float(info["step_safety_cost"]),
                 next_obs=next_obs,
                 done=terminated,
+                privileged_obs=info.get("privileged_obs"),
             )
 
             episode_return[0] += float(reward)
@@ -468,6 +478,18 @@ def main() -> None:
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--save-dir", type=str, default="checkpoints/sac")
     parser.add_argument("--hidden-dim", type=int, default=256)
+    parser.add_argument(
+        "--use-layernorm", action="store_true", default=False,
+        help="Enable LayerNorm in Actor and Critic networks (DroQ/improved SAC).",
+    )
+    parser.add_argument(
+        "--dropout-rate", type=float, default=0.0, metavar="P",
+        help="Dropout rate for hidden layers (0.0 = off). DroQ recommends 0.01.",
+    )
+    parser.add_argument(
+        "--use-asymmetric-critic", action="store_true", default=False,
+        help="Enable Asymmetric Critic: Critic sees privileged_obs from env info.",
+    )
     parser.add_argument(
         "--num-envs", type=int, default=16)
     parser.add_argument(

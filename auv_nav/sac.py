@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from .networks import MLP, require_torch
+from .networks import MLP, build_hidden_layers, require_torch
 
 try:
     import torch
@@ -40,6 +40,10 @@ class SACConfig:
     batch_size: int = 256
     updates_per_step: int = 1
     grad_clip_norm: float = 10.0
+    # --- architecture improvements ---
+    use_layernorm: bool = False
+    dropout_rate: float = 0.0       # 0.0 = off; DroQ recommends 0.01
+    privileged_obs_dim: int = 0     # 0 = off; set to 2 for asymmetric critic
 
 
 class SquashedGaussianActor(_ModuleBase):
@@ -47,12 +51,9 @@ class SquashedGaussianActor(_ModuleBase):
         require_torch()
         super().__init__()
         self.config = config
-        self.backbone = nn.Sequential(
-            nn.Linear(config.obs_dim, config.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(config.hidden_dim, config.hidden_dim),
-            nn.ReLU(),
-        )
+        self.backbone = nn.Sequential(*build_hidden_layers(
+            config.obs_dim, config.hidden_dim, config.use_layernorm, config.dropout_rate
+        ))
         self.mean = nn.Linear(config.hidden_dim, config.action_dim)
         self.log_std = nn.Linear(config.hidden_dim, config.action_dim)
 
@@ -86,10 +87,55 @@ class QNetwork(_ModuleBase):
     def __init__(self, config: SACConfig) -> None:
         require_torch()
         super().__init__()
-        self.q = MLP(config.obs_dim + config.action_dim, config.hidden_dim, 1)
+        self.q = MLP(
+            config.obs_dim + config.action_dim,
+            config.hidden_dim,
+            1,
+            use_layernorm=config.use_layernorm,
+            dropout_rate=config.dropout_rate,
+        )
 
-    def forward(self, obs: "torch.Tensor", action: "torch.Tensor") -> "torch.Tensor":
+    def forward(
+        self,
+        obs: "torch.Tensor",
+        action: "torch.Tensor",
+        privileged_obs: "torch.Tensor | None" = None,
+    ) -> "torch.Tensor":
         x = torch.cat([obs, action], dim=-1)
+        return self.q(x).squeeze(-1)
+
+
+class AsymmetricQNetwork(_ModuleBase):
+    """Critic that accepts privileged observations during training.
+
+    Input: obs + action + privileged_obs (when provided) or zero-padded.
+    The privileged_obs argument should be None at evaluation time.
+    """
+
+    def __init__(self, config: SACConfig) -> None:
+        require_torch()
+        super().__init__()
+        self._priv_dim = config.privileged_obs_dim
+        total_in = config.obs_dim + config.action_dim + config.privileged_obs_dim
+        self.q = MLP(
+            total_in,
+            config.hidden_dim,
+            1,
+            use_layernorm=config.use_layernorm,
+            dropout_rate=config.dropout_rate,
+        )
+
+    def forward(
+        self,
+        obs: "torch.Tensor",
+        action: "torch.Tensor",
+        privileged_obs: "torch.Tensor | None" = None,
+    ) -> "torch.Tensor":
+        if privileged_obs is None:
+            # Actor update: privileged info unavailable; use zeros as padding.
+            # expand avoids a copy — the cat below materialises it once.
+            privileged_obs = obs.new_zeros(1, self._priv_dim).expand(obs.shape[0], -1)
+        x = torch.cat([obs, action, privileged_obs], dim=-1)
         return self.q(x).squeeze(-1)
 
 
@@ -109,10 +155,11 @@ class SACAgent:
             self.target_entropy = float(config.target_entropy)
 
         self.actor = SquashedGaussianActor(config).to(self.device)
-        self.q1 = QNetwork(config).to(self.device)
-        self.q2 = QNetwork(config).to(self.device)
-        self.q1_target = QNetwork(config).to(self.device)
-        self.q2_target = QNetwork(config).to(self.device)
+        critic_cls = AsymmetricQNetwork if config.privileged_obs_dim > 0 else QNetwork
+        self.q1 = critic_cls(config).to(self.device)
+        self.q2 = critic_cls(config).to(self.device)
+        self.q1_target = critic_cls(config).to(self.device)
+        self.q2_target = critic_cls(config).to(self.device)
         self.q1_target.load_state_dict(self.q1.state_dict())
         self.q2_target.load_state_dict(self.q2.state_dict())
 
@@ -167,16 +214,18 @@ class SACAgent:
         rewards = batch["rewards"]
         next_obs = batch["next_obs"]
         dones = batch["dones"]
+        priv = batch.get("privileged_obs")   # None if not present
 
         with torch.no_grad():
             next_action, next_log_prob = self.actor.sample(next_obs)
+            # Target critics do not use privileged obs (unavailable at eval time)
             q1_next = self.q1_target(next_obs, next_action)
             q2_next = self.q2_target(next_obs, next_action)
             q_next = torch.min(q1_next, q2_next) - self.alpha.detach() * next_log_prob
             q_target = rewards + self.config.gamma * (1.0 - dones) * q_next
 
-        q1_pred = self.q1(obs, actions)
-        q2_pred = self.q2(obs, actions)
+        q1_pred = self.q1(obs, actions, priv)
+        q2_pred = self.q2(obs, actions, priv)
         q1_loss = F.mse_loss(q1_pred, q_target)
         q2_loss = F.mse_loss(q2_pred, q_target)
 

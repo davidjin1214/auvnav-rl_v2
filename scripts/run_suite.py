@@ -38,6 +38,39 @@ METHOD_SPECS: dict[str, MethodSpec] = {
         extra_args=("--history-length", "4"),
         description="Feedforward SAC with 4-step observation history.",
     ),
+    "sac_ln_k16": MethodSpec(
+        key="sac_ln_k16",
+        train_module="scripts.train_sac",
+        extra_args=("--use-layernorm", "--history-length", "16"),
+        description="SAC + LayerNorm + history K=16",
+    ),
+    "sac_droq": MethodSpec(
+        key="sac_droq",
+        train_module="scripts.train_sac",
+        extra_args=(
+            "--use-layernorm", "--dropout-rate", "0.01",
+            "--updates-per-step", "4", "--history-length", "16",
+        ),
+        description="DroQ: SAC + LayerNorm + Dropout(0.01) + UTD=4 + K=16",
+    ),
+    "sac_asym_k16": MethodSpec(
+        key="sac_asym_k16",
+        train_module="scripts.train_sac",
+        extra_args=(
+            "--use-layernorm", "--use-asymmetric-critic", "--history-length", "16",
+        ),
+        description="SAC + LayerNorm + Asymmetric Critic + K=16",
+    ),
+    "sac_full": MethodSpec(
+        key="sac_full",
+        train_module="scripts.train_sac",
+        extra_args=(
+            "--use-layernorm", "--dropout-rate", "0.01",
+            "--updates-per-step", "4",
+            "--use-asymmetric-critic", "--history-length", "16",
+        ),
+        description="SAC + all improvements: LN + DroQ + AsymCritic + UTD=4 + K=16",
+    ),
 }
 
 
@@ -85,6 +118,19 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "batch_size": 256,
             "replay_capacity": 1_000_000,
             "hidden_dim": 256,
+        },
+    ),
+    "sac_ablation_v1": SuitePreset(
+        name="sac_ablation_v1",
+        description=(
+            "5-variant SAC ablation study: baseline vs LN+K16 vs DroQ "
+            "vs AsymCritic vs Full. 3 seeds each."
+        ),
+        values={
+            "methods": "sac,sac_ln_k16,sac_droq,sac_asym_k16,sac_full",
+            "seeds": "42,43,44",
+            "total_steps": 200_000,
+            "difficulty": "medium",
         },
     ),
 }

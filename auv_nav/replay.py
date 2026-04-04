@@ -18,6 +18,7 @@ except ImportError:
 @dataclass(slots=True)
 class TransitionReplayConfig:
     capacity: int = 1_000_000
+    privileged_obs_dim: int = 0   # 0 = disabled
 
 
 class TransitionReplay:
@@ -36,6 +37,13 @@ class TransitionReplay:
         self.dones = np.zeros(capacity, dtype=np.float32)
         self.ptr = 0
         self.size = 0
+        # Optional privileged observation buffer.
+        if config.privileged_obs_dim > 0:
+            self.privileged_obs: np.ndarray | None = np.zeros(
+                (capacity, config.privileged_obs_dim), dtype=np.float32
+            )
+        else:
+            self.privileged_obs = None
 
     def __len__(self) -> int:
         return self.size
@@ -48,6 +56,7 @@ class TransitionReplay:
         cost: float,
         next_obs: np.ndarray,
         done: bool,
+        privileged_obs: np.ndarray | None = None,
     ) -> None:
         idx = self.ptr
         self.observations[idx] = np.asarray(obs, dtype=np.float32)
@@ -56,7 +65,10 @@ class TransitionReplay:
         self.costs[idx] = float(cost)
         self.next_observations[idx] = np.asarray(next_obs, dtype=np.float32)
         self.dones[idx] = float(done)
-
+        if self.privileged_obs is not None:
+            if privileged_obs is not None:
+                self.privileged_obs[idx] = np.asarray(privileged_obs, dtype=np.float32)
+            # else: slot stays as zeros (safe default)
         self.ptr = (self.ptr + 1) % self.config.capacity
         self.size = min(self.size + 1, self.config.capacity)
 
@@ -109,11 +121,16 @@ class TransitionReplay:
             raise RuntimeError("Replay buffer is empty.")
         batch_size = max(1, int(batch_size))
         indices = np.random.randint(0, self.size, size=batch_size)
-        return {
-            "obs": torch.as_tensor(self.observations[indices], device=device),
-            "actions": torch.as_tensor(self.actions[indices], device=device),
-            "rewards": torch.as_tensor(self.rewards[indices], device=device),
-            "costs": torch.as_tensor(self.costs[indices], device=device),
+        batch = {
+            "obs":      torch.as_tensor(self.observations[indices], device=device),
+            "actions":  torch.as_tensor(self.actions[indices], device=device),
+            "rewards":  torch.as_tensor(self.rewards[indices], device=device),
+            "costs":    torch.as_tensor(self.costs[indices], device=device),
             "next_obs": torch.as_tensor(self.next_observations[indices], device=device),
-            "dones": torch.as_tensor(self.dones[indices], device=device),
+            "dones":    torch.as_tensor(self.dones[indices], device=device),
         }
+        if self.privileged_obs is not None:
+            batch["privileged_obs"] = torch.as_tensor(
+                self.privileged_obs[indices], device=device
+            )
+        return batch

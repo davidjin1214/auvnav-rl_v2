@@ -872,6 +872,9 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
             "center_current_world": self.last_center_current_world.astype(np.float32),
             "equivalent_current_world": equivalent_world.astype(np.float32),
             "equivalent_current_body": equivalent_body.astype(np.float32),
+            # Privileged observation for asymmetric critic training (not used by actor).
+            # Contains body-frame equivalent flow [u_eq, v_eq] in m/s.
+            "privileged_obs": equivalent_body[:2].astype(np.float32),
             "reference_flow_world": self.reference_flow_world.copy(),
             "reference_flow_speed_mps": float(self.reference_flow_speed_mps),
             "reference_flow_heading_rad": float(self.reference_flow_heading_rad),

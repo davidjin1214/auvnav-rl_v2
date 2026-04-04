@@ -144,9 +144,15 @@ class SACAgent:
         deterministic: bool = False,
     ) -> "tuple[np.ndarray, None]":
         _ = policy_state
-        obs_t = torch.as_tensor(obs, dtype=torch.float32, device=self.device).unsqueeze(0)
+        obs_t = torch.as_tensor(obs, dtype=torch.float32, device=self.device)
+        is_batched = obs_t.ndim > 1
+        if not is_batched:
+            obs_t = obs_t.unsqueeze(0)
         action, _ = self.actor.sample(obs_t, deterministic=deterministic)
-        return action[0].cpu().numpy().astype(np.float32), None
+        action_np = action.cpu().numpy().astype(np.float32)
+        if not is_batched:
+            action_np = action_np[0]
+        return action_np, None
 
     def soft_update_targets(self) -> None:
         with torch.no_grad():

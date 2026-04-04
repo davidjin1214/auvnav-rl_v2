@@ -261,8 +261,8 @@ def _cylinder_drag_coeff(length: float, diameter: float, nu_r: Vec6) -> float:
     return cd * kappa
 
 
-def _cross_flow_drag(length: float, diameter: float, nu_r: Vec6,
-                     rho: float, n_strips: int = 20) -> Vec6:
+def _cross_flow_drag_out(length: float, diameter: float, nu_r: Vec6,
+                         rho: float, out: Vec6, n_strips: int = 20) -> None:
     """Strip-theory cross-flow drag (vectorised over hull strips)."""
     dx = length / n_strips
     cd_2d = _cylinder_drag_coeff(length, diameter, nu_r)
@@ -271,31 +271,29 @@ def _cross_flow_drag(length: float, diameter: float, nu_r: Vec6,
     q = float(nu_r[4])
     r_rate = float(nu_r[5])
 
-    # Midpoints of n_strips evenly-spaced strips along the hull
     x_l = np.linspace(-length / 2.0 + dx / 2.0, length / 2.0 - dx / 2.0, n_strips)
 
-    # Local cross-flow velocities at each strip
     v_local = v_r + x_l * r_rate
     w_local = w_r + x_l * q
 
-    # Quadratic drag terms: |v| * v
     uh = np.abs(v_local) * v_local
     uv = np.abs(w_local) * w_local
 
     coeff = -0.5 * rho * diameter * cd_2d * dx
-    Yh = coeff * np.sum(uh)
-    Zh = coeff * np.sum(uv)
-    Mh = coeff * np.dot(x_l, uv)
-    Nh = coeff * np.dot(x_l, uh)
+    out[0] = 0.0
+    out[1] = coeff * np.sum(uh)
+    out[2] = coeff * np.sum(uv)
+    out[3] = 0.0
+    out[4] = coeff * np.dot(x_l, uv)
+    out[5] = coeff * np.dot(x_l, uh)
 
-    return np.array([0.0, Yh, Zh, 0.0, Mh, Nh], dtype=float)
 
-
-def _lift_drag_force(span: float, area: float, cd_0: float,
-                     alpha: float, u_r: float, rho: float) -> Vec6:
+def _lift_drag_force_out(span: float, area: float, cd_0: float,
+                         alpha: float, u_r: float, rho: float, out: Vec6) -> None:
     """Axial lift and induced drag on the hull (thin-wing model)."""
     if area <= 0.0:
-        return np.zeros(6, dtype=float)
+        out.fill(0.0)
+        return
 
     e_oswald = 0.3
     ar = span**2 / area
@@ -308,14 +306,30 @@ def _lift_drag_force(span: float, area: float, cd_0: float,
     f_lift = q_dyn * cl
 
     ca, sa = np.cos(alpha), np.sin(alpha)
-    X = ca * (-f_drag) - sa * (-f_lift)
-    Z = sa * (-f_drag) + ca * (-f_lift)
-    return np.array([X, 0.0, Z, 0.0, 0.0, 0.0], dtype=float)
+    out[0] = ca * (-f_drag) - sa * (-f_lift)
+    out[1] = 0.0
+    out[2] = sa * (-f_drag) + ca * (-f_lift)
+    out[3] = 0.0
+    out[4] = 0.0
+    out[5] = 0.0
 
 
 # ---------------------------------------------------------------------------
 # Main vehicle class
 # ---------------------------------------------------------------------------
+
+
+def smtrx_out(a: Array, out: Array) -> None:
+    """Skew-symmetric (cross-product) matrix: S(a) b = a x b."""
+    out[0, 0] = 0.0
+    out[0, 1] = -a[2]
+    out[0, 2] = a[1]
+    out[1, 0] = a[2]
+    out[1, 1] = 0.0
+    out[1, 2] = -a[0]
+    out[2, 0] = -a[1]
+    out[2, 1] = a[0]
+    out[2, 2] = 0.0
 
 class Remus100:
     """REMUS 100 six-degree-of-freedom dynamic model."""
@@ -347,6 +361,61 @@ class Remus100:
         self.r_bG = np.array([0.0, 0.0, p.cg_z], dtype=float)
         self.r_bB = np.array([0.0, 0.0, p.cb_z], dtype=float)
 
+        m = (4.0 / 3.0) * np.pi * p.rho * self.a * self.b**2
+        self.mass = m
+        Ix = (2.0 / 5.0) * m * self.b**2
+        Iy = (1.0 / 5.0) * m * (self.a**2 + self.b**2)
+        self.Ig = np.array([Ix, Iy, Iy], dtype=float)
+        
+        MRB_CG = np.diag([m, m, m, Ix, Iy, Iy]).astype(float)
+        
+        self.H = np.block([
+            [np.eye(3), smtrx(self.r_bG).T],
+            [np.zeros((3, 3)), np.eye(3)],
+        ])
+        self.HT = self.H.T.copy()
+        self.MRB = self.HT @ MRB_CG @ self.H
+
+        MA_44 = p.r44 * Ix
+        e = np.sqrt(max(1.0 - (self.b / self.a)**2, 1e-8))
+        alpha_0 = (2.0 * (1.0 - e**2) / e**3) * (
+            0.5 * np.log((1.0 + e) / (1.0 - e)) - e)
+        beta_0 = (1.0 / e**2
+                   - (1.0 - e**2) / (2.0 * e**3)
+                   * np.log((1.0 + e) / (1.0 - e)))
+        k1 = alpha_0 / (2.0 - alpha_0)
+        k2 = beta_0 / (2.0 - beta_0)
+        k_prime = (e**4 * (beta_0 - alpha_0)
+                   / ((2.0 - e**2)
+                      * (2.0 * e**2 - (2.0 - e**2) * (beta_0 - alpha_0))))
+        self.MA_diag = np.array([
+            m * k1, m * k2, m * k2,
+            MA_44, k_prime * Iy, k_prime * Iy,
+        ], dtype=float)
+        self.MA = np.diag(self.MA_diag).astype(float)
+
+        self.M = self.MRB + self.MA
+        
+        self._nu_c = np.zeros(6, dtype=float)
+        self._nu_r = np.zeros(6, dtype=float)
+        self._Dnu_c = np.zeros(6, dtype=float)
+        self._CRB_CG = np.zeros((6, 6), dtype=float)
+        self._CRB_tmp = np.zeros((6, 6), dtype=float)
+        self._CRB = np.zeros((6, 6), dtype=float)
+        self._CA = np.zeros((6, 6), dtype=float)
+        self._C = np.zeros((6, 6), dtype=float)
+        self._D = np.zeros((6, 6), dtype=float)
+        self._tau_ctrl = np.zeros(6, dtype=float)
+        self._tau_ld = np.zeros(6, dtype=float)
+        self._tau_cf = np.zeros(6, dtype=float)
+        self._g_vec = np.zeros(6, dtype=float)
+        self._rhs = np.zeros(6, dtype=float)
+        self._eta_dot = np.zeros(6, dtype=float)
+        self._x_dot = np.zeros(12, dtype=float)
+        
+        self.W = self.MRB[0, 0] * gravity(p.latitude_rad)
+        self.B = self.W
+
     # -- relative flow ------------------------------------------------------
 
     def compute_relative_flow(self, x: Array,
@@ -356,128 +425,96 @@ class Remus100:
         """Compute body-frame relative-flow quantities."""
         nu = x[:6]
         psi = float(x[S.PSI])
-        u_c = Vc * np.cos(beta_Vc - psi)
-        v_c = Vc * np.sin(beta_Vc - psi)
-        nu_c = np.array([u_c, v_c, w_c, 0.0, 0.0, 0.0], dtype=float)
-        nu_r = nu - nu_c
-        u_r, v_r, w_r = map(float, nu_r[:3])
-        U_r = float(np.linalg.norm(nu_r[:3]))
+        self._nu_c[0] = Vc * np.cos(beta_Vc - psi)
+        self._nu_c[1] = Vc * np.sin(beta_Vc - psi)
+        self._nu_c[2] = w_c
+        self._nu_r[:] = nu - self._nu_c
+        
+        u_r, v_r, w_r = float(self._nu_r[0]), float(self._nu_r[1]), float(self._nu_r[2])
+        U_r = float(np.linalg.norm(self._nu_r[:3]))
 
-        # Avoid division by zero at very low forward speed
         safe_u = u_r if abs(u_r) >= min_forward_speed else (
             min_forward_speed if u_r >= 0.0 else -min_forward_speed)
         alpha = float(np.arctan2(w_r, safe_u))
         beta = float(np.arctan2(v_r, safe_u))
 
         return RelativeFlow(
-            nu_r=nu_r, nu_c=nu_c,
+            nu_r=self._nu_r, nu_c=self._nu_c,
             u_r=u_r, v_r=v_r, w_r=w_r, U_r=U_r,
             alpha=alpha, beta=beta,
             alpha_abs=abs(alpha), beta_abs=abs(beta),
         )
 
-    # -- rigid-body matrices ------------------------------------------------
+    # -- rigid-body and added mass matrices (combined) ----------------------
 
-    def _rigid_body_matrices(self, omega: Vec3) -> tuple[Mat6, Mat6]:
-        """MRB and CRB at the body origin (translated from CG)."""
-        p = self.params
-        m = (4.0 / 3.0) * np.pi * p.rho * self.a * self.b**2
-        Ix = (2.0 / 5.0) * m * self.b**2
-        Iy = (1.0 / 5.0) * m * (self.a**2 + self.b**2)
-
-        MRB_CG = np.diag([m, m, m, Ix, Iy, Iy]).astype(float)
-        O3 = np.zeros((3, 3), dtype=float)
-        Ig = np.diag([Ix, Iy, Iy]).astype(float)
-        CRB_CG = np.block([
-            [m * smtrx(omega), O3],
-            [O3, -smtrx(Ig @ omega)],
-        ])
-        # Transform from CG to body origin
-        H = np.block([
-            [np.eye(3), smtrx(self.r_bG).T],
-            [np.zeros((3, 3)), np.eye(3)],
-        ])
-        return H.T @ MRB_CG @ H, H.T @ CRB_CG @ H
-
-    # -- added-mass matrices ------------------------------------------------
-
-    def _added_mass_matrices(self, nu_r: Vec6) -> tuple[Mat6, Mat6]:
-        """MA and CA from Lamb's k-factors for a prolate spheroid."""
-        p = self.params
-        m = (4.0 / 3.0) * np.pi * p.rho * self.a * self.b**2
-        Ix = (2.0 / 5.0) * m * self.b**2
-        Iy = (1.0 / 5.0) * m * (self.a**2 + self.b**2)
-        MA_44 = p.r44 * Ix
-
-        e = np.sqrt(max(1.0 - (self.b / self.a)**2, 1e-8))
-        alpha_0 = (2.0 * (1.0 - e**2) / e**3) * (
-            0.5 * np.log((1.0 + e) / (1.0 - e)) - e)
-        beta_0 = (1.0 / e**2
-                   - (1.0 - e**2) / (2.0 * e**3)
-                   * np.log((1.0 + e) / (1.0 - e)))
-
-        k1 = alpha_0 / (2.0 - alpha_0)
-        k2 = beta_0 / (2.0 - beta_0)
-        k_prime = (e**4 * (beta_0 - alpha_0)
-                   / ((2.0 - e**2)
-                      * (2.0 * e**2 - (2.0 - e**2) * (beta_0 - alpha_0))))
-
-        MA = np.diag([
-            m * k1, m * k2, m * k2,
-            MA_44, k_prime * Iy, k_prime * Iy,
-        ]).astype(float)
-
-        CA = m2c(MA, nu_r)
-        # Zero out cross-coupling terms that are negligible for slender bodies
-        for i, j in [(4, 2), (2, 4), (4, 0), (0, 4),
-                     (5, 0), (0, 5), (5, 1), (1, 5)]:
-            CA[i, j] = 0.0
-        return MA, CA
+    def _compute_C_matrices(self, omega: Vec3, nu_r: Vec6) -> tuple[Mat6, Mat6]:
+        """Compute CRB and CA in-place and return them."""
+        smtrx_out(omega, self._CRB_CG[0:3, 0:3])
+        self._CRB_CG[0:3, 0:3] *= self.mass
+        
+        Ig_omega = self.Ig * omega
+        smtrx_out(Ig_omega, self._CRB_CG[3:6, 3:6])
+        self._CRB_CG[3:6, 3:6] *= -1.0
+        
+        np.dot(self.HT, np.dot(self._CRB_CG, self.H, out=self._CRB_tmp), out=self._CRB)
+        
+        p1 = self.MA_diag[:3] * nu_r[:3]
+        p2 = self.MA_diag[3:] * nu_r[3:]
+        
+        smtrx_out(p1, self._CA[0:3, 3:6])
+        self._CA[0:3, 3:6] *= -1.0
+        self._CA[3:6, 0:3] = self._CA[0:3, 3:6]
+        
+        smtrx_out(p2, self._CA[3:6, 3:6])
+        self._CA[3:6, 3:6] *= -1.0
+        
+        self._CA[0, 4] = self._CA[0, 5] = self._CA[1, 5] = self._CA[2, 4] = 0.0
+        self._CA[4, 0] = self._CA[4, 2] = self._CA[5, 0] = self._CA[5, 1] = 0.0
+        
+        return self._CRB, self._CA
 
     # -- restoring forces ---------------------------------------------------
 
-    def _restoring_forces(self, W: float, B: float, R: Array) -> Vec6:
+    def _compute_restoring_forces(self, R: Array) -> Vec6:
         """Gravity and buoyancy restoring force/moment vector."""
-        dW = W - B
-        c3 = R[2, :]
-        f = -dW * c3
-        rG, rB = self.r_bG, self.r_bB
-        return np.array([
-            f[0], f[1], f[2],
-            -(rG[1] * W - rB[1] * B) * c3[2] + (rG[2] * W - rB[2] * B) * c3[1],
-            -(rG[2] * W - rB[2] * B) * c3[0] + (rG[0] * W - rB[0] * B) * c3[2],
-            -(rG[0] * W - rB[0] * B) * c3[1] + (rG[1] * W - rB[1] * B) * c3[0],
-        ], dtype=float)
+        dW = self.W - self.B
+        c30, c31, c32 = R[2, 0], R[2, 1], R[2, 2]
+        self._g_vec[0] = -dW * c30
+        self._g_vec[1] = -dW * c31
+        self._g_vec[2] = -dW * c32
+        
+        W, B, rG, rB = self.W, self.B, self.r_bG, self.r_bB
+        self._g_vec[3] = -(rG[1] * W - rB[1] * B) * c32 + (rG[2] * W - rB[2] * B) * c31
+        self._g_vec[4] = -(rG[2] * W - rB[2] * B) * c30 + (rG[0] * W - rB[0] * B) * c32
+        self._g_vec[5] = -(rG[0] * W - rB[0] * B) * c31 + (rG[1] * W - rB[1] * B) * c30
+        return self._g_vec
 
     # -- damping matrix -----------------------------------------------------
 
-    def _damping_matrix(self, M: Mat6, U_r: float, W: float) -> Mat6:
+    def _compute_damping_matrix(self, U_r: float) -> Mat6:
         """Linear + speed-dependent damping."""
-        p = self.params
+        p, M = self.params, self.M
         dz = max(self.r_bG[2] - self.r_bB[2], 1e-6)
-        w4 = np.sqrt(max(W * dz / max(M[3, 3], 1e-8), 1e-8))
-        w5 = np.sqrt(max(W * dz / max(M[4, 4], 1e-8), 1e-8))
+        w4 = np.sqrt(max(self.W * dz / max(M[3, 3], 1e-8), 1e-8))
+        w5 = np.sqrt(max(self.W * dz / max(M[4, 4], 1e-8), 1e-8))
 
-        D = np.diag([
-            M[0, 0] / p.t_surge,
-            M[1, 1] / p.t_sway,
-            M[2, 2] / p.t_sway,
-            M[3, 3] * 2.0 * p.zeta_roll * w4,
-            M[4, 4] * 2.0 * p.zeta_pitch * w5,
-            M[5, 5] / p.t_yaw,
-        ]).astype(float)
+        self._D[0, 0] = M[0, 0] / p.t_surge
+        self._D[1, 1] = M[1, 1] / p.t_sway
+        self._D[2, 2] = M[2, 2] / p.t_sway
+        self._D[3, 3] = M[3, 3] * 2.0 * p.zeta_roll * w4
+        self._D[4, 4] = M[4, 4] * 2.0 * p.zeta_pitch * w5
+        self._D[5, 5] = M[5, 5] / p.t_yaw
 
-        # Reduce linear drag at higher speed (quadratic drag dominates)
         exp_factor = np.exp(-3.0 * U_r)
-        D[0, 0] *= exp_factor
-        D[1, 1] *= exp_factor
-        return D
+        self._D[0, 0] *= exp_factor
+        self._D[1, 1] *= exp_factor
+        return self._D
 
     # -- propulsion and control surfaces ------------------------------------
 
-    def _propulsion_and_control(self, nu: Vec6, flow: RelativeFlow,
-                                U: float, delta_r: float,
-                                delta_s: float, n_rpm: float) -> Vec6:
+    def _compute_propulsion_and_control(self, flow: RelativeFlow,
+                                        U: float, delta_r: float,
+                                        delta_s: float, n_rpm: float) -> Vec6:
         """Propeller thrust/torque and fin forces."""
         p = self.params
         n_rps = n_rpm / 60.0
@@ -496,20 +533,18 @@ class Remus100:
         U_rh = float(np.hypot(flow.u_r, flow.v_r))
         U_rv = float(np.hypot(flow.u_r, flow.w_r))
 
-        # Fin drag (quadratic in deflection) and side/normal forces
         X_r = -0.5 * p.rho * U_rh**2 * self.A_rudder * p.cl_delta_r * delta_r**2
         X_s = -0.5 * p.rho * U_rv**2 * self.A_stern * p.cl_delta_s * delta_s**2
         Y_r = -0.5 * p.rho * U_rh**2 * self.A_rudder * p.cl_delta_r * delta_r
         Z_s = -0.5 * p.rho * U_rv**2 * self.A_stern * p.cl_delta_s * delta_s
 
-        tau = np.zeros(6, dtype=float)
-        tau[0] = (1.0 - p.t_prop) * X_prop + X_r + X_s
-        tau[1] = Y_r
-        tau[2] = Z_s
-        tau[3] = K_prop / 10.0       # empirical propeller-to-roll coupling
-        tau[4] = -self.x_fin * Z_s
-        tau[5] = self.x_fin * Y_r
-        return tau
+        self._tau_ctrl[0] = (1.0 - p.t_prop) * X_prop + X_r + X_s
+        self._tau_ctrl[1] = Y_r
+        self._tau_ctrl[2] = Z_s
+        self._tau_ctrl[3] = K_prop / 10.0
+        self._tau_ctrl[4] = -self.x_fin * Z_s
+        self._tau_ctrl[5] = self.x_fin * Y_r
+        return self._tau_ctrl
 
     # -- control helpers ----------------------------------------------------
 
@@ -560,59 +595,52 @@ class Remus100:
                  w_c: float = 0.0) -> tuple[Array, float, Mat6]:
         """
         Evaluate 6-DOF equations of motion.
-
-        Returns
-        -------
-        x_dot : (12,) state derivative
-        U     : total body-frame speed
-        M     : 6x6 system inertia matrix (rigid-body + added mass)
         """
         p = self.params
         nu, eta = x[:6], x[6:]
-        phi = float(eta[3])
-        theta = float(eta[4])
-        psi = float(eta[5])
-        delta_r, delta_s, n_rpm = map(float, self.saturate_control(ui))
+        phi, theta, psi = float(eta[3]), float(eta[4]), float(eta[5])
+        
+        cmd_sat = self.saturate_control(ui)
+        delta_r, delta_s, n_rpm = cmd_sat[0], cmd_sat[1], cmd_sat[2]
 
         flow = self.compute_relative_flow(x, Vc=Vc, beta_Vc=beta_Vc, w_c=w_c)
         U = float(np.linalg.norm(nu[:3]))
         u_c, v_c = flow.nu_c[0], flow.nu_c[1]
 
-        # Acceleration of the body-fixed current vector
-        Dnu_c = np.array([nu[5] * v_c, -nu[5] * u_c,
-                          0.0, 0.0, 0.0, 0.0], dtype=float)
+        self._Dnu_c[0] = nu[5] * v_c
+        self._Dnu_c[1] = -nu[5] * u_c
+        
+        CRB, CA = self._compute_C_matrices(nu[3:], flow.nu_r)
+        self._C[:] = CRB + CA
 
-        # Inertia and Coriolis matrices
-        MRB, CRB = self._rigid_body_matrices(nu[3:])
-        MA, CA = self._added_mass_matrices(flow.nu_r)
-        M = MRB + MA
-        C = CRB + CA
-
-        # Weight and buoyancy
-        W = MRB[0, 0] * self.g_mu
-        B = W
         R = r_zyx(phi, theta, psi)
-        g_vec = self._restoring_forces(W, B, R)
+        g_vec = self._compute_restoring_forces(R)
 
-        # Damping
-        D = self._damping_matrix(M, flow.U_r, W)
+        D = self._compute_damping_matrix(flow.U_r)
 
-        # External forces
-        tau_ld = _lift_drag_force(p.diameter, self.S_ref, self.CD_0,
-                                  flow.alpha, flow.U_r, p.rho)
-        tau_cf = _cross_flow_drag(p.length, p.diameter, flow.nu_r, p.rho)
-        tau_ctrl = self._propulsion_and_control(
-            nu, flow, U, delta_r, delta_s, n_rpm)
+        _lift_drag_force_out(p.diameter, self.S_ref, self.CD_0,
+                             flow.alpha, flow.U_r, p.rho, self._tau_ld)
+        _cross_flow_drag_out(p.length, p.diameter, flow.nu_r, p.rho, self._tau_cf)
+        tau_ctrl = self._compute_propulsion_and_control(
+            flow, U, delta_r, delta_s, n_rpm)
 
-        # Newton-Euler in body frame
-        rhs = tau_ctrl + tau_ld + tau_cf - C @ flow.nu_r - D @ flow.nu_r - g_vec
-        nu_dot = Dnu_c + np.linalg.solve(M, rhs)
+        self._rhs[:] = tau_ctrl
+        self._rhs += self._tau_ld
+        self._rhs += self._tau_cf
+        self._rhs -= self._C @ flow.nu_r
+        self._rhs -= D @ flow.nu_r
+        self._rhs -= g_vec
+        
+        nu_dot = self._Dnu_c + np.linalg.solve(self.M, self._rhs)
 
-        # Kinematics
         T = t_zyx(phi, theta)
-        eta_dot = np.concatenate([R @ nu[:3], T @ nu[3:]])
+        self._eta_dot[:3] = R @ nu[:3]
+        self._eta_dot[3:] = T @ nu[3:]
 
-        return np.concatenate([nu_dot, eta_dot]), U, M
+        self._x_dot[:6] = nu_dot
+        self._x_dot[6:] = self._eta_dot
+        
+        return self._x_dot.copy(), U, self.M
 
     # -- validity check -----------------------------------------------------
 

@@ -964,8 +964,8 @@ def make_training_configs(
     profiles = {
         "navigation": NavigationProfile(
             name="navigation",
-            # Cover the REMUS-100 operating speed range (1.0–1.5 m/s).
-            U_phys_values=(1.0, 1.25, 1.5),
+            # Cover the REMUS-100 operating speed extremes (1.0 and 1.5 m/s) to test under-actuation.
+            U_phys_values=(1.0, 1.5),
             # Two Re values for different wake complexity; chosen for LBM
             # stability (tau_s ∈ [0.524, 0.56]) and mechanism diversity.
             Re_values=(150.0, 250.0),

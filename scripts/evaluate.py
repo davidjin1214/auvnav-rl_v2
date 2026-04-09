@@ -43,7 +43,8 @@ def main() -> None:
         if args.history_length is not None
         else int(trainer_state.get("history_length", 1))
     )
-    env = make_planar_env(flow_path, history_length=history_length)
+    probe_layout = trainer_state.get("probe_layout", "s0")
+    env = make_planar_env(flow_path, history_length=history_length, probe_layout=probe_layout)
     agent = SACAgent(SACConfig(**agent_cfg_dict), device=args.device)
 
     checkpoint_root = Path(args.checkpoint)

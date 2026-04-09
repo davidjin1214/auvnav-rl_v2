@@ -132,6 +132,57 @@ def default_probe_offsets() -> np.ndarray:
     )
 
 
+def make_probe_offsets(layout: str) -> np.ndarray:
+    """Return body-frame probe offsets (m) for the named sensing scheme.
+
+    All coordinates are in the AUV body frame: x points forward (bow),
+    y points to port.  Only velocity channels (u, v) are assumed; no
+    vorticity is required.
+
+    Schemes
+    -------
+    s0 — 1 probe: centre only.
+         Represents a DVL water-track — the standard REMUS-100 baseline.
+
+    s1 — 5 probes: symmetric local cross at ±2 m.
+         Hull-mounted near-field sensors with no forward reach.
+         Captures local vortex cross-section; purely reactive sensing.
+
+    s2 — 5 probes: forward ADCP beam pattern.
+         Centre (DVL) + two along-axis cells at 5 m and 9 m + two lateral
+         beams at [8 m, ±4 m] (≈ 27° half-angle at 9 m range).
+         Represents a research-grade 1 MHz forward ADCP on REMUS-100.
+         Provides ~3–7 control steps of advance warning for upstream tasks.
+    """
+    if layout == "s0":
+        return np.array([[0.0, 0.0]], dtype=float)
+    if layout == "s1":
+        return np.array(
+            [
+                [0.0,  0.0],
+                [2.0,  0.0],
+                [-2.0, 0.0],
+                [0.0,  2.0],
+                [0.0, -2.0],
+            ],
+            dtype=float,
+        )
+    if layout == "s2":
+        return np.array(
+            [
+                [0.0, 0.0],   # centre — DVL water-track
+                [5.0, 0.0],   # near forward cell (~1.7 s preview, upstream)
+                [9.0, 0.0],   # far forward cell  (~3.0 s preview, upstream)
+                [8.0,  4.0],  # port  lateral beam at 9 m range, 27° half-angle
+                [8.0, -4.0],  # stbd  lateral beam
+            ],
+            dtype=float,
+        )
+    raise ValueError(
+        f"Unknown probe layout {layout!r}. Choose from 's0', 's1', 's2'."
+    )
+
+
 @dataclass(slots=True)
 class FlowSample:
     world: np.ndarray

@@ -89,6 +89,7 @@ def apply_resume_defaults(args: argparse.Namespace, parser: argparse.ArgumentPar
         apply_default(arg_name, train_state.get(state_name))
 
     apply_default("flow", trainer_state.get("flow_path"))
+    apply_default("probe_layout", trainer_state.get("probe_layout"))
     apply_default("difficulty", reset_state.get("task_difficulty"))
     apply_default("task_geometry", reset_state.get("task_geometry"))
     apply_default("action_mode", reset_state.get("action_mode"))
@@ -129,10 +130,16 @@ def train(args: argparse.Namespace) -> None:
 
     flow_path = args.flow or discover_flow_path()
     
+    probe_layout = args.probe_layout
+
     if train_cfg.num_envs > 1:
         def make_env_fn(seed_offset):
             def _thunk():
-                env = make_planar_env(flow_path, history_length=train_cfg.history_length)
+                env = make_planar_env(
+                    flow_path,
+                    history_length=train_cfg.history_length,
+                    probe_layout=probe_layout,
+                )
                 env.action_space.seed(train_cfg.seed + seed_offset)
                 return env
             return _thunk
@@ -141,11 +148,19 @@ def train(args: argparse.Namespace) -> None:
         obs_dim = int(env.single_observation_space.shape[0])
         action_dim = int(env.single_action_space.shape[0])
     else:
-        env = make_planar_env(flow_path, history_length=train_cfg.history_length)
+        env = make_planar_env(
+            flow_path,
+            history_length=train_cfg.history_length,
+            probe_layout=probe_layout,
+        )
         obs_dim = int(env.observation_space.shape[0])
         action_dim = int(env.action_space.shape[0])
-        
-    eval_env = make_planar_env(flow_path, history_length=train_cfg.history_length)
+
+    eval_env = make_planar_env(
+        flow_path,
+        history_length=train_cfg.history_length,
+        probe_layout=probe_layout,
+    )
     reset_options = make_reset_options(args)
 
     agent_cfg = SACConfig(
@@ -391,6 +406,7 @@ def train(args: argparse.Namespace) -> None:
                 extra_state={
                     "algorithm": "sac",
                     "history_length": train_cfg.history_length,
+                    "probe_layout": probe_layout,
                 },
             )
 
@@ -408,6 +424,7 @@ def train(args: argparse.Namespace) -> None:
                 extra_state={
                     "algorithm": "sac",
                     "history_length": train_cfg.history_length,
+                    "probe_layout": probe_layout,
                 },
             )
 
@@ -500,6 +517,17 @@ def main() -> None:
     )
     parser.add_argument("--checkpoint-every", type=int, default=5_000)
     parser.add_argument("--resume", type=str, default=None)
+    parser.add_argument(
+        "--probe-layout",
+        choices=["s0", "s1", "s2"],
+        default="s0",
+        help=(
+            "Flow sensing layout: "
+            "s0=centre only (DVL, obs+2), "
+            "s1=local cross 5-probe (obs+10), "
+            "s2=ADCP beam pattern 5-probe (obs+10)."
+        ),
+    )
     args = parser.parse_args()
     apply_resume_defaults(args, parser)
     train(args)

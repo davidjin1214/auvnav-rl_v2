@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 
 from auv_nav.env import ObservationHistoryWrapper, PlanarRemusEnv, PlanarRemusEnvConfig
+from auv_nav.flow import make_probe_offsets
 
 try:
     import torch
@@ -32,9 +33,14 @@ def make_planar_env(
     flow_path: str | Path,
     *,
     history_length: int = 1,
+    probe_layout: str = "s0",
 ) -> PlanarRemusEnv | ObservationHistoryWrapper:
     env: PlanarRemusEnv | ObservationHistoryWrapper = PlanarRemusEnv(
-        PlanarRemusEnvConfig(flow_path=flow_path)
+        PlanarRemusEnvConfig(
+            flow_path=flow_path,
+            probe_offsets_body=make_probe_offsets(probe_layout),
+            probe_channels="velocity",
+        )
     )
     if history_length > 1:
         env = ObservationHistoryWrapper(env, history_length)

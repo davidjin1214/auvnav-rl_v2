@@ -329,6 +329,9 @@ class PlanarRemusEnvConfig:
 
     # -- observation probes (agent perception) --
     probe_offsets_body: np.ndarray = field(default_factory=_default_center_probe)
+    # "velocity" → (u, v) per probe (physically realistic, DVL/ADCP).
+    # "full"     → (u, v, ω) per probe (includes vorticity, simulation-only).
+    probe_channels: str = "velocity"
 
     # -- hull-averaged current for dynamics --
     hull_flow_sample_fractions: tuple[float, ...] = (-0.4, -0.2, 0.0, 0.2, 0.4)
@@ -360,6 +363,8 @@ class PlanarRemusEnvConfig:
             raise ValueError("At least one hull flow sample fraction is required.")
         if len(self.hull_flow_sample_fractions) != len(self.hull_flow_sample_weights):
             raise ValueError("Hull flow sample fractions and weights must have the same length.")
+        if self.probe_channels not in {"velocity", "full"}:
+            raise ValueError("probe_channels must be 'velocity' or 'full'.")
         if self.task_geometry not in {"downstream", "cross_stream", "upstream"}:
             raise ValueError(
                 "task_geometry must be one of: downstream, cross_stream, upstream."
@@ -526,7 +531,8 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
         )
 
         n_probes = self.probe_offsets_body.shape[0]
-        obs_dim = 8 + n_probes * 3
+        self.channels_per_probe = 2 if config.probe_channels == "velocity" else 3
+        obs_dim = 8 + n_probes * self.channels_per_probe
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf,
             shape=(obs_dim,), dtype=np.float32,
@@ -542,9 +548,17 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
             goal_x_index=5,
             goal_y_index=6,
             first_probe_index=8,
-            probe_stride=3,
+            probe_stride=self.channels_per_probe,
             num_probes=n_probes,
         )
+
+        # Precompute per-step probe normalization scales (immutable after init).
+        ns0 = config.obs_norm
+        if self.channels_per_probe == 2:
+            _channel_scales = [ns0.flow_vel, ns0.flow_vel]
+        else:
+            _channel_scales = [ns0.flow_vel, ns0.flow_vel, ns0.flow_omega]
+        self._probe_flow_scales = np.tile(_channel_scales, n_probes).astype(np.float32)
 
         # --- mutable episode state ---
         self.state = np.zeros(S.N, dtype=float)
@@ -771,7 +785,7 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
         return {
             "own": obs[self._obs_own],
             "goal": obs[self._obs_goal],
-            "probes": obs[self._obs_probe].reshape(n_probes, 3),
+            "probes": obs[self._obs_probe].reshape(n_probes, self.channels_per_probe),
         }
 
     def _build_observation(self) -> np.ndarray:
@@ -782,23 +796,25 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
         goal_body = rot @ goal_world
         distance = float(np.linalg.norm(goal_world))
 
-        # Probe flow sensing (body frame)
-        probes_raw = self.flow_sampler.sample_probes_body(
+        # Probe flow sensing — sample all 3 channels, then keep channels_per_probe.
+        probes_all = self.flow_sampler.sample_probes_body(
             float(pos_xy[0]),
             float(pos_xy[1]),
             psi,
             self.flow_time,
             self.probe_offsets_body,
+        )
+        probes_raw = np.ascontiguousarray(
+            probes_all[:, : self.channels_per_probe]
         ).reshape(-1)
 
-        # Raw observation vector
         ns = self.config.obs_norm if self.config.normalize_obs else None
 
         own = np.array([
             self.state[S.U]  / (ns.speed if ns else 1.0),
             self.state[S.V]  / (ns.speed if ns else 1.0),
             self.state[S.R]  / (ns.yaw_rate if ns else 1.0),
-            np.cos(psi),      # already in [-1, 1]
+            np.cos(psi),
             np.sin(psi),
         ], dtype=np.float32)
 
@@ -809,11 +825,7 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
         ], dtype=np.float32)
 
         if ns:
-            flow_scales = np.tile(
-                [ns.flow_vel, ns.flow_vel, ns.flow_omega],
-                self.probe_offsets_body.shape[0],
-            ).astype(np.float32)
-            probes_obs = probes_raw.astype(np.float32) / flow_scales
+            probes_obs = probes_raw / self._probe_flow_scales
         else:
             probes_obs = probes_raw.astype(np.float32)
 

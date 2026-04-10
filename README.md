@@ -1,141 +1,421 @@
 # AUV Navigation in Complex Flow Fields
 
-## 项目概述 (Project Overview)
-本项目是一个基于深度强化学习（Deep Reinforcement Learning, DRL）的研究项目，旨在为自主水下航行器（Autonomous Underwater Vehicle, AUV，以 REMUS-100 为原型）在复杂、非均匀流场（如通过格子玻尔兹曼方法生成的单/多圆柱尾迹流场）中，学习高效、鲁棒的导航与轨迹规划策略。本项目主要采用了高度优化与改进版的 Soft Actor-Critic (SAC) 算法。
+一个面向研究的强化学习项目：让 AUV 在复杂、非均匀、随时间变化的尾迹流场中学会高效导航，而不是只会“顶流直冲”。
 
----
+## 项目在做什么
 
-## 目录结构 (Repository Structure)
+这个仓库研究的问题可以概括为：
 
-本项目代码模块化清晰，主要分为以下几个部分：
+- 载体：以 REMUS-100 风格 AUV 为原型的平面导航任务
+- 环境：由 LBM 生成的单圆柱或多圆柱尾迹流场
+- 目标：在动态流场中从起点到目标点导航
+- 难点：流场强、非均匀、时变，且存在欠驱动场景
+- 方法：基于改进版 Soft Actor-Critic (SAC) 学习策略
 
-- **`auv_nav/`**: 核心代码包，包含环境定义、航行器动力学、流场建模和 RL 算法。
-  - **`env.py`**: 基于 Gymnasium 封装的 AUV 导航环境 (`PlanarRemusEnv`)，2 维动作（航向指令、速度指令），观测维度取决于流速探针配置：8 基础维 + n_probes×2（`s0` 默认为 10 维，`s1`/`s2` 为 18 维）。
-  - **`vehicle.py` & `autopilot.py`**: 实现了 REMUS-100 航行器的动力学模型与底层控制系统（如基于航向和深度的自动驾驶仪）。
-  - **`flow.py`**: 流场环境建模、流体数据插值采样，将 LBM 数据接入实时物理仿真。
-  - **`sac.py` & `networks.py` & `replay.py`**: 核心 SAC 算法实现、神经网络结构以及经验回放池。包含了如 LayerNorm、Dropout (DroQ) 和非对称 Critic 等多种改进架构。
-  - **`reward.py`**: 统一的奖励建模体系 (`RewardModel`) 和安全性成本模型 (`SafetyCostModel`)，用于风险整形、步长惩罚与边界碰撞检测。
-  - **`baselines.py`**: 用于对比测试的传统基线策略（如视线法目标追踪、纯迎流补偿、全球坐标补偿、无流体假设规划等）。
+这不是一个“静态路径规划”仓库。它更接近一个闭环控制与决策系统：
 
-- **`scripts/`**: 项目的所有可执行脚本，涵盖生成、训练、评估、可视化与论文制图流程（详见“使用指南”）。
+- 上游先离线生成流场数据
+- 中游将流场接入 AUV 物理环境
+- 下游用 RL 学习控制策略
+- 最后通过评估、可视化和论文作图分析结果
 
-- **`tests/`**: 单元测试目录，基于 `pytest` 编写，包含针对改进版 SAC 模块 (`test_improved_sac.py`) 和多圆柱 LBM 生成 (`test_multi_cylinder_lbm.py`) 的自动化测试。
+如果只看一句话：
 
-- **`docs/`**: 设计文档、调研报告（如 SAC 算法改进调研、世界模型调研等），以及核心功能的规格设计（在 `superpowers/` 中）。
+> 本项目试图回答：AUV 能否学会主动利用尾迹中的涡结构和局部流动信息，在强逆流或复杂干涉流场中更高效地到达目标。
 
-- **`wake_data/`**: 存放通过 LBM (Lattice Boltzmann Method) 预先生成的流场数据。每个流场由一个 `.npy` 文件（流速场数组，shape `(T, Nx, Ny, C)`）和一个同名的 `_meta.json` 配套文件组成，两者缺一不可。
-- **`checkpoints/`**: 模型训练时的自动保存路径（权重和日志）。
+## 这个仓库的整体闭环
 
----
-
-## 详细使用指南 (Usage Guide)
-
-### 1. 生成尾迹流场数据 (Generating Wake Data)
-在进行训练之前，首先需要生成用于仿真环境的流场数据。执行 `scripts/generate_wake.py` 脚本（基于 TRT-LBM 流体动力学仿真）生成高质量尾迹数据。
-
-该脚本支持 **单圆柱** 以及 **多种多圆柱（Multi-cylinder）尾迹配置**，模拟极其复杂的水下流场。生成结果为 `.npy` + `_meta.json` 配对文件，存于 `wake_data/`：
-```bash
-# 生成默认的标准导航尾迹流场（单圆柱）
-python -m scripts.generate_wake --profile navigation
-
-# 生成串联双圆柱 (Tandem) 尾迹流场，间距为 3.5D
-python -m scripts.generate_wake --profile tandem_G35_nav
-
-# 生成并排双圆柱 (Side-by-side) 尾迹流场，间距为 3.5D
-python -m scripts.generate_wake --profile side_by_side_G35_nav
-
-# 使用 GPU 加速生成（需要安装并配置 CuPy）
-python -m scripts.generate_wake --profile navigation --gpu
-
-# 自定义雷诺数 (Reynolds number) 和自由流速 (Free-stream velocity)
-python -m scripts.generate_wake --re 150 250 --u 1.0 1.5
+```text
+generate_wake.py
+    ↓
+wake_data/*.npy + *_meta.json
+    ↓
+PlanarRemusEnv + WakeField + FlowSampler
+    ↓
+SAC / baseline policies
+    ↓
+checkpoint / logs / metrics
+    ↓
+evaluate / demo / visualize / figure_paper
 ```
 
-### 2. 训练强化学习智能体 (Training the SAC Agent)
-使用 `scripts/train_sac.py` 在指定的流场和任务难度下训练 SAC 模型。所有脚本均以**模块方式**从仓库根目录运行（`python -m scripts.<name>`）。本项目实现了一系列前沿的 **SAC 改进技术 (Architecture Improvements)** 以应对复杂流场环境。
+按实验流程理解这个仓库，通常最清晰：
+
+1. 用 `scripts/generate_wake.py` 生成尾迹流场数据。
+2. 用 `scripts/train_sac.py` 在指定流场上训练策略。
+3. 用 `scripts/evaluate.py` 批量评估 checkpoint。
+4. 用 `scripts/demo.py`、`scripts/visualize.py`、`scripts/figure_paper.py` 做行为分析和结果展示。
+
+## 核心研究设定
+
+### 1. 状态、动作和任务
+
+环境主体是 [`auv_nav/env.py`](auv_nav/env.py) 中的 `PlanarRemusEnv`。
+
+它的基本设定是：
+
+- 动作为 2 维：航向相关指令 + 速度相关指令
+- 环境内部包含 REMUS-100 风格动力学与自动驾驶仪
+- 任务是在流场 ROI 内，从随机采样起点导航到目标点
+- 每个 episode 有最大时间限制、边界限制和姿态/速度安全约束
+
+任务几何有三种：
+
+- `downstream`：顺流
+- `cross_stream`：横流
+- `upstream`：逆流
+
+脚本层面又把它们映射为难度：
+
+- `easy -> downstream`
+- `medium -> cross_stream`
+- `hard -> upstream`
+
+所以你在训练脚本里看到的 `--difficulty hard`，本质上是在测试最有挑战性的逆流任务。
+
+### 2. AUV 能看到什么
+
+观测并不是“全局流场图像”，而是局部传感器式观测。
+
+默认观测由两部分组成：
+
+- AUV 自身运动状态与目标相对信息
+- 机体附近若干流速探针读数
+
+项目提供 3 种 probe layout：
+
+- `s0`：1 个中心探针，最接近基础 DVL 设定，观测维度 10
+- `s1`：5 个对称局部探针，强调近场被动感知，观测维度 18
+- `s2`：5 个前向 ADCP 风格探针，能提前“看到”前方来流，观测维度 18
+
+这点很重要：这个仓库不是让 agent 直接看完整流场，而是让它在有限局部感知下做控制决策。
+
+### 3. 奖励和安全约束
+
+奖励与成本定义在 [`auv_nav/reward.py`](auv_nav/reward.py)。
+
+每一步奖励大致由以下部分组成：
+
+- 时间/步长惩罚：鼓励尽快完成任务
+- 朝目标前进的 progress reward：鼓励有效推进
+- 成功终止奖励：到达目标时给正奖励
+- 失败或超时惩罚：出界、失稳、超时等情况给负奖励
+- 可选的 safety cost / energy cost：用于更细的风险整形
+
+也就是说，项目优化的不是“单纯最短路”，而是一个兼顾到达、效率和安全性的控制目标。
+
+## 为什么要先生成流场
+
+这个仓库没有在线 CFD。流场是先离线生成，再在训练时按时空插值读取。
+
+流场生成脚本是 [`scripts/generate_wake.py`](scripts/generate_wake.py)，其职责是：
+
+- 用二维 TRT-LBM 模拟圆柱绕流
+- 支持单圆柱、串联双圆柱、并排双圆柱等配置
+- 记录 ROI 中的 `(u, v, ω)` 时空演化
+- 产出下游环境可直接读取的数据文件
+
+生成后的数据在 `wake_data/` 中，通常每个 case 对应：
+
+- `wake_*.npy`：主数据，形状为 `(T, Nx, Ny, 3)`
+- `wake_*_meta.json`：元数据，记录空间分辨率、ROI 边界、时间步长等
+- `wake_*_phase.npy`：涡相位估计结果
+
+训练和评估真正依赖的是：
+
+- `.npy`
+- 同名 `_meta.json`
+
+如果你想细看这个脚本怎么用、有哪些 profile、哪些参数能调，见：
+
+- [`docs/generate_wake_usage.md`](docs/generate_wake_usage.md)
+
+## 仓库结构应该怎么理解
+
+### `auv_nav/`
+
+这是核心包，建议按下面方式理解。
+
+- `env.py`
+  研究主环境。负责 episode 采样、动作解释、奖励计算、终止条件和观测组织。
+- `vehicle.py`
+  AUV 动力学模型与状态定义。
+- `autopilot.py`
+  低层控制后端，例如深度保持、航向控制、等效流体处理等。
+- `flow.py`
+  负责读取 `wake_data/`，并做空间和时间上的插值采样，把离线流场变成环境中的“可查询背景流”。
+- `reward.py`
+  奖励和安全成本模型。
+- `sac.py`
+  SAC agent 主体实现。
+- `networks.py`
+  Actor / Critic 网络结构及相关工具。
+- `replay.py`
+  经验回放池。
+- `baselines.py`
+  非学习型基线策略，用于对照实验。
+
+如果你想知道“项目最核心的逻辑在哪”，答案通常是：
+
+- 环境在 `auv_nav/env.py`
+- 流场接入在 `auv_nav/flow.py`
+- 算法在 `auv_nav/sac.py`
+
+### `scripts/`
+
+这是实验工作流的入口层。
+
+- `generate_wake.py`
+  生成流场数据。
+- `train_sac.py`
+  训练 SAC 智能体。
+- `evaluate.py`
+  用训练好的 checkpoint 做批量评估。
+- `demo.py`
+  跑单次或少量 episode，对比 baseline 或策略行为。
+- `visualize.py`
+  生成更详细的轨迹与流场动画。
+- `figure_paper.py`
+  生成论文级静态图。
+- `run_suite.py`
+  批量跑多组实验。
+- `summarize_suite.py`
+  汇总多个实验日志。
+- `plot_suite.py`, `plot_training.py`
+  绘制训练曲线与消融图。
+- `train_utils.py`
+  训练/评估的公共工具函数。
+
+### `tests/`
+
+当前测试重点在两类：
+
+- 改进版 SAC
+- 多圆柱 LBM 数据生成
+
+这说明项目最容易出错、也最值得固定行为的部分，正是算法实现和流场生成。
+
+### `docs/`
+
+这里既有研究型说明，也有实现文档。
+
+你可以优先看：
+
+- `docs/generate_wake_usage.md`
+- `docs/environment_design.md`
+- `docs/SAC_improvements_survey.md`
+- `docs/world_model_and_offline_rl_survey.md`
+
+### `wake_data/`
+
+离线流场数据库。没有它，环境无法运行。
+
+### `checkpoints/`
+
+训练产物目录，通常保存：
+
+- agent 权重
+- replay buffer
+- RNG 状态
+- `trainer_state.json`
+- 训练日志与评估日志
+
+## 一次训练到底发生了什么
+
+从 [`scripts/train_sac.py`](scripts/train_sac.py) 看，单次训练的主流程大致是：
+
+1. 读取指定流场或自动发现 `wake_data/` 下的第一个可用文件。
+2. 用 `make_planar_env(...)` 构造环境。
+3. 根据 `probe_layout` 和 `history_length` 确定观测维度。
+4. 初始化 SAC agent、replay buffer 和日志路径。
+5. 环境交互采样。
+6. 在满足 `update_after` 等条件后执行 SAC 更新。
+7. 周期性评估、存 checkpoint、写日志。
+
+这个流程里有几个研究上很关键的控制项：
+
+- `--probe-layout`
+  控制 agent 的感知方式。
+- `--history-length`
+  控制是否把最近若干帧观测堆叠起来，缓解部分可观测性。
+- `--use-layernorm`
+  稳定网络训练。
+- `--dropout-rate`
+  对 critic 做 DroQ 风格正则化。
+- `--use-asymmetric-critic`
+  训练时让 critic 看到特权观测，而 actor 仍只用局部感知。
+- `--difficulty` / `--task-geometry`
+  控制任务类型。
+- `--target-speed`
+  控制 AUV 极限速度，是本项目里非常关键的实验旋钮。
+
+## 为什么 `--target-speed 1.5` 重要
+
+项目默认把 AUV 在满转速下的名义最大速度设为 `2.0 m/s`。如果流场来流速度接近这个量级，问题会变得非常尖锐。
+
+比如：
+
+- 流场 `U = 1.5 m/s`
+- AUV 最大速度也限制为 `1.5 m/s`
+
+那么在逆流任务里，AUV 基本处于“靠本体推进难以直接胜出”的临界状态。此时：
+
+- 直线迎流策略通常很差
+- agent 必须学会利用局部流动结构
+- 这更能体现 RL 是否真的“借力流场”，而不是只学会简单跟踪目标
+
+所以 README 里最值得你记住的一条实验建议是：
+
+> 当你想测试策略是否真的具备复杂流场利用能力时，优先尝试 `U_flow = 1.5 m/s` 且 `target-speed = 1.5 m/s` 的逆流任务。
+
+## 常见使用路径
+
+### 1. 先生成数据，再训练
 
 ```bash
-# 在具有挑战性的逆流环境（hard 难度）下训练模型，并启用多项算法改进
+python -m scripts.generate_wake --profile navigation
 python -m scripts.train_sac \
-    --flow wake_data/wake_v8_U1.50_Re150_D12.00_dx0.60_Ti5pct_1200f_roi.npy \
-    --target-speed 1.5 \
+    --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --difficulty hard \
-    --total-steps 50000 \
+    --target-speed 1.5 \
+    --probe-layout s0 \
+    --history-length 5 \
     --use-layernorm \
     --dropout-rate 0.01 \
     --use-asymmetric-critic \
-    --history-length 5 \
-    --probe-layout s0 \
     --seed 42 \
     --device cpu
 ```
 
-> **💡 核心实验技巧 (Pro Tip):**
-> 强烈建议在训练和测试时，配合 $1.5 \text{ m/s}$ 的流场使用 `--target-speed 1.5` 选项，将 AUV 的极限速度从默认的 $2.0 \text{ m/s}$ 降维锁死在 $1.5 \text{ m/s}$。这会制造出一个严苛的**欠驱动临界状态 ($U_{flow} / V_{AUV} = 1.0$)**。在此设定下，传统的直线抗流策略将寸步难行，而这正是展示 SAC 强化学习算法通过”借力涡流”实现智能突破的绝佳场景！
+### 2. 评估一个 checkpoint
 
-**关键参数解析：**
-- `--probe-layout`: 流速感知方案，决定观测维度。
-  - `s0`（默认）：1 个中心探针（DVL），**观测 10 维**，对应真实 REMUS-100 传感器配置。
-  - `s1`：5 个对称 ±2 m 十字探针，**观测 18 维**，纯被动局部感知。
-  - `s2`：5 个前向 ADCP 波束探针（最远 9 m），**观测 18 维**，对逆流任务提供 ~3–7 步提前量。
-- `--use-layernorm`: 在 MLP 骨干中加入 Layer Normalization，有助于稳定深层网络在复杂观测下的训练。
-- `--dropout-rate`: 设置 Dropout 概率（如 `0.01`，参考 DroQ 算法），有效缓解 Critic 早期过拟合问题。
-- `--use-asymmetric-critic`: 启用非对称 Critic。Critic 在训练阶段可额外接收 2 维参考流速特权观测（Privileged Observations），而 Actor 推理时仅依赖探针局部观测，从而加速收敛。
-- `--history-length`: 设置观测历史堆叠长度，赋予智能体时序记忆能力，有效处理环境的部分可观测性 (POMDP)。
-
-### 3. 模型评估 (Evaluating a Checkpoint)
-利用 `scripts/evaluate.py` 对特定的 checkpoint 进行大批量测试以统计如到达成功率、耗时、能量消耗等指标。probe-layout 和 history-length 自动从 checkpoint 的 `trainer_state.json` 中恢复，无需手动指定。
 ```bash
 python -m scripts.evaluate \
     --checkpoint checkpoints/sac/<run_dir> \
     --episodes 100 \
-    --seed 123 \
-    --flow wake_data/wake_v8_U1.00_Re150...npy \
-    --difficulty hard
+    --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
+    --difficulty hard \
+    --target-speed 1.5
 ```
 
-### 4. 演示、轨迹分析与动画渲染 (Demos & Visualization)
-- **基线策略交互对比 (`scripts/demo.py`)**:
-  用于方便地调用各种预设基线策略在环境中单次或多次运行，并绘制静态轨迹对比图。
-  ```bash
-  # 运行 "目标追踪 (goal)" 并在屏幕弹窗展示轨迹（观察其在逆流中失败的极限情况）
-  python -m scripts.demo --policy goal --flow wake_data/wake_v8_U1.50_Re150...npy --target-speed 1.5 --difficulty hard --plot
-
-  # 所有 baseline 并排对比并保存图像
-  python -m scripts.demo --policy all --flow wake_data/wake_v8_U1.50_Re150...npy --target-speed 1.5 --difficulty hard --plot --save comparison.png
-  ```
-
-- **四面板详细数据动画 (`scripts/visualize.py`)**:
-  专为轨迹细节打造，可将单回合渲染为包含：① 全局涡量热力图、② 距离目标曲线、③ 累积奖励曲线、④ 目标速度分解 (Speed Decomposition，显示 AUV 自带动力与流场带来动力的拆解) 的 MP4 或 GIF 动画。
-  ```bash
-  python -m scripts.visualize --policy goal --flow wake_data/...npy --save animation.mp4
-  ```
-
-### 5. 论文级图表生成 (Generating Paper Figures)
-使用 `scripts/figure_paper.py` 生成标准出版物级别的 PDF 静态科研插图。这会生成涵盖不同策略对 "流体动力利用率 (Quantitative Flow Contribution)" 指标影响的分析对比图 (`figure1_comparison.pdf` 与 `figure2_speed_decomposition.pdf`)。
-```bash
-python -m scripts.figure_paper \
-    --flow wake_data/...npy \
-    --checkpoint checkpoints/sac/<run_dir> \
-    --outdir ./figures/
-```
-
-### 6. 批量消融实验与绘图 (Batch Suites & Plotting)
-项目提供了一套自动化的批处理与统计流脚本，用于进行多随机种子（Multi-seed）与模块消融（Ablation）实验：
-- `scripts/run_suite.py`: 根据预设文件连续跑大规模多参数组合。
-- `scripts/summarize_suite.py`: 提取 Tensorboard 或 JSONL 日志数据，并合并多 Seed 统计信息。
-- `scripts/plot_suite.py` & `scripts/plot_training.py`: 读取汇总数据，生成论文所需的平滑训练曲线柱状分析图。
+### 3. 看基线策略在复杂流场里怎么失败
 
 ```bash
-# 启动多种子消融训练
-python -m scripts.run_suite --preset ablation_improvements --seeds 42 43 44 --difficulty hard
+python -m scripts.demo \
+    --policy goal \
+    --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
+    --difficulty hard \
+    --target-speed 1.5 \
+    --plot
 ```
 
-### 7. 运行单元测试 (Running Unit Tests)
-使用 `pytest` 运行针对代码核心模块的测试，确保你的环境以及安装正常工作：
+### 4. 生成更复杂的多圆柱流场
+
+```bash
+python -m scripts.generate_wake --profile tandem_G35_nav
+python -m scripts.generate_wake --profile side_by_side_G35_nav
+```
+
+## 运行脚本时要知道的约定
+
+- 所有脚本都建议从仓库根目录以模块方式运行：
+  `python -m scripts.<name>`
+- 本仓库本地运行约定使用 Conda 环境 `mytorch1`
+- 如果 `wake_data/` 下没有流场文件，训练和演示脚本会先报缺少数据
+- 训练时如果不显式指定 `--flow`，会自动发现 `wake_data/` 下的第一个 `wake_*_roi.npy`
+
+## 输出产物怎么看
+
+### 流场生成阶段
+
+输出在 `wake_data/`：
+
+- `wake_*.npy`
+- `wake_*_meta.json`
+- `wake_*_phase.npy`
+
+### 训练阶段
+
+输出保存在 `--save-dir` 指定的目录中，默认是 `checkpoints/sac/`。常见文件包括：
+
+- `agent_latest.pt`
+- `agent_step_<N>.pt`
+- `agent_final.pt`
+- `replay_latest.pkl`
+- `rng_state.pkl`
+- `trainer_state.json`
+- `train_log.jsonl`
+- `eval_log.csv`
+- `final_eval.json`
+
+其中最关键的是 `trainer_state.json`，因为它保存了恢复训练和评估所需的重要配置，例如：
+
+- flow 路径
+- history length
+- probe layout
+- reset options
+- agent config
+
+## 如果你第一次看这个仓库，建议这样读
+
+### 目标是理解“这个项目在干什么”
+
+建议顺序：
+
+1. 先读本文档
+2. 再读 [`docs/generate_wake_usage.md`](docs/generate_wake_usage.md)
+3. 然后读 [`auv_nav/env.py`](auv_nav/env.py) 里的 `PlanarRemusEnvConfig`
+4. 最后看 [`scripts/train_sac.py`](scripts/train_sac.py) 的参数入口
+
+### 目标是理解“流场怎么接进环境”
+
+建议顺序：
+
+1. [`scripts/generate_wake.py`](scripts/generate_wake.py)
+2. [`auv_nav/flow.py`](auv_nav/flow.py)
+3. [`auv_nav/env.py`](auv_nav/env.py)
+
+### 目标是理解“算法做了哪些改进”
+
+建议顺序：
+
+1. [`docs/SAC_improvements_survey.md`](docs/SAC_improvements_survey.md)
+2. [`auv_nav/networks.py`](auv_nav/networks.py)
+3. [`auv_nav/sac.py`](auv_nav/sac.py)
+4. [`tests/test_improved_sac.py`](tests/test_improved_sac.py)
+
+## 快速索引
+
+- 想生成流场：[`scripts/generate_wake.py`](scripts/generate_wake.py)
+- 想看流场生成文档：[`docs/generate_wake_usage.md`](docs/generate_wake_usage.md)
+- 想训练 agent：[`scripts/train_sac.py`](scripts/train_sac.py)
+- 想评估 checkpoint：[`scripts/evaluate.py`](scripts/evaluate.py)
+- 想看环境定义：[`auv_nav/env.py`](auv_nav/env.py)
+- 想看流场读取：[`auv_nav/flow.py`](auv_nav/flow.py)
+- 想看奖励：[`auv_nav/reward.py`](auv_nav/reward.py)
+- 想看基线：[`auv_nav/baselines.py`](auv_nav/baselines.py)
+
+## 测试
+
 ```bash
 pytest tests/
-# 或测试指定模块
+```
+
+或运行指定模块：
+
+```bash
 pytest tests/test_improved_sac.py
 pytest tests/test_multi_cylinder_lbm.py
 ```
+
+## 当前 README 的定位
+
+这份 README 的目标不是完整替代代码文档，而是让你在不深入读源码的前提下，先回答下面这些问题：
+
+- 这个仓库研究的是什么问题
+- 实验闭环是怎样的
+- 数据、环境、算法和可视化分别在哪里
+- 训练时有哪些关键实验旋钮
+- 我第一次上手应该先跑哪个脚本
+
+如果这些问题你已经能答出来，这份 README 就达到了目的。

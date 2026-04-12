@@ -215,12 +215,12 @@ class SACAgent:
         next_obs = batch["next_obs"]
         dones = batch["dones"]
         priv = batch.get("privileged_obs")   # None if not present
+        next_priv = batch.get("next_privileged_obs")
 
         with torch.no_grad():
             next_action, next_log_prob = self.actor.sample(next_obs)
-            # Target critics do not use privileged obs (unavailable at eval time)
-            q1_next = self.q1_target(next_obs, next_action)
-            q2_next = self.q2_target(next_obs, next_action)
+            q1_next = self.q1_target(next_obs, next_action, next_priv)
+            q2_next = self.q2_target(next_obs, next_action, next_priv)
             q_next = torch.min(q1_next, q2_next) - self.alpha.detach() * next_log_prob
             q_target = rewards + self.config.gamma * (1.0 - dones) * q_next
 

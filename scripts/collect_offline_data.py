@@ -65,6 +65,8 @@ def collect(args: argparse.Namespace) -> None:
     all_costs: list[float] = []
     all_next_obs: list[np.ndarray] = []
     all_dones: list[bool] = []
+    all_privileged_obs: list[np.ndarray] = []
+    all_next_privileged_obs: list[np.ndarray] = []
 
     successes = 0
     episode_returns: list[float] = []
@@ -73,6 +75,7 @@ def collect(args: argparse.Namespace) -> None:
     t0 = time.time()
     for ep in range(args.episodes):
         obs, info = env.reset(seed=args.seed + ep, options=reset_options)
+        current_privileged_obs = info.get("privileged_obs")
         ep_return = 0.0
         ep_length = 0
         done = False
@@ -93,10 +96,16 @@ def collect(args: argparse.Namespace) -> None:
             all_costs.append(float(info.get("step_safety_cost", 0.0)))
             all_next_obs.append(np.asarray(next_obs, dtype=np.float32))
             all_dones.append(bool(terminated))
+            if current_privileged_obs is not None:
+                all_privileged_obs.append(np.asarray(current_privileged_obs, dtype=np.float32))
+            next_privileged_obs = info.get("privileged_obs")
+            if next_privileged_obs is not None:
+                all_next_privileged_obs.append(np.asarray(next_privileged_obs, dtype=np.float32))
 
             ep_return += float(reward)
             ep_length += 1
             obs = next_obs
+            current_privileged_obs = next_privileged_obs
             done = terminated or truncated
 
         successes += int(info.get("success", False))
@@ -116,15 +125,19 @@ def collect(args: argparse.Namespace) -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     npz_path = output_dir / "transitions.npz"
-    np.savez_compressed(
-        str(npz_path),
-        obs=np.array(all_obs, dtype=np.float32),
-        actions=np.array(all_actions, dtype=np.float32),
-        rewards=np.array(all_rewards, dtype=np.float32),
-        costs=np.array(all_costs, dtype=np.float32),
-        next_obs=np.array(all_next_obs, dtype=np.float32),
-        dones=np.array(all_dones, dtype=np.float32),
-    )
+    payload = {
+        "obs": np.array(all_obs, dtype=np.float32),
+        "actions": np.array(all_actions, dtype=np.float32),
+        "rewards": np.array(all_rewards, dtype=np.float32),
+        "costs": np.array(all_costs, dtype=np.float32),
+        "next_obs": np.array(all_next_obs, dtype=np.float32),
+        "dones": np.array(all_dones, dtype=np.float32),
+    }
+    if all_privileged_obs:
+        payload["privileged_obs"] = np.array(all_privileged_obs, dtype=np.float32)
+    if all_next_privileged_obs:
+        payload["next_privileged_obs"] = np.array(all_next_privileged_obs, dtype=np.float32)
+    np.savez_compressed(str(npz_path), **payload)
 
     # Save metadata.
     n_transitions = len(all_obs)
@@ -135,6 +148,9 @@ def collect(args: argparse.Namespace) -> None:
         "history_length": args.history_length,
         "obs_dim": obs_dim,
         "action_dim": action_dim,
+        "privileged_obs_dim": (
+            int(payload["privileged_obs"].shape[1]) if "privileged_obs" in payload else 0
+        ),
         "difficulty": args.difficulty,
         "target_speed": args.target_speed,
         "task_geometry": args.task_geometry,

@@ -137,6 +137,7 @@ def train(args: argparse.Namespace) -> None:
         device=args.device,
         checkpoint_every_steps=args.checkpoint_every,
         history_length=args.history_length,
+        num_envs=args.num_envs,
     )
 
     random.seed(train_cfg.seed)
@@ -209,6 +210,16 @@ def train(args: argparse.Namespace) -> None:
                 f"Offline obs_dim={offline_replay.obs_dim} != env obs_dim={obs_dim}. "
                 "Offline data must match the target probe layout and history length."
             )
+        if offline_replay.action_dim != action_dim:
+            raise ValueError(
+                f"Offline action_dim={offline_replay.action_dim} != env action_dim={action_dim}."
+            )
+        if args.use_asymmetric_critic:
+            if offline_replay.privileged_obs is None or offline_replay.next_privileged_obs is None:
+                raise ValueError(
+                    "Offline data is missing privileged_obs / next_privileged_obs, "
+                    "which are required when --use-asymmetric-critic is enabled."
+                )
         dual_sampler = DualBufferSampler(
             offline_replay, replay, args.offline_ratio,
         )
@@ -242,6 +253,11 @@ def train(args: argparse.Namespace) -> None:
     episode_length = np.zeros(num_envs, dtype=int)
     episode_idx = start_episode
     last_update: dict[str, float] = {}
+    current_privileged_obs = (
+        info.get("privileged_obs")
+        if not is_vector_env
+        else (info["privileged_obs"] if "privileged_obs" in info else None)
+    )
 
     for env_step in range(start_step + 1, (train_cfg.total_env_steps // num_envs) + 1):
         global_step = env_step * num_envs
@@ -250,29 +266,42 @@ def train(args: argparse.Namespace) -> None:
         else:
             action, policy_state = agent.act(obs, policy_state, deterministic=False)
 
-        next_obs, reward, terminated, truncated, info = env.step(action)
+        next_obs, reward, terminated, truncated, step_info = env.step(action)
 
         if is_vector_env:
-            has_final_obs = "final_observation" in info
-            has_final_info = "final_info" in info
-            has_step_cost = "step_safety_cost" in info
-            has_priv_obs = "privileged_obs" in info
-            has_success = "success" in info
-            has_elapsed = "elapsed_time_s" in info
-            has_geom = "task_geometry" in info
-            has_target = "target_auv_max_speed_mps" in info
-            _false_sentinel = info.get("_final_observation", None)
-            _final_info_mask = info.get("_final_info", None)
+            has_final_obs = "final_observation" in step_info
+            has_final_info = "final_info" in step_info
+            has_step_cost = "step_safety_cost" in step_info
+            has_priv_obs = "privileged_obs" in step_info
+            has_success = "success" in step_info
+            has_elapsed = "elapsed_time_s" in step_info
+            has_geom = "task_geometry" in step_info
+            has_target = "target_auv_max_speed_mps" in step_info
+            _false_sentinel = step_info.get("_final_observation", None)
+            _final_info_mask = step_info.get("_final_info", None)
 
             for i in range(num_envs):
                 done_i = terminated[i] or truncated[i]
                 if has_final_obs and _false_sentinel is not None and _false_sentinel[i]:
-                    real_next_obs = info["final_observation"][i]
+                    real_next_obs = step_info["final_observation"][i]
                 else:
                     real_next_obs = next_obs[i]
 
-                step_cost = float(info["step_safety_cost"][i]) if has_step_cost else 0.0
-                priv_obs = info["privileged_obs"][i] if has_priv_obs else None
+                step_cost = float(step_info["step_safety_cost"][i]) if has_step_cost else 0.0
+                priv_obs = (
+                    np.asarray(current_privileged_obs[i], dtype=np.float32)
+                    if current_privileged_obs is not None
+                    else None
+                )
+                next_priv_obs = (
+                    np.asarray(step_info["privileged_obs"][i], dtype=np.float32)
+                    if has_priv_obs
+                    else None
+                )
+                if done_i and has_final_info and _final_info_mask is not None and _final_info_mask[i]:
+                    f_info = step_info["final_info"][i]
+                    if "privileged_obs" in f_info:
+                        next_priv_obs = np.asarray(f_info["privileged_obs"], dtype=np.float32)
 
                 replay.add(
                     obs=obs[i],
@@ -282,6 +311,7 @@ def train(args: argparse.Namespace) -> None:
                     next_obs=real_next_obs,
                     done=bool(terminated[i]),
                     privileged_obs=priv_obs,
+                    next_privileged_obs=next_priv_obs,
                 )
                 episode_return[i] += float(reward[i])
                 episode_cost[i] += step_cost
@@ -290,13 +320,15 @@ def train(args: argparse.Namespace) -> None:
                 if done_i:
                     episode_idx += 1
 
-                    success = bool(info["success"][i]) if has_success else False
-                    elapsed_time_s = float(info["elapsed_time_s"][i]) if has_elapsed else 0.0
-                    task_geom = info["task_geometry"][i] if has_geom else ""
-                    target_auv = float(info["target_auv_max_speed_mps"][i]) if has_target else 0.0
+                    success = bool(step_info["success"][i]) if has_success else False
+                    elapsed_time_s = float(step_info["elapsed_time_s"][i]) if has_elapsed else 0.0
+                    task_geom = step_info["task_geometry"][i] if has_geom else ""
+                    target_auv = (
+                        float(step_info["target_auv_max_speed_mps"][i]) if has_target else 0.0
+                    )
 
                     if has_final_info and _final_info_mask is not None and _final_info_mask[i]:
-                        f_info = info["final_info"][i]
+                        f_info = step_info["final_info"][i]
                         success = bool(f_info.get("success", success))
                         elapsed_time_s = float(f_info.get("elapsed_time_s", elapsed_time_s))
                         task_geom = f_info.get("task_geometry", task_geom)
@@ -338,20 +370,26 @@ def train(args: argparse.Namespace) -> None:
                     episode_return[i] = 0.0
                     episode_cost[i] = 0.0
                     episode_length[i] = 0
+
+            obs = next_obs
+            info = step_info
+            current_privileged_obs = step_info["privileged_obs"] if has_priv_obs else None
         else:
             done = terminated or truncated
+            next_priv_obs = step_info.get("privileged_obs")
             replay.add(
                 obs=obs,
                 action=action,
                 reward=float(reward),
-                cost=float(info["step_safety_cost"]),
+                cost=float(step_info["step_safety_cost"]),
                 next_obs=next_obs,
                 done=terminated,
-                privileged_obs=info.get("privileged_obs"),
+                privileged_obs=current_privileged_obs,
+                next_privileged_obs=next_priv_obs,
             )
 
             episode_return[0] += float(reward)
-            episode_cost[0] += float(info["step_safety_cost"])
+            episode_cost[0] += float(step_info["step_safety_cost"])
             episode_length[0] += 1
 
             if done:
@@ -363,11 +401,11 @@ def train(args: argparse.Namespace) -> None:
                         "env_step": global_step,
                         "return": float(episode_return[0]),
                         "episode_cost": float(episode_cost[0]),
-                        "success": bool(info["success"]),
-                        "elapsed_time_s": float(info["elapsed_time_s"]),
+                        "success": bool(step_info["success"]),
+                        "elapsed_time_s": float(step_info["elapsed_time_s"]),
                         "episode_length": int(episode_length[0]),
-                        "task_geometry": info["task_geometry"],
-                        "target_auv_max_speed_mps": float(info["target_auv_max_speed_mps"]),
+                        "task_geometry": step_info["task_geometry"],
+                        "target_auv_max_speed_mps": float(step_info["target_auv_max_speed_mps"]),
                         **last_update,
                     },
                 )
@@ -381,19 +419,22 @@ def train(args: argparse.Namespace) -> None:
                         )
                     print(
                         f"[train] episode={episode_idx} step={global_step} "
-                        f"return={episode_return[0]:.2f} success={info['success']} "
-                        f"time={info['elapsed_time_s']:.1f}s "
-                        f"geometry={info['task_geometry']} "
+                        f"return={episode_return[0]:.2f} success={step_info['success']} "
+                        f"time={step_info['elapsed_time_s']:.1f}s "
+                        f"geometry={step_info['task_geometry']} "
                         f"history={train_cfg.history_length}"
                         f"{update_msg}"
                     )
 
                 obs, info = env.reset(seed=train_cfg.seed + episode_idx, options=reset_options)
+                current_privileged_obs = info.get("privileged_obs")
                 episode_return[0] = 0.0
                 episode_cost[0] = 0.0
                 episode_length[0] = 0
-
-        obs = next_obs
+            else:
+                obs = next_obs
+                info = step_info
+                current_privileged_obs = next_priv_obs
 
         if (
             global_step >= train_cfg.update_after
@@ -537,7 +578,9 @@ def main() -> None:
         help="Enable Asymmetric Critic: Critic sees privileged_obs from env info.",
     )
     parser.add_argument(
-        "--num-envs", type=int, default=16)
+        "--num-envs", type=int, default=16,
+        help="Number of parallel environments. Use 1 for single-env debugging.",
+    )
     parser.add_argument(
         "--history-length",
         type=int,
@@ -561,8 +604,8 @@ def main() -> None:
         help=(
             "Flow sensing layout: "
             "s0=centre only (DVL, obs+2), "
-            "s1=local cross 5-probe (obs+10), "
-            "s2=ADCP beam pattern 5-probe (obs+10)."
+            "s1=short-range forward ADCP 2-probe (obs+4), "
+            "s2=forward ADCP 4-probe (obs+8)."
         ),
     )
     args = parser.parse_args()

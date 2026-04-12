@@ -43,8 +43,12 @@ class TransitionReplay:
             self.privileged_obs: np.ndarray | None = np.zeros(
                 (capacity, config.privileged_obs_dim), dtype=np.float32
             )
+            self.next_privileged_obs: np.ndarray | None = np.zeros(
+                (capacity, config.privileged_obs_dim), dtype=np.float32
+            )
         else:
             self.privileged_obs = None
+            self.next_privileged_obs = None
 
     def __len__(self) -> int:
         return self.size
@@ -58,6 +62,7 @@ class TransitionReplay:
         next_obs: np.ndarray,
         done: bool,
         privileged_obs: np.ndarray | None = None,
+        next_privileged_obs: np.ndarray | None = None,
     ) -> None:
         idx = self.ptr
         self.observations[idx] = np.asarray(obs, dtype=np.float32)
@@ -70,6 +75,13 @@ class TransitionReplay:
             if privileged_obs is not None:
                 self.privileged_obs[idx] = np.asarray(privileged_obs, dtype=np.float32)
             # else: slot stays as zeros (safe default)
+        if self.next_privileged_obs is not None:
+            if next_privileged_obs is not None:
+                self.next_privileged_obs[idx] = np.asarray(
+                    next_privileged_obs,
+                    dtype=np.float32,
+                )
+            # else: slot stays as zeros (safe default)
         self.ptr = (self.ptr + 1) % self.config.capacity
         self.size = min(self.size + 1, self.config.capacity)
 
@@ -80,6 +92,7 @@ class TransitionReplay:
         return {
             "config": {
                 "capacity": self.config.capacity,
+                "privileged_obs_dim": self.config.privileged_obs_dim,
             },
             "obs_dim": self.obs_dim,
             "action_dim": self.action_dim,
@@ -92,6 +105,11 @@ class TransitionReplay:
             "ptr": self.ptr,
             "size": self.size,
         }
+        if self.privileged_obs is not None:
+            state["privileged_obs"] = self.privileged_obs
+        if self.next_privileged_obs is not None:
+            state["next_privileged_obs"] = self.next_privileged_obs
+        return state
 
     def load_state_dict(self, state: dict[str, Any]) -> None:
         saved_config = state.get("config")
@@ -113,6 +131,16 @@ class TransitionReplay:
         self.rewards[...] = np.asarray(state["rewards"], dtype=np.float32)
         self.costs[...] = np.asarray(state["costs"], dtype=np.float32)
         self.dones[...] = np.asarray(state["dones"], dtype=np.float32)
+        if self.privileged_obs is not None:
+            self.privileged_obs[...] = np.asarray(
+                state.get("privileged_obs", self.privileged_obs),
+                dtype=np.float32,
+            )
+        if self.next_privileged_obs is not None:
+            self.next_privileged_obs[...] = np.asarray(
+                state.get("next_privileged_obs", self.next_privileged_obs),
+                dtype=np.float32,
+            )
         self.ptr = int(state.get("ptr", 0))
         self.size = int(state.get("size", 0))
 
@@ -121,13 +149,27 @@ class TransitionReplay:
         """Create a read-only TransitionReplay pre-filled from a .npz file.
 
         The .npz must contain arrays: obs, actions, rewards, costs, next_obs, dones.
+        Optional arrays: privileged_obs, next_privileged_obs.
         """
         data = np.load(str(path))
         obs = data["obs"]
         actions = data["actions"]
         n_transitions, obs_dim = obs.shape
         action_dim = actions.shape[1]
-        config = TransitionReplayConfig(capacity=n_transitions)
+        priv = data["privileged_obs"] if "privileged_obs" in data.files else None
+        next_priv = data["next_privileged_obs"] if "next_privileged_obs" in data.files else None
+        priv_dim = 0
+        if priv is not None:
+            priv_dim = int(priv.shape[1])
+        if next_priv is not None:
+            next_priv_dim = int(next_priv.shape[1])
+            if priv_dim not in {0, next_priv_dim}:
+                raise ValueError(
+                    "privileged_obs and next_privileged_obs dimensions do not match."
+                )
+            priv_dim = next_priv_dim
+
+        config = TransitionReplayConfig(capacity=n_transitions, privileged_obs_dim=priv_dim)
         replay = cls(obs_dim, action_dim, config)
         replay.observations[:n_transitions] = obs.astype(np.float32)
         replay.actions[:n_transitions] = actions.astype(np.float32)
@@ -135,6 +177,10 @@ class TransitionReplay:
         replay.costs[:n_transitions] = data["costs"].astype(np.float32)
         replay.next_observations[:n_transitions] = data["next_obs"].astype(np.float32)
         replay.dones[:n_transitions] = data["dones"].astype(np.float32)
+        if replay.privileged_obs is not None and priv is not None:
+            replay.privileged_obs[:n_transitions] = priv.astype(np.float32)
+        if replay.next_privileged_obs is not None and next_priv is not None:
+            replay.next_privileged_obs[:n_transitions] = next_priv.astype(np.float32)
         replay.size = n_transitions
         replay.ptr = 0  # offline buffer is read-only
         return replay
@@ -156,6 +202,10 @@ class TransitionReplay:
         if self.privileged_obs is not None:
             batch["privileged_obs"] = torch.as_tensor(
                 self.privileged_obs[indices], device=device
+            )
+        if self.next_privileged_obs is not None:
+            batch["next_privileged_obs"] = torch.as_tensor(
+                self.next_privileged_obs[indices], device=device
             )
         return batch
 
@@ -183,9 +233,18 @@ class DualBufferSampler:
         require_torch()
         n_offline = int(batch_size * self.offline_ratio)
         n_online = batch_size - n_offline
-        offline_batch = self.offline.sample_batch(n_offline, device)
-        online_batch = self.online.sample_batch(n_online, device)
-        return {
-            k: torch.cat([offline_batch[k], online_batch[k]], dim=0)
-            for k in online_batch
-        }
+        offline_batch = self.offline.sample_batch(n_offline, device) if n_offline > 0 else {}
+        online_batch = self.online.sample_batch(n_online, device) if n_online > 0 else {}
+
+        keys = set(offline_batch) | set(online_batch)
+        merged: dict[str, torch.Tensor] = {}
+        for key in keys:
+            offline_value = offline_batch.get(key)
+            online_value = online_batch.get(key)
+            if offline_value is None:
+                assert online_value is not None
+                offline_value = online_value.new_zeros((n_offline,) + online_value.shape[1:])
+            if online_value is None:
+                online_value = offline_value.new_zeros((n_online,) + offline_value.shape[1:])
+            merged[key] = torch.cat([offline_value, online_value], dim=0)
+        return merged

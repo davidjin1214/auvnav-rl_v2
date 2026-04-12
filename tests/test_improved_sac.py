@@ -169,7 +169,7 @@ def test_sac_agent_uses_standard_critic_by_default():
 
 
 def test_sac_agent_update_with_privileged_obs():
-    """SACAgent.update() accepts batch with 'privileged_obs' key."""
+    """SACAgent.update() accepts current/next privileged critic inputs."""
     cfg = _cfg(privileged_obs_dim=2)
     agent = SACAgent(cfg, device="cpu")
     batch = {
@@ -179,6 +179,7 @@ def test_sac_agent_update_with_privileged_obs():
         "next_obs":       torch.randn(4, 8),
         "dones":          torch.zeros(4),
         "privileged_obs": torch.randn(4, 2),
+        "next_privileged_obs": torch.randn(4, 2),
     }
     metrics = agent.update(batch)
     assert "q1_loss" in metrics
@@ -232,24 +233,29 @@ def test_replay_without_privileged_obs_unchanged():
 
 
 def test_replay_with_privileged_obs_stores_and_returns():
-    """TransitionReplay stores privileged_obs and returns it in sample_batch."""
+    """TransitionReplay stores current/next privileged_obs and returns both."""
     cfg = TransitionReplayConfig(capacity=100, privileged_obs_dim=2)
     replay = TransitionReplay(obs_dim=4, action_dim=2, config=cfg)
     priv = np.array([1.5, -0.3], dtype=np.float32)
+    next_priv = np.array([-0.2, 0.7], dtype=np.float32)
     replay.add(
         obs=np.zeros(4), action=np.zeros(2),
         reward=0.0, cost=0.0, next_obs=np.zeros(4), done=False,
         privileged_obs=priv,
+        next_privileged_obs=next_priv,
     )
     assert len(replay) == 1
     batch = replay.sample_batch(1, device=torch.device("cpu"))
     assert "privileged_obs" in batch
+    assert "next_privileged_obs" in batch
     assert batch["privileged_obs"].shape == (1, 2)
+    assert batch["next_privileged_obs"].shape == (1, 2)
     assert float(batch["privileged_obs"][0, 0]) == pytest.approx(1.5)
+    assert float(batch["next_privileged_obs"][0, 1]) == pytest.approx(0.7)
 
 
 def test_replay_privileged_obs_none_not_stored():
-    """If add() is called without privileged_obs, buffer stays at zeros."""
+    """If add() is called without privileged_obs, buffers stay at zeros."""
     cfg = TransitionReplayConfig(capacity=100, privileged_obs_dim=2)
     replay = TransitionReplay(obs_dim=4, action_dim=2, config=cfg)
     replay.add(
@@ -259,3 +265,57 @@ def test_replay_privileged_obs_none_not_stored():
     )
     batch = replay.sample_batch(1, device=torch.device("cpu"))
     assert "privileged_obs" in batch   # key still present (zeros)
+    assert "next_privileged_obs" in batch
+    assert torch.allclose(batch["privileged_obs"], torch.zeros_like(batch["privileged_obs"]))
+    assert torch.allclose(
+        batch["next_privileged_obs"],
+        torch.zeros_like(batch["next_privileged_obs"]),
+    )
+
+
+def test_replay_from_npz_loads_privileged_obs(tmp_path: Path):
+    """TransitionReplay.from_npz() restores optional privileged observation arrays."""
+    path = tmp_path / "offline.npz"
+    np.savez_compressed(
+        path,
+        obs=np.zeros((3, 4), dtype=np.float32),
+        actions=np.zeros((3, 2), dtype=np.float32),
+        rewards=np.zeros(3, dtype=np.float32),
+        costs=np.zeros(3, dtype=np.float32),
+        next_obs=np.zeros((3, 4), dtype=np.float32),
+        dones=np.zeros(3, dtype=np.float32),
+        privileged_obs=np.ones((3, 2), dtype=np.float32),
+        next_privileged_obs=2.0 * np.ones((3, 2), dtype=np.float32),
+    )
+    replay = TransitionReplay.from_npz(path)
+    batch = replay.sample_batch(2, device=torch.device("cpu"))
+    assert replay.config.privileged_obs_dim == 2
+    assert "privileged_obs" in batch
+    assert "next_privileged_obs" in batch
+
+
+def test_dual_buffer_sampler_fills_missing_optional_keys():
+    """DualBufferSampler zero-fills optional keys when only one buffer has them."""
+    offline = TransitionReplay(obs_dim=4, action_dim=2, config=TransitionReplayConfig(capacity=10))
+    online = TransitionReplay(
+        obs_dim=4,
+        action_dim=2,
+        config=TransitionReplayConfig(capacity=10, privileged_obs_dim=2),
+    )
+    offline.add(
+        obs=np.zeros(4), action=np.zeros(2),
+        reward=0.0, cost=0.0, next_obs=np.zeros(4), done=False,
+    )
+    online.add(
+        obs=np.zeros(4), action=np.zeros(2),
+        reward=0.0, cost=0.0, next_obs=np.zeros(4), done=False,
+        privileged_obs=np.ones(2, dtype=np.float32),
+        next_privileged_obs=np.ones(2, dtype=np.float32),
+    )
+    from auv_nav.replay import DualBufferSampler
+    sampler = DualBufferSampler(offline, online, offline_ratio=0.5)
+    batch = sampler.sample_batch(2, device=torch.device("cpu"))
+    assert "privileged_obs" in batch
+    assert "next_privileged_obs" in batch
+    assert batch["privileged_obs"].shape == (2, 2)
+    assert batch["next_privileged_obs"].shape == (2, 2)

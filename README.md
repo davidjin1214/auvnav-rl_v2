@@ -86,8 +86,8 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 项目提供 3 种 probe layout：
 
 - `s0`：1 个中心探针，最接近基础 DVL 设定，观测维度 10
-- `s1`：5 个对称局部探针，强调近场被动感知，观测维度 18
-- `s2`：5 个前向 ADCP 风格探针，能提前“看到”前方来流，观测维度 18
+- `s1`：2 个探针（中心 DVL + 短程前向 ADCP），观测维度 12
+- `s2`：4 个探针（中心 DVL + 前向/侧向 ADCP），观测维度 16
 
 这点很重要：这个仓库不是让 agent 直接看完整流场，而是让它在有限局部感知下做控制决策。
 

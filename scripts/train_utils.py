@@ -11,6 +11,7 @@ import numpy as np
 
 from auv_nav.env import ObservationHistoryWrapper, PlanarRemusEnv, PlanarRemusEnvConfig
 from auv_nav.flow import make_probe_offsets
+from .benchmark_utils import BenchmarkManifest, load_benchmark_manifest
 
 try:
     import torch
@@ -118,6 +119,12 @@ def append_csv(path: Path, row: dict[str, Any]) -> None:
         writer.writerow(row)
 
 
+def maybe_load_benchmark_manifest(path: str | Path | None) -> BenchmarkManifest | None:
+    if path is None:
+        return None
+    return load_benchmark_manifest(path)
+
+
 def save_training_state(
     save_dir: Path,
     agent: Any,
@@ -191,31 +198,119 @@ def evaluate_agent(
     reset_options: dict[str, Any],
     seed: int,
     num_episodes: int,
-) -> dict[str, float]:
-    returns = []
-    costs = []
-    successes = 0
-    times = []
-    for idx in range(num_episodes):
-        obs, info = env.reset(seed=seed + idx, options=reset_options)
+    benchmark_manifest: BenchmarkManifest | None = None,
+) -> dict[str, Any]:
+    if benchmark_manifest is not None:
+        episodes = benchmark_manifest.episodes
+    else:
+        episodes = None
+
+    results: list[dict[str, Any]] = []
+    n_rollouts = len(episodes) if episodes is not None else num_episodes
+    for idx in range(n_rollouts):
+        episode_reset_options = dict(reset_options)
+        rollout_seed = seed + idx
+        episode_id = f"seed_{rollout_seed}"
+        if episodes is not None:
+            spec = episodes[idx]
+            episode_reset_options.update(spec.reset_options)
+            rollout_seed = int(spec.seed)
+            episode_id = spec.episode_id
+
+        obs, info = env.reset(seed=rollout_seed, options=episode_reset_options)
         policy_state = agent.reset_policy_state()
         done = False
         total_reward = 0.0
         total_cost = 0.0
+        total_energy = 0.0
+        path_length = 0.0
+        speed_samples: list[float] = []
+        relative_speed_samples: list[float] = []
+        prev_pos = np.asarray(info["position_xy_m"], dtype=np.float32)
+        initial_distance = float(info["initial_distance_m"])
+
         while not done:
             action, policy_state = agent.act(obs, policy_state, deterministic=True)
             obs, reward, terminated, truncated, info = env.step(action)
-            total_reward += reward
+            total_reward += float(reward)
             total_cost += float(info["step_safety_cost"])
+            total_energy += float(info["energy_cost"])
+            pos = np.asarray(info["position_xy_m"], dtype=np.float32)
+            path_length += float(np.linalg.norm(pos - prev_pos))
+            prev_pos = pos
+            speed_samples.append(float(info["ground_speed_mps"]))
+            relative_speed_samples.append(float(info["water_relative_speed_mps"]))
             done = terminated or truncated
-        returns.append(total_reward)
-        costs.append(total_cost)
-        successes += int(info["success"])
-        times.append(float(info["elapsed_time_s"]))
+
+        final_distance = float(info["distance_to_goal_m"])
+        progress_m = initial_distance - final_distance
+        progress_ratio = progress_m / max(initial_distance, 1e-8)
+        path_efficiency = progress_m / max(path_length, 1e-8)
+        results.append(
+            {
+                "episode_id": episode_id,
+                "seed": rollout_seed,
+                "success": bool(info["success"]),
+                "reason": str(info["reason"]),
+                "return": total_reward,
+                "cost": total_cost,
+                "energy": total_energy,
+                "elapsed_time_s": float(info["elapsed_time_s"]),
+                "path_length_m": path_length,
+                "initial_distance_m": initial_distance,
+                "final_distance_m": final_distance,
+                "progress_m": progress_m,
+                "progress_ratio": progress_ratio,
+                "path_efficiency": path_efficiency,
+                "mean_ground_speed_mps": float(np.mean(speed_samples)) if speed_samples else 0.0,
+                "mean_water_relative_speed_mps": (
+                    float(np.mean(relative_speed_samples)) if relative_speed_samples else 0.0
+                ),
+            }
+        )
+
+    returns = np.array([row["return"] for row in results], dtype=float)
+    costs = np.array([row["cost"] for row in results], dtype=float)
+    energies = np.array([row["energy"] for row in results], dtype=float)
+    times = np.array([row["elapsed_time_s"] for row in results], dtype=float)
+    path_lengths = np.array([row["path_length_m"] for row in results], dtype=float)
+    progress_ratios = np.array([row["progress_ratio"] for row in results], dtype=float)
+    path_efficiencies = np.array([row["path_efficiency"] for row in results], dtype=float)
+    successes = np.array([row["success"] for row in results], dtype=bool)
+    success_times = times[successes]
+    success_energies = energies[successes]
+    success_paths = path_lengths[successes]
+    termination_counts: dict[str, int] = {}
+    for row in results:
+        termination_counts[row["reason"]] = termination_counts.get(row["reason"], 0) + 1
 
     return {
+        "num_eval_episodes": float(len(results)),
         "eval_return": float(np.mean(returns)),
+        "eval_return_std": float(np.std(returns)),
         "eval_cost": float(np.mean(costs)),
-        "eval_success_rate": float(successes / max(1, num_episodes)),
+        "eval_cost_std": float(np.std(costs)),
+        "eval_success_rate": float(np.mean(successes.astype(float))),
         "eval_time_s": float(np.mean(times)),
+        "eval_time_s_std": float(np.std(times)),
+        "eval_time_s_success": float(np.mean(success_times)) if len(success_times) else float("nan"),
+        "eval_energy": float(np.mean(energies)),
+        "eval_energy_std": float(np.std(energies)),
+        "eval_energy_success": (
+            float(np.mean(success_energies)) if len(success_energies) else float("nan")
+        ),
+        "eval_path_length_m": float(np.mean(path_lengths)),
+        "eval_path_length_m_std": float(np.std(path_lengths)),
+        "eval_path_length_success": (
+            float(np.mean(success_paths)) if len(success_paths) else float("nan")
+        ),
+        "eval_progress_ratio": float(np.mean(progress_ratios)),
+        "eval_progress_ratio_std": float(np.std(progress_ratios)),
+        "eval_path_efficiency": float(np.mean(path_efficiencies)),
+        "eval_path_efficiency_std": float(np.std(path_efficiencies)),
+        "eval_termination_counts": termination_counts,
+        "eval_episode_results": results,
+        "eval_manifest_flow_path": (
+            benchmark_manifest.flow_path if benchmark_manifest is not None else None
+        ),
     }

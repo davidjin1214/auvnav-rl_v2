@@ -1,0 +1,625 @@
+{
+  "schema_version": 2,
+  "created_at": "2026-04-13T00:36:06",
+  "flow_path": "wake_data/wake_v8_U1p50_Re250_D12p00_dx0p60_Ti5pct_1200f_roi.npy",
+  "probe_layout": null,
+  "history_length": null,
+  "base_reset_options": {
+    "task_geometry": "cross_stream",
+    "action_mode": "auto",
+    "target_auv_max_speed_mps": 1.5,
+    "initial_speed": 0.3
+  },
+  "episodes": [
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0000",
+      "seed": 1200,
+      "reset_options": {
+        "flow_time": 207.56973965171406,
+        "start_xy": [
+          190.22691345214844,
+          68.83792114257812
+        ],
+        "goal_xy": [
+          181.8192138671875,
+          109.14334106445312
+        ],
+        "initial_heading": 1.6813857774913412,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0001",
+      "seed": 1201,
+      "reset_options": {
+        "flow_time": 160.02240858362225,
+        "start_xy": [
+          214.75106811523438,
+          69.26133728027344
+        ],
+        "goal_xy": [
+          224.9083709716797,
+          110.809814453125
+        ],
+        "initial_heading": 1.3636353670010921,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0002",
+      "seed": 1202,
+      "reset_options": {
+        "flow_time": 16.593937207239087,
+        "start_xy": [
+          268.768798828125,
+          69.04878997802734
+        ],
+        "goal_xy": [
+          282.8012390136719,
+          108.36123657226562
+        ],
+        "initial_heading": 1.0030891450487935,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0003",
+      "seed": 1203,
+      "reset_options": {
+        "flow_time": 21.76803576254424,
+        "start_xy": [
+          222.33868408203125,
+          112.28511810302734
+        ],
+        "goal_xy": [
+          221.52406311035156,
+          67.05619812011719
+        ],
+        "initial_heading": -1.3424021372197878,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0004",
+      "seed": 1204,
+      "reset_options": {
+        "flow_time": 246.3627994207547,
+        "start_xy": [
+          291.4067077636719,
+          68.177490234375
+        ],
+        "goal_xy": [
+          276.6100769042969,
+          109.16608428955078
+        ],
+        "initial_heading": 1.7148304209124614,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0005",
+      "seed": 1205,
+      "reset_options": {
+        "flow_time": 288.878353359072,
+        "start_xy": [
+          272.9263916015625,
+          68.53611755371094
+        ],
+        "goal_xy": [
+          266.79443359375,
+          108.89334106445312
+        ],
+        "initial_heading": 1.4916050020196234,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0006",
+      "seed": 1206,
+      "reset_options": {
+        "flow_time": 63.15497565468884,
+        "start_xy": [
+          132.70057678222656,
+          112.3866958618164
+        ],
+        "goal_xy": [
+          136.96009826660156,
+          67.04569244384766
+        ],
+        "initial_heading": -1.5313282028044835,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0007",
+      "seed": 1207,
+      "reset_options": {
+        "flow_time": 63.92810852610225,
+        "start_xy": [
+          140.17996215820312,
+          70.78155517578125
+        ],
+        "goal_xy": [
+          131.81036376953125,
+          110.31879425048828
+        ],
+        "initial_heading": 1.7063037270051744,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0008",
+      "seed": 1208,
+      "reset_options": {
+        "flow_time": 172.81559944475907,
+        "start_xy": [
+          282.7005615234375,
+          112.21620178222656
+        ],
+        "goal_xy": [
+          300.8280944824219,
+          67.16376495361328
+        ],
+        "initial_heading": -1.3288968087807256,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0009",
+      "seed": 1209,
+      "reset_options": {
+        "flow_time": 112.24157970946396,
+        "start_xy": [
+          166.4002227783203,
+          69.75870513916016
+        ],
+        "goal_xy": [
+          152.38577270507812,
+          109.22856140136719
+        ],
+        "initial_heading": 1.7216251658264419,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0010",
+      "seed": 1210,
+      "reset_options": {
+        "flow_time": 116.89143463480191,
+        "start_xy": [
+          151.65283203125,
+          67.23186492919922
+        ],
+        "goal_xy": [
+          150.51165771484375,
+          112.1977767944336
+        ],
+        "initial_heading": 1.4458047478927787,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0011",
+      "seed": 1211,
+      "reset_options": {
+        "flow_time": 166.59109523176377,
+        "start_xy": [
+          296.6152648925781,
+          109.86248016357422
+        ],
+        "goal_xy": [
+          284.8367004394531,
+          70.15380859375
+        ],
+        "initial_heading": -1.801055529120816,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0012",
+      "seed": 1212,
+      "reset_options": {
+        "flow_time": 102.67440639419273,
+        "start_xy": [
+          278.1617126464844,
+          109.3404312133789
+        ],
+        "goal_xy": [
+          272.4279479980469,
+          68.02889251708984
+        ],
+        "initial_heading": -1.6589864896738953,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0013",
+      "seed": 1213,
+      "reset_options": {
+        "flow_time": 204.13938581058216,
+        "start_xy": [
+          240.92929077148438,
+          67.29847717285156
+        ],
+        "goal_xy": [
+          234.3355712890625,
+          111.09221649169922
+        ],
+        "initial_heading": 1.6104389083720738,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0014",
+      "seed": 1214,
+      "reset_options": {
+        "flow_time": 345.937712689025,
+        "start_xy": [
+          241.9609375,
+          108.8224868774414
+        ],
+        "goal_xy": [
+          241.21878051757812,
+          67.9385986328125
+        ],
+        "initial_heading": -1.528334155975363,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0015",
+      "seed": 1215,
+      "reset_options": {
+        "flow_time": 13.318787950452904,
+        "start_xy": [
+          152.45494079589844,
+          67.7974853515625
+        ],
+        "goal_xy": [
+          162.91110229492188,
+          106.51461791992188
+        ],
+        "initial_heading": 1.3867638974407939,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0016",
+      "seed": 1216,
+      "reset_options": {
+        "flow_time": 30.465542656335856,
+        "start_xy": [
+          284.5887451171875,
+          111.5916519165039
+        ],
+        "goal_xy": [
+          294.18231201171875,
+          68.81880950927734
+        ],
+        "initial_heading": -1.5274039132699453,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0017",
+      "seed": 1217,
+      "reset_options": {
+        "flow_time": 182.16811551900892,
+        "start_xy": [
+          229.26220703125,
+          111.97335815429688
+        ],
+        "goal_xy": [
+          221.9611053466797,
+          67.46516418457031
+        ],
+        "initial_heading": -1.655359769506879,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0018",
+      "seed": 1218,
+      "reset_options": {
+        "flow_time": 184.93084267516997,
+        "start_xy": [
+          203.53135681152344,
+          68.75135803222656
+        ],
+        "goal_xy": [
+          200.40670776367188,
+          111.78092956542969
+        ],
+        "initial_heading": 1.6975907789702056,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0019",
+      "seed": 1219,
+      "reset_options": {
+        "flow_time": 226.42091075010816,
+        "start_xy": [
+          190.16500854492188,
+          67.1107406616211
+        ],
+        "goal_xy": [
+          194.00430297851562,
+          108.62533569335938
+        ],
+        "initial_heading": 1.44750050786016,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0020",
+      "seed": 1220,
+      "reset_options": {
+        "flow_time": 225.4903845141368,
+        "start_xy": [
+          196.1614532470703,
+          111.71216583251953
+        ],
+        "goal_xy": [
+          182.16470336914062,
+          73.7852554321289
+        ],
+        "initial_heading": -1.8816205077124644,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0021",
+      "seed": 1221,
+      "reset_options": {
+        "flow_time": 290.55908004403454,
+        "start_xy": [
+          167.66160583496094,
+          67.0112075805664
+        ],
+        "goal_xy": [
+          181.27877807617188,
+          112.36737060546875
+        ],
+        "initial_heading": 1.2315646781509875,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0022",
+      "seed": 1222,
+      "reset_options": {
+        "flow_time": 15.202960234488238,
+        "start_xy": [
+          165.1119842529297,
+          112.33710479736328
+        ],
+        "goal_xy": [
+          152.5089111328125,
+          67.00469970703125
+        ],
+        "initial_heading": -1.6583048322477103,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0023",
+      "seed": 1223,
+      "reset_options": {
+        "flow_time": 48.587416121390326,
+        "start_xy": [
+          291.5451965332031,
+          111.86119842529297
+        ],
+        "goal_xy": [
+          288.4825744628906,
+          67.02862548828125
+        ],
+        "initial_heading": -1.5403636040541118,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0024",
+      "seed": 1224,
+      "reset_options": {
+        "flow_time": 120.47473814077289,
+        "start_xy": [
+          155.6441192626953,
+          110.67574310302734
+        ],
+        "goal_xy": [
+          165.37513732910156,
+          68.33023071289062
+        ],
+        "initial_heading": -1.4846485891462966,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0025",
+      "seed": 1225,
+      "reset_options": {
+        "flow_time": 206.11453711702,
+        "start_xy": [
+          226.9429931640625,
+          112.27186584472656
+        ],
+        "goal_xy": [
+          221.35980224609375,
+          67.82959747314453
+        ],
+        "initial_heading": -1.905809971158919,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0026",
+      "seed": 1226,
+      "reset_options": {
+        "flow_time": 146.59811955316022,
+        "start_xy": [
+          140.64059448242188,
+          109.27542114257812
+        ],
+        "goal_xy": [
+          131.49935913085938,
+          70.2869873046875
+        ],
+        "initial_heading": -1.8681119645961184,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0027",
+      "seed": 1227,
+      "reset_options": {
+        "flow_time": 161.1326737610192,
+        "start_xy": [
+          161.5335235595703,
+          110.30270385742188
+        ],
+        "goal_xy": [
+          152.9805908203125,
+          68.02660369873047
+        ],
+        "initial_heading": -1.9763648527233344,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0028",
+      "seed": 1228,
+      "reset_options": {
+        "flow_time": 164.02032404406148,
+        "start_xy": [
+          260.70379638671875,
+          70.10660552978516
+        ],
+        "goal_xy": [
+          263.71734619140625,
+          111.3552474975586
+        ],
+        "initial_heading": 1.2970065722925712,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    },
+    {
+      "episode_id": "single_u15_cross_tgt15_ep_0029",
+      "seed": 1229,
+      "reset_options": {
+        "flow_time": 103.39570094123974,
+        "start_xy": [
+          161.27862548828125,
+          109.73242950439453
+        ],
+        "goal_xy": [
+          167.91717529296875,
+          67.90731048583984
+        ],
+        "initial_heading": -1.2892422011162443,
+        "initial_speed": 0.3,
+        "task_geometry": "cross_stream",
+        "action_mode": "absolute_heading",
+        "target_auv_max_speed_mps": 1.5
+      }
+    }
+  ],
+  "benchmark_id": "single_u15_cross_tgt15",
+  "benchmark_group": null,
+  "factor_values": {
+    "topology": "single",
+    "flow_speed_mps": 1.5,
+    "reynolds": 250,
+    "task_geometry": "cross_stream",
+    "target_speed_mps": 1.5
+  },
+  "notes": "Single-cylinder benchmark with matched flow/vehicle speed, cross-stream task geometry."
+}

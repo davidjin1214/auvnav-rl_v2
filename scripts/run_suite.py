@@ -9,6 +9,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .benchmark_catalog import (
+    BENCHMARK_GROUPS,
+    BenchmarkSpec,
+    default_manifest_path,
+    resolve_benchmark_specs,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class MethodSpec:
@@ -71,7 +78,6 @@ METHOD_SPECS: dict[str, MethodSpec] = {
         ),
         description="SAC + all improvements: LN + DroQ + AsymCritic + UTD=4 + K=16",
     ),
-    # -- RLPD variants (require pre-collected offline data) --
     "rlpd_goalseek": MethodSpec(
         key="rlpd_goalseek",
         train_module="scripts.train_sac",
@@ -109,7 +115,7 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
     "medium_formal_v1": SuitePreset(
         name="medium_formal_v1",
         description=(
-            "Formal benchmark on medium difficulty "
+            "Legacy benchmark on medium difficulty "
             "(cross-stream) with 5 seeds and a 200k-step budget."
         ),
         values={
@@ -132,7 +138,7 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
     ),
     "medium_pilot_v1": SuitePreset(
         name="medium_pilot_v1",
-        description="Smaller pilot version for quick checks before the formal suite.",
+        description="Legacy pilot suite for quick checks before the formal medium benchmark.",
         values={
             "difficulty": "medium",
             "methods": "sac,sac_stack4",
@@ -164,6 +170,81 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "difficulty": "medium",
         },
     ),
+    "geometry_factor_v1": SuitePreset(
+        name="geometry_factor_v1",
+        description="Factorized suite varying only task geometry on the single-cylinder matched-speed benchmark.",
+        values={
+            "benchmark_group": "geometry_factor_v1",
+            "methods": "sac,sac_stack4",
+            "seeds": "42,43,44",
+            "total_steps": 200_000,
+            "random_steps": 5_000,
+            "update_after": 5_000,
+            "eval_every": 10_000,
+            "eval_episodes": 30,
+            "checkpoint_every": 10_000,
+        },
+    ),
+    "flow_factor_v1": SuitePreset(
+        name="flow_factor_v1",
+        description="Factorized suite varying only the incoming free-stream speed.",
+        values={
+            "benchmark_group": "flow_factor_v1",
+            "methods": "sac,sac_stack4",
+            "seeds": "42,43,44",
+            "total_steps": 200_000,
+            "random_steps": 5_000,
+            "update_after": 5_000,
+            "eval_every": 10_000,
+            "eval_episodes": 30,
+            "checkpoint_every": 10_000,
+        },
+    ),
+    "topology_factor_v1": SuitePreset(
+        name="topology_factor_v1",
+        description="Factorized suite varying wake topology in the matched-speed upstream regime.",
+        values={
+            "benchmark_group": "topology_factor_v1",
+            "methods": "sac,sac_stack4",
+            "seeds": "42,43,44",
+            "total_steps": 200_000,
+            "random_steps": 5_000,
+            "update_after": 5_000,
+            "eval_every": 10_000,
+            "eval_episodes": 30,
+            "checkpoint_every": 10_000,
+        },
+    ),
+    "speed_factor_v1": SuitePreset(
+        name="speed_factor_v1",
+        description="Factorized suite varying only the target AUV max-speed setting.",
+        values={
+            "benchmark_group": "speed_factor_v1",
+            "methods": "sac,sac_stack4",
+            "seeds": "42,43,44",
+            "total_steps": 200_000,
+            "random_steps": 5_000,
+            "update_after": 5_000,
+            "eval_every": 10_000,
+            "eval_episodes": 30,
+            "checkpoint_every": 10_000,
+        },
+    ),
+    "study_core_v1": SuitePreset(
+        name="study_core_v1",
+        description="Recommended benchmark suite covering the project's primary transfer axes.",
+        values={
+            "benchmark_group": "study_core_v1",
+            "methods": "sac,sac_stack4",
+            "seeds": "42,43,44",
+            "total_steps": 200_000,
+            "random_steps": 5_000,
+            "update_after": 5_000,
+            "eval_every": 10_000,
+            "eval_episodes": 30,
+            "checkpoint_every": 10_000,
+        },
+    ),
 }
 
 
@@ -189,19 +270,63 @@ def append_optional_arg(args: list[str], flag: str, value: Any) -> None:
     args.extend([flag, str(value)])
 
 
+def resolve_suite_benchmarks(args: argparse.Namespace) -> list[BenchmarkSpec]:
+    return resolve_benchmark_specs(args.benchmarks, args.benchmark_group)
+
+
+def validate_benchmark_mode(args: argparse.Namespace, benchmarks: list[BenchmarkSpec]) -> None:
+    if not benchmarks:
+        return
+    conflicting = {
+        "flow": args.flow,
+        "difficulty": args.difficulty,
+        "task_geometry": args.task_geometry,
+        "action_mode": args.action_mode,
+        "speed_ratio": args.speed_ratio,
+        "target_speed": args.target_speed,
+        "eval_manifest": args.eval_manifest,
+    }
+    active_conflicts = [key for key, value in conflicting.items() if value is not None]
+    if active_conflicts:
+        raise ValueError(
+            "Direct task-defining flags are not allowed together with benchmark mode: "
+            + ", ".join(active_conflicts)
+        )
+
+
+def benchmark_manifest_path(
+    benchmark: BenchmarkSpec,
+    manifest_dir: str,
+) -> str:
+    return default_manifest_path(benchmark, manifest_dir=manifest_dir)
+
+
 def build_command(
     method: MethodSpec,
     seed: int,
     save_dir: Path,
     cli_args: argparse.Namespace,
+    benchmark: BenchmarkSpec | None = None,
 ) -> list[str]:
     cmd = [sys.executable, "-m", method.train_module, *method.extra_args]
-    append_optional_arg(cmd, "--flow", cli_args.flow)
-    append_optional_arg(cmd, "--difficulty", cli_args.difficulty)
-    append_optional_arg(cmd, "--task-geometry", cli_args.task_geometry)
-    append_optional_arg(cmd, "--action-mode", cli_args.action_mode)
-    append_optional_arg(cmd, "--speed-ratio", cli_args.speed_ratio)
-    append_optional_arg(cmd, "--target-speed", cli_args.target_speed)
+    if benchmark is None:
+        append_optional_arg(cmd, "--flow", cli_args.flow)
+        append_optional_arg(cmd, "--difficulty", cli_args.difficulty)
+        append_optional_arg(cmd, "--task-geometry", cli_args.task_geometry)
+        append_optional_arg(cmd, "--action-mode", cli_args.action_mode)
+        append_optional_arg(cmd, "--speed-ratio", cli_args.speed_ratio)
+        append_optional_arg(cmd, "--target-speed", cli_args.target_speed)
+        append_optional_arg(cmd, "--eval-manifest", cli_args.eval_manifest)
+    else:
+        append_optional_arg(cmd, "--flow", benchmark.flow_path)
+        append_optional_arg(cmd, "--task-geometry", benchmark.task_geometry)
+        append_optional_arg(cmd, "--action-mode", benchmark.action_mode)
+        append_optional_arg(cmd, "--target-speed", benchmark.target_speed)
+        append_optional_arg(
+            cmd,
+            "--eval-manifest",
+            benchmark_manifest_path(benchmark, cli_args.benchmark_manifest_dir),
+        )
     append_optional_arg(cmd, "--total-steps", cli_args.total_steps)
     append_optional_arg(cmd, "--random-steps", cli_args.random_steps)
     append_optional_arg(cmd, "--update-after", cli_args.update_after)
@@ -222,8 +347,20 @@ def build_command(
     return cmd
 
 
+def default_suite_root(args: argparse.Namespace, benchmarks: list[BenchmarkSpec]) -> str:
+    if args.preset is not None:
+        return f"experiments/{args.preset}"
+    if args.benchmark_group is not None:
+        return f"experiments/{args.benchmark_group}"
+    if len(benchmarks) == 1:
+        return f"experiments/{benchmarks[0].key}"
+    return "experiments/ablation_suite"
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run SAC ablation suite over multiple seeds.")
+    parser = argparse.ArgumentParser(
+        description="Run factorized RL suites over benchmark x method x seed.",
+    )
     parser.add_argument(
         "--preset",
         type=str,
@@ -235,7 +372,7 @@ def main() -> None:
         "--suite-root",
         type=str,
         default=None,
-        help="Root directory for all method/seed run folders.",
+        help="Root directory for all benchmark/method/seed run folders.",
     )
     parser.add_argument(
         "--methods",
@@ -248,6 +385,25 @@ def main() -> None:
         type=str,
         default=None,
         help="Comma-separated integer seeds.",
+    )
+    parser.add_argument(
+        "--benchmarks",
+        type=str,
+        default=None,
+        help="Comma-separated benchmark keys from scripts.benchmark_catalog.",
+    )
+    parser.add_argument(
+        "--benchmark-group",
+        type=str,
+        choices=sorted(BENCHMARK_GROUPS.keys()),
+        default=None,
+        help="Named benchmark group from scripts.benchmark_catalog.",
+    )
+    parser.add_argument(
+        "--benchmark-manifest-dir",
+        type=str,
+        default="benchmarks",
+        help="Directory containing standard benchmark manifests.",
     )
     parser.add_argument("--flow", type=str, default=None)
     parser.add_argument("--difficulty", choices=["easy", "medium", "hard"], default=None)
@@ -263,6 +419,7 @@ def main() -> None:
     )
     parser.add_argument("--speed-ratio", type=float, default=None)
     parser.add_argument("--target-speed", type=float, default=None)
+    parser.add_argument("--eval-manifest", type=str, default=None)
     parser.add_argument("--total-steps", type=int, default=None)
     parser.add_argument("--random-steps", type=int, default=None)
     parser.add_argument("--update-after", type=int, default=None)
@@ -283,11 +440,12 @@ def main() -> None:
     args = parser.parse_args()
 
     apply_preset_defaults(args)
+
+    benchmarks = resolve_suite_benchmarks(args)
+    validate_benchmark_mode(args, benchmarks)
+
     if args.suite_root is None:
-        if args.preset is not None:
-            args.suite_root = f"experiments/{args.preset}"
-        else:
-            args.suite_root = "experiments/ablation_suite"
+        args.suite_root = default_suite_root(args, benchmarks)
     if args.methods is None:
         args.methods = "sac,sac_stack4"
     if args.seeds is None:
@@ -325,10 +483,33 @@ def main() -> None:
     suite_root = Path(args.suite_root)
     suite_root.mkdir(parents=True, exist_ok=True)
 
+    if benchmarks:
+        for benchmark in benchmarks:
+            manifest_path = Path(benchmark_manifest_path(benchmark, args.benchmark_manifest_dir))
+            if not manifest_path.exists():
+                raise FileNotFoundError(
+                    f"Missing benchmark manifest for {benchmark.key}: {manifest_path}"
+                )
+    else:
+        benchmarks = []
+
     manifest = {
         "suite_root": str(suite_root),
         "methods": method_keys,
         "seeds": seeds,
+        "benchmarks": [
+            {
+                "key": benchmark.key,
+                "description": benchmark.description,
+                "flow_path": benchmark.flow_path,
+                "task_geometry": benchmark.task_geometry,
+                "target_speed": benchmark.target_speed,
+                "eval_manifest": benchmark_manifest_path(benchmark, args.benchmark_manifest_dir),
+                "factor_values": benchmark.factor_values,
+            }
+            for benchmark in benchmarks
+        ],
+        "benchmark_group": args.benchmark_group,
         "task_geometry": args.task_geometry,
         "difficulty": args.difficulty,
         "action_mode": args.action_mode,
@@ -339,33 +520,58 @@ def main() -> None:
         "runs": [],
     }
 
-    for method_key in method_keys:
-        method = METHOD_SPECS[method_key]
-        for seed in seeds:
-            run_dir = suite_root / method.key / f"seed_{seed}"
-            cmd = build_command(method, seed, run_dir, args)
-            run_record = {
-                "method": method.key,
-                "seed": seed,
-                "run_dir": str(run_dir),
-                "train_module": method.train_module,
-                "description": method.description,
-                "command": cmd,
-            }
-            manifest["runs"].append(run_record)
+    benchmark_items: list[BenchmarkSpec | None] = benchmarks if benchmarks else [None]
+    for benchmark in benchmark_items:
+        for method_key in method_keys:
+            method = METHOD_SPECS[method_key]
+            for seed in seeds:
+                if benchmark is None:
+                    run_dir = suite_root / method.key / f"seed_{seed}"
+                else:
+                    run_dir = suite_root / benchmark.key / method.key / f"seed_{seed}"
+                cmd = build_command(method, seed, run_dir, args, benchmark)
+                run_record = {
+                    "benchmark": benchmark.key if benchmark is not None else None,
+                    "benchmark_description": (
+                        benchmark.description if benchmark is not None else None
+                    ),
+                    "factor_values": benchmark.factor_values if benchmark is not None else None,
+                    "method": method.key,
+                    "seed": seed,
+                    "run_dir": str(run_dir),
+                    "train_module": method.train_module,
+                    "description": method.description,
+                    "command": cmd,
+                }
+                if benchmark is not None:
+                    run_record["eval_manifest"] = benchmark_manifest_path(
+                        benchmark,
+                        args.benchmark_manifest_dir,
+                    )
+                manifest["runs"].append(run_record)
 
-            final_eval_path = run_dir / "final_eval.json"
-            if args.skip_existing and final_eval_path.exists():
-                print(f"[skip] {method.key} seed={seed} -> {run_dir}")
-                continue
+                final_eval_path = run_dir / "final_eval.json"
+                if args.skip_existing and final_eval_path.exists():
+                    label = (
+                        f"{benchmark.key} / {method.key}"
+                        if benchmark is not None
+                        else method.key
+                    )
+                    print(f"[skip] {label} seed={seed} -> {run_dir}")
+                    continue
 
-            print(f"[run] {method.key} seed={seed}")
-            print("      " + shlex.join(cmd))
-            if args.dry_run:
-                continue
+                label = (
+                    f"{benchmark.key} / {method.key}"
+                    if benchmark is not None
+                    else method.key
+                )
+                print(f"[run] {label} seed={seed}")
+                print("      " + shlex.join(cmd))
+                if args.dry_run:
+                    continue
 
-            run_dir.mkdir(parents=True, exist_ok=True)
-            subprocess.run(cmd, check=True)
+                run_dir.mkdir(parents=True, exist_ok=True)
+                subprocess.run(cmd, check=True)
 
     with (suite_root / "suite_manifest.json").open("w", encoding="utf-8") as fp:
         json.dump(manifest, fp, indent=2)

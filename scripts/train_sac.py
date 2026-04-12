@@ -27,6 +27,7 @@ from .train_utils import (
     load_trainer_state,
     make_planar_env,
     make_reset_options,
+    maybe_load_benchmark_manifest,
     maybe_resume,
     save_training_state,
 )
@@ -89,6 +90,7 @@ def apply_resume_defaults(args: argparse.Namespace, parser: argparse.ArgumentPar
         apply_default(arg_name, train_state.get(state_name))
 
     apply_default("flow", trainer_state.get("flow_path"))
+    apply_default("eval_manifest", trainer_state.get("eval_manifest"))
     apply_default("probe_layout", trainer_state.get("probe_layout"))
     apply_default("difficulty", reset_state.get("task_difficulty"))
     apply_default("task_geometry", reset_state.get("task_geometry"))
@@ -111,6 +113,8 @@ def _build_extra_state(
         "history_length": train_cfg.history_length,
         "probe_layout": probe_layout,
     }
+    if args.eval_manifest is not None:
+        state["eval_manifest"] = str(args.eval_manifest)
     if offline_replay is not None:
         state["offline_data_path"] = str(args.offline_data)
         state["offline_ratio"] = args.offline_ratio
@@ -148,6 +152,7 @@ def train(args: argparse.Namespace) -> None:
             torch.cuda.manual_seed_all(train_cfg.seed)
 
     flow_path = args.flow or discover_flow_path()
+    benchmark_manifest = maybe_load_benchmark_manifest(args.eval_manifest)
     
     probe_layout = args.probe_layout
 
@@ -175,8 +180,26 @@ def train(args: argparse.Namespace) -> None:
         obs_dim = int(env.observation_space.shape[0])
         action_dim = int(env.action_space.shape[0])
 
+    if benchmark_manifest is not None:
+        if (
+            benchmark_manifest.probe_layout is not None
+            and benchmark_manifest.probe_layout != probe_layout
+        ):
+            raise ValueError(
+                f"Eval manifest probe_layout={benchmark_manifest.probe_layout} "
+                f"!= training probe_layout={probe_layout}."
+            )
+        if (
+            benchmark_manifest.history_length is not None
+            and benchmark_manifest.history_length != train_cfg.history_length
+        ):
+            raise ValueError(
+                f"Eval manifest history_length={benchmark_manifest.history_length} "
+                f"!= training history_length={train_cfg.history_length}."
+            )
+    eval_flow_path = benchmark_manifest.flow_path if benchmark_manifest is not None else flow_path
     eval_env = make_planar_env(
-        flow_path,
+        eval_flow_path,
         history_length=train_cfg.history_length,
         probe_layout=probe_layout,
     )
@@ -455,13 +478,17 @@ def train(args: argparse.Namespace) -> None:
                 reset_options=reset_options,
                 seed=train_cfg.seed + 10_000 + global_step,
                 num_episodes=train_cfg.eval_episodes,
+                benchmark_manifest=benchmark_manifest,
             )
             print(
                 f"[eval] step={global_step} "
                 f"return={metrics['eval_return']:.2f} "
                 f"cost={metrics['eval_cost']:.3f} "
                 f"success={metrics['eval_success_rate']:.2%} "
-                f"time={metrics['eval_time_s']:.1f}s"
+                f"time={metrics['eval_time_s']:.1f}s "
+                f"energy={metrics['eval_energy']:.1f} "
+                f"path={metrics['eval_path_length_m']:.1f} "
+                f"prog={metrics['eval_progress_ratio']:.2f}"
             )
             append_csv(
                 eval_log_path,
@@ -471,6 +498,10 @@ def train(args: argparse.Namespace) -> None:
                     "eval_cost": metrics["eval_cost"],
                     "eval_success_rate": metrics["eval_success_rate"],
                     "eval_time_s": metrics["eval_time_s"],
+                    "eval_energy": metrics["eval_energy"],
+                    "eval_path_length_m": metrics["eval_path_length_m"],
+                    "eval_progress_ratio": metrics["eval_progress_ratio"],
+                    "eval_path_efficiency": metrics["eval_path_efficiency"],
                 },
             )
             agent.save(str(save_dir / f"agent_step_{global_step}.pt"))
@@ -520,6 +551,7 @@ def train(args: argparse.Namespace) -> None:
         reset_options=reset_options,
         seed=train_cfg.seed + 20_000,
         num_episodes=train_cfg.eval_episodes,
+        benchmark_manifest=benchmark_manifest,
     )
     with (save_dir / "final_eval.json").open("w", encoding="utf-8") as fp:
         json.dump(final_metrics, fp, indent=2)
@@ -560,6 +592,10 @@ def main() -> None:
     parser.add_argument("--replay-capacity", type=int, default=1_000_000)
     parser.add_argument("--eval-every", type=int, default=5_000)
     parser.add_argument("--eval-episodes", type=int, default=5)
+    parser.add_argument(
+        "--eval-manifest", type=Path, default=None,
+        help="Optional fixed benchmark manifest used for periodic/final evaluation.",
+    )
     parser.add_argument("--log-every-episodes", type=int, default=5)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cpu")

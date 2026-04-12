@@ -47,6 +47,12 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 4. 用 `scripts/evaluate.py` 批量评估 checkpoint。
 5. 用 `scripts/demo.py`、`scripts/visualize.py`、`scripts/figure_paper.py` 做行为分析和结果展示。
 
+做严格算法对比时，建议优先使用仓库内置的标准 benchmark：
+
+- 先用 `scripts/generate_standard_benchmarks.py` 生成 `benchmarks/*.json`
+- 再用 `scripts/run_suite.py --benchmark-group ...` 跑成组实验
+- 或者单独用 `scripts/evaluate.py --manifest benchmarks/<benchmark>.json` 统一评测
+
 ## 核心研究设定
 
 ### 1. 状态、动作和任务
@@ -173,7 +179,11 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - `collect_offline_data.py`
   用基线策略（goalseek / crosscomp / worldcomp / privileged）收集离线 transition 数据，输出 `.npz` + `metadata.json`。
 - `evaluate.py`
-  用训练好的 checkpoint 做批量评估。
+  用训练好的 checkpoint 做批量评估；支持固定 benchmark manifest 进行可复现评测。
+- `generate_benchmark_manifest.py`
+  预先采样并固化一组评估 episode，供算法间公平对比。
+- `generate_standard_benchmarks.py`
+  生成仓库约定的标准 benchmark manifests，显式拆分 `geometry / flow / topology / speed` 因子。
 - `demo.py`
   跑单次或少量 episode，对比 baseline 或策略行为。
 - `visualize.py`
@@ -181,9 +191,9 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - `figure_paper.py`
   生成论文级静态图。
 - `run_suite.py`
-  批量跑多组实验。
+  按 `benchmark × method × seed` 批量跑多组实验，支持 benchmark group 预设。
 - `summarize_suite.py`
-  汇总多个实验日志。
+  按 `benchmark × method` 汇总多个实验日志，并输出统一指标。
 - `plot_suite.py`, `plot_training.py`
   绘制训练曲线与消融图。
 - `train_utils.py`
@@ -212,6 +222,10 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 ### `wake_data/`
 
 离线流场数据库。没有它，环境无法运行。
+
+### `benchmarks/`
+
+固定评估 episode 的标准 manifests。它们只冻结任务实例，不绑定 `probe_layout/history_length`，所以可以在 `s0/s1/s2` 和不同 history 设置之间复用。
 
 ### `checkpoints/`
 

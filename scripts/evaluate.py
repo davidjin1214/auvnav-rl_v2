@@ -6,10 +6,14 @@ import argparse
 import json
 from pathlib import Path
 
-import numpy as np
-
 from auv_nav.sac import SACAgent, SACConfig
-from .train_utils import load_trainer_state, make_planar_env, make_reset_options
+from .train_utils import (
+    evaluate_agent,
+    load_trainer_state,
+    make_planar_env,
+    make_reset_options,
+    maybe_load_benchmark_manifest,
+)
 
 
 def main() -> None:
@@ -20,6 +24,10 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--flow", type=str, default=None)
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="Path to a fixed benchmark manifest JSON.")
+    parser.add_argument("--output-json", type=Path, default=None,
+                        help="Optional path to save evaluation metrics as JSON.")
     parser.add_argument("--difficulty", choices=["easy", "medium", "hard"], default=None)
     parser.add_argument("--task-geometry",
                         choices=["downstream", "cross_stream", "upstream"], default=None)
@@ -36,6 +44,7 @@ def main() -> None:
     agent_cfg_dict = trainer_state["agent_config"]
 
     reset_options = {**trainer_state.get("reset_options", {}), **make_reset_options(args)}
+    benchmark_manifest = maybe_load_benchmark_manifest(args.manifest)
 
     flow_path = args.flow or trainer_state.get("flow_path", "wake_data/wake_test_roi.npy")
     history_length = (
@@ -44,6 +53,24 @@ def main() -> None:
         else int(trainer_state.get("history_length", 1))
     )
     probe_layout = trainer_state.get("probe_layout", "s0")
+    if benchmark_manifest is not None:
+        if (
+            benchmark_manifest.probe_layout is not None
+            and benchmark_manifest.probe_layout != probe_layout
+        ):
+            raise ValueError(
+                f"Benchmark manifest probe_layout={benchmark_manifest.probe_layout} "
+                f"!= checkpoint probe_layout={probe_layout}."
+            )
+        if (
+            benchmark_manifest.history_length is not None
+            and benchmark_manifest.history_length != history_length
+        ):
+            raise ValueError(
+                f"Benchmark manifest history_length={benchmark_manifest.history_length} "
+                f"!= evaluation history_length={history_length}."
+            )
+        flow_path = args.flow or benchmark_manifest.flow_path
     env = make_planar_env(flow_path, history_length=history_length, probe_layout=probe_layout)
     agent = SACAgent(SACConfig(**agent_cfg_dict), device=args.device)
 
@@ -55,41 +82,43 @@ def main() -> None:
     )
     agent.load(str(agent_file))
 
-    returns = []
-    costs = []
-    successes = 0
-    times = []
-    reasons: dict[str, int] = {}
-    for idx in range(args.episodes):
-        obs, info = env.reset(seed=args.seed + idx, options=reset_options)
-        policy_state = agent.reset_policy_state()
-        total_reward = 0.0
-        total_cost = 0.0
-        done = False
-        while not done:
-            action, policy_state = agent.act(obs, policy_state, deterministic=True)
-            obs, reward, terminated, truncated, info = env.step(action)
-            total_reward += reward
-            total_cost += float(info["step_safety_cost"])
-            done = terminated or truncated
-        returns.append(total_reward)
-        costs.append(total_cost)
-        successes += int(info["success"])
-        times.append(float(info["elapsed_time_s"]))
-        reasons[info["reason"]] = reasons.get(info["reason"], 0) + 1
-
-    print(f"episodes          : {args.episodes}")
-    print(
-        f"success_rate      : {successes}/{args.episodes} "
-        f"({100.0 * successes / max(1, args.episodes):.1f}%)"
+    metrics = evaluate_agent(
+        env=env,
+        agent=agent,
+        reset_options=reset_options,
+        seed=args.seed,
+        num_episodes=args.episodes,
+        benchmark_manifest=benchmark_manifest,
     )
-    print(f"avg_return        : {np.mean(returns):.2f} +/- {np.std(returns):.2f}")
-    print(f"avg_cost          : {np.mean(costs):.3f} +/- {np.std(costs):.3f}")
-    print(f"avg_time_s        : {np.mean(times):.2f} +/- {np.std(times):.2f}")
-    print(f"termination       : {reasons}")
-    print(f"task_geometry     : {info['task_geometry']}")
-    print(f"target_u_max_mps  : {info['target_auv_max_speed_mps']:.2f}")
-    print(f"max_rpm_command   : {info['max_rpm_command']:.0f}")
+
+    n_eps = int(metrics["num_eval_episodes"])
+    print(f"episodes              : {n_eps}")
+    print(f"success_rate          : {100.0 * metrics['eval_success_rate']:.1f}%")
+    print(f"avg_return            : {metrics['eval_return']:.2f} +/- {metrics['eval_return_std']:.2f}")
+    print(f"avg_cost              : {metrics['eval_cost']:.3f} +/- {metrics['eval_cost_std']:.3f}")
+    print(f"avg_time_s            : {metrics['eval_time_s']:.2f} +/- {metrics['eval_time_s_std']:.2f}")
+    print(f"avg_time_s_success    : {metrics['eval_time_s_success']:.2f}")
+    print(f"avg_energy            : {metrics['eval_energy']:.2f} +/- {metrics['eval_energy_std']:.2f}")
+    print(
+        f"avg_path_length_m     : "
+        f"{metrics['eval_path_length_m']:.2f} +/- {metrics['eval_path_length_m_std']:.2f}"
+    )
+    print(
+        f"avg_progress_ratio    : "
+        f"{metrics['eval_progress_ratio']:.3f} +/- {metrics['eval_progress_ratio_std']:.3f}"
+    )
+    print(
+        f"avg_path_efficiency   : "
+        f"{metrics['eval_path_efficiency']:.3f} +/- {metrics['eval_path_efficiency_std']:.3f}"
+    )
+    print(f"termination           : {metrics['eval_termination_counts']}")
+    if benchmark_manifest is not None:
+        print(f"benchmark_manifest    : {args.manifest}")
+
+    if args.output_json is not None:
+        args.output_json.parent.mkdir(parents=True, exist_ok=True)
+        with args.output_json.open("w", encoding="utf-8") as fp:
+            json.dump(metrics, fp, indent=2)
 
 
 def cli() -> None:

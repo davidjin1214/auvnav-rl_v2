@@ -139,31 +139,51 @@ def make_probe_offsets(layout: str) -> np.ndarray:
     y points to port.  Only velocity channels (u, v) are assumed; no
     vorticity is required.
 
+    Physical basis
+    --------------
+    All three layouts are derived from sensors physically realizable on a
+    REMUS-100 class AUV in the horizontal navigation plane.
+
+    A standard downward-looking DVL (1200 kHz, Janus 4-beam) in water-tracking
+    mode samples the water layer directly below the AUV; in 2-D horizontal
+    navigation all four beams converge to the same horizontal position, giving
+    a single equivalent (u, v) measurement at the vehicle centre (S0).
+
+    A compact forward-looking ADCP (e.g. Nortek Aquadopp 1 or 2 MHz) mounted
+    in the nose payload bay extends sensing ahead of the vehicle.  Each beam
+    measures only its radial (along-beam) velocity component; at least three
+    non-parallel beams at a given range cell are combined to reconstruct the
+    full (u, v) vector at that cell.  The probe positions below represent those
+    reconstructed vector locations, not individual beam hit-points.
+
     Schemes
     -------
-    s0 — 1 probe: centre only.
-         Represents a DVL water-track — the standard REMUS-100 baseline.
+    s0 — 1 probe  — DVL water-track (standard REMUS-100 baseline)
+         Single (u, v) at vehicle centre.  Purely reactive sensing.
+         d_obs = 8 + 1 × 2 = 10
 
-    s1 — 5 probes: symmetric local cross at ±2 m.
-         Hull-mounted near-field sensors with no forward reach.
-         Captures local vortex cross-section; purely reactive sensing.
+    s1 — 2 probes — short-range forward ADCP  (≈ 2 MHz, ~5 m range)
+         DVL centre + one near-field reconstructed vector at 4.5 m ahead.
+         Provides ~3 control steps of advance warning at 1.5 m/s.
+         No lateral beam spread at this short range (< 2 m lateral offset).
+         d_obs = 8 + 2 × 2 = 12
 
-    s2 — 5 probes: forward ADCP beam pattern.
-         Centre (DVL) + two along-axis cells at 5 m and 9 m + two lateral
-         beams at [8 m, ±4 m] (≈ 27° half-angle at 9 m range).
-         Represents a research-grade 1 MHz forward ADCP on REMUS-100.
-         Provides ~3–7 control steps of advance warning for upstream tasks.
+    s2 — 4 probes — long-range forward ADCP  (1 MHz, ~9 m range)
+         DVL centre + near forward cell at 5 m + two lateral beam cells at
+         [8 m, ±4 m] (≈ 27° half-angle, consistent with Nortek Aquadopp
+         1 MHz beam geometry at 9 m range).
+         Near cell gives axial preview; lateral pair gives cross-stream
+         gradient for locating the AUV relative to the vortex core.
+         Provides ~3–7 control steps of advance warning.
+         d_obs = 8 + 4 × 2 = 16
     """
     if layout == "s0":
         return np.array([[0.0, 0.0]], dtype=float)
     if layout == "s1":
         return np.array(
             [
-                [0.0,  0.0],
-                [2.0,  0.0],
-                [-2.0, 0.0],
-                [0.0,  2.0],
-                [0.0, -2.0],
+                [0.0, 0.0],   # centre — DVL water-track
+                [4.5, 0.0],   # near forward cell — short-range ADCP (~2 MHz)
             ],
             dtype=float,
         )
@@ -171,9 +191,8 @@ def make_probe_offsets(layout: str) -> np.ndarray:
         return np.array(
             [
                 [0.0, 0.0],   # centre — DVL water-track
-                [5.0, 0.0],   # near forward cell (~1.7 s preview, upstream)
-                [9.0, 0.0],   # far forward cell  (~3.0 s preview, upstream)
-                [8.0,  4.0],  # port  lateral beam at 9 m range, 27° half-angle
+                [5.0, 0.0],   # near forward cell (~1.7 s preview at 1.5 m/s)
+                [8.0,  4.0],  # port  lateral beam, 27° half-angle at ~9 m range
                 [8.0, -4.0],  # stbd  lateral beam
             ],
             dtype=float,

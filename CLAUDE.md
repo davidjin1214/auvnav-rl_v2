@@ -89,12 +89,12 @@ The core library. Components are loosely coupled; non-ML parts work without PyTo
 - **Observation:** 8 base channels + n_probes×2 (velocity) channels
   - Base 8: surge `u`, sway `v`, yaw rate `r`, `cos(ψ)`, `sin(ψ)`, goal body-frame x/y, distance-to-goal
   - Probe channels: (u, v) per probe in body frame
-  - `s0` (default, 1 probe): **10-D**; `s1`/`s2` (5 probes): **18-D**
+  - `s0` (default, 1 probe): **10-D**; `s1` (2 probes): **12-D**; `s2` (4 probes): **16-D**
 - **Action (2-D):** continuous heading command, speed command
-- **Probe layouts (`--probe-layout`):**
-  - `s0` — 1 probe (DVL centre); REMUS-100 standard baseline
-  - `s1` — 5 probes symmetric ±2 m cross; reactive local sensing
-  - `s2` — 5 probes forward ADCP beam pattern; ~3–7 steps advance warning for upstream tasks
+- **Probe layouts (`--probe-layout`):** all physically grounded in real REMUS-100 sensors
+  - `s0` — 1 probe at (0,0); DVL water-track, REMUS-100 standard baseline
+  - `s1` — 2 probes at (0,0)+(4.5,0); DVL + 2 MHz short-range forward ADCP, ~3 steps advance warning
+  - `s2` — 4 probes at (0,0)+(5,0)+(8,±4); DVL + 1 MHz long-range ADCP, ~7 steps warning + lateral gradient
 - **Task geometry:** `downstream`, `cross_stream`, `upstream`
 - **Difficulty:** `easy`, `medium`, `hard` (controls start/goal separation and flow strength)
 - **Observation history:** `--history-length N` wraps env with `ObservationHistoryWrapper` for stacking N recent observations

@@ -812,7 +812,13 @@ def run_simulation(
 
     # --- Monitor setup ---
     total_steps = lc.steps_spinup + lc.steps_record
-    mon_x = min(lc.cx_lat + 3 * lc.D_lat, lc.Nx - 1)
+    # Place the Strouhal monitor 3D downstream of the *most downstream* cylinder.
+    # For single-cylinder configs this equals cx_lat + 3*D_lat (unchanged).
+    # For tandem (in-line) configs the primary cylinder (cx_lat) is upstream; using
+    # it would land the monitor inside the inter-cylinder gap where the flow
+    # oscillates at a slow recirculation frequency instead of the Kármán frequency.
+    _most_downstream_cx = max(cx for cx, cy, r in lc.cylinders_lat)
+    mon_x = min(_most_downstream_cx + 3 * lc.D_lat, lc.Nx - 1)
     mon_y = min(lc.cy_lat + int(round(0.7 * lc.D_lat)), lc.Ny - 1)
     monitor_samples = 2000
     monitor_start = max(0, lc.steps_spinup - monitor_samples * lc.steps_per_frame)

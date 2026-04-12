@@ -69,6 +69,7 @@ figures/
 *.csv
 *.jsonl
 events.out.tfevents.*
+figs/
 
 # Temp files
 tmp/
@@ -78,4 +79,5 @@ temp/
 # Other
 .omc/
 wake_data/
+offline_data/
 .claude/

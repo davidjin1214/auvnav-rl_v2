@@ -71,6 +71,37 @@ METHOD_SPECS: dict[str, MethodSpec] = {
         ),
         description="SAC + all improvements: LN + DroQ + AsymCritic + UTD=4 + K=16",
     ),
+    # -- RLPD variants (require pre-collected offline data) --
+    "rlpd_goalseek": MethodSpec(
+        key="rlpd_goalseek",
+        train_module="scripts.train_sac",
+        extra_args=(
+            "--use-layernorm", "--history-length", "1",
+            "--offline-data", "offline_data/goalseek/transitions.npz",
+            "--offline-ratio", "0.5",
+        ),
+        description="RLPD: SAC + GoalSeek offline data (50/50).",
+    ),
+    "rlpd_worldcomp": MethodSpec(
+        key="rlpd_worldcomp",
+        train_module="scripts.train_sac",
+        extra_args=(
+            "--use-layernorm", "--history-length", "1",
+            "--offline-data", "offline_data/worldcomp/transitions.npz",
+            "--offline-ratio", "0.5",
+        ),
+        description="RLPD: SAC + WorldFrameCompensation offline data (50/50).",
+    ),
+    "rlpd_privileged": MethodSpec(
+        key="rlpd_privileged",
+        train_module="scripts.train_sac",
+        extra_args=(
+            "--use-layernorm", "--history-length", "1",
+            "--offline-data", "offline_data/privileged/transitions.npz",
+            "--offline-ratio", "0.5",
+        ),
+        description="RLPD: SAC + PrivilegedCorridor offline data (50/50).",
+    ),
 }
 
 
@@ -186,6 +217,8 @@ def build_command(
     append_optional_arg(cmd, "--batch-size", cli_args.batch_size)
     append_optional_arg(cmd, "--replay-capacity", cli_args.replay_capacity)
     append_optional_arg(cmd, "--hidden-dim", cli_args.hidden_dim)
+    append_optional_arg(cmd, "--offline-data", getattr(cli_args, "offline_data", None))
+    append_optional_arg(cmd, "--offline-ratio", getattr(cli_args, "offline_ratio", None))
     return cmd
 
 
@@ -243,6 +276,8 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--replay-capacity", type=int, default=None)
     parser.add_argument("--hidden-dim", type=int, default=None)
+    parser.add_argument("--offline-data", type=str, default=None)
+    parser.add_argument("--offline-ratio", type=float, default=None)
     parser.add_argument("--skip-existing", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()

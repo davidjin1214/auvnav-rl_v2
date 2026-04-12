@@ -11,7 +11,7 @@ import numpy as np
 import gymnasium as gym
 
 from auv_nav.sac import SACAgent, SACConfig
-from auv_nav.replay import TransitionReplay, TransitionReplayConfig
+from auv_nav.replay import DualBufferSampler, TransitionReplay, TransitionReplayConfig
 from auv_nav.networks import require_torch
 
 try:
@@ -100,6 +100,24 @@ def apply_resume_defaults(args: argparse.Namespace, parser: argparse.ArgumentPar
     apply_default("hidden_dim", agent_state.get("hidden_dim"))
 
 
+def _build_extra_state(
+    args: argparse.Namespace,
+    train_cfg: TrainConfig,
+    probe_layout: str,
+    offline_replay: TransitionReplay | None,
+) -> dict[str, Any]:
+    state: dict[str, Any] = {
+        "algorithm": "rlpd" if offline_replay is not None else "sac",
+        "history_length": train_cfg.history_length,
+        "probe_layout": probe_layout,
+    }
+    if offline_replay is not None:
+        state["offline_data_path"] = str(args.offline_data)
+        state["offline_ratio"] = args.offline_ratio
+        state["offline_transitions"] = len(offline_replay)
+    return state
+
+
 def train(args: argparse.Namespace) -> None:
     require_torch()
 
@@ -182,6 +200,25 @@ def train(args: argparse.Namespace) -> None:
             privileged_obs_dim=agent_cfg.privileged_obs_dim,
         ),
     )
+
+    # RLPD: load offline data and create dual-buffer sampler.
+    if args.offline_data is not None:
+        offline_replay = TransitionReplay.from_npz(args.offline_data)
+        if offline_replay.obs_dim != obs_dim:
+            raise ValueError(
+                f"Offline obs_dim={offline_replay.obs_dim} != env obs_dim={obs_dim}. "
+                "Offline data must match the target probe layout and history length."
+            )
+        dual_sampler = DualBufferSampler(
+            offline_replay, replay, args.offline_ratio,
+        )
+        print(
+            f"[rlpd] loaded {len(offline_replay)} offline transitions "
+            f"from {args.offline_data}, ratio={args.offline_ratio}"
+        )
+    else:
+        offline_replay = None
+        dual_sampler = None
 
     save_dir = Path(train_cfg.save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -364,7 +401,10 @@ def train(args: argparse.Namespace) -> None:
             and global_step % train_cfg.update_every == 0
         ):
             for _ in range(train_cfg.updates_per_step):
-                batch = replay.sample_batch(train_cfg.batch_size, agent.device)
+                if dual_sampler is not None and dual_sampler.ready(train_cfg.batch_size):
+                    batch = dual_sampler.sample_batch(train_cfg.batch_size, agent.device)
+                else:
+                    batch = replay.sample_batch(train_cfg.batch_size, agent.device)
                 last_update = agent.update(batch)
 
         if global_step % train_cfg.eval_every_steps == 0:
@@ -403,11 +443,7 @@ def train(args: argparse.Namespace) -> None:
                 flow_path=str(flow_path),
                 env_step=global_step,
                 episode_idx=episode_idx,
-                extra_state={
-                    "algorithm": "sac",
-                    "history_length": train_cfg.history_length,
-                    "probe_layout": probe_layout,
-                },
+                extra_state=_build_extra_state(args, train_cfg, probe_layout, offline_replay),
             )
 
         if global_step % train_cfg.checkpoint_every_steps == 0:
@@ -421,11 +457,7 @@ def train(args: argparse.Namespace) -> None:
                 flow_path=str(flow_path),
                 env_step=global_step,
                 episode_idx=episode_idx,
-                extra_state={
-                    "algorithm": "sac",
-                    "history_length": train_cfg.history_length,
-                    "probe_layout": probe_layout,
-                },
+                extra_state=_build_extra_state(args, train_cfg, probe_layout, offline_replay),
             )
 
     agent.save(str(save_dir / "agent_final.pt"))
@@ -439,10 +471,7 @@ def train(args: argparse.Namespace) -> None:
         flow_path=str(flow_path),
         env_step=train_cfg.total_env_steps,
         episode_idx=episode_idx,
-        extra_state={
-            "algorithm": "sac",
-            "history_length": train_cfg.history_length,
-        },
+        extra_state=_build_extra_state(args, train_cfg, probe_layout, offline_replay),
     )
     final_metrics = evaluate_agent(
         env=eval_env,
@@ -516,6 +545,14 @@ def main() -> None:
         help="Number of recent observations to stack for feedforward history baselines.",
     )
     parser.add_argument("--checkpoint-every", type=int, default=5_000)
+    parser.add_argument(
+        "--offline-data", type=Path, default=None,
+        help="Path to offline transitions.npz for RLPD mode.",
+    )
+    parser.add_argument(
+        "--offline-ratio", type=float, default=0.5,
+        help="Fraction of each batch drawn from offline buffer (default: 0.5).",
+    )
     parser.add_argument("--resume", type=str, default=None)
     parser.add_argument(
         "--probe-layout",

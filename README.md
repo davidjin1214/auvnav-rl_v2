@@ -10,7 +10,7 @@
 - 环境：由 LBM 生成的单圆柱或多圆柱尾迹流场
 - 目标：在动态流场中从起点到目标点导航
 - 难点：流场强、非均匀、时变，且存在欠驱动场景
-- 方法：基于改进版 Soft Actor-Critic (SAC) 学习策略
+- 方法：基于改进版 Soft Actor-Critic (SAC) 学习策略，支持 RLPD（RL with Prior Data）利用离线基线数据加速训练
 
 这不是一个“静态路径规划”仓库。它更接近一个闭环控制与决策系统：
 
@@ -33,18 +33,19 @@ wake_data/*.npy + *_meta.json
 PlanarRemusEnv + WakeField + FlowSampler
     ↓
 SAC / baseline policies
-    ↓
-checkpoint / logs / metrics
-    ↓
-evaluate / demo / visualize / figure_paper
+    ↓                          ↓
+checkpoint / logs / metrics    collect_offline_data.py → offline_data/
+    ↓                                                      ↓
+evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 ```
 
 按实验流程理解这个仓库，通常最清晰：
 
 1. 用 `scripts/generate_wake.py` 生成尾迹流场数据。
 2. 用 `scripts/train_sac.py` 在指定流场上训练策略。
-3. 用 `scripts/evaluate.py` 批量评估 checkpoint。
-4. 用 `scripts/demo.py`、`scripts/visualize.py`、`scripts/figure_paper.py` 做行为分析和结果展示。
+3. （可选）用 `scripts/collect_offline_data.py` 收集基线策略的离线数据，再用 RLPD 模式训练。
+4. 用 `scripts/evaluate.py` 批量评估 checkpoint。
+5. 用 `scripts/demo.py`、`scripts/visualize.py`、`scripts/figure_paper.py` 做行为分析和结果展示。
 
 ## 核心研究设定
 
@@ -151,7 +152,7 @@ evaluate / demo / visualize / figure_paper
 - `networks.py`
   Actor / Critic 网络结构及相关工具。
 - `replay.py`
-  经验回放池。
+  经验回放池。支持 `TransitionReplay.from_npz()` 加载离线数据，`DualBufferSampler` 实现 RLPD 双 buffer 对称采样。
 - `baselines.py`
   非学习型基线策略，用于对照实验。
 
@@ -168,7 +169,9 @@ evaluate / demo / visualize / figure_paper
 - `generate_wake.py`
   生成流场数据。
 - `train_sac.py`
-  训练 SAC 智能体。
+  训练 SAC 智能体。支持 `--offline-data` 和 `--offline-ratio` 参数开启 RLPD 模式。
+- `collect_offline_data.py`
+  用基线策略（goalseek / crosscomp / worldcomp / privileged）收集离线 transition 数据，输出 `.npz` + `metadata.json`。
 - `evaluate.py`
   用训练好的 checkpoint 做批量评估。
 - `demo.py`
@@ -309,7 +312,30 @@ python -m scripts.demo \
     --plot
 ```
 
-### 4. 生成更复杂的多圆柱流场
+### 4. 用 RLPD 加速训练（离线数据 + 在线 SAC）
+
+```bash
+# 第一步：收集基线策略的离线数据
+python -m scripts.collect_offline_data \
+    --policy worldcomp \
+    --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
+    --probe-layout s0 --difficulty hard --target-speed 1.5 \
+    --episodes 500 --seed 0 \
+    --output-dir offline_data/worldcomp
+
+# 第二步：用 RLPD 模式训练（自动 50/50 采样离线+在线数据）
+python -m scripts.train_sac \
+    --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
+    --difficulty hard --target-speed 1.5 \
+    --probe-layout s0 --use-layernorm \
+    --offline-data offline_data/worldcomp/transitions.npz \
+    --offline-ratio 0.5 \
+    --seed 42 --device cpu
+```
+
+支持的离线数据策略：`goalseek`（无特权）、`crosscomp`（无特权）、`worldcomp`（中度特权）、`privileged`（强特权）。详见 `docs/rlpd_design.md`。
+
+### 5. 生成更复杂的多圆柱流场
 
 ```bash
 python -m scripts.generate_wake --profile tandem_G35_nav
@@ -333,6 +359,13 @@ python -m scripts.generate_wake --profile side_by_side_G35_nav
 - `wake_*.npy`
 - `wake_*_meta.json`
 - `wake_*_phase.npy`
+
+### 离线数据收集阶段
+
+输出在 `offline_data/<policy_name>/`：
+
+- `transitions.npz`：包含 obs, actions, rewards, costs, next_obs, dones
+- `metadata.json`：策略名、流场路径、探针布局、统计信息（成功率、回报分布等）
 
 ### 训练阶段
 
@@ -375,7 +408,7 @@ python -m scripts.generate_wake --profile side_by_side_G35_nav
 2. [`auv_nav/flow.py`](auv_nav/flow.py)
 3. [`auv_nav/env.py`](auv_nav/env.py)
 
-### 目标是理解“算法做了哪些改进”
+### 目标是理解”算法做了哪些改进”
 
 建议顺序：
 
@@ -384,11 +417,22 @@ python -m scripts.generate_wake --profile side_by_side_G35_nav
 3. [`auv_nav/sac.py`](auv_nav/sac.py)
 4. [`tests/test_improved_sac.py`](tests/test_improved_sac.py)
 
+### 目标是理解”RLPD 离线-在线训练怎么用”
+
+建议顺序：
+
+1. [`docs/rlpd_design.md`](docs/rlpd_design.md) — 算法选择、实验设计、论文关联
+2. [`auv_nav/replay.py`](auv_nav/replay.py) — `from_npz` 和 `DualBufferSampler`
+3. [`scripts/collect_offline_data.py`](scripts/collect_offline_data.py) — 离线数据收集
+4. [`scripts/train_sac.py`](scripts/train_sac.py) — `--offline-data` 参数入口
+
 ## 快速索引
 
 - 想生成流场：[`scripts/generate_wake.py`](scripts/generate_wake.py)
 - 想看流场生成文档：[`docs/generate_wake_usage.md`](docs/generate_wake_usage.md)
 - 想训练 agent：[`scripts/train_sac.py`](scripts/train_sac.py)
+- 想收集离线数据：[`scripts/collect_offline_data.py`](scripts/collect_offline_data.py)
+- 想了解 RLPD 设计：[`docs/rlpd_design.md`](docs/rlpd_design.md)
 - 想评估 checkpoint：[`scripts/evaluate.py`](scripts/evaluate.py)
 - 想看环境定义：[`auv_nav/env.py`](auv_nav/env.py)
 - 想看流场读取：[`auv_nav/flow.py`](auv_nav/flow.py)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -115,6 +116,29 @@ class TransitionReplay:
         self.ptr = int(state.get("ptr", 0))
         self.size = int(state.get("size", 0))
 
+    @classmethod
+    def from_npz(cls, path: str | Path) -> "TransitionReplay":
+        """Create a read-only TransitionReplay pre-filled from a .npz file.
+
+        The .npz must contain arrays: obs, actions, rewards, costs, next_obs, dones.
+        """
+        data = np.load(str(path))
+        obs = data["obs"]
+        actions = data["actions"]
+        n_transitions, obs_dim = obs.shape
+        action_dim = actions.shape[1]
+        config = TransitionReplayConfig(capacity=n_transitions)
+        replay = cls(obs_dim, action_dim, config)
+        replay.observations[:n_transitions] = obs.astype(np.float32)
+        replay.actions[:n_transitions] = actions.astype(np.float32)
+        replay.rewards[:n_transitions] = data["rewards"].astype(np.float32)
+        replay.costs[:n_transitions] = data["costs"].astype(np.float32)
+        replay.next_observations[:n_transitions] = data["next_obs"].astype(np.float32)
+        replay.dones[:n_transitions] = data["dones"].astype(np.float32)
+        replay.size = n_transitions
+        replay.ptr = 0  # offline buffer is read-only
+        return replay
+
     def sample_batch(self, batch_size: int, device: "torch.device") -> "dict[str, torch.Tensor]":
         require_torch()
         if self.size <= 0:
@@ -134,3 +158,34 @@ class TransitionReplay:
                 self.privileged_obs[indices], device=device
             )
         return batch
+
+
+class DualBufferSampler:
+    """RLPD-style symmetric sampling from offline + online replay buffers."""
+
+    def __init__(
+        self,
+        offline_buffer: TransitionReplay,
+        online_buffer: TransitionReplay,
+        offline_ratio: float = 0.5,
+    ) -> None:
+        self.offline = offline_buffer
+        self.online = online_buffer
+        self.offline_ratio = offline_ratio
+
+    def ready(self, batch_size: int) -> bool:
+        n_online = max(1, int(batch_size * (1 - self.offline_ratio)))
+        return self.online.ready(n_online) and len(self.offline) > 0
+
+    def sample_batch(
+        self, batch_size: int, device: "torch.device"
+    ) -> "dict[str, torch.Tensor]":
+        require_torch()
+        n_offline = int(batch_size * self.offline_ratio)
+        n_online = batch_size - n_offline
+        offline_batch = self.offline.sample_batch(n_offline, device)
+        online_batch = self.online.sample_batch(n_online, device)
+        return {
+            k: torch.cat([offline_batch[k], online_batch[k]], dim=0)
+            for k in online_batch
+        }

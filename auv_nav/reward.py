@@ -29,6 +29,81 @@ SAFETY_FAILURE_REASONS = frozenset(
 )
 
 
+REWARD_CONFIG_FIELDS = (
+    "step_penalty",
+    "time_penalty_per_second",
+    "reward_progress_gain",
+    "success_reward",
+    "failure_penalty",
+    "timeout_penalty",
+    "energy_cost_gain",
+    "safety_cost_gain",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class RewardObjectivePreset:
+    key: str
+    description: str
+    reward_config: dict[str, float | None]
+
+
+REWARD_OBJECTIVE_PRESETS: dict[str, RewardObjectivePreset] = {
+    "arrival_v1": RewardObjectivePreset(
+        key="arrival_v1",
+        description="Legacy task-completion objective: optimize time-to-goal with progress shaping.",
+        reward_config={
+            "step_penalty": -1.0,
+            "time_penalty_per_second": None,
+            "reward_progress_gain": 1.0,
+            "success_reward": 100.0,
+            "failure_penalty": -20.0,
+            "timeout_penalty": None,
+            "energy_cost_gain": 0.0,
+            "safety_cost_gain": 0.0,
+        },
+    ),
+    "efficiency_v1": RewardObjectivePreset(
+        key="efficiency_v1",
+        description=(
+            "Efficiency-aware objective: retain time/progress shaping while penalizing "
+            "control effort and soft safety-risk accumulation."
+        ),
+        reward_config={
+            "step_penalty": -1.0,
+            "time_penalty_per_second": None,
+            "reward_progress_gain": 1.0,
+            "success_reward": 100.0,
+            "failure_penalty": -20.0,
+            "timeout_penalty": None,
+            "energy_cost_gain": 5e-4,
+            "safety_cost_gain": 2.0,
+        },
+    ),
+}
+
+REWARD_OBJECTIVE_ALIASES = {
+    "arrival": "arrival_v1",
+    "time_optimal": "arrival_v1",
+    "efficiency": "efficiency_v1",
+    "efficient": "efficiency_v1",
+    "efficiency_aware": "efficiency_v1",
+}
+
+
+def canonical_reward_objective(key: str) -> str:
+    canonical = REWARD_OBJECTIVE_ALIASES.get(key, key)
+    if canonical not in REWARD_OBJECTIVE_PRESETS:
+        known = ", ".join(sorted(REWARD_OBJECTIVE_PRESETS))
+        raise ValueError(f"Unknown reward objective: {key}. Known objectives: {known}")
+    return canonical
+
+
+def reward_objective_config(key: str) -> dict[str, float | None]:
+    canonical = canonical_reward_objective(key)
+    return dict(REWARD_OBJECTIVE_PRESETS[canonical].reward_config)
+
+
 @dataclass(slots=True)
 class RewardBreakdown:
     reward: float

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
 from .benchmark_catalog import (
     BENCHMARK_GROUPS,
     BenchmarkSpec,
@@ -177,6 +178,7 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "benchmark_group": "geometry_factor_v1",
             "methods": "sac,sac_stack4",
             "seeds": "42,43,44",
+            "objective": "efficiency_v1",
             "total_steps": 200_000,
             "random_steps": 5_000,
             "update_after": 5_000,
@@ -192,6 +194,7 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "benchmark_group": "flow_factor_v1",
             "methods": "sac,sac_stack4",
             "seeds": "42,43,44",
+            "objective": "efficiency_v1",
             "total_steps": 200_000,
             "random_steps": 5_000,
             "update_after": 5_000,
@@ -207,6 +210,7 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "benchmark_group": "topology_factor_v1",
             "methods": "sac,sac_stack4",
             "seeds": "42,43,44",
+            "objective": "efficiency_v1",
             "total_steps": 200_000,
             "random_steps": 5_000,
             "update_after": 5_000,
@@ -222,6 +226,7 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "benchmark_group": "speed_factor_v1",
             "methods": "sac,sac_stack4",
             "seeds": "42,43,44",
+            "objective": "efficiency_v1",
             "total_steps": 200_000,
             "random_steps": 5_000,
             "update_after": 5_000,
@@ -237,6 +242,26 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "benchmark_group": "study_core_v1",
             "methods": "sac,sac_stack4",
             "seeds": "42,43,44",
+            "objective": "efficiency_v1",
+            "total_steps": 200_000,
+            "random_steps": 5_000,
+            "update_after": 5_000,
+            "eval_every": 10_000,
+            "eval_episodes": 30,
+            "checkpoint_every": 10_000,
+        },
+    ),
+    "objective_ablation_v1": SuitePreset(
+        name="objective_ablation_v1",
+        description=(
+            "Small objective ablation on the critical single-cylinder upstream benchmark: "
+            "arrival_v1 vs efficiency_v1."
+        ),
+        values={
+            "benchmarks": "single_u15_upstream_tgt15",
+            "methods": "sac_stack4",
+            "objectives": "arrival_v1,efficiency_v1",
+            "seeds": "42,43,44",
             "total_steps": 200_000,
             "random_steps": 5_000,
             "update_after": 5_000,
@@ -250,6 +275,10 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
 
 def parse_seed_list(seed_text: str) -> list[int]:
     return [int(part.strip()) for part in seed_text.split(",") if part.strip()]
+
+
+def parse_objective_list(objective_text: str) -> list[str]:
+    return [part.strip() for part in objective_text.split(",") if part.strip()]
 
 
 def apply_preset_defaults(args: argparse.Namespace) -> None:
@@ -306,9 +335,11 @@ def build_command(
     seed: int,
     save_dir: Path,
     cli_args: argparse.Namespace,
+    objective: str | None = None,
     benchmark: BenchmarkSpec | None = None,
 ) -> list[str]:
     cmd = [sys.executable, "-m", method.train_module, *method.extra_args]
+    resolved_objective = objective if objective is not None else getattr(cli_args, "objective", None)
     if benchmark is None:
         append_optional_arg(cmd, "--flow", cli_args.flow)
         append_optional_arg(cmd, "--difficulty", cli_args.difficulty)
@@ -327,6 +358,9 @@ def build_command(
             "--eval-manifest",
             benchmark_manifest_path(benchmark, cli_args.benchmark_manifest_dir),
         )
+    append_optional_arg(cmd, "--objective", resolved_objective)
+    append_optional_arg(cmd, "--energy-cost-gain", cli_args.energy_cost_gain)
+    append_optional_arg(cmd, "--safety-cost-gain", cli_args.safety_cost_gain)
     append_optional_arg(cmd, "--total-steps", cli_args.total_steps)
     append_optional_arg(cmd, "--random-steps", cli_args.random_steps)
     append_optional_arg(cmd, "--update-after", cli_args.update_after)
@@ -420,6 +454,20 @@ def main() -> None:
     parser.add_argument("--speed-ratio", type=float, default=None)
     parser.add_argument("--target-speed", type=float, default=None)
     parser.add_argument("--eval-manifest", type=str, default=None)
+    parser.add_argument(
+        "--objective",
+        type=str,
+        choices=sorted(REWARD_OBJECTIVE_PRESETS.keys()),
+        default=None,
+    )
+    parser.add_argument(
+        "--objectives",
+        type=str,
+        default=None,
+        help="Comma-separated reward objectives for objective-ablation suites.",
+    )
+    parser.add_argument("--energy-cost-gain", type=float, default=None)
+    parser.add_argument("--safety-cost-gain", type=float, default=None)
     parser.add_argument("--total-steps", type=int, default=None)
     parser.add_argument("--random-steps", type=int, default=None)
     parser.add_argument("--update-after", type=int, default=None)
@@ -475,10 +523,24 @@ def main() -> None:
     if args.hidden_dim is None:
         args.hidden_dim = 256
 
+    if args.objective is not None and args.objectives is not None:
+        raise ValueError("Use either --objective or --objectives, not both.")
+
     method_keys = [item.strip() for item in args.methods.split(",") if item.strip()]
     unknown = [key for key in method_keys if key not in METHOD_SPECS]
     if unknown:
         raise ValueError(f"Unknown method keys: {unknown}")
+    if args.objectives is not None:
+        objectives = parse_objective_list(args.objectives)
+    elif args.objective is not None:
+        objectives = [args.objective]
+    else:
+        objectives = [None]
+    unknown_objectives = [
+        key for key in objectives if key is not None and key not in REWARD_OBJECTIVE_PRESETS
+    ]
+    if unknown_objectives:
+        raise ValueError(f"Unknown objective keys: {unknown_objectives}")
     seeds = parse_seed_list(args.seeds)
     suite_root = Path(args.suite_root)
     suite_root.mkdir(parents=True, exist_ok=True)
@@ -515,6 +577,10 @@ def main() -> None:
         "action_mode": args.action_mode,
         "speed_ratio": args.speed_ratio,
         "target_speed": args.target_speed,
+        "objective": args.objective,
+        "objectives": objectives,
+        "energy_cost_gain": args.energy_cost_gain,
+        "safety_cost_gain": args.safety_cost_gain,
         "total_steps": args.total_steps,
         "device": args.device,
         "runs": [],
@@ -522,56 +588,73 @@ def main() -> None:
 
     benchmark_items: list[BenchmarkSpec | None] = benchmarks if benchmarks else [None]
     for benchmark in benchmark_items:
-        for method_key in method_keys:
-            method = METHOD_SPECS[method_key]
-            for seed in seeds:
-                if benchmark is None:
-                    run_dir = suite_root / method.key / f"seed_{seed}"
-                else:
-                    run_dir = suite_root / benchmark.key / method.key / f"seed_{seed}"
-                cmd = build_command(method, seed, run_dir, args, benchmark)
-                run_record = {
-                    "benchmark": benchmark.key if benchmark is not None else None,
-                    "benchmark_description": (
-                        benchmark.description if benchmark is not None else None
-                    ),
-                    "factor_values": benchmark.factor_values if benchmark is not None else None,
-                    "method": method.key,
-                    "seed": seed,
-                    "run_dir": str(run_dir),
-                    "train_module": method.train_module,
-                    "description": method.description,
-                    "command": cmd,
-                }
-                if benchmark is not None:
-                    run_record["eval_manifest"] = benchmark_manifest_path(
-                        benchmark,
-                        args.benchmark_manifest_dir,
+        for objective in objectives:
+            for method_key in method_keys:
+                method = METHOD_SPECS[method_key]
+                for seed in seeds:
+                    if benchmark is None:
+                        if objective is None:
+                            run_dir = suite_root / method.key / f"seed_{seed}"
+                        else:
+                            run_dir = suite_root / objective / method.key / f"seed_{seed}"
+                    else:
+                        if objective is None:
+                            run_dir = suite_root / benchmark.key / method.key / f"seed_{seed}"
+                        else:
+                            run_dir = suite_root / benchmark.key / objective / method.key / f"seed_{seed}"
+                    cmd = build_command(
+                        method,
+                        seed,
+                        run_dir,
+                        args,
+                        objective=objective,
+                        benchmark=benchmark,
                     )
-                manifest["runs"].append(run_record)
+                    run_record = {
+                        "benchmark": benchmark.key if benchmark is not None else None,
+                        "benchmark_description": (
+                            benchmark.description if benchmark is not None else None
+                        ),
+                        "factor_values": benchmark.factor_values if benchmark is not None else None,
+                        "objective": objective,
+                        "method": method.key,
+                        "seed": seed,
+                        "run_dir": str(run_dir),
+                        "train_module": method.train_module,
+                        "description": method.description,
+                        "command": cmd,
+                    }
+                    if benchmark is not None:
+                        run_record["eval_manifest"] = benchmark_manifest_path(
+                            benchmark,
+                            args.benchmark_manifest_dir,
+                        )
+                    manifest["runs"].append(run_record)
 
-                final_eval_path = run_dir / "final_eval.json"
-                if args.skip_existing and final_eval_path.exists():
-                    label = (
-                        f"{benchmark.key} / {method.key}"
-                        if benchmark is not None
-                        else method.key
-                    )
-                    print(f"[skip] {label} seed={seed} -> {run_dir}")
-                    continue
+                    final_eval_path = run_dir / "final_eval.json"
+                    if args.skip_existing and final_eval_path.exists():
+                        label_parts = [
+                            benchmark.key if benchmark is not None else None,
+                            objective,
+                            method.key,
+                        ]
+                        label = " / ".join(part for part in label_parts if part is not None)
+                        print(f"[skip] {label} seed={seed} -> {run_dir}")
+                        continue
 
-                label = (
-                    f"{benchmark.key} / {method.key}"
-                    if benchmark is not None
-                    else method.key
-                )
-                print(f"[run] {label} seed={seed}")
-                print("      " + shlex.join(cmd))
-                if args.dry_run:
-                    continue
+                    label_parts = [
+                        benchmark.key if benchmark is not None else None,
+                        objective,
+                        method.key,
+                    ]
+                    label = " / ".join(part for part in label_parts if part is not None)
+                    print(f"[run] {label} seed={seed}")
+                    print("      " + shlex.join(cmd))
+                    if args.dry_run:
+                        continue
 
-                run_dir.mkdir(parents=True, exist_ok=True)
-                subprocess.run(cmd, check=True)
+                    run_dir.mkdir(parents=True, exist_ok=True)
+                    subprocess.run(cmd, check=True)
 
     with (suite_root / "suite_manifest.json").open("w", encoding="utf-8") as fp:
         json.dump(manifest, fp, indent=2)

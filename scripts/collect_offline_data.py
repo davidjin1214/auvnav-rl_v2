@@ -28,8 +28,14 @@ from auv_nav.baselines import (
     WorldFrameCurrentCompensationPolicy,
 )
 from auv_nav.env import ObservationHistoryWrapper
+from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
 
-from .train_utils import discover_flow_path, make_planar_env, make_reset_options
+from .train_utils import (
+    discover_flow_path,
+    make_env_config_overrides,
+    make_planar_env,
+    make_reset_options,
+)
 
 POLICY_MAP = {
     "goalseek": GoalSeekPolicy,
@@ -41,10 +47,12 @@ POLICY_MAP = {
 
 def collect(args: argparse.Namespace) -> None:
     flow_path = args.flow or discover_flow_path()
+    env_config_overrides = make_env_config_overrides(args)
     env = make_planar_env(
         flow_path,
         history_length=args.history_length,
         probe_layout=args.probe_layout,
+        env_config_overrides=env_config_overrides,
     )
 
     # Baseline policies need the unwrapped PlanarRemusEnv for env-specific calls.
@@ -154,6 +162,8 @@ def collect(args: argparse.Namespace) -> None:
         "difficulty": args.difficulty,
         "target_speed": args.target_speed,
         "task_geometry": args.task_geometry,
+        "objective": env_config_overrides.get("reward_objective"),
+        "reward_config": env_config_overrides,
         "seed": args.seed,
         "num_episodes": args.episodes,
         "num_transitions": n_transitions,
@@ -203,6 +213,14 @@ def main() -> None:
         default=None,
     )
     parser.add_argument("--target-speed", type=float, default=None)
+    parser.add_argument(
+        "--objective",
+        choices=sorted(REWARD_OBJECTIVE_PRESETS.keys()),
+        default="arrival_v1",
+        help="Reward objective preset used when collecting offline transitions.",
+    )
+    parser.add_argument("--energy-cost-gain", type=float, default=None)
+    parser.add_argument("--safety-cost-gain", type=float, default=None)
     parser.add_argument("--episodes", type=int, default=500)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument(

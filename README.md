@@ -109,7 +109,14 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - 失败或超时惩罚：出界、失稳、超时等情况给负奖励
 - 可选的 safety cost / energy cost：用于更细的风险整形
 
-也就是说，项目优化的不是“单纯最短路”，而是一个兼顾到达、效率和安全性的控制目标。
+当前仓库把目标函数显式分成两个 preset：
+
+- `arrival_v1`
+  兼容旧实验的“到达优先”目标。主优化量仍然是时间惩罚 + progress + terminal reward。
+- `efficiency_v1`
+  在 `arrival_v1` 基础上额外惩罚能耗和软安全风险，更适合论文里“高效航行”这类表述。
+
+因此，现在不建议再笼统地说“默认 reward 就是高效导航目标”。你需要在实验表格和命令里明确写出 `--objective arrival_v1` 或 `--objective efficiency_v1`。
 
 ## 为什么要先生成流场
 
@@ -194,6 +201,9 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
   按 `benchmark × method × seed` 批量跑多组实验，支持 benchmark group 预设。
 - `summarize_suite.py`
   按 `benchmark × method` 汇总多个实验日志，并输出统一指标。
+
+新的 factorized benchmark presets 默认走 `efficiency_v1`，因为它们面向“高效航行”主问题；旧的 legacy preset 仍保持兼容旧实验口径。
+如果要专门比较目标函数，可以直接使用 `objective_ablation_v1` preset。
 - `plot_suite.py`, `plot_training.py`
   绘制训练曲线与消融图。
 - `train_utils.py`
@@ -265,6 +275,10 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
   控制任务类型。
 - `--target-speed`
   控制 AUV 极限速度，是本项目里非常关键的实验旋钮。
+- `--objective`
+  显式指定 reward objective。做“高效航行”主实验时，建议用 `efficiency_v1`。
+- `--num-envs`
+  控制并行环境数。现在默认会按 CPU 核心数保守自适应，而不是固定 16；在 `6C/12T` 机器上默认会落到大约 `6`。
 
 ## 为什么 `--target-speed 1.5` 重要
 
@@ -295,6 +309,7 @@ python -m scripts.train_sac \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --difficulty hard \
     --target-speed 1.5 \
+    --objective efficiency_v1 \
     --probe-layout s0 \
     --history-length 5 \
     --use-layernorm \
@@ -310,6 +325,7 @@ python -m scripts.train_sac \
 python -m scripts.evaluate \
     --checkpoint checkpoints/sac/<run_dir> \
     --episodes 100 \
+    --objective efficiency_v1 \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --difficulty hard \
     --target-speed 1.5
@@ -334,6 +350,7 @@ python -m scripts.collect_offline_data \
     --policy worldcomp \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 --difficulty hard --target-speed 1.5 \
+    --objective efficiency_v1 \
     --episodes 500 --seed 0 \
     --output-dir offline_data/worldcomp
 
@@ -341,6 +358,7 @@ python -m scripts.collect_offline_data \
 python -m scripts.train_sac \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --difficulty hard --target-speed 1.5 \
+    --objective efficiency_v1 \
     --probe-layout s0 --use-layernorm \
     --offline-data offline_data/worldcomp/transitions.npz \
     --offline-ratio 0.5 \
@@ -349,7 +367,23 @@ python -m scripts.train_sac \
 
 支持的离线数据策略：`goalseek`（无特权）、`crosscomp`（无特权）、`worldcomp`（中度特权）、`privileged`（强特权）。详见 `docs/rlpd_design.md`。
 
-### 5. 生成更复杂的多圆柱流场
+### 5. 做目标函数对照实验（objective ablation）
+
+```bash
+conda run -n mytorch1 python -m scripts.run_suite \
+    --preset objective_ablation_v1
+
+conda run -n mytorch1 python -m scripts.summarize_suite \
+    --suite-root experiments/objective_ablation_v1
+
+conda run -n mytorch1 python -m scripts.plot_suite \
+    --suite-root experiments/objective_ablation_v1
+```
+
+这个 preset 会在 `single_u15_upstream_tgt15` 上，用 `sac_stack4`、3 个 seeds，直接比较
+`arrival_v1` 和 `efficiency_v1`。
+
+### 6. 生成更复杂的多圆柱流场
 
 ```bash
 python -m scripts.generate_wake --profile tandem_G35_nav

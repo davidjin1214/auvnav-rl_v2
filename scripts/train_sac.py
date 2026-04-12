@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
+import subprocess
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -10,6 +13,7 @@ from typing import Any
 import numpy as np
 import gymnasium as gym
 
+from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
 from auv_nav.sac import SACAgent, SACConfig
 from auv_nav.replay import DualBufferSampler, TransitionReplay, TransitionReplayConfig
 from auv_nav.networks import require_torch
@@ -24,7 +28,9 @@ from .train_utils import (
     append_jsonl,
     discover_flow_path,
     evaluate_agent,
+    extract_env_config_overrides,
     load_trainer_state,
+    make_env_config_overrides,
     make_planar_env,
     make_reset_options,
     maybe_load_benchmark_manifest,
@@ -51,6 +57,59 @@ class TrainConfig:
     checkpoint_every_steps: int = 5_000
     history_length: int = 1
     num_envs: int = 1
+
+
+def detect_physical_cpu_count() -> int | None:
+    try:
+        if sys.platform == "darwin":
+            result = subprocess.run(
+                ["sysctl", "-n", "hw.physicalcpu"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return max(1, int(result.stdout.strip()))
+        if sys.platform.startswith("linux"):
+            cpuinfo = Path("/proc/cpuinfo")
+            if not cpuinfo.exists():
+                return None
+            physical_cores: set[tuple[str, str]] = set()
+            current_physical_id = "0"
+            current_core_id = None
+            for line in cpuinfo.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    if current_core_id is not None:
+                        physical_cores.add((current_physical_id, current_core_id))
+                    current_physical_id = "0"
+                    current_core_id = None
+                    continue
+                if ":" not in line:
+                    continue
+                key, value = [part.strip() for part in line.split(":", 1)]
+                if key == "physical id":
+                    current_physical_id = value
+                elif key == "core id":
+                    current_core_id = value
+            if current_core_id is not None:
+                physical_cores.add((current_physical_id, current_core_id))
+            if physical_cores:
+                return len(physical_cores)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    return None
+
+
+def recommended_num_envs(
+    logical_cpus: int | None = None,
+    physical_cpus: int | None = None,
+) -> int:
+    logical = max(1, int(logical_cpus or os.cpu_count() or 1))
+    physical = physical_cpus if physical_cpus is not None else detect_physical_cpu_count()
+    if physical is not None:
+        return max(1, min(8, int(physical)))
+    if logical <= 4:
+        return logical
+    return max(1, min(8, logical // 2))
 
 
 def apply_resume_defaults(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
@@ -92,12 +151,16 @@ def apply_resume_defaults(args: argparse.Namespace, parser: argparse.ArgumentPar
     apply_default("flow", trainer_state.get("flow_path"))
     apply_default("eval_manifest", trainer_state.get("eval_manifest"))
     apply_default("probe_layout", trainer_state.get("probe_layout"))
+    apply_default("objective", trainer_state.get("reward_objective"))
     apply_default("difficulty", reset_state.get("task_difficulty"))
     apply_default("task_geometry", reset_state.get("task_geometry"))
     apply_default("action_mode", reset_state.get("action_mode"))
     apply_default("target_speed", reset_state.get("target_auv_max_speed_mps"))
     if args.target_speed == parser.get_default("target_speed"):
         apply_default("speed_ratio", reset_state.get("target_speed_ratio"))
+    env_state = extract_env_config_overrides(trainer_state)
+    for reward_field in ("energy_cost_gain", "safety_cost_gain"):
+        apply_default(reward_field, env_state.get(reward_field))
 
     apply_default("hidden_dim", agent_state.get("hidden_dim"))
 
@@ -107,11 +170,14 @@ def _build_extra_state(
     train_cfg: TrainConfig,
     probe_layout: str,
     offline_replay: TransitionReplay | None,
+    env_config_overrides: dict[str, Any],
 ) -> dict[str, Any]:
     state: dict[str, Any] = {
         "algorithm": "rlpd" if offline_replay is not None else "sac",
         "history_length": train_cfg.history_length,
         "probe_layout": probe_layout,
+        "reward_objective": env_config_overrides.get("reward_objective"),
+        "env_config_overrides": env_config_overrides,
     }
     if args.eval_manifest is not None:
         state["eval_manifest"] = str(args.eval_manifest)
@@ -153,7 +219,8 @@ def train(args: argparse.Namespace) -> None:
 
     flow_path = args.flow or discover_flow_path()
     benchmark_manifest = maybe_load_benchmark_manifest(args.eval_manifest)
-    
+    env_config_overrides = make_env_config_overrides(args)
+
     probe_layout = args.probe_layout
 
     if train_cfg.num_envs > 1:
@@ -163,6 +230,7 @@ def train(args: argparse.Namespace) -> None:
                     flow_path,
                     history_length=train_cfg.history_length,
                     probe_layout=probe_layout,
+                    env_config_overrides=env_config_overrides,
                 )
                 env.action_space.seed(train_cfg.seed + seed_offset)
                 return env
@@ -176,6 +244,7 @@ def train(args: argparse.Namespace) -> None:
             flow_path,
             history_length=train_cfg.history_length,
             probe_layout=probe_layout,
+            env_config_overrides=env_config_overrides,
         )
         obs_dim = int(env.observation_space.shape[0])
         action_dim = int(env.action_space.shape[0])
@@ -202,6 +271,7 @@ def train(args: argparse.Namespace) -> None:
         eval_flow_path,
         history_length=train_cfg.history_length,
         probe_layout=probe_layout,
+        env_config_overrides=env_config_overrides,
     )
     reset_options = make_reset_options(args)
 
@@ -228,6 +298,31 @@ def train(args: argparse.Namespace) -> None:
     # RLPD: load offline data and create dual-buffer sampler.
     if args.offline_data is not None:
         offline_replay = TransitionReplay.from_npz(args.offline_data)
+        offline_metadata_path = args.offline_data.parent / "metadata.json"
+        if offline_metadata_path.exists():
+            with offline_metadata_path.open("r", encoding="utf-8") as fp:
+                offline_metadata = json.load(fp)
+            offline_objective = offline_metadata.get("objective")
+            if offline_objective is not None and offline_objective != env_config_overrides.get(
+                "reward_objective"
+            ):
+                raise ValueError(
+                    f"Offline objective={offline_objective} != "
+                    f"training objective={env_config_overrides.get('reward_objective')}."
+                )
+            offline_reward_config = offline_metadata.get("reward_config")
+            if isinstance(offline_reward_config, dict):
+                mismatched_reward_keys = []
+                for key, value in env_config_overrides.items():
+                    if key not in offline_reward_config:
+                        continue
+                    if offline_reward_config[key] != value:
+                        mismatched_reward_keys.append(key)
+                if mismatched_reward_keys:
+                    raise ValueError(
+                        "Offline reward_config does not match training reward_config for keys: "
+                        + ", ".join(sorted(mismatched_reward_keys))
+                    )
         if offline_replay.obs_dim != obs_dim:
             raise ValueError(
                 f"Offline obs_dim={offline_replay.obs_dim} != env obs_dim={obs_dim}. "
@@ -482,8 +577,9 @@ def train(args: argparse.Namespace) -> None:
             )
             print(
                 f"[eval] step={global_step} "
+                f"objective={metrics['reward_objective']} "
                 f"return={metrics['eval_return']:.2f} "
-                f"cost={metrics['eval_cost']:.3f} "
+                f"safety={metrics['eval_safety_cost']:.3f} "
                 f"success={metrics['eval_success_rate']:.2%} "
                 f"time={metrics['eval_time_s']:.1f}s "
                 f"energy={metrics['eval_energy']:.1f} "
@@ -494,8 +590,10 @@ def train(args: argparse.Namespace) -> None:
                 eval_log_path,
                 {
                     "env_step": global_step,
+                    "reward_objective": metrics["reward_objective"],
                     "eval_return": metrics["eval_return"],
                     "eval_cost": metrics["eval_cost"],
+                    "eval_safety_cost": metrics["eval_safety_cost"],
                     "eval_success_rate": metrics["eval_success_rate"],
                     "eval_time_s": metrics["eval_time_s"],
                     "eval_energy": metrics["eval_energy"],
@@ -515,7 +613,13 @@ def train(args: argparse.Namespace) -> None:
                 flow_path=str(flow_path),
                 env_step=global_step,
                 episode_idx=episode_idx,
-                extra_state=_build_extra_state(args, train_cfg, probe_layout, offline_replay),
+                extra_state=_build_extra_state(
+                    args,
+                    train_cfg,
+                    probe_layout,
+                    offline_replay,
+                    env_config_overrides,
+                ),
             )
 
         if global_step % train_cfg.checkpoint_every_steps == 0:
@@ -529,7 +633,13 @@ def train(args: argparse.Namespace) -> None:
                 flow_path=str(flow_path),
                 env_step=global_step,
                 episode_idx=episode_idx,
-                extra_state=_build_extra_state(args, train_cfg, probe_layout, offline_replay),
+                extra_state=_build_extra_state(
+                    args,
+                    train_cfg,
+                    probe_layout,
+                    offline_replay,
+                    env_config_overrides,
+                ),
             )
 
     agent.save(str(save_dir / "agent_final.pt"))
@@ -543,7 +653,13 @@ def train(args: argparse.Namespace) -> None:
         flow_path=str(flow_path),
         env_step=train_cfg.total_env_steps,
         episode_idx=episode_idx,
-        extra_state=_build_extra_state(args, train_cfg, probe_layout, offline_replay),
+        extra_state=_build_extra_state(
+            args,
+            train_cfg,
+            probe_layout,
+            offline_replay,
+            env_config_overrides,
+        ),
     )
     final_metrics = evaluate_agent(
         env=eval_env,
@@ -561,6 +677,9 @@ def train(args: argparse.Namespace) -> None:
             fp.write(f"{key}={value}\n")
         fp.write("AgentConfig\n")
         for key, value in asdict(agent_cfg).items():
+            fp.write(f"{key}={value}\n")
+        fp.write("EnvConfigOverrides\n")
+        for key, value in env_config_overrides.items():
             fp.write(f"{key}={value}\n")
         fp.write("ResetOptions\n")
         for key, value in reset_options.items():
@@ -583,6 +702,14 @@ def main() -> None:
     )
     parser.add_argument("--speed-ratio", type=float, default=None)
     parser.add_argument("--target-speed", type=float, default=None)
+    parser.add_argument(
+        "--objective",
+        choices=sorted(REWARD_OBJECTIVE_PRESETS.keys()),
+        default="arrival_v1",
+        help="Reward objective preset. Use efficiency_v1 for efficiency-aware training.",
+    )
+    parser.add_argument("--energy-cost-gain", type=float, default=None)
+    parser.add_argument("--safety-cost-gain", type=float, default=None)
     parser.add_argument("--total-steps", type=int, default=50_000)
     parser.add_argument("--random-steps", type=int, default=2_000)
     parser.add_argument("--update-after", type=int, default=2_000)
@@ -614,8 +741,11 @@ def main() -> None:
         help="Enable Asymmetric Critic: Critic sees privileged_obs from env info.",
     )
     parser.add_argument(
-        "--num-envs", type=int, default=16,
-        help="Number of parallel environments. Use 1 for single-env debugging.",
+        "--num-envs", type=int, default=recommended_num_envs(),
+        help=(
+            "Number of parallel environments. Defaults to a conservative auto-tuned value "
+            "based on available CPU cores. Use 1 for single-env debugging."
+        ),
     )
     parser.add_argument(
         "--history-length",

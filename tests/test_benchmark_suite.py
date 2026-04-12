@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from scripts.benchmark_catalog import BENCHMARK_GROUPS, BENCHMARK_SPECS, resolve_benchmark_specs
-from scripts.run_suite import METHOD_SPECS, build_command
+from scripts.run_suite import METHOD_SPECS, SUITE_PRESETS, build_command
 
 
 def test_resolve_benchmark_group_preserves_order() -> None:
@@ -21,6 +21,9 @@ def test_build_command_in_benchmark_mode_uses_manifest_and_explicit_factors(tmp_
         speed_ratio=None,
         target_speed=None,
         eval_manifest=None,
+        objective="efficiency_v1",
+        energy_cost_gain=None,
+        safety_cost_gain=None,
         total_steps=1000,
         random_steps=100,
         update_after=100,
@@ -55,4 +58,14 @@ def test_build_command_in_benchmark_mode_uses_manifest_and_explicit_factors(tmp_
     assert str(benchmark.target_speed) in cmd
     assert "--eval-manifest" in cmd
     assert f"benchmarks/{benchmark.key}.json" in cmd
+    assert "--objective" in cmd
+    assert "efficiency_v1" in cmd
     assert "--difficulty" not in cmd
+
+
+def test_factorized_preset_uses_efficiency_objective() -> None:
+    assert SUITE_PRESETS["geometry_factor_v1"].values["objective"] == "efficiency_v1"
+
+
+def test_objective_ablation_preset_expands_two_objectives() -> None:
+    assert SUITE_PRESETS["objective_ablation_v1"].values["objectives"] == "arrival_v1,efficiency_v1"

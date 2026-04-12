@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -36,9 +37,20 @@ def infer_runs_from_layout(suite_root: Path) -> list[dict[str, Any]]:
         relative_parts = run_dir.relative_to(suite_root).parts
         if len(relative_parts) == 2:
             benchmark = None
+            objective = None
             method, seed_part = relative_parts
         elif len(relative_parts) == 3:
-            benchmark, method, seed_part = relative_parts
+            part0, part1, seed_part = relative_parts
+            if part0 in REWARD_OBJECTIVE_PRESETS:
+                benchmark = None
+                objective = part0
+                method = part1
+            else:
+                benchmark = part0
+                objective = None
+                method = part1
+        elif len(relative_parts) == 4:
+            benchmark, objective, method, seed_part = relative_parts
         else:
             continue
         seed_text = seed_part.removeprefix("seed_")
@@ -49,6 +61,7 @@ def infer_runs_from_layout(suite_root: Path) -> list[dict[str, Any]]:
         runs.append(
             {
                 "benchmark": benchmark,
+                "objective": objective,
                 "method": method,
                 "seed": seed,
                 "run_dir": str(run_dir),
@@ -56,7 +69,12 @@ def infer_runs_from_layout(suite_root: Path) -> list[dict[str, Any]]:
         )
     return sorted(
         runs,
-        key=lambda item: ((item["benchmark"] or ""), item["method"], item["seed"]),
+        key=lambda item: (
+            (item["benchmark"] or ""),
+            (item["objective"] or ""),
+            item["method"],
+            item["seed"],
+        ),
     )
 
 
@@ -115,7 +133,7 @@ def main() -> None:
         benchmark_specs = {}
 
     detailed_rows: list[dict[str, Any]] = []
-    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
 
     for run in runs:
         run_dir = Path(run["run_dir"])
@@ -129,16 +147,23 @@ def main() -> None:
         train_tail = load_train_log_tail(run_dir / "train_log.jsonl") or {}
         benchmark_key = run.get("benchmark")
         benchmark_meta = benchmark_specs.get(benchmark_key, {})
+        objective = str(
+            run.get("objective")
+            or trainer_state.get("reward_objective", "")
+        )
 
         row = {
             "benchmark": benchmark_key or "",
+            "objective": objective,
             "method": run["method"],
             "seed": int(run.get("seed", -1)),
             "run_dir": str(run_dir),
             "algorithm": trainer_state.get("algorithm", ""),
+            "reward_objective": trainer_state.get("reward_objective", ""),
             "env_step": int(trainer_state.get("env_step", 0)),
             "eval_return": _safe_float(final_eval, "eval_return"),
             "eval_cost": _safe_float(final_eval, "eval_cost"),
+            "eval_safety_cost": _safe_float(final_eval, "eval_safety_cost"),
             "eval_success_rate": _safe_float(final_eval, "eval_success_rate"),
             "eval_time_s": _safe_float(final_eval, "eval_time_s"),
             "eval_energy": _safe_float(final_eval, "eval_energy"),
@@ -159,15 +184,18 @@ def main() -> None:
             ),
         }
         detailed_rows.append(row)
-        grouped[(row["benchmark"], row["method"])].append(row)
+        grouped[(row["benchmark"], row["objective"], row["method"])].append(row)
 
-    detailed_rows.sort(key=lambda item: (item["benchmark"], item["method"], item["seed"]))
+    detailed_rows.sort(
+        key=lambda item: (item["benchmark"], item["objective"], item["method"], item["seed"])
+    )
     write_csv(output_dir / "ablation_runs.csv", detailed_rows)
 
     summary_rows: list[dict[str, Any]] = []
-    for (benchmark, method), rows in sorted(grouped.items()):
+    for (benchmark, objective, method), rows in sorted(grouped.items()):
         returns = [float(row["eval_return"]) for row in rows]
         costs = [float(row["eval_cost"]) for row in rows]
+        safety_costs = [float(row["eval_safety_cost"]) for row in rows]
         success = [float(row["eval_success_rate"]) for row in rows]
         times = [float(row["eval_time_s"]) for row in rows]
         energy = [float(row["eval_energy"]) for row in rows]
@@ -178,8 +206,10 @@ def main() -> None:
         summary_rows.append(
             {
                 "benchmark": benchmark,
+                "objective": objective,
                 "method": method,
                 "num_runs": len(rows),
+                "reward_objective": exemplar["reward_objective"],
                 "flow_path": exemplar["flow_path"],
                 "task_geometry": exemplar["task_geometry"],
                 "target_speed": exemplar["target_speed"],
@@ -187,6 +217,8 @@ def main() -> None:
                 "eval_return_std": float(np.std(returns)),
                 "eval_cost_mean": float(np.mean(costs)),
                 "eval_cost_std": float(np.std(costs)),
+                "eval_safety_cost_mean": float(np.mean(safety_costs)),
+                "eval_safety_cost_std": float(np.std(safety_costs)),
                 "eval_success_rate_mean": float(np.mean(success)),
                 "eval_success_rate_std": float(np.std(success)),
                 "eval_time_s_mean": float(np.mean(times)),
@@ -205,6 +237,7 @@ def main() -> None:
     summary_rows.sort(
         key=lambda item: (
             item["benchmark"],
+            item["objective"],
             -item["eval_success_rate_mean"],
             -item["eval_return_mean"],
             item["eval_cost_mean"],
@@ -227,16 +260,17 @@ def main() -> None:
     markdown_lines.append(f"Runs summarized: {len(detailed_rows)}")
     markdown_lines.append("")
     markdown_lines.append(
-        "| Benchmark | Method | N | Eval Return | Success | Time (s) | Energy | Path (m) | Progress | Efficiency |"
+        "| Benchmark | Objective | Method | N | Eval Return | Success | Time (s) | Energy | Path (m) | Progress | Efficiency |"
     )
     markdown_lines.append(
-        "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
     )
     for row in summary_rows:
-        method_rows = grouped[(row["benchmark"], row["method"])]
+        method_rows = grouped[(row["benchmark"], row["objective"], row["method"])]
         markdown_lines.append(
             "| "
             f"{row['benchmark'] or '-'} | "
+            f"{row['objective'] or '-'} | "
             f"{row['method']} | "
             f"{row['num_runs']} | "
             f"{format_mean_std([float(item['eval_return']) for item in method_rows])} | "

@@ -11,6 +11,11 @@ import numpy as np
 
 from auv_nav.env import ObservationHistoryWrapper, PlanarRemusEnv, PlanarRemusEnvConfig
 from auv_nav.flow import make_probe_offsets
+from auv_nav.reward import (
+    REWARD_CONFIG_FIELDS,
+    canonical_reward_objective,
+    reward_objective_config,
+)
 from .benchmark_utils import BenchmarkManifest, load_benchmark_manifest
 
 try:
@@ -35,13 +40,17 @@ def make_planar_env(
     *,
     history_length: int = 1,
     probe_layout: str = "s0",
+    env_config_overrides: dict[str, Any] | None = None,
 ) -> PlanarRemusEnv | ObservationHistoryWrapper:
+    config_kwargs: dict[str, Any] = {
+        "flow_path": flow_path,
+        "probe_offsets_body": make_probe_offsets(probe_layout),
+        "probe_channels": "velocity",
+    }
+    if env_config_overrides:
+        config_kwargs.update(env_config_overrides)
     env: PlanarRemusEnv | ObservationHistoryWrapper = PlanarRemusEnv(
-        PlanarRemusEnvConfig(
-            flow_path=flow_path,
-            probe_offsets_body=make_probe_offsets(probe_layout),
-            probe_channels="velocity",
-        )
+        PlanarRemusEnvConfig(**config_kwargs)
     )
     if history_length > 1:
         env = ObservationHistoryWrapper(env, history_length)
@@ -61,6 +70,30 @@ def make_reset_options(args: Any) -> dict[str, Any]:
     elif getattr(args, "speed_ratio", None) is not None:
         options["target_speed_ratio"] = args.speed_ratio
     return options
+
+
+def make_env_config_overrides(
+    args: Any,
+    *,
+    base_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    overrides = dict(base_overrides or {})
+    objective = getattr(args, "objective", None)
+    if objective is not None:
+        objective = canonical_reward_objective(objective)
+        overrides.update(reward_objective_config(objective))
+        overrides["reward_objective"] = objective
+
+    for field in REWARD_CONFIG_FIELDS:
+        value = getattr(args, field, None)
+        if value is not None:
+            overrides[field] = value
+    return overrides
+
+
+def extract_env_config_overrides(trainer_state: dict[str, Any]) -> dict[str, Any]:
+    saved = trainer_state.get("env_config_overrides", {})
+    return dict(saved) if isinstance(saved, dict) else {}
 
 
 def load_trainer_state(path: str) -> dict[str, Any]:
@@ -254,6 +287,7 @@ def evaluate_agent(
                 "reason": str(info["reason"]),
                 "return": total_reward,
                 "cost": total_cost,
+                "safety_cost": total_cost,
                 "energy": total_energy,
                 "elapsed_time_s": float(info["elapsed_time_s"]),
                 "path_length_m": path_length,
@@ -290,6 +324,8 @@ def evaluate_agent(
         "eval_return_std": float(np.std(returns)),
         "eval_cost": float(np.mean(costs)),
         "eval_cost_std": float(np.std(costs)),
+        "eval_safety_cost": float(np.mean(costs)),
+        "eval_safety_cost_std": float(np.std(costs)),
         "eval_success_rate": float(np.mean(successes.astype(float))),
         "eval_time_s": float(np.mean(times)),
         "eval_time_s_std": float(np.std(times)),
@@ -310,6 +346,9 @@ def evaluate_agent(
         "eval_path_efficiency_std": float(np.std(path_efficiencies)),
         "eval_termination_counts": termination_counts,
         "eval_episode_results": results,
+        "reward_objective": env.unwrapped.config.reward_objective,
+        "energy_cost_gain": float(env.unwrapped.config.energy_cost_gain),
+        "safety_cost_gain": float(env.unwrapped.config.safety_cost_gain),
         "eval_manifest_flow_path": (
             benchmark_manifest.flow_path if benchmark_manifest is not None else None
         ),

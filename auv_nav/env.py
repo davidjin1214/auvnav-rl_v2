@@ -27,6 +27,7 @@ from .autopilot import (
     HeadingAutopilotConfig,
 )
 from .reward import (
+    REWARD_OBJECTIVE_PRESETS,
     RewardBreakdown,
     RewardModel,
     RewardModelConfig,
@@ -304,6 +305,7 @@ class PlanarRemusEnvConfig:
     max_rpm_command: float = 1200.0
 
     # -- reward --
+    reward_objective: str = "arrival_v1"
     step_penalty: float = -1.0          # per control step (not per sim step)
     time_penalty_per_second: float | None = None
     reward_progress_gain: float = 1.0   # scale on distance-progress shaping
@@ -355,6 +357,10 @@ class PlanarRemusEnvConfig:
             raise ValueError("goal_radius_m must be positive.")
         if self.backend_mode not in {"depth_hold_6dof"}:
             raise ValueError("backend_mode must be 'depth_hold_6dof'.")
+        if self.reward_objective not in REWARD_OBJECTIVE_PRESETS:
+            raise ValueError(
+                f"reward_objective must be one of: {sorted(REWARD_OBJECTIVE_PRESETS)}."
+            )
         if self.action_mode not in {"auto", "goal_relative_offset", "absolute_heading"}:
             raise ValueError(
                 "action_mode must be 'auto', 'goal_relative_offset', or 'absolute_heading'."
@@ -899,6 +905,9 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
             "action_mode": self.current_action_mode,
             "target_auv_max_speed_mps": float(self.current_target_auv_max_speed_mps),
             "max_rpm_command": float(self.current_max_rpm_command),
+            "reward_objective": self.config.reward_objective,
+            "energy_cost_gain": float(self.config.energy_cost_gain),
+            "safety_cost_gain": float(self.config.safety_cost_gain),
             "reward_task": float(self.last_reward_breakdown.task_reward),
             "reward_progress": float(self.last_reward_breakdown.progress_reward),
             "reward_terminal": float(self.last_reward_breakdown.terminal_reward),

@@ -26,6 +26,7 @@ except ImportError:
 from .train_utils import (
     append_csv,
     append_jsonl,
+    default_device,
     discover_flow_path,
     evaluate_agent,
     extract_env_config_overrides,
@@ -53,7 +54,7 @@ class TrainConfig:
     eval_episodes: int = 5
     log_every_episodes: int = 5
     save_dir: str = "checkpoints/sac"
-    device: str = "cpu"
+    device: str = "cuda:0"
     checkpoint_every_steps: int = 5_000
     history_length: int = 1
     num_envs: int = 1
@@ -725,7 +726,12 @@ def main() -> None:
     )
     parser.add_argument("--log-every-episodes", type=int, default=5)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=default_device(),
+        help="Torch device. Defaults to cuda:0 when CUDA is available, otherwise cpu.",
+    )
     parser.add_argument("--save-dir", type=str, default="checkpoints/sac")
     parser.add_argument("--hidden-dim", type=int, default=256)
     parser.add_argument(

@@ -24,6 +24,12 @@ except ImportError:
     torch = None
 
 
+def default_device() -> str:
+    if torch is not None and torch.cuda.is_available():
+        return "cuda:0"
+    return "cpu"
+
+
 def discover_flow_path() -> Path:
     data_dir = Path("wake_data")
     candidates = sorted(data_dir.glob("wake_*_roi.npy"))

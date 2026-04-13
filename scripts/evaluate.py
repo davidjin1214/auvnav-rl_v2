@@ -9,6 +9,7 @@ from pathlib import Path
 from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
 from auv_nav.sac import SACAgent, SACConfig
 from .train_utils import (
+    default_device,
     evaluate_agent,
     extract_env_config_overrides,
     load_trainer_state,
@@ -25,7 +26,12 @@ def main() -> None:
                         help="Run directory or trainer_state.json path.")
     parser.add_argument("--episodes", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
-    parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=default_device(),
+        help="Torch device. Defaults to cuda:0 when CUDA is available, otherwise cpu.",
+    )
     parser.add_argument("--flow", type=str, default=None)
     parser.add_argument("--manifest", type=Path, default=None,
                         help="Path to a fixed benchmark manifest JSON.")

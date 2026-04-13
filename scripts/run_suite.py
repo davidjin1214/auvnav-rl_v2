@@ -16,6 +16,7 @@ from .benchmark_catalog import (
     default_manifest_path,
     resolve_benchmark_specs,
 )
+from .train_utils import default_device
 
 
 @dataclass(frozen=True, slots=True)
@@ -476,7 +477,12 @@ def main() -> None:
     parser.add_argument("--eval-every", type=int, default=None)
     parser.add_argument("--eval-episodes", type=int, default=None)
     parser.add_argument("--log-every-episodes", type=int, default=None)
-    parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=default_device(),
+        help="Torch device forwarded to train_sac. Defaults to cuda:0 when CUDA is available, otherwise cpu.",
+    )
     parser.add_argument("--checkpoint-every", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--replay-capacity", type=int, default=None)

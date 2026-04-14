@@ -80,6 +80,23 @@ REWARD_OBJECTIVE_PRESETS: dict[str, RewardObjectivePreset] = {
             "safety_cost_gain": 2.0,
         },
     ),
+    "efficiency_v2": RewardObjectivePreset(
+        key="efficiency_v2",
+        description=(
+            "Weak safety-shaped objective selected from the gain sweep: preserve arrival "
+            "learning while adding only a light safety-risk penalty."
+        ),
+        reward_config={
+            "step_penalty": -1.0,
+            "time_penalty_per_second": None,
+            "reward_progress_gain": 1.0,
+            "success_reward": 100.0,
+            "failure_penalty": -20.0,
+            "timeout_penalty": None,
+            "energy_cost_gain": 0.0,
+            "safety_cost_gain": 0.25,
+        },
+    ),
 }
 
 REWARD_OBJECTIVE_ALIASES = {
@@ -88,6 +105,7 @@ REWARD_OBJECTIVE_ALIASES = {
     "efficiency": "efficiency_v1",
     "efficient": "efficiency_v1",
     "efficiency_aware": "efficiency_v1",
+    "efficiency_weak_safety": "efficiency_v2",
 }
 
 

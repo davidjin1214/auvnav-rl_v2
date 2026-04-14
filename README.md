@@ -23,6 +23,30 @@
 
 > 本项目试图回答：AUV 能否学会主动利用尾迹中的涡结构和局部流动信息，在强逆流或复杂干涉流场中更高效地到达目标。
 
+如果你想直接看已经整理好的实验结论，而不是翻 `experiments/` 下的原始日志，见：
+
+- [`results/rl_navigation_experiment_report.md`](results/rl_navigation_experiment_report.md)
+
+## 当前状态
+
+如果你只想先建立正确的全局认识，而不想立刻深入源码，可以先记住下面 6 点：
+
+- 这是一个“流场感知 + AUV 动力学 + RL 控制”的研究仓库，不是静态路径规划仓库。
+- 环境核心在 `auv_nav/env.py`，流场读取在 `auv_nav/flow.py`，算法核心在 `auv_nav/sac.py`。
+- 训练入口是 `scripts/train_sac.py`，标准化批量实验入口是 `scripts/run_suite.py`。
+- 当前主研究 benchmark 是 `single_u15_upstream_tgt15`，也就是 `U_flow = 1.5 m/s`、`target-speed = 1.5 m/s` 的单圆柱逆流任务。
+- 当前推荐的主实验目标函数是 `efficiency_v2`，不是旧的 `efficiency_v1`。
+- 已整理好的实验结论在 `results/rl_navigation_experiment_report.md`，建议先看它再决定下一轮实验。
+
+## 推荐阅读顺序
+
+如果你第一次进入这个仓库，建议按下面顺序理解：
+
+1. 先读本文档，建立整体闭环和当前推荐实验路线。
+2. 再看 [`results/rl_navigation_experiment_report.md`](results/rl_navigation_experiment_report.md)，了解目前已经得到的结论。
+3. 然后读 [`docs/environment_design.md`](docs/environment_design.md)，理解流场与任务设计。
+4. 最后进入源码：先看 [`auv_nav/env.py`](auv_nav/env.py)，再看 [`auv_nav/flow.py`](auv_nav/flow.py) 和 [`auv_nav/sac.py`](auv_nav/sac.py)。
+
 ## 这个仓库的整体闭环
 
 ```text
@@ -109,14 +133,17 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - 失败或超时惩罚：出界、失稳、超时等情况给负奖励
 - 可选的 safety cost / energy cost：用于更细的风险整形
 
-当前仓库把目标函数显式分成两个 preset：
+当前仓库把目标函数显式分成三个 preset：
 
 - `arrival_v1`
   兼容旧实验的“到达优先”目标。主优化量仍然是时间惩罚 + progress + terminal reward。
 - `efficiency_v1`
-  在 `arrival_v1` 基础上额外惩罚能耗和软安全风险，更适合论文里“高效航行”这类表述。
+  在 `arrival_v1` 基础上额外惩罚能耗和软安全风险。它是第一版效率目标，但在硬 benchmark 上往往过强。
+- `efficiency_v2`
+  根据 `efficiency_gain_sweep_v1` 的结果收敛出来的弱 safety shaping 版本。
+  当前推荐把它作为“高效航行”主实验的默认起点。
 
-因此，现在不建议再笼统地说“默认 reward 就是高效导航目标”。你需要在实验表格和命令里明确写出 `--objective arrival_v1` 或 `--objective efficiency_v1`。
+因此，现在不建议再笼统地说“默认 reward 就是高效导航目标”。你需要在实验表格和命令里明确写出 `--objective arrival_v1`、`--objective efficiency_v1` 或 `--objective efficiency_v2`。
 
 ## 为什么要先生成流场
 
@@ -198,12 +225,15 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - `figure_paper.py`
   生成论文级静态图。
 - `run_suite.py`
-  按 `benchmark × method × seed` 批量跑多组实验，支持 benchmark group 预设。
+  按 `benchmark × objective × gain × method × seed` 组织批量实验；当某些维度未启用时会自动退化成更简单的目录结构。
 - `summarize_suite.py`
-  按 `benchmark × method` 汇总多个实验日志，并输出统一指标。
+  按实际启用的实验维度汇总多个实验日志，并输出统一指标。
 
-新的 factorized benchmark presets 默认走 `efficiency_v1`，因为它们面向“高效航行”主问题；旧的 legacy preset 仍保持兼容旧实验口径。
+当前代码里的 factorized benchmark presets 仍默认走 `efficiency_v1`，这是为了保持既有预设和实验目录兼容。
+如果你要开始新的主实验，建议显式覆盖成 `--objective efficiency_v2`。
+旧的 legacy preset 仍保持兼容旧实验口径。
 如果要专门比较目标函数，可以直接使用 `objective_ablation_v1` preset。
+如果 `efficiency_v1` 在硬 benchmark 上学不稳，可以直接使用 `efficiency_gain_sweep_v1` preset，围绕低安全/低能耗权重做小范围扫描。当前 sweep 的推荐结果是 `efficiency_v2`。
 - `plot_suite.py`, `plot_training.py`
   绘制训练曲线与消融图。
 - `train_utils.py`
@@ -236,6 +266,14 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 ### `benchmarks/`
 
 固定评估 episode 的标准 manifests。它们只冻结任务实例，不绑定 `probe_layout/history_length`，所以可以在 `s0/s1/s2` 和不同 history 设置之间复用。
+
+### `results/`
+
+整理后的实验报告目录。当前最重要的汇总文件是：
+
+- `results/rl_navigation_experiment_report.md`
+
+如果你不想先逐个翻 `experiments/*/final_eval.json` 和 `ablation_summary.csv`，可以直接从这里进入。
 
 ### `checkpoints/`
 
@@ -276,7 +314,7 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - `--target-speed`
   控制 AUV 极限速度，是本项目里非常关键的实验旋钮。
 - `--objective`
-  显式指定 reward objective。做“高效航行”主实验时，建议用 `efficiency_v1`。
+  显式指定 reward objective。做“高效航行”主实验时，建议优先试 `efficiency_v2`。
 - `--num-envs`
   控制并行环境数。现在默认会按 CPU 核心数保守自适应，而不是固定 16；在 `6C/12T` 机器上默认会落到大约 `6`。
 
@@ -309,7 +347,7 @@ python -m scripts.train_sac \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --difficulty hard \
     --target-speed 1.5 \
-    --objective efficiency_v1 \
+    --objective efficiency_v2 \
     --probe-layout s0 \
     --history-length 5 \
     --use-layernorm \
@@ -325,7 +363,7 @@ python -m scripts.train_sac \
 python -m scripts.evaluate \
     --checkpoint checkpoints/sac/<run_dir> \
     --episodes 100 \
-    --objective efficiency_v1 \
+    --objective efficiency_v2 \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --difficulty hard \
     --target-speed 1.5
@@ -350,7 +388,7 @@ python -m scripts.collect_offline_data \
     --policy worldcomp \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 --difficulty hard --target-speed 1.5 \
-    --objective efficiency_v1 \
+    --objective efficiency_v2 \
     --episodes 500 --seed 0 \
     --output-dir offline_data/worldcomp
 
@@ -358,7 +396,7 @@ python -m scripts.collect_offline_data \
 python -m scripts.train_sac \
     --flow wake_data/wake_v8_U1p50_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --difficulty hard --target-speed 1.5 \
-    --objective efficiency_v1 \
+    --objective efficiency_v2 \
     --probe-layout s0 --use-layernorm \
     --offline-data offline_data/worldcomp/transitions.npz \
     --offline-ratio 0.5 \
@@ -383,7 +421,43 @@ conda run -n mytorch1 python -m scripts.plot_suite \
 这个 preset 会在 `single_u15_upstream_tgt15` 上，用 `sac_stack4`、3 个 seeds，直接比较
 `arrival_v1` 和 `efficiency_v1`。
 
-### 6. 生成更复杂的多圆柱流场
+### 6. 做 efficiency gain sweep
+
+```bash
+conda run -n mytorch1 python -m scripts.run_suite \
+    --preset efficiency_gain_sweep_v1
+
+conda run -n mytorch1 python -m scripts.summarize_suite \
+    --suite-root experiments/efficiency_gain_sweep_v1
+
+conda run -n mytorch1 python -m scripts.plot_suite \
+    --suite-root experiments/efficiency_gain_sweep_v1
+```
+
+这个 preset 固定 `single_u15_upstream_tgt15 + sac_stack4 + efficiency_v1`，扫描：
+`(energy,safety) = (0,0), (0,0.25), (0,0.5), (0,1.0), (1e-4,0.5), (2e-4,0.5), (5e-4,2.0)`。
+推荐先用它确认“低强度 safety shaping”是否能保住 success，再决定是否重新引入 energy shaping。
+
+如果你要在 factorized benchmark suites 上直接使用当前推荐的新目标函数，可以显式覆盖：
+
+```bash
+conda run -n mytorch1 python -m scripts.run_suite \
+    --preset study_core_v1 \
+    --objective efficiency_v2
+```
+
+### 7. 按最佳周期评估选 checkpoint
+
+```bash
+conda run -n mytorch1 python -m scripts.evaluate_best_checkpoint \
+    --run-dir experiments/efficiency_gain_sweep_v1/single_u15_upstream_tgt15/efficiency_v1/e0_s0p25/sac_stack4/seed_44
+```
+
+这个脚本会读取 `eval_log.csv`，按
+`eval_success_rate -> eval_return -> -eval_safety_cost -> -eval_time_s`
+选择最佳周期评估点，并给出对应的 `scripts.evaluate` 命令。
+
+### 8. 生成更复杂的多圆柱流场
 
 ```bash
 python -m scripts.generate_wake --profile tandem_G35_nav
@@ -482,10 +556,12 @@ python -m scripts.generate_wake --profile side_by_side_G35_nav
 - 想收集离线数据：[`scripts/collect_offline_data.py`](scripts/collect_offline_data.py)
 - 想了解 RLPD 设计：[`docs/rlpd_design.md`](docs/rlpd_design.md)
 - 想评估 checkpoint：[`scripts/evaluate.py`](scripts/evaluate.py)
+- 想按最佳周期评估选择 checkpoint：[`scripts/evaluate_best_checkpoint.py`](scripts/evaluate_best_checkpoint.py)
 - 想看环境定义：[`auv_nav/env.py`](auv_nav/env.py)
 - 想看流场读取：[`auv_nav/flow.py`](auv_nav/flow.py)
 - 想看奖励：[`auv_nav/reward.py`](auv_nav/reward.py)
 - 想看基线：[`auv_nav/baselines.py`](auv_nav/baselines.py)
+- 想直接看整理后的实验报告：[`results/rl_navigation_experiment_report.md`](results/rl_navigation_experiment_report.md)
 
 ## 测试
 

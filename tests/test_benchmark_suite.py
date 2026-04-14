@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from scripts.benchmark_catalog import BENCHMARK_GROUPS, BENCHMARK_SPECS, resolve_benchmark_specs
-from scripts.run_suite import METHOD_SPECS, SUITE_PRESETS, build_command
+from scripts.run_suite import METHOD_SPECS, SUITE_PRESETS, build_command, parse_gain_pairs
 
 
 def test_resolve_benchmark_group_preserves_order() -> None:
@@ -69,3 +69,16 @@ def test_factorized_preset_uses_efficiency_objective() -> None:
 
 def test_objective_ablation_preset_expands_two_objectives() -> None:
     assert SUITE_PRESETS["objective_ablation_v1"].values["objectives"] == "arrival_v1,efficiency_v1"
+
+
+def test_efficiency_gain_sweep_preset_expands_gain_pairs() -> None:
+    gain_pairs = parse_gain_pairs(SUITE_PRESETS["efficiency_gain_sweep_v1"].values["gain_pairs"])
+    assert [gain.label for gain in gain_pairs] == [
+        "e0_s0",
+        "e0_s0p25",
+        "e0_s0p5",
+        "e0_s1",
+        "e0p0001_s0p5",
+        "e0p0002_s0p5",
+        "e0p0005_s2",
+    ]

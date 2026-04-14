@@ -40,6 +40,16 @@ _OBJECTIVE_STYLE = {
     "efficiency_v1": {"label": "Efficiency", "color": "#2E8B57"},
 }
 
+_GAIN_PALETTE = [
+    "#4C78A8",
+    "#72B7B2",
+    "#54A24B",
+    "#E45756",
+    "#F58518",
+    "#B279A2",
+    "#FF9DA6",
+]
+
 
 def load_csv_rows(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
@@ -70,12 +80,42 @@ def infer_plot_mode(summary_rows: list[dict[str, Any]]) -> str:
     objectives = sorted({_string_value(row, "objective") for row in summary_rows if _string_value(row, "objective")})
     methods = sorted({_string_value(row, "method") for row in summary_rows if _string_value(row, "method")})
     benchmarks = sorted({_string_value(row, "benchmark") for row in summary_rows if _string_value(row, "benchmark")})
+    gains = sorted({_string_value(row, "gain_label") for row in summary_rows if _string_value(row, "gain_label")})
 
     if len(objectives) > 1 and len(methods) == 1:
         return "objective"
+    if len(gains) > 1 and len(methods) == 1 and len(objectives) <= 1:
+        return "gain"
     if len(benchmarks) > 1 and len(methods) == 1 and len(objectives) <= 1:
         return "benchmark"
     return "method"
+
+
+def _gain_sort_key(row: dict[str, Any]) -> tuple[float, float, str]:
+    safety = row.get("safety_cost_gain")
+    energy = row.get("energy_cost_gain")
+    gain_label = _string_value(row, "gain_label")
+    safety_value = float(safety) if isinstance(safety, (int, float)) else np.inf
+    energy_value = float(energy) if isinstance(energy, (int, float)) else np.inf
+    return (safety_value, energy_value, gain_label)
+
+
+def _gain_display_label(row: dict[str, Any]) -> str:
+    energy = row.get("energy_cost_gain")
+    safety = row.get("safety_cost_gain")
+    if isinstance(energy, (int, float)) and isinstance(safety, (int, float)):
+        return f"E={energy:.4g}\nS={safety:.4g}"
+    return _string_value(row, "gain_label")
+
+
+def _gain_color(gain_label: str, all_gain_labels: list[str]) -> str:
+    if not all_gain_labels:
+        return "#4C78A8"
+    try:
+        idx = all_gain_labels.index(gain_label)
+    except ValueError:
+        idx = 0
+    return _GAIN_PALETTE[idx % len(_GAIN_PALETTE)]
 
 
 def sort_rows(rows: list[dict[str, Any]], *, mode: str) -> list[dict[str, Any]]:
@@ -90,6 +130,8 @@ def sort_rows(rows: list[dict[str, Any]], *, mode: str) -> list[dict[str, Any]]:
                 method_order.get(_string_value(row, "method"), 10_000),
             ),
         )
+    if mode == "gain":
+        return sorted(rows, key=_gain_sort_key)
     if mode == "benchmark":
         return sorted(rows, key=lambda row: _string_value(row, "benchmark"))
     return sorted(
@@ -101,14 +143,29 @@ def sort_rows(rows: list[dict[str, Any]], *, mode: str) -> list[dict[str, Any]]:
     )
 
 
-def _style_for_row(row: dict[str, Any], *, mode: str) -> tuple[str, str]:
+def _style_for_row(
+    row: dict[str, Any],
+    *,
+    mode: str,
+    context_rows: list[dict[str, Any]],
+) -> tuple[str, str]:
     method = _string_value(row, "method")
     objective = _string_value(row, "objective")
     benchmark = _string_value(row, "benchmark")
+    gain_label = _string_value(row, "gain_label")
 
     if mode == "objective":
         style = _OBJECTIVE_STYLE.get(objective, {})
         return style.get("label", objective or method), style.get("color", "#777777")
+    if mode == "gain":
+        gain_labels = sorted(
+            {
+                _string_value(candidate, "gain_label")
+                for candidate in context_rows
+                if _string_value(candidate, "gain_label")
+            }
+        )
+        return _gain_display_label(row), _gain_color(gain_label, gain_labels)
     if mode == "benchmark":
         return benchmark or method, "#4C78A8"
 
@@ -142,6 +199,8 @@ def collect_variant_points(
 def variant_key(row: dict[str, Any], *, mode: str) -> str:
     if mode == "objective":
         return _string_value(row, "objective")
+    if mode == "gain":
+        return _string_value(row, "gain_label")
     if mode == "benchmark":
         return _string_value(row, "benchmark")
     objective = _string_value(row, "objective")
@@ -170,7 +229,7 @@ def panel_bar_with_points(
     labels: list[str] = []
     colors: list[str] = []
     for row in summary_rows:
-        label, color = _style_for_row(row, mode=mode)
+        label, color = _style_for_row(row, mode=mode, context_rows=summary_rows)
         labels.append(label)
         colors.append(color)
 
@@ -225,6 +284,15 @@ def figure_title(summary_rows: list[dict[str, Any]], *, mode: str) -> str:
         benchmark = benchmarks[0] if len(benchmarks) == 1 else "Multiple Benchmarks"
         method = _METHOD_STYLE.get(methods[0], {}).get("label", methods[0]) if len(methods) == 1 else "Multiple Methods"
         return f"Objective Ablation on {benchmark} with {method}"
+    if mode == "gain":
+        benchmark = benchmarks[0] if len(benchmarks) == 1 else "Multiple Benchmarks"
+        objective_label = (
+            _OBJECTIVE_STYLE.get(objectives[0], {}).get("label", objectives[0])
+            if len(objectives) == 1
+            else "Multiple Objectives"
+        )
+        method = _METHOD_STYLE.get(methods[0], {}).get("label", methods[0]) if len(methods) == 1 else "Multiple Methods"
+        return f"Gain Sweep on {benchmark} under {objective_label} with {method}"
     if mode == "benchmark":
         method = _METHOD_STYLE.get(methods[0], {}).get("label", methods[0]) if len(methods) == 1 else "Multiple Methods"
         return f"Benchmark Transfer Study with {method}"
@@ -237,12 +305,15 @@ def figure_title(summary_rows: list[dict[str, Any]], *, mode: str) -> str:
 def add_suite_annotation(fig: plt.Figure, suite_root: Path, run_rows: list[dict[str, Any]], *, mode: str) -> None:
     methods = sorted({_string_value(row, "method") for row in run_rows if _string_value(row, "method")})
     objectives = sorted({_string_value(row, "objective") for row in run_rows if _string_value(row, "objective")})
+    gains = sorted({_string_value(row, "gain_label") for row in run_rows if _string_value(row, "gain_label")})
     seeds = sorted({int(row["seed"]) for row in run_rows if "seed" in row and row["seed"] != ""})
     annotation = (
         f"Suite: {suite_root.name} | Mode: {mode} | Methods: {','.join(methods) if methods else 'n/a'}"
     )
     if objectives:
         annotation += f" | Objectives: {','.join(objectives)}"
+    if gains:
+        annotation += f" | Gains: {','.join(gains)}"
     annotation += f" | Seeds: {','.join(str(seed) for seed in seeds) if seeds else 'n/a'}"
     fig.text(0.01, 0.01, annotation, fontsize=9, color="#444444")
 

@@ -24,6 +24,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate a saved SAC checkpoint.")
     parser.add_argument("--checkpoint", type=str, required=True,
                         help="Run directory or trainer_state.json path.")
+    parser.add_argument(
+        "--agent-file",
+        type=str,
+        default=None,
+        help="Optional agent filename relative to the run directory, for example agent_step_180000.pt.",
+    )
     parser.add_argument("--episodes", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument(
@@ -101,11 +107,9 @@ def main() -> None:
     agent = SACAgent(SACConfig(**agent_cfg_dict), device=args.device)
 
     checkpoint_root = Path(args.checkpoint)
-    agent_file = (
-        checkpoint_root / trainer_state["agent_path"]
-        if checkpoint_root.is_dir()
-        else checkpoint_root.parent / trainer_state["agent_path"]
-    )
+    run_root = checkpoint_root if checkpoint_root.is_dir() else checkpoint_root.parent
+    agent_relative_path = args.agent_file or trainer_state["agent_path"]
+    agent_file = run_root / agent_relative_path
     agent.load(str(agent_file))
 
     metrics = evaluate_agent(

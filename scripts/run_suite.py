@@ -34,6 +34,13 @@ class SuitePreset:
     values: dict[str, Any]
 
 
+@dataclass(frozen=True, slots=True)
+class GainSpec:
+    label: str
+    energy_cost_gain: float
+    safety_cost_gain: float
+
+
 METHOD_SPECS: dict[str, MethodSpec] = {
     "sac": MethodSpec(
         key="sac",
@@ -271,6 +278,27 @@ SUITE_PRESETS: dict[str, SuitePreset] = {
             "checkpoint_every": 10_000,
         },
     ),
+    "efficiency_gain_sweep_v1": SuitePreset(
+        name="efficiency_gain_sweep_v1",
+        description=(
+            "Gain sweep around the efficiency objective on the critical single-cylinder "
+            "upstream benchmark. Includes the zero-cost baseline, low safety-only variants, "
+            "and low-energy variants."
+        ),
+        values={
+            "benchmarks": "single_u15_upstream_tgt15",
+            "methods": "sac_stack4",
+            "objective": "efficiency_v1",
+            "gain_pairs": "0:0,0:0.25,0:0.5,0:1.0,0.0001:0.5,0.0002:0.5,0.0005:2.0",
+            "seeds": "42,43,44",
+            "total_steps": 200_000,
+            "random_steps": 5_000,
+            "update_after": 5_000,
+            "eval_every": 10_000,
+            "eval_episodes": 30,
+            "checkpoint_every": 10_000,
+        },
+    ),
 }
 
 
@@ -280,6 +308,44 @@ def parse_seed_list(seed_text: str) -> list[int]:
 
 def parse_objective_list(objective_text: str) -> list[str]:
     return [part.strip() for part in objective_text.split(",") if part.strip()]
+
+
+def format_gain_component(value: float) -> str:
+    if abs(value) < 1e-12:
+        return "0"
+    return f"{value:.6g}".replace("-", "m").replace(".", "p")
+
+
+def gain_label_from_values(energy_cost_gain: float, safety_cost_gain: float) -> str:
+    return (
+        f"e{format_gain_component(energy_cost_gain)}"
+        f"_s{format_gain_component(safety_cost_gain)}"
+    )
+
+
+def parse_gain_pairs(gain_text: str) -> list[GainSpec]:
+    pairs: list[GainSpec] = []
+    for part in gain_text.split(","):
+        spec = part.strip()
+        if not spec:
+            continue
+        try:
+            energy_text, safety_text = spec.split(":", maxsplit=1)
+            energy_cost_gain = float(energy_text)
+            safety_cost_gain = float(safety_text)
+        except ValueError as exc:
+            raise ValueError(
+                "Invalid gain pair. Expected comma-separated energy:safety entries, "
+                f"received: {spec!r}"
+            ) from exc
+        pairs.append(
+            GainSpec(
+                label=gain_label_from_values(energy_cost_gain, safety_cost_gain),
+                energy_cost_gain=energy_cost_gain,
+                safety_cost_gain=safety_cost_gain,
+            )
+        )
+    return pairs
 
 
 def apply_preset_defaults(args: argparse.Namespace) -> None:
@@ -338,9 +404,21 @@ def build_command(
     cli_args: argparse.Namespace,
     objective: str | None = None,
     benchmark: BenchmarkSpec | None = None,
+    energy_cost_gain_override: float | None = None,
+    safety_cost_gain_override: float | None = None,
 ) -> list[str]:
     cmd = [sys.executable, "-m", method.train_module, *method.extra_args]
     resolved_objective = objective if objective is not None else getattr(cli_args, "objective", None)
+    resolved_energy_cost_gain = (
+        energy_cost_gain_override
+        if energy_cost_gain_override is not None
+        else cli_args.energy_cost_gain
+    )
+    resolved_safety_cost_gain = (
+        safety_cost_gain_override
+        if safety_cost_gain_override is not None
+        else cli_args.safety_cost_gain
+    )
     if benchmark is None:
         append_optional_arg(cmd, "--flow", cli_args.flow)
         append_optional_arg(cmd, "--difficulty", cli_args.difficulty)
@@ -360,8 +438,8 @@ def build_command(
             benchmark_manifest_path(benchmark, cli_args.benchmark_manifest_dir),
         )
     append_optional_arg(cmd, "--objective", resolved_objective)
-    append_optional_arg(cmd, "--energy-cost-gain", cli_args.energy_cost_gain)
-    append_optional_arg(cmd, "--safety-cost-gain", cli_args.safety_cost_gain)
+    append_optional_arg(cmd, "--energy-cost-gain", resolved_energy_cost_gain)
+    append_optional_arg(cmd, "--safety-cost-gain", resolved_safety_cost_gain)
     append_optional_arg(cmd, "--total-steps", cli_args.total_steps)
     append_optional_arg(cmd, "--random-steps", cli_args.random_steps)
     append_optional_arg(cmd, "--update-after", cli_args.update_after)
@@ -467,6 +545,15 @@ def main() -> None:
         default=None,
         help="Comma-separated reward objectives for objective-ablation suites.",
     )
+    parser.add_argument(
+        "--gain-pairs",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated energy:safety gain pairs for gain sweeps, for example "
+            "'0:0,0:0.5,0.0001:0.5'. Requires a single --objective."
+        ),
+    )
     parser.add_argument("--energy-cost-gain", type=float, default=None)
     parser.add_argument("--safety-cost-gain", type=float, default=None)
     parser.add_argument("--total-steps", type=int, default=None)
@@ -531,6 +618,16 @@ def main() -> None:
 
     if args.objective is not None and args.objectives is not None:
         raise ValueError("Use either --objective or --objectives, not both.")
+    if args.gain_pairs is not None and args.objectives is not None:
+        raise ValueError("Use either --objectives or --gain-pairs, not both.")
+    if args.gain_pairs is not None and args.objective is None:
+        raise ValueError("--gain-pairs requires a single --objective.")
+    if args.gain_pairs is not None and (
+        args.energy_cost_gain is not None or args.safety_cost_gain is not None
+    ):
+        raise ValueError(
+            "Use either explicit --energy-cost-gain/--safety-cost-gain or --gain-pairs, not both."
+        )
 
     method_keys = [item.strip() for item in args.methods.split(",") if item.strip()]
     unknown = [key for key in method_keys if key not in METHOD_SPECS]
@@ -547,6 +644,7 @@ def main() -> None:
     ]
     if unknown_objectives:
         raise ValueError(f"Unknown objective keys: {unknown_objectives}")
+    gain_specs = parse_gain_pairs(args.gain_pairs) if args.gain_pairs is not None else [None]
     seeds = parse_seed_list(args.seeds)
     suite_root = Path(args.suite_root)
     suite_root.mkdir(parents=True, exist_ok=True)
@@ -585,6 +683,15 @@ def main() -> None:
         "target_speed": args.target_speed,
         "objective": args.objective,
         "objectives": objectives,
+        "gain_pairs": [
+            {
+                "label": gain_spec.label,
+                "energy_cost_gain": gain_spec.energy_cost_gain,
+                "safety_cost_gain": gain_spec.safety_cost_gain,
+            }
+            for gain_spec in gain_specs
+            if gain_spec is not None
+        ],
         "energy_cost_gain": args.energy_cost_gain,
         "safety_cost_gain": args.safety_cost_gain,
         "total_steps": args.total_steps,
@@ -595,72 +702,115 @@ def main() -> None:
     benchmark_items: list[BenchmarkSpec | None] = benchmarks if benchmarks else [None]
     for benchmark in benchmark_items:
         for objective in objectives:
-            for method_key in method_keys:
-                method = METHOD_SPECS[method_key]
-                for seed in seeds:
-                    if benchmark is None:
-                        if objective is None:
-                            run_dir = suite_root / method.key / f"seed_{seed}"
+            for gain_spec in gain_specs:
+                for method_key in method_keys:
+                    method = METHOD_SPECS[method_key]
+                    for seed in seeds:
+                        if benchmark is None:
+                            if objective is None:
+                                if gain_spec is None:
+                                    run_dir = suite_root / method.key / f"seed_{seed}"
+                                else:
+                                    run_dir = suite_root / gain_spec.label / method.key / f"seed_{seed}"
+                            else:
+                                if gain_spec is None:
+                                    run_dir = suite_root / objective / method.key / f"seed_{seed}"
+                                else:
+                                    run_dir = (
+                                        suite_root / objective / gain_spec.label / method.key / f"seed_{seed}"
+                                    )
                         else:
-                            run_dir = suite_root / objective / method.key / f"seed_{seed}"
-                    else:
-                        if objective is None:
-                            run_dir = suite_root / benchmark.key / method.key / f"seed_{seed}"
-                        else:
-                            run_dir = suite_root / benchmark.key / objective / method.key / f"seed_{seed}"
-                    cmd = build_command(
-                        method,
-                        seed,
-                        run_dir,
-                        args,
-                        objective=objective,
-                        benchmark=benchmark,
-                    )
-                    run_record = {
-                        "benchmark": benchmark.key if benchmark is not None else None,
-                        "benchmark_description": (
-                            benchmark.description if benchmark is not None else None
-                        ),
-                        "factor_values": benchmark.factor_values if benchmark is not None else None,
-                        "objective": objective,
-                        "method": method.key,
-                        "seed": seed,
-                        "run_dir": str(run_dir),
-                        "train_module": method.train_module,
-                        "description": method.description,
-                        "command": cmd,
-                    }
-                    if benchmark is not None:
-                        run_record["eval_manifest"] = benchmark_manifest_path(
-                            benchmark,
-                            args.benchmark_manifest_dir,
+                            if objective is None:
+                                if gain_spec is None:
+                                    run_dir = suite_root / benchmark.key / method.key / f"seed_{seed}"
+                                else:
+                                    run_dir = (
+                                        suite_root / benchmark.key / gain_spec.label / method.key / f"seed_{seed}"
+                                    )
+                            else:
+                                if gain_spec is None:
+                                    run_dir = suite_root / benchmark.key / objective / method.key / f"seed_{seed}"
+                                else:
+                                    run_dir = (
+                                        suite_root
+                                        / benchmark.key
+                                        / objective
+                                        / gain_spec.label
+                                        / method.key
+                                        / f"seed_{seed}"
+                                    )
+                        cmd = build_command(
+                            method,
+                            seed,
+                            run_dir,
+                            args,
+                            objective=objective,
+                            benchmark=benchmark,
+                            energy_cost_gain_override=(
+                                None if gain_spec is None else gain_spec.energy_cost_gain
+                            ),
+                            safety_cost_gain_override=(
+                                None if gain_spec is None else gain_spec.safety_cost_gain
+                            ),
                         )
-                    manifest["runs"].append(run_record)
+                        run_record = {
+                            "benchmark": benchmark.key if benchmark is not None else None,
+                            "benchmark_description": (
+                                benchmark.description if benchmark is not None else None
+                            ),
+                            "factor_values": benchmark.factor_values if benchmark is not None else None,
+                            "objective": objective,
+                            "gain_label": None if gain_spec is None else gain_spec.label,
+                            "energy_cost_gain": (
+                                args.energy_cost_gain
+                                if gain_spec is None
+                                else gain_spec.energy_cost_gain
+                            ),
+                            "safety_cost_gain": (
+                                args.safety_cost_gain
+                                if gain_spec is None
+                                else gain_spec.safety_cost_gain
+                            ),
+                            "method": method.key,
+                            "seed": seed,
+                            "run_dir": str(run_dir),
+                            "train_module": method.train_module,
+                            "description": method.description,
+                            "command": cmd,
+                        }
+                        if benchmark is not None:
+                            run_record["eval_manifest"] = benchmark_manifest_path(
+                                benchmark,
+                                args.benchmark_manifest_dir,
+                            )
+                        manifest["runs"].append(run_record)
 
-                    final_eval_path = run_dir / "final_eval.json"
-                    if args.skip_existing and final_eval_path.exists():
+                        final_eval_path = run_dir / "final_eval.json"
+                        if args.skip_existing and final_eval_path.exists():
+                            label_parts = [
+                                benchmark.key if benchmark is not None else None,
+                                objective,
+                                None if gain_spec is None else gain_spec.label,
+                                method.key,
+                            ]
+                            label = " / ".join(part for part in label_parts if part is not None)
+                            print(f"[skip] {label} seed={seed} -> {run_dir}")
+                            continue
+
                         label_parts = [
                             benchmark.key if benchmark is not None else None,
                             objective,
+                            None if gain_spec is None else gain_spec.label,
                             method.key,
                         ]
                         label = " / ".join(part for part in label_parts if part is not None)
-                        print(f"[skip] {label} seed={seed} -> {run_dir}")
-                        continue
+                        print(f"[run] {label} seed={seed}")
+                        print("      " + shlex.join(cmd))
+                        if args.dry_run:
+                            continue
 
-                    label_parts = [
-                        benchmark.key if benchmark is not None else None,
-                        objective,
-                        method.key,
-                    ]
-                    label = " / ".join(part for part in label_parts if part is not None)
-                    print(f"[run] {label} seed={seed}")
-                    print("      " + shlex.join(cmd))
-                    if args.dry_run:
-                        continue
-
-                    run_dir.mkdir(parents=True, exist_ok=True)
-                    subprocess.run(cmd, check=True)
+                        run_dir.mkdir(parents=True, exist_ok=True)
+                        subprocess.run(cmd, check=True)
 
     with (suite_root / "suite_manifest.json").open("w", encoding="utf-8") as fp:
         json.dump(manifest, fp, indent=2)

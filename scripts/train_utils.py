@@ -84,6 +84,21 @@ def make_env_config_overrides(
     base_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     overrides = dict(base_overrides or {})
+
+    # Keep environment defaults aligned with CLI episode settings so that
+    # auto-resets in vectorized environments do not silently drift back to the
+    # config defaults (for example downstream geometry).
+    if getattr(args, "difficulty", None) is not None:
+        overrides["task_difficulty"] = args.difficulty
+    if getattr(args, "task_geometry", None) is not None:
+        overrides["task_geometry"] = args.task_geometry
+    if getattr(args, "action_mode", None) is not None:
+        overrides["action_mode"] = args.action_mode
+    if getattr(args, "target_speed", None) is not None:
+        overrides["target_auv_max_speed_mps"] = args.target_speed
+    elif getattr(args, "speed_ratio", None) is not None:
+        overrides["target_speed_ratio"] = args.speed_ratio
+
     objective = getattr(args, "objective", None)
     if objective is not None:
         objective = canonical_reward_objective(objective)

@@ -69,6 +69,22 @@ BENCHMARK_SPECS: dict[str, BenchmarkSpec] = {
             "target_speed_mps": 1.5,
         },
     ),
+    "single_u10_cross_tgt15": BenchmarkSpec(
+        key="single_u10_cross_tgt15",
+        description="Single-cylinder cross-stream benchmark with weaker incoming flow and higher actuation margin.",
+        flow_path=FLOW_SINGLE_U10,
+        task_geometry="cross_stream",
+        target_speed=1.5,
+        manifest_seed=1250,
+        tags=("geometry", "flow", "single", "u10", "target15"),
+        factor_values={
+            "topology": "single",
+            "flow_speed_mps": 1.0,
+            "reynolds": 150,
+            "task_geometry": "cross_stream",
+            "target_speed_mps": 1.5,
+        },
+    ),
     "single_u15_upstream_tgt15": BenchmarkSpec(
         key="single_u15_upstream_tgt15",
         description="Single-cylinder benchmark in the critical matched-speed upstream regime.",

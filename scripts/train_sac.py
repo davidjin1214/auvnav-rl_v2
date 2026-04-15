@@ -372,6 +372,11 @@ def train(args: argparse.Namespace) -> None:
     episode_length = np.zeros(num_envs, dtype=int)
     episode_idx = start_episode
     last_update: dict[str, float] = {}
+    next_eval_step = ((start_step // train_cfg.eval_every_steps) + 1) * train_cfg.eval_every_steps
+    next_checkpoint_step = (
+        ((start_step // train_cfg.checkpoint_every_steps) + 1)
+        * train_cfg.checkpoint_every_steps
+    )
     current_privileged_obs = (
         info.get("privileged_obs")
         if not is_vector_env
@@ -567,7 +572,7 @@ def train(args: argparse.Namespace) -> None:
                     batch = replay.sample_batch(train_cfg.batch_size, agent.device)
                 last_update = agent.update(batch)
 
-        if global_step % train_cfg.eval_every_steps == 0:
+        if global_step >= next_eval_step:
             metrics = evaluate_agent(
                 env=eval_env,
                 agent=agent,
@@ -622,8 +627,11 @@ def train(args: argparse.Namespace) -> None:
                     env_config_overrides,
                 ),
             )
+            next_eval_step = (
+                (global_step // train_cfg.eval_every_steps) + 1
+            ) * train_cfg.eval_every_steps
 
-        if global_step % train_cfg.checkpoint_every_steps == 0:
+        if global_step >= next_checkpoint_step:
             save_training_state(
                 save_dir=save_dir,
                 agent=agent,
@@ -642,6 +650,9 @@ def train(args: argparse.Namespace) -> None:
                     env_config_overrides,
                 ),
             )
+            next_checkpoint_step = (
+                (global_step // train_cfg.checkpoint_every_steps) + 1
+            ) * train_cfg.checkpoint_every_steps
 
     agent.save(str(save_dir / "agent_final.pt"))
     save_training_state(

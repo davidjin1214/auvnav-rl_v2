@@ -1,8 +1,31 @@
 # 离线 RL 快速验证方案
 
-> 文档版本：2026-04-17 rev.2
+> 文档版本：2026-04-17 rev.3
 > 定位：`offline_rl_implementation_plan.md` 的 Phase 0，目标是在 1-2 天内得到**可信**的离线 RL 先验结论
 > 核心问题：**在当前 repo 的数据接口和评估协议下，纯离线 RL 是否能稳定优于纯 BC，并在 deployable teacher 数据上显示真实价值？**
+
+---
+
+## 0. 当前实现状态
+
+状态标签说明：
+
+- `已实现`：代码已落地，并已做最小静态检查或 smoke test。
+- `部分实现`：已有基础代码支持，但未形成完整自动化闭环，或只覆盖文档中的一部分范围。
+- `未实现`：文档中的建议尚未编码。
+- `未跑实验`：代码已可执行，但仓库中尚未提交对应 Phase 0 正式实验结果。
+
+截至目前，Phase 0 **没有全部实现完**。当前状态更准确地说是：
+
+- `已实现`：`TD3+BC` agent、`train_offline.py`、`evaluate_offline.py`、`evaluate_baseline_on_manifest.py`、observation normalizer、checkpoint 中的 `obs_normalizer` 持久化、`privileged-critic` 可选协议、Phase 0 启动脚本 [`scripts/run_offline_td3bc_phase0.sh`](../scripts/run_offline_td3bc_phase0.sh)。
+- `部分实现`：训练/评估协议校验、离线数据 metadata 对齐检查、`best agent` 选择与最终评估。
+- `未实现`：support-broadened collector（如 `--action-noise-std`）、`mixed-deployable` 数据收集、holdout/index-aware sampler。
+- `未跑实验`：文档中 Step A / B / C 的正式实验结论还没有在仓库内固化。
+
+说明：
+
+- 文档中的命令前缀请按运行环境替换，可用 `python`，也可用 `conda run -n <env> python`。
+- 下文标题后的状态标签，表示“当前代码实现状态”，不是“研究上已经得到结论”。
 
 ---
 
@@ -127,7 +150,7 @@ Phase 0 不能照搬通用 offline RL recipe。必须先锁死下面四件事，
 
 ## 四、数据策略
 
-### 4.1 主数据集：`crosscomp-500`
+### 4.1 主数据集：`crosscomp-500` `【部分实现】`
 
 Phase 0 的主数据集应从 `crosscomp` 收集，因为它更接近 deployable teacher。
 
@@ -147,7 +170,7 @@ conda run -n mytorch1 python -m scripts.collect_offline_data \
     --output-dir offline_data/crosscomp_s0_h4_effv2_re150_u10cross
 ```
 
-### 4.2 二级数据集：`worldcomp-500`
+### 4.2 二级数据集：`worldcomp-500` `【部分实现】`
 
 `worldcomp` 不是 Phase 0 主结论的数据源，而是用来分析局部 teacher-gap。
 
@@ -167,7 +190,7 @@ conda run -n mytorch1 python -m scripts.collect_offline_data \
     --output-dir offline_data/worldcomp_s0_h4_effv2_re150_u10cross
 ```
 
-### 4.3 可选后续：support-broadened 数据集
+### 4.3 可选后续：support-broadened 数据集 `【未实现】`
 
 当前 [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) 默认执行确定性 baseline，不带动作噪声，也不混合多个 teacher。
 
@@ -185,7 +208,7 @@ Phase 0 之后最小的正确扩展方向是：
 - 或新增 `mixed-deployable` 数据收集；
 - 或显式加入 recovery transitions。
 
-### 4.4 数据检查
+### 4.4 数据检查 `【部分实现】`
 
 收集完成后检查 `metadata.json`，至少确认：
 
@@ -198,7 +221,13 @@ Phase 0 之后最小的正确扩展方向是：
 | `num_transitions` | `> 100k` 为宜 | 太少时过拟合风险高 |
 | `success_rate` | 不宜太低 | 成功轨迹稀缺会压低上界 |
 
-### 4.5 过拟合风险估算
+当前状态说明：
+
+- `metadata.json` 已由 [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) 输出。
+- [`scripts/train_offline.py`](../scripts/train_offline.py) 已对 `probe_layout`、`history_length`、`objective`、`reward_config`、`obs_dim`、`action_dim` 做一致性检查。
+- 但还没有单独的“dataset validator”脚本把这些检查独立成一条预检命令。
+
+### 4.5 过拟合风险估算 `【未实现】`
 
 ```text
 采样次数 / transition ≈ total_steps × batch_size / num_transitions
@@ -214,7 +243,7 @@ Phase 0 之后最小的正确扩展方向是：
 
 ## 五、实现边界
 
-### 5.1 建议新增的文件
+### 5.1 建议新增的文件 `【已实现】`
 
 ```text
 auv_nav/td3bc.py
@@ -222,6 +251,8 @@ scripts/train_offline.py
 scripts/evaluate_offline.py
 scripts/evaluate_baseline_on_manifest.py
 ```
+
+补充：当前还新增了一个批量启动脚本 [`scripts/run_offline_td3bc_phase0.sh`](../scripts/run_offline_td3bc_phase0.sh)，用于按本文档的默认协议直接发起 Phase 0 实验。
 
 ### 5.2 可以直接复用的部分
 
@@ -237,7 +268,7 @@ auv_nav/networks.py 中的 build_hidden_layers
 - 当前 `QNetwork` 定义在 [`auv_nav/sac.py`](../auv_nav/sac.py)，不在 `networks.py`；
 - 当前 [`scripts/evaluate.py`](../scripts/evaluate.py) 是 **SAC 专用**，不能假定 TD3+BC checkpoint 可直接复用。
 
-### 5.3 为什么推荐单独做 `evaluate_offline.py`
+### 5.3 为什么推荐单独做 `evaluate_offline.py` `【已实现】`
 
 因为当前 `evaluate.py` 假定：
 
@@ -250,7 +281,7 @@ Phase 0 更稳妥的做法是：
 - 只要求 `TD3BCAgent + TD3BCConfig + evaluate_agent()` 跑通；
 - 等纯离线算法不止一个后，再统一做 evaluator dispatch。
 
-### 5.4 `trainer_state.json` 的最小字段
+### 5.4 `trainer_state.json` 的最小字段 `【部分实现】`
 
 为了保证训练和评估协议一致，建议离线 checkpoint 至少保存：
 
@@ -258,7 +289,7 @@ Phase 0 更稳妥的做法是：
 {
   "algo": "td3bc",
   "agent_config": "...",
-  "offline_data": "...",
+  "offline_data_path": "...",
   "flow_path": "...",
   "probe_layout": "s0",
   "history_length": 4,
@@ -278,7 +309,13 @@ Phase 0 更稳妥的做法是：
 }
 ```
 
-### 5.5 关于 holdout
+当前状态说明：
+
+- 核心字段已经实现，且实际会写入 `algo`、`agent_config`、`flow_path`、`probe_layout`、`history_length`、`reset_options`、`env_config_overrides`、`obs_normalizer`、`agent_path`。
+- 真实实现里字段名是 `offline_data_path`，不是 `offline_data`。
+- 当前还额外保存了 `protocol`、`best_eval_metrics`、`best_eval_step`、`offline_metadata` 等辅助字段。
+
+### 5.5 关于 holdout `【未实现】`
 
 当前 [`TransitionReplay.sample_batch()`](../auv_nav/replay.py) 直接从全 buffer 均匀采样。只记录 `holdout_indices` 并不能真正把验证集排除出训练。
 
@@ -292,7 +329,7 @@ Phase 0 更稳妥的做法是：
 
 ## 六、TD3+BC 的最小实现建议
 
-### 6.1 网络与接口
+### 6.1 网络与接口 `【已实现】`
 
 `TD3BCAgent` 只需满足以下约束：
 
@@ -303,7 +340,7 @@ Phase 0 更稳妥的做法是：
 
 这样即可与 [`evaluate_agent()`](../scripts/train_utils.py) 兼容。
 
-### 6.2 状态归一化是硬要求
+### 6.2 状态归一化是硬要求 `【已实现】`
 
 TD3+BC 的最小正确实现必须包含 observation normalization。
 
@@ -316,7 +353,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 
 若缺少这一步，不应称为“原始 TD3+BC”。
 
-### 6.3 `privileged_obs` 的正确定位
+### 6.3 `privileged_obs` 的正确定位 `【已实现（代码支持）】`
 
 建议把它做成**可选二级 ablation**，而不是 Phase 0 的默认主线。
 
@@ -332,7 +369,13 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 - `worldcomp` 二级实验：可额外做 `privileged-critic` ablation；
 - 所有图表和表格必须显式标注 protocol。
 
-### 6.4 关键超参
+当前状态说明：
+
+- [`auv_nav/td3bc.py`](../auv_nav/td3bc.py) 已支持 `privileged_obs_dim > 0` 的 critic。
+- actor update 的语义已显式做成 `privileged_actor_update_mode ∈ {zeros, batch}`，不再隐含在实现细节里。
+- 但 `worldcomp + privileged-critic` 的正式实验结果还没有在仓库里沉淀。
+
+### 6.4 关键超参 `【已实现】`
 
 保留最少的超参扫描：
 
@@ -349,7 +392,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 
 ## 七、训练与评估协议
 
-### 7.1 Step A：`crosscomp` smoke test
+### 7.1 Step A：`crosscomp` smoke test `【可执行，未跑正式实验】`
 
 - 数据集：`crosscomp_s0_h4_effv2_re150_u10cross`
 - `alpha ∈ {0.0, 2.5}`
@@ -362,7 +405,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 - 确认状态归一化闭环正确；
 - 先判断 `alpha > 0` 相对 BC 是否出现正信号。
 
-### 7.2 Step B：`crosscomp` full quick validation
+### 7.2 Step B：`crosscomp` full quick validation `【可执行，未跑正式实验】`
 
 - `alpha ∈ {0.0, 1.0, 2.5, 5.0}`
 - `seed ∈ {42, 43}`
@@ -370,7 +413,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 
 只有当 Step A 正常时才做 Step B。
 
-### 7.3 Step C：`worldcomp` teacher-gap diagnostic
+### 7.3 Step C：`worldcomp` teacher-gap diagnostic `【可执行，未跑正式实验】`
 
 在 `crosscomp` 得到 best alpha 之后，再去 `worldcomp` 上做诊断：
 
@@ -378,7 +421,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 - 如有需要，再加 `privileged-critic` ablation；
 - `worldcomp` 结果不作为 Phase 0 主 gate。
 
-### 7.4 推荐训练命令
+### 7.4 推荐训练命令 `【已实现】`
 
 先跑 `crosscomp` smoke test：
 
@@ -422,7 +465,12 @@ conda run -n mytorch1 python -m scripts.train_offline \
 
 `train_offline.py` 建议支持 `--manifest`，中间评估就直接走固定 benchmark，不要用随机 reset。
 
-### 7.5 最终评估
+当前状态说明：
+
+- [`scripts/train_offline.py`](../scripts/train_offline.py) 已支持 `--manifest`。
+- [`scripts/run_offline_td3bc_phase0.sh`](../scripts/run_offline_td3bc_phase0.sh) 已把 Step A / B 所需的 benchmark、dataset、alpha sweep 和 final eval 串成一条可复用工作流。
+
+### 7.5 最终评估 `【已实现】`
 
 最终结果必须在固定 manifest 上重新评估，建议 100 episodes：
 
@@ -434,7 +482,7 @@ conda run -n mytorch1 python -m scripts.evaluate_offline \
     --device cuda
 ```
 
-### 7.6 行为策略对照
+### 7.6 行为策略对照 `【已实现】`
 
 如果要和 teacher 做严格对比，建议补一个轻量 baseline evaluator，而不是依赖当前 `demo.py`。原因是：
 
@@ -446,11 +494,13 @@ conda run -n mytorch1 python -m scripts.evaluate_offline \
 - 在 `evaluate_offline.py` 旁边加一个 `evaluate_baseline_on_manifest.py`；
 - 或给 `evaluate_offline.py` 增加 `--baseline-policy` 模式。
 
+当前状态：前一种方案已经实现，即 [`scripts/evaluate_baseline_on_manifest.py`](../scripts/evaluate_baseline_on_manifest.py)。
+
 ---
 
 ## 八、监控与诊断
 
-### 8.1 训练时至少记录这些指标
+### 8.1 训练时至少记录这些指标 `【部分实现】`
 
 | 指标 | 优先级 | 用途 |
 |---|---|---|
@@ -460,6 +510,15 @@ conda run -n mytorch1 python -m scripts.evaluate_offline \
 | `critic_loss` | P1 | 训练稳定性 |
 | `actor_loss` | P1 | 策略更新方向 |
 | `bc_loss` | P1 | `alpha=0` 与 `alpha>0` 的行为偏离程度 |
+
+当前状态说明：
+
+- 已实现：`eval_success_rate`、`eval_return`、`mean_q`、`critic_loss`、`actor_loss`、`bc_loss`。
+- 指标输出位置：
+  - 训练日志：`train_log.jsonl`
+  - 周期评估：`eval_log.csv`
+  - 最终评估：`final_eval.json`
+- 当前 `eval_log.csv` 主要记录评估指标，训练损失仍以 `train_log.jsonl` 为主，没有统一汇总到一张表里。
 
 ### 8.2 最常见失败模式
 

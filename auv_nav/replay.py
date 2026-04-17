@@ -89,7 +89,7 @@ class TransitionReplay:
         return self.size >= max(1, int(batch_size))
 
     def state_dict(self) -> dict[str, Any]:
-        return {
+        state = {
             "config": {
                 "capacity": self.config.capacity,
                 "privileged_obs_dim": self.config.privileged_obs_dim,

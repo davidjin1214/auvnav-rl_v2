@@ -218,35 +218,54 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
   预先采样并固化一组评估 episode，供算法间公平对比。
 - `generate_standard_benchmarks.py`
   生成仓库约定的标准 benchmark manifests，显式拆分 `geometry / flow / topology / speed` 因子。
+- `benchmark_catalog.py`
+  集中定义所有 benchmark 的 `BenchmarkSpec`（流场路径、任务几何、目标速度等），是 benchmark 相关脚本的注册表。
+- `benchmark_utils.py`
+  `BenchmarkManifest` / `BenchmarkEpisode` 数据类及序列化工具函数，被 `generate_benchmark_manifest.py` 等调用。
 - `demo.py`
   跑单次或少量 episode，对比 baseline 或策略行为。
 - `visualize.py`
   生成更详细的轨迹与流场动画。
+- `visualize_flow_field.py`
+  独立流场可视化脚本，不依赖 PyTorch 或 RL 环境，直接从 `wake_data/*.npy` 生成出版级静态图（涡量快照网格、时均流统计、Re 对比等）。
 - `figure_paper.py`
   生成论文级静态图。
+- `plot_suite.py`, `plot_training.py`
+  绘制训练曲线与消融图。
+- `plot_wake_profiles.py`
+  尾迹流速剖面图。
+- `plot_wake_flow_overlays.py`
+  流场轨迹叠加图。
+- `plot_probe_layouts.py`
+  探针布局示意图。
 - `run_suite.py`
   按 `benchmark × objective × gain × method × seed` 组织批量实验；当某些维度未启用时会自动退化成更简单的目录结构。
 - `summarize_suite.py`
   按实际启用的实验维度汇总多个实验日志，并输出统一指标。
+- `train_utils.py`
+  训练/评估的公共工具函数。
+- `repair_tandem_metadata.py`
+  一次性维护工具：修复串联双圆柱 case 中 Strouhal 监测点位置错误导致的 `St_measured` 和 `phase.npy` 异常。
 
 当前代码里的 factorized benchmark presets 仍默认走 `efficiency_v1`，这是为了保持既有预设和实验目录兼容。
 如果你要开始新的主实验，建议显式覆盖成 `--objective efficiency_v2`。
 旧的 legacy preset 仍保持兼容旧实验口径。
 如果要专门比较目标函数，可以直接使用 `objective_ablation_v1` preset。
 如果 `efficiency_v1` 在硬 benchmark 上学不稳，可以直接使用 `efficiency_gain_sweep_v1` preset，围绕低安全/低能耗权重做小范围扫描。当前 sweep 的推荐结果是 `efficiency_v2`。
-- `plot_suite.py`, `plot_training.py`
-  绘制训练曲线与消融图。
-- `train_utils.py`
-  训练/评估的公共工具函数。
 
 ### `tests/`
 
-当前测试重点在两类：
+当前共有 9 个测试文件，覆盖以下维度：
 
-- 改进版 SAC
-- 多圆柱 LBM 数据生成
-
-这说明项目最容易出错、也最值得固定行为的部分，正是算法实现和流场生成。
+- `test_improved_sac.py` — SAC 算法改进（LayerNorm、DroQ、非对称 Critic 等）
+- `test_multi_cylinder_lbm.py` — 多圆柱 LBM 流场生成
+- `test_benchmark_protocol.py` — benchmark 固定 episode 协议的正确性
+- `test_benchmark_suite.py` — benchmark suite 组织与加载
+- `test_best_checkpoint.py` — 最佳 checkpoint 选取逻辑
+- `test_reward_objective.py` — reward objective preset（arrival / efficiency）行为
+- `test_suite_summary.py` — 多实验日志汇总输出
+- `test_plot_suite.py` — 绘图脚本基本可执行性
+- `test_num_envs_default.py` — 并行环境数量自适应默认值
 
 ### `docs/`
 
@@ -258,6 +277,8 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - `docs/environment_design.md`
 - `docs/SAC_improvements_survey.md`
 - `docs/world_model_and_offline_rl_survey.md`
+- `docs/systematic_improved_sac_experiment_plan.md` — 针对 SAC 改进项（LayerNorm / Dropout / 非对称 Critic / RLPD）的系统实验方案，包含可归因、可复现的对照设计
+- `docs/offline_rl_implementation_plan.md` — 纯离线 RL 算法实现方案（FQL / XQL / TD3+BC / REBRAC），含算法原理、代码骨架、数据策略与实验规划
 
 ### `wake_data/`
 
@@ -551,6 +572,7 @@ python -m scripts.generate_wake --profile side_by_side_G35_nav
 ## 快速索引
 
 - 想生成流场：[`scripts/generate_wake.py`](scripts/generate_wake.py)
+- 想可视化流场（独立，无需 checkpoint）：[`scripts/visualize_flow_field.py`](scripts/visualize_flow_field.py)
 - 想看流场生成文档：[`docs/generate_wake_usage.md`](docs/generate_wake_usage.md)
 - 想训练 agent：[`scripts/train_sac.py`](scripts/train_sac.py)
 - 想收集离线数据：[`scripts/collect_offline_data.py`](scripts/collect_offline_data.py)

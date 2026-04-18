@@ -27,6 +27,7 @@ HISTORY_LENGTH="${HISTORY_LENGTH:-4}"
 DATASET_POLICY="${DATASET_POLICY:-crosscomp}"
 DATASET_EPISODES="${DATASET_EPISODES:-500}"
 DATASET_SEED="${DATASET_SEED:-0}"
+COLLECT_WORKERS="${COLLECT_WORKERS:-4}"
 DATASET_NAME="${DATASET_NAME:-${DATASET_POLICY}_${PROBE_LAYOUT}_h${HISTORY_LENGTH}_${OBJECTIVE}_re150_u10cross}"
 DATASET_DIR="${DATASET_DIR:-offline_data/${DATASET_NAME}}"
 
@@ -55,6 +56,14 @@ EVAL_EVERY="${EVAL_EVERY:-10000}"
 EVAL_EPISODES="${EVAL_EPISODES:-30}"
 LOG_EVERY="${LOG_EVERY:-1000}"
 CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-10000}"
+TENSOR_REPLAY="${TENSOR_REPLAY:-1}"
+TRAIN_SKIP_FINAL_EVAL="${TRAIN_SKIP_FINAL_EVAL:-1}"
+RUN_BASELINE_EVAL="${RUN_BASELINE_EVAL:-1}"
+RUN_FINAL_EVAL="${RUN_FINAL_EVAL:-1}"
+EVAL_WORKERS="${EVAL_WORKERS:-4}"
+EVAL_WORKER_DEVICE="${EVAL_WORKER_DEVICE:-cpu}"
+TRAIN_EVAL_WORKERS="${TRAIN_EVAL_WORKERS:-$EVAL_WORKERS}"
+TRAIN_EVAL_WORKER_DEVICE="${TRAIN_EVAL_WORKER_DEVICE:-$EVAL_WORKER_DEVICE}"
 
 USE_LAYERNORM="${USE_LAYERNORM:-0}"
 USE_ASYMMETRIC_CRITIC="${USE_ASYMMETRIC_CRITIC:-0}"
@@ -111,10 +120,15 @@ run_collect() {
     --objective "$OBJECTIVE" \
     --episodes "$DATASET_EPISODES" \
     --seed "$DATASET_SEED" \
+    --num-workers "$COLLECT_WORKERS" \
     --output-dir "$DATASET_DIR"
 }
 
 run_baseline_eval() {
+  if [[ "$RUN_BASELINE_EVAL" != "1" ]]; then
+    echo "[skip] baseline evaluation disabled"
+    return
+  fi
   mkdir -p "$RESULTS_ROOT/baselines"
   run_cmd "${PYTHON_CMD[@]}" -m scripts.evaluate_baseline_on_manifest \
     --policy "$DATASET_POLICY" \
@@ -125,6 +139,7 @@ run_baseline_eval() {
     --target-speed "$TARGET_SPEED" \
     --objective "$OBJECTIVE" \
     --manifest "$FINAL_MANIFEST_PATH" \
+    --num-workers "$EVAL_WORKERS" \
     --output-json "$RESULTS_ROOT/baselines/${DATASET_POLICY}_final_eval.json"
 }
 
@@ -145,11 +160,18 @@ train_one() {
 
   extra_layernorm=()
   extra_priv=()
+  extra_perf=()
   if [[ "$USE_LAYERNORM" == "1" ]]; then
     extra_layernorm=(--use-layernorm)
   fi
   if [[ "$USE_ASYMMETRIC_CRITIC" == "1" ]]; then
     extra_priv=(--use-asymmetric-critic --privileged-actor-update-mode "$PRIVILEGED_ACTOR_UPDATE_MODE")
+  fi
+  if [[ "$TENSOR_REPLAY" != "1" ]]; then
+    extra_perf+=(--disable-tensor-replay)
+  fi
+  if [[ "$TRAIN_SKIP_FINAL_EVAL" == "1" ]]; then
+    extra_perf+=(--skip-final-eval)
   fi
 
   run_cmd "${PYTHON_CMD[@]}" -m scripts.train_offline \
@@ -176,19 +198,28 @@ train_one() {
     --grad-clip-norm "$GRAD_CLIP_NORM" \
     --eval-every "$EVAL_EVERY" \
     --eval-episodes "$EVAL_EPISODES" \
+    --eval-workers "$TRAIN_EVAL_WORKERS" \
+    --eval-worker-device "$TRAIN_EVAL_WORKER_DEVICE" \
     --log-every "$LOG_EVERY" \
     --checkpoint-every "$CHECKPOINT_EVERY" \
     --save-dir "$run_dir" \
     --seed "$seed" \
     --device "$DEVICE" \
     "${extra_layernorm[@]+"${extra_layernorm[@]}"}" \
-    "${extra_priv[@]+"${extra_priv[@]}"}"
+    "${extra_priv[@]+"${extra_priv[@]}"}" \
+    "${extra_perf[@]+"${extra_perf[@]}"}"
 
-  run_cmd "${PYTHON_CMD[@]}" -m scripts.evaluate_offline \
-    --checkpoint "$run_dir" \
-    --manifest "$FINAL_MANIFEST_PATH" \
-    --device "$DEVICE" \
-    --output-json "$final_eval_json"
+  if [[ "$RUN_FINAL_EVAL" == "1" ]]; then
+    run_cmd "${PYTHON_CMD[@]}" -m scripts.evaluate_offline \
+      --checkpoint "$run_dir" \
+      --manifest "$FINAL_MANIFEST_PATH" \
+      --device "$DEVICE" \
+      --num-workers "$EVAL_WORKERS" \
+      --worker-device "$EVAL_WORKER_DEVICE" \
+      --output-json "$final_eval_json"
+  else
+    echo "[skip] final evaluation disabled: ${run_dir}"
+  fi
 }
 
 run_train_sweep() {

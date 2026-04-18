@@ -27,6 +27,7 @@ from .train_utils import (
     default_device,
     discover_flow_path,
     evaluate_agent,
+    evaluate_offline_policy_parallel,
     extract_env_config_overrides,
     make_env_config_overrides,
     make_planar_env,
@@ -47,6 +48,10 @@ class OfflineTrainConfig:
     device: str = "cuda:0"
     checkpoint_every_steps: int = 10_000
     history_length: int = 1
+    tensor_replay: bool = True
+    skip_final_eval: bool = False
+    eval_workers: int = 1
+    eval_worker_device: str = "cpu"
 
 
 def _json_ready(value: Any) -> Any:
@@ -155,6 +160,43 @@ def _metric_score(metrics: dict[str, Any]) -> tuple[float, float]:
     )
 
 
+def _evaluate_current_policy(
+    *,
+    eval_env: Any,
+    agent: TD3BCAgent,
+    eval_flow_path: str,
+    train_cfg: OfflineTrainConfig,
+    reset_options: dict[str, Any],
+    probe_layout: str,
+    env_config_overrides: dict[str, Any],
+    seed: int,
+    num_episodes: int,
+    benchmark_manifest: Any,
+) -> dict[str, Any]:
+    if train_cfg.eval_workers <= 1:
+        return evaluate_agent(
+            env=eval_env,
+            agent=agent,
+            reset_options=reset_options,
+            seed=seed,
+            num_episodes=num_episodes,
+            benchmark_manifest=benchmark_manifest,
+        )
+    return evaluate_offline_policy_parallel(
+        policy_payload=agent.export_policy_payload(),
+        flow_path=eval_flow_path,
+        history_length=train_cfg.history_length,
+        probe_layout=probe_layout,
+        env_config_overrides=env_config_overrides,
+        reset_options=reset_options,
+        seed=seed,
+        num_episodes=num_episodes,
+        benchmark_manifest=benchmark_manifest,
+        num_workers=train_cfg.eval_workers,
+        worker_device=train_cfg.eval_worker_device,
+    )
+
+
 def _save_offline_training_state(
     save_dir: Path,
     agent: TD3BCAgent,
@@ -226,6 +268,10 @@ def train(args: argparse.Namespace) -> None:
         device=args.device,
         checkpoint_every_steps=args.checkpoint_every,
         history_length=args.history_length,
+        tensor_replay=not args.disable_tensor_replay,
+        skip_final_eval=args.skip_final_eval,
+        eval_workers=max(1, int(args.eval_workers)),
+        eval_worker_device=args.eval_worker_device,
     )
 
     random.seed(train_cfg.seed)
@@ -290,6 +336,8 @@ def train(args: argparse.Namespace) -> None:
         eps=args.normalizer_eps,
         device=train_cfg.device,
     )
+    if train_cfg.tensor_replay:
+        offline_replay.enable_tensor_cache(train_cfg.device)
     agent_cfg = TD3BCConfig(
         obs_dim=obs_dim,
         action_dim=action_dim,
@@ -325,12 +373,16 @@ def train(args: argparse.Namespace) -> None:
     best_metrics: dict[str, Any] | None = None
     best_step: int | None = None
     best_score = (-np.inf, -np.inf)
-    next_eval_step = train_cfg.eval_every_steps
-    next_checkpoint_step = train_cfg.checkpoint_every_steps
+    next_eval_step = train_cfg.eval_every_steps if train_cfg.eval_every_steps > 0 else None
+    next_checkpoint_step = (
+        train_cfg.checkpoint_every_steps if train_cfg.checkpoint_every_steps > 0 else None
+    )
 
     print(
         f"[offline] transitions={len(offline_replay)} obs_dim={offline_replay.obs_dim} "
-        f"action_dim={offline_replay.action_dim} protocol={protocol_label}"
+        f"action_dim={offline_replay.action_dim} protocol={protocol_label} "
+        f"tensor_replay={'on' if offline_replay.has_tensor_cache(agent.device) else 'off'} "
+        f"eval_workers={train_cfg.eval_workers}"
     )
 
     for step in range(1, train_cfg.total_steps + 1):
@@ -349,11 +401,15 @@ def train(args: argparse.Namespace) -> None:
                 f"bc={metrics['bc_loss']:.3f} lambda={metrics['lambda']:.3f}"
             )
 
-        if step >= next_eval_step:
-            eval_metrics = evaluate_agent(
-                env=eval_env,
+        if next_eval_step is not None and step >= next_eval_step:
+            eval_metrics = _evaluate_current_policy(
+                eval_env=eval_env,
                 agent=agent,
+                eval_flow_path=eval_flow_path,
+                train_cfg=train_cfg,
                 reset_options=reset_options,
+                probe_layout=probe_layout,
+                env_config_overrides=env_config_overrides,
                 seed=train_cfg.seed + 10_000 + step,
                 num_episodes=train_cfg.eval_episodes,
                 benchmark_manifest=benchmark_manifest,
@@ -407,9 +463,9 @@ def train(args: argparse.Namespace) -> None:
                 best_step=best_step,
                 best_agent_name="agent_best.pt" if best_metrics is not None else None,
             )
-            next_eval_step = ((step // train_cfg.eval_every_steps) + 1) * train_cfg.eval_every_steps
+            next_eval_step += train_cfg.eval_every_steps
 
-        if step >= next_checkpoint_step:
+        if next_checkpoint_step is not None and step >= next_checkpoint_step:
             _save_offline_training_state(
                 save_dir,
                 agent,
@@ -428,26 +484,29 @@ def train(args: argparse.Namespace) -> None:
                 best_step=best_step,
                 best_agent_name="agent_best.pt" if best_metrics is not None else None,
             )
-            next_checkpoint_step = (
-                (step // train_cfg.checkpoint_every_steps) + 1
-            ) * train_cfg.checkpoint_every_steps
+            next_checkpoint_step += train_cfg.checkpoint_every_steps
 
     agent.save(str(save_dir / "agent_final.pt"))
-    final_metrics = evaluate_agent(
-        env=eval_env,
-        agent=agent,
-        reset_options=reset_options,
-        seed=train_cfg.seed + 20_000,
-        num_episodes=train_cfg.eval_episodes,
-        benchmark_manifest=benchmark_manifest,
-    )
-    with (save_dir / "final_eval.json").open("w", encoding="utf-8") as fp:
-        json.dump(_json_ready(final_metrics), fp, indent=2)
+    if not train_cfg.skip_final_eval:
+        final_metrics = _evaluate_current_policy(
+            eval_env=eval_env,
+            agent=agent,
+            eval_flow_path=eval_flow_path,
+            train_cfg=train_cfg,
+            reset_options=reset_options,
+            probe_layout=probe_layout,
+            env_config_overrides=env_config_overrides,
+            seed=train_cfg.seed + 20_000,
+            num_episodes=train_cfg.eval_episodes,
+            benchmark_manifest=benchmark_manifest,
+        )
+        with (save_dir / "final_eval.json").open("w", encoding="utf-8") as fp:
+            json.dump(_json_ready(final_metrics), fp, indent=2)
 
-    if _metric_score(final_metrics) > best_score:
-        best_metrics = final_metrics
-        best_step = train_cfg.total_steps
-        agent.save(str(save_dir / "agent_best.pt"))
+        if _metric_score(final_metrics) > best_score:
+            best_metrics = final_metrics
+            best_step = train_cfg.total_steps
+            agent.save(str(save_dir / "agent_best.pt"))
 
     _save_offline_training_state(
         save_dir,
@@ -481,6 +540,7 @@ def train(args: argparse.Namespace) -> None:
         fp.write("ResetOptions\n")
         for key, value in reset_options.items():
             fp.write(f"{key}={value}\n")
+    eval_env.close()
 
 
 def main() -> None:
@@ -511,8 +571,25 @@ def main() -> None:
     parser.add_argument("--safety-cost-gain", type=float, default=None)
     parser.add_argument("--total-steps", type=int, default=200_000)
     parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--eval-every", type=int, default=10_000)
+    parser.add_argument(
+        "--eval-every",
+        type=int,
+        default=10_000,
+        help="Periodic evaluation interval in gradient steps. Set to 0 to disable.",
+    )
     parser.add_argument("--eval-episodes", type=int, default=30)
+    parser.add_argument(
+        "--eval-workers",
+        type=int,
+        default=1,
+        help="Number of worker processes for periodic/final evaluation inside training.",
+    )
+    parser.add_argument(
+        "--eval-worker-device",
+        type=str,
+        default="cpu",
+        help="Torch device used by in-training evaluation workers when --eval-workers > 1.",
+    )
     parser.add_argument("--log-every", type=int, default=1_000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
@@ -535,7 +612,24 @@ def main() -> None:
     parser.add_argument("--normalizer-eps", type=float, default=1e-3)
     parser.add_argument("--use-layernorm", action="store_true", default=False)
     parser.add_argument("--dropout-rate", type=float, default=0.0)
-    parser.add_argument("--checkpoint-every", type=int, default=10_000)
+    parser.add_argument(
+        "--checkpoint-every",
+        type=int,
+        default=10_000,
+        help="Checkpoint interval in gradient steps. Set to 0 to disable periodic checkpoints.",
+    )
+    parser.add_argument(
+        "--disable-tensor-replay",
+        action="store_true",
+        default=False,
+        help="Keep offline data in numpy form and copy each batch on demand.",
+    )
+    parser.add_argument(
+        "--skip-final-eval",
+        action="store_true",
+        default=False,
+        help="Skip the final evaluation pass. Useful when a separate evaluator job will run.",
+    )
     parser.add_argument(
         "--probe-layout",
         choices=["s0", "s1", "s2"],

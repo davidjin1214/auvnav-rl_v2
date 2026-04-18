@@ -49,6 +49,8 @@ class TransitionReplay:
         else:
             self.privileged_obs = None
             self.next_privileged_obs = None
+        self._tensor_cache: dict[str, "torch.Tensor"] | None = None
+        self._tensor_cache_device: "torch.device | None" = None
 
     def __len__(self) -> int:
         return self.size
@@ -64,6 +66,8 @@ class TransitionReplay:
         privileged_obs: np.ndarray | None = None,
         next_privileged_obs: np.ndarray | None = None,
     ) -> None:
+        if self._tensor_cache is not None:
+            self.clear_tensor_cache()
         idx = self.ptr
         self.observations[idx] = np.asarray(obs, dtype=np.float32)
         self.actions[idx] = np.asarray(action, dtype=np.float32)
@@ -87,6 +91,69 @@ class TransitionReplay:
 
     def ready(self, batch_size: int) -> bool:
         return self.size >= max(1, int(batch_size))
+
+    def clear_tensor_cache(self) -> None:
+        self._tensor_cache = None
+        self._tensor_cache_device = None
+
+    def enable_tensor_cache(self, device: "torch.device | str") -> None:
+        """Materialize a fixed replay buffer as tensors on the target device."""
+        require_torch()
+        if self.size <= 0:
+            raise RuntimeError("Cannot build tensor cache for an empty replay buffer.")
+        target_device = torch.device(device)
+        self._tensor_cache = {
+            "obs": torch.as_tensor(
+                self.observations[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            ),
+            "actions": torch.as_tensor(
+                self.actions[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            ),
+            "rewards": torch.as_tensor(
+                self.rewards[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            ),
+            "costs": torch.as_tensor(
+                self.costs[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            ),
+            "next_obs": torch.as_tensor(
+                self.next_observations[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            ),
+            "dones": torch.as_tensor(
+                self.dones[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            ),
+        }
+        if self.privileged_obs is not None:
+            self._tensor_cache["privileged_obs"] = torch.as_tensor(
+                self.privileged_obs[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            )
+        if self.next_privileged_obs is not None:
+            self._tensor_cache["next_privileged_obs"] = torch.as_tensor(
+                self.next_privileged_obs[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            )
+        self._tensor_cache_device = target_device
+
+    def has_tensor_cache(self, device: "torch.device | str | None" = None) -> bool:
+        if self._tensor_cache is None or self._tensor_cache_device is None:
+            return False
+        if device is None:
+            return True
+        return self._tensor_cache_device == torch.device(device)
 
     def state_dict(self) -> dict[str, Any]:
         state = {
@@ -190,6 +257,13 @@ class TransitionReplay:
         if self.size <= 0:
             raise RuntimeError("Replay buffer is empty.")
         batch_size = max(1, int(batch_size))
+        cache_device = torch.device(device)
+        if self._tensor_cache is not None and self._tensor_cache_device == cache_device:
+            indices = torch.randint(0, self.size, size=(batch_size,), device=cache_device)
+            return {
+                key: value.index_select(0, indices)
+                for key, value in self._tensor_cache.items()
+            }
         indices = np.random.randint(0, self.size, size=batch_size)
         batch = {
             "obs":      torch.as_tensor(self.observations[indices], device=device),

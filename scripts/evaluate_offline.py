@@ -12,6 +12,7 @@ from auv_nav.td3bc import TD3BCAgent, TD3BCConfig
 from .train_utils import (
     default_device,
     evaluate_agent,
+    evaluate_offline_checkpoint_parallel,
     extract_env_config_overrides,
     load_trainer_state,
     make_env_config_overrides,
@@ -81,6 +82,18 @@ def main() -> None:
         default=default_device(),
         help="Torch device. Defaults to cuda:0 when CUDA is available, otherwise cpu.",
     )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=1,
+        help="Parallel evaluation workers. Values >1 run manifest episodes in separate worker processes.",
+    )
+    parser.add_argument(
+        "--worker-device",
+        type=str,
+        default="cpu",
+        help="Torch device used inside parallel evaluation workers.",
+    )
     parser.add_argument("--flow", type=str, default=None)
     parser.add_argument("--manifest", type=Path, default=None,
                         help="Path to a fixed benchmark manifest JSON.")
@@ -146,14 +159,6 @@ def main() -> None:
     flow_path = args.flow or (
         benchmark_manifest.flow_path if benchmark_manifest is not None else trainer_state.get("flow_path")
     )
-    env = make_planar_env(
-        flow_path,
-        history_length=history_length,
-        probe_layout=probe_layout,
-        env_config_overrides=env_config_overrides,
-    )
-    agent = TD3BCAgent(TD3BCConfig(**agent_cfg_dict), device=args.device)
-
     checkpoint_root = Path(args.checkpoint)
     run_root = checkpoint_root if checkpoint_root.is_dir() else checkpoint_root.parent
     default_agent_file = (
@@ -164,16 +169,43 @@ def main() -> None:
     )
     if default_agent_file is None:
         raise ValueError("Checkpoint metadata does not specify an agent file.")
-    agent.load(str(run_root / default_agent_file))
+    checkpoint_path = str(run_root / default_agent_file)
 
-    metrics = evaluate_agent(
-        env=env,
-        agent=agent,
-        reset_options=reset_options,
-        seed=args.seed,
-        num_episodes=args.episodes,
-        benchmark_manifest=benchmark_manifest,
-    )
+    if args.num_workers > 1:
+        metrics = evaluate_offline_checkpoint_parallel(
+            checkpoint_path=checkpoint_path,
+            agent_config=agent_cfg_dict,
+            flow_path=str(flow_path),
+            history_length=history_length,
+            probe_layout=probe_layout,
+            env_config_overrides=env_config_overrides,
+            reset_options=reset_options,
+            seed=args.seed,
+            num_episodes=args.episodes,
+            benchmark_manifest=benchmark_manifest,
+            num_workers=args.num_workers,
+            worker_device=args.worker_device,
+        )
+    else:
+        env = make_planar_env(
+            flow_path,
+            history_length=history_length,
+            probe_layout=probe_layout,
+            env_config_overrides=env_config_overrides,
+        )
+        try:
+            agent = TD3BCAgent(TD3BCConfig(**agent_cfg_dict), device=args.device)
+            agent.load(checkpoint_path)
+            metrics = evaluate_agent(
+                env=env,
+                agent=agent,
+                reset_options=reset_options,
+                seed=args.seed,
+                num_episodes=args.episodes,
+                benchmark_manifest=benchmark_manifest,
+            )
+        finally:
+            env.close()
     _print_metrics(metrics, args.manifest or (Path(trainer_state["manifest"]) if trainer_state.get("manifest") else None))
 
     if args.output_json is not None:

@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 import numpy as np
 
+from auv_nav.td3bc import TD3BCAgent, TD3BCConfig
 from scripts.benchmark_utils import (
     BenchmarkEpisode,
     build_benchmark_manifest,
     load_benchmark_manifest,
     save_benchmark_manifest,
 )
-from scripts.train_utils import evaluate_agent, make_planar_env
+from scripts.train_utils import evaluate_agent, evaluate_offline_policy_parallel, make_planar_env
 
 
 class ZeroAgent:
@@ -116,3 +118,52 @@ def test_evaluate_agent_uses_fixed_manifest_episodes(tmp_path: Path):
 
     payload = json.loads(manifest_path.read_text())
     assert payload["history_length"] is None
+
+
+def test_parallel_policy_eval_matches_serial() -> None:
+    env = make_planar_env(_flow_path(), history_length=1, probe_layout="s0")
+    try:
+        agent = TD3BCAgent(
+            TD3BCConfig(obs_dim=int(env.observation_space.shape[0]), action_dim=2),
+            device="cpu",
+        )
+        reset_options = {
+            "task_geometry": "downstream",
+            "action_mode": "absolute_heading",
+            "target_auv_max_speed_mps": 1.0,
+            "initial_speed": 0.3,
+        }
+        serial_metrics = evaluate_agent(
+            env=env,
+            agent=agent,
+            reset_options=reset_options,
+            seed=123,
+            num_episodes=2,
+        )
+        parallel_metrics = evaluate_offline_policy_parallel(
+            policy_payload=agent.export_policy_payload(),
+            flow_path=str(_flow_path()),
+            history_length=1,
+            probe_layout="s0",
+            env_config_overrides={},
+            reset_options=reset_options,
+            seed=123,
+            num_episodes=2,
+            benchmark_manifest=None,
+            num_workers=2,
+            worker_device="cpu",
+        )
+    finally:
+        env.close()
+
+    assert serial_metrics.keys() == parallel_metrics.keys()
+    for key in serial_metrics:
+        serial_value = serial_metrics[key]
+        parallel_value = parallel_metrics[key]
+        if isinstance(serial_value, float):
+            if math.isnan(serial_value):
+                assert math.isnan(parallel_value), key
+            else:
+                assert serial_value == parallel_value, key
+        else:
+            assert serial_value == parallel_value, key

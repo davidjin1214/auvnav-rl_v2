@@ -13,11 +13,12 @@ from auv_nav.baselines import (
     PrivilegedCorridorPolicy,
     WorldFrameCurrentCompensationPolicy,
 )
-from auv_nav.env import ObservationHistoryWrapper
 from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
 from .train_utils import (
     discover_flow_path,
     evaluate_agent,
+    evaluate_baseline_parallel,
+    make_baseline_agent_adapter,
     make_env_config_overrides,
     make_planar_env,
     make_reset_options,
@@ -40,24 +41,6 @@ def _json_ready(value):
     if isinstance(value, float):
         return value if math.isfinite(value) else None
     return value
-
-
-class BaselineAgentAdapter:
-    def __init__(self, env, policy_name: str) -> None:
-        self.env = env
-        self.policy = POLICY_MAP[policy_name]()
-
-    def reset_policy_state(self) -> None:
-        return None
-
-    def act(self, obs, policy_state=None, deterministic: bool = True):
-        _ = policy_state, deterministic
-        env = self.env.env if isinstance(self.env, ObservationHistoryWrapper) else self.env
-        if isinstance(self.env, ObservationHistoryWrapper):
-            single_obs = self.env._history[-1]
-        else:
-            single_obs = obs
-        return self.policy.act(env, single_obs), None
 
 
 def _print_metrics(metrics: dict[str, float], manifest_path: Path | None) -> None:
@@ -98,6 +81,12 @@ def main() -> None:
                         help="Path to a fixed benchmark manifest JSON.")
     parser.add_argument("--episodes", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=1,
+        help="Parallel evaluation workers. Values >1 run episode chunks in separate worker processes.",
+    )
     parser.add_argument("--output-json", type=Path, default=None)
     parser.add_argument("--difficulty", choices=["easy", "medium", "hard"], default=None)
     parser.add_argument("--task-geometry",
@@ -148,22 +137,38 @@ def main() -> None:
         if benchmark_manifest is not None
         else str(args.flow or discover_flow_path())
     )
-    env = make_planar_env(
-        flow_path,
-        history_length=args.history_length,
-        probe_layout=args.probe_layout,
-        env_config_overrides=env_config_overrides,
-    )
-    agent = BaselineAgentAdapter(env, args.policy)
-
-    metrics = evaluate_agent(
-        env=env,
-        agent=agent,
-        reset_options=reset_options,
-        seed=args.seed,
-        num_episodes=args.episodes,
-        benchmark_manifest=benchmark_manifest,
-    )
+    if args.num_workers > 1:
+        metrics = evaluate_baseline_parallel(
+            policy_name=args.policy,
+            flow_path=str(flow_path),
+            history_length=args.history_length,
+            probe_layout=args.probe_layout,
+            env_config_overrides=env_config_overrides,
+            reset_options=reset_options,
+            seed=args.seed,
+            num_episodes=args.episodes,
+            benchmark_manifest=benchmark_manifest,
+            num_workers=args.num_workers,
+        )
+    else:
+        env = make_planar_env(
+            flow_path,
+            history_length=args.history_length,
+            probe_layout=args.probe_layout,
+            env_config_overrides=env_config_overrides,
+        )
+        try:
+            agent = make_baseline_agent_adapter(env, args.policy)
+            metrics = evaluate_agent(
+                env=env,
+                agent=agent,
+                reset_options=reset_options,
+                seed=args.seed,
+                num_episodes=args.episodes,
+                benchmark_manifest=benchmark_manifest,
+            )
+        finally:
+            env.close()
     _print_metrics(metrics, args.manifest)
     if args.output_json is not None:
         args.output_json.parent.mkdir(parents=True, exist_ok=True)

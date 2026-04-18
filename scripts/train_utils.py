@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import csv
 import json
+import multiprocessing as mp
 import pickle
 import random
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +19,7 @@ from auv_nav.reward import (
     canonical_reward_objective,
     reward_objective_config,
 )
-from .benchmark_utils import BenchmarkManifest, load_benchmark_manifest
+from .benchmark_utils import BenchmarkEpisode, BenchmarkManifest, load_benchmark_manifest
 
 try:
     import torch
@@ -179,6 +182,512 @@ def maybe_load_benchmark_manifest(path: str | Path | None) -> BenchmarkManifest 
     return load_benchmark_manifest(path)
 
 
+def _resolved_eval_episodes(
+    *,
+    reset_options: dict[str, Any],
+    seed: int,
+    num_episodes: int,
+    benchmark_manifest: BenchmarkManifest | None,
+) -> list[BenchmarkEpisode]:
+    if benchmark_manifest is None:
+        return [
+            BenchmarkEpisode(
+                episode_id=f"seed_{seed + idx}",
+                seed=seed + idx,
+                reset_options=dict(reset_options),
+            )
+            for idx in range(max(0, int(num_episodes)))
+        ]
+
+    episodes: list[BenchmarkEpisode] = []
+    for spec in benchmark_manifest.episodes:
+        episode_reset_options = dict(reset_options)
+        episode_reset_options.update(spec.reset_options)
+        episodes.append(
+            BenchmarkEpisode(
+                episode_id=spec.episode_id,
+                seed=int(spec.seed),
+                reset_options=episode_reset_options,
+            )
+        )
+    return episodes
+
+
+def _rollout_episode(
+    env: Any,
+    agent: Any,
+    episode: BenchmarkEpisode,
+) -> dict[str, Any]:
+    obs, info = env.reset(seed=int(episode.seed), options=dict(episode.reset_options))
+    policy_state = agent.reset_policy_state()
+    done = False
+    total_reward = 0.0
+    total_cost = 0.0
+    total_energy = 0.0
+    path_length = 0.0
+    speed_samples: list[float] = []
+    relative_speed_samples: list[float] = []
+    prev_pos = np.asarray(info["position_xy_m"], dtype=np.float32)
+    initial_distance = float(info["initial_distance_m"])
+
+    while not done:
+        action, policy_state = agent.act(obs, policy_state, deterministic=True)
+        obs, reward, terminated, truncated, info = env.step(action)
+        total_reward += float(reward)
+        total_cost += float(info["step_safety_cost"])
+        total_energy += float(info["energy_cost"])
+        pos = np.asarray(info["position_xy_m"], dtype=np.float32)
+        path_length += float(np.linalg.norm(pos - prev_pos))
+        prev_pos = pos
+        speed_samples.append(float(info["ground_speed_mps"]))
+        relative_speed_samples.append(float(info["water_relative_speed_mps"]))
+        done = terminated or truncated
+
+    final_distance = float(info["distance_to_goal_m"])
+    progress_m = initial_distance - final_distance
+    progress_ratio = progress_m / max(initial_distance, 1e-8)
+    path_efficiency = progress_m / max(path_length, 1e-8)
+    return {
+        "episode_id": episode.episode_id,
+        "seed": int(episode.seed),
+        "success": bool(info["success"]),
+        "reason": str(info["reason"]),
+        "return": total_reward,
+        "cost": total_cost,
+        "safety_cost": total_cost,
+        "energy": total_energy,
+        "elapsed_time_s": float(info["elapsed_time_s"]),
+        "path_length_m": path_length,
+        "initial_distance_m": initial_distance,
+        "final_distance_m": final_distance,
+        "progress_m": progress_m,
+        "progress_ratio": progress_ratio,
+        "path_efficiency": path_efficiency,
+        "mean_ground_speed_mps": float(np.mean(speed_samples)) if speed_samples else 0.0,
+        "mean_water_relative_speed_mps": (
+            float(np.mean(relative_speed_samples)) if relative_speed_samples else 0.0
+        ),
+    }
+
+
+def _evaluate_episodes_serial(
+    env: Any,
+    agent: Any,
+    episodes: list[BenchmarkEpisode],
+) -> list[dict[str, Any]]:
+    return [_rollout_episode(env, agent, episode) for episode in episodes]
+
+
+def _summarize_eval_results(
+    results: list[dict[str, Any]],
+    *,
+    reward_objective: str,
+    energy_cost_gain: float,
+    safety_cost_gain: float,
+    manifest_flow_path: str | None,
+) -> dict[str, Any]:
+    if not results:
+        raise ValueError("Evaluation produced no episode results.")
+
+    returns = np.array([row["return"] for row in results], dtype=float)
+    costs = np.array([row["cost"] for row in results], dtype=float)
+    energies = np.array([row["energy"] for row in results], dtype=float)
+    times = np.array([row["elapsed_time_s"] for row in results], dtype=float)
+    path_lengths = np.array([row["path_length_m"] for row in results], dtype=float)
+    progress_ratios = np.array([row["progress_ratio"] for row in results], dtype=float)
+    path_efficiencies = np.array([row["path_efficiency"] for row in results], dtype=float)
+    successes = np.array([row["success"] for row in results], dtype=bool)
+    success_times = times[successes]
+    success_energies = energies[successes]
+    success_paths = path_lengths[successes]
+    termination_counts: dict[str, int] = {}
+    for row in results:
+        termination_counts[row["reason"]] = termination_counts.get(row["reason"], 0) + 1
+
+    return {
+        "num_eval_episodes": float(len(results)),
+        "eval_return": float(np.mean(returns)),
+        "eval_return_std": float(np.std(returns)),
+        "eval_cost": float(np.mean(costs)),
+        "eval_cost_std": float(np.std(costs)),
+        "eval_safety_cost": float(np.mean(costs)),
+        "eval_safety_cost_std": float(np.std(costs)),
+        "eval_success_rate": float(np.mean(successes.astype(float))),
+        "eval_time_s": float(np.mean(times)),
+        "eval_time_s_std": float(np.std(times)),
+        "eval_time_s_success": (
+            float(np.mean(success_times)) if len(success_times) else float("nan")
+        ),
+        "eval_energy": float(np.mean(energies)),
+        "eval_energy_std": float(np.std(energies)),
+        "eval_energy_success": (
+            float(np.mean(success_energies)) if len(success_energies) else float("nan")
+        ),
+        "eval_path_length_m": float(np.mean(path_lengths)),
+        "eval_path_length_m_std": float(np.std(path_lengths)),
+        "eval_path_length_success": (
+            float(np.mean(success_paths)) if len(success_paths) else float("nan")
+        ),
+        "eval_progress_ratio": float(np.mean(progress_ratios)),
+        "eval_progress_ratio_std": float(np.std(progress_ratios)),
+        "eval_path_efficiency": float(np.mean(path_efficiencies)),
+        "eval_path_efficiency_std": float(np.std(path_efficiencies)),
+        "eval_termination_counts": termination_counts,
+        "eval_episode_results": results,
+        "reward_objective": reward_objective,
+        "energy_cost_gain": float(energy_cost_gain),
+        "safety_cost_gain": float(safety_cost_gain),
+        "eval_manifest_flow_path": manifest_flow_path,
+    }
+
+
+def _evaluation_context(
+    *,
+    flow_path: str,
+    history_length: int,
+    probe_layout: str,
+    env_config_overrides: dict[str, Any],
+) -> tuple[str, float, float]:
+    env = make_planar_env(
+        flow_path,
+        history_length=history_length,
+        probe_layout=probe_layout,
+        env_config_overrides=env_config_overrides,
+    )
+    try:
+        return (
+            str(env.unwrapped.config.reward_objective),
+            float(env.unwrapped.config.energy_cost_gain),
+            float(env.unwrapped.config.safety_cost_gain),
+        )
+    finally:
+        env.close()
+
+
+def _chunk_episodes(
+    episodes: list[BenchmarkEpisode],
+    num_chunks: int,
+) -> list[list[BenchmarkEpisode]]:
+    if not episodes:
+        return []
+    num_chunks = max(1, min(int(num_chunks), len(episodes)))
+    chunk_size = (len(episodes) + num_chunks - 1) // num_chunks
+    return [
+        episodes[idx: idx + chunk_size]
+        for idx in range(0, len(episodes), chunk_size)
+    ]
+
+
+def _run_parallel_episode_chunks(
+    worker_fn: Any,
+    worker_config: Any,
+    episodes: list[BenchmarkEpisode],
+    *,
+    num_workers: int,
+) -> list[dict[str, Any]]:
+    chunks = _chunk_episodes(episodes, num_workers)
+    if len(chunks) <= 1:
+        return worker_fn(worker_config, episodes)
+
+    try:
+        ctx = mp.get_context("spawn")
+        results: list[dict[str, Any]] = []
+        with ProcessPoolExecutor(max_workers=len(chunks), mp_context=ctx) as executor:
+            futures = [
+                executor.submit(worker_fn, worker_config, chunk)
+                for chunk in chunks
+            ]
+            for future in futures:
+                results.extend(future.result())
+        return results
+    except PermissionError as exc:
+        print(f"[eval] parallel workers unavailable ({exc}); falling back to serial.")
+        return worker_fn(worker_config, episodes)
+    except OSError as exc:
+        print(f"[eval] parallel workers unavailable ({exc}); falling back to serial.")
+        return worker_fn(worker_config, episodes)
+
+
+def make_baseline_agent_adapter(env: Any, policy_name: str) -> Any:
+    from auv_nav.baselines import (
+        CrossCurrentCompensationPolicy,
+        GoalSeekPolicy,
+        PrivilegedCorridorPolicy,
+        WorldFrameCurrentCompensationPolicy,
+    )
+
+    policy_map = {
+        "goalseek": GoalSeekPolicy,
+        "crosscomp": CrossCurrentCompensationPolicy,
+        "worldcomp": WorldFrameCurrentCompensationPolicy,
+        "privileged": PrivilegedCorridorPolicy,
+    }
+    if policy_name not in policy_map:
+        raise ValueError(f"Unsupported baseline policy: {policy_name!r}")
+    policy = policy_map[policy_name]()
+
+    class _BaselineAgentAdapter:
+        def __init__(self, wrapped_env: Any, wrapped_policy: Any) -> None:
+            self.env = wrapped_env
+            self.policy = wrapped_policy
+
+        def reset_policy_state(self) -> None:
+            return None
+
+        def act(self, obs, policy_state=None, deterministic: bool = True):
+            _ = policy_state, deterministic, obs
+            base_env = self.env.env if isinstance(self.env, ObservationHistoryWrapper) else self.env
+            if isinstance(self.env, ObservationHistoryWrapper):
+                single_obs = self.env._history[-1]
+            else:
+                single_obs = obs
+            return self.policy.act(base_env, single_obs), None
+
+    return _BaselineAgentAdapter(env, policy)
+
+
+@dataclass(slots=True)
+class OfflineEvalWorkerConfig:
+    checkpoint_path: str
+    agent_config: dict[str, Any]
+    flow_path: str
+    history_length: int
+    probe_layout: str
+    env_config_overrides: dict[str, Any]
+    device: str
+
+
+@dataclass(slots=True)
+class OfflinePolicyEvalWorkerConfig:
+    policy_payload: dict[str, Any]
+    flow_path: str
+    history_length: int
+    probe_layout: str
+    env_config_overrides: dict[str, Any]
+    device: str
+
+
+@dataclass(slots=True)
+class BaselineEvalWorkerConfig:
+    policy_name: str
+    flow_path: str
+    history_length: int
+    probe_layout: str
+    env_config_overrides: dict[str, Any]
+
+
+def _evaluate_offline_chunk(
+    worker_config: OfflineEvalWorkerConfig,
+    episodes: list[BenchmarkEpisode],
+) -> list[dict[str, Any]]:
+    from auv_nav.td3bc import TD3BCAgent, TD3BCConfig
+
+    env = make_planar_env(
+        worker_config.flow_path,
+        history_length=worker_config.history_length,
+        probe_layout=worker_config.probe_layout,
+        env_config_overrides=worker_config.env_config_overrides,
+    )
+    try:
+        agent = TD3BCAgent(
+            TD3BCConfig(**worker_config.agent_config),
+            device=worker_config.device,
+        )
+        agent.load(worker_config.checkpoint_path)
+        return _evaluate_episodes_serial(env, agent, episodes)
+    finally:
+        env.close()
+
+
+def _evaluate_offline_policy_chunk(
+    worker_config: OfflinePolicyEvalWorkerConfig,
+    episodes: list[BenchmarkEpisode],
+) -> list[dict[str, Any]]:
+    from auv_nav.td3bc import TD3BCPolicy
+
+    env = make_planar_env(
+        worker_config.flow_path,
+        history_length=worker_config.history_length,
+        probe_layout=worker_config.probe_layout,
+        env_config_overrides=worker_config.env_config_overrides,
+    )
+    try:
+        agent = TD3BCPolicy.from_payload(
+            worker_config.policy_payload,
+            device=worker_config.device,
+        )
+        return _evaluate_episodes_serial(env, agent, episodes)
+    finally:
+        env.close()
+
+
+def _evaluate_baseline_chunk(
+    worker_config: BaselineEvalWorkerConfig,
+    episodes: list[BenchmarkEpisode],
+) -> list[dict[str, Any]]:
+    env = make_planar_env(
+        worker_config.flow_path,
+        history_length=worker_config.history_length,
+        probe_layout=worker_config.probe_layout,
+        env_config_overrides=worker_config.env_config_overrides,
+    )
+    try:
+        agent = make_baseline_agent_adapter(env, worker_config.policy_name)
+        return _evaluate_episodes_serial(env, agent, episodes)
+    finally:
+        env.close()
+
+
+def evaluate_offline_checkpoint_parallel(
+    *,
+    checkpoint_path: str,
+    agent_config: dict[str, Any],
+    flow_path: str,
+    history_length: int,
+    probe_layout: str,
+    env_config_overrides: dict[str, Any],
+    reset_options: dict[str, Any],
+    seed: int,
+    num_episodes: int,
+    benchmark_manifest: BenchmarkManifest | None,
+    num_workers: int,
+    worker_device: str = "cpu",
+) -> dict[str, Any]:
+    episodes = _resolved_eval_episodes(
+        reset_options=reset_options,
+        seed=seed,
+        num_episodes=num_episodes,
+        benchmark_manifest=benchmark_manifest,
+    )
+    reward_objective, energy_cost_gain, safety_cost_gain = _evaluation_context(
+        flow_path=flow_path,
+        history_length=history_length,
+        probe_layout=probe_layout,
+        env_config_overrides=env_config_overrides,
+    )
+    results = _run_parallel_episode_chunks(
+        _evaluate_offline_chunk,
+        OfflineEvalWorkerConfig(
+            checkpoint_path=str(checkpoint_path),
+            agent_config=dict(agent_config),
+            flow_path=str(flow_path),
+            history_length=int(history_length),
+            probe_layout=str(probe_layout),
+            env_config_overrides=dict(env_config_overrides),
+            device=str(worker_device),
+        ),
+        episodes,
+        num_workers=max(1, int(num_workers)),
+    )
+    return _summarize_eval_results(
+        results,
+        reward_objective=reward_objective,
+        energy_cost_gain=energy_cost_gain,
+        safety_cost_gain=safety_cost_gain,
+        manifest_flow_path=(
+            benchmark_manifest.flow_path if benchmark_manifest is not None else None
+        ),
+    )
+
+
+def evaluate_offline_policy_parallel(
+    *,
+    policy_payload: dict[str, Any],
+    flow_path: str,
+    history_length: int,
+    probe_layout: str,
+    env_config_overrides: dict[str, Any],
+    reset_options: dict[str, Any],
+    seed: int,
+    num_episodes: int,
+    benchmark_manifest: BenchmarkManifest | None,
+    num_workers: int,
+    worker_device: str = "cpu",
+) -> dict[str, Any]:
+    episodes = _resolved_eval_episodes(
+        reset_options=reset_options,
+        seed=seed,
+        num_episodes=num_episodes,
+        benchmark_manifest=benchmark_manifest,
+    )
+    reward_objective, energy_cost_gain, safety_cost_gain = _evaluation_context(
+        flow_path=flow_path,
+        history_length=history_length,
+        probe_layout=probe_layout,
+        env_config_overrides=env_config_overrides,
+    )
+    results = _run_parallel_episode_chunks(
+        _evaluate_offline_policy_chunk,
+        OfflinePolicyEvalWorkerConfig(
+            policy_payload=dict(policy_payload),
+            flow_path=str(flow_path),
+            history_length=int(history_length),
+            probe_layout=str(probe_layout),
+            env_config_overrides=dict(env_config_overrides),
+            device=str(worker_device),
+        ),
+        episodes,
+        num_workers=max(1, int(num_workers)),
+    )
+    return _summarize_eval_results(
+        results,
+        reward_objective=reward_objective,
+        energy_cost_gain=energy_cost_gain,
+        safety_cost_gain=safety_cost_gain,
+        manifest_flow_path=(
+            benchmark_manifest.flow_path if benchmark_manifest is not None else None
+        ),
+    )
+
+
+def evaluate_baseline_parallel(
+    *,
+    policy_name: str,
+    flow_path: str,
+    history_length: int,
+    probe_layout: str,
+    env_config_overrides: dict[str, Any],
+    reset_options: dict[str, Any],
+    seed: int,
+    num_episodes: int,
+    benchmark_manifest: BenchmarkManifest | None,
+    num_workers: int,
+) -> dict[str, Any]:
+    episodes = _resolved_eval_episodes(
+        reset_options=reset_options,
+        seed=seed,
+        num_episodes=num_episodes,
+        benchmark_manifest=benchmark_manifest,
+    )
+    reward_objective, energy_cost_gain, safety_cost_gain = _evaluation_context(
+        flow_path=flow_path,
+        history_length=history_length,
+        probe_layout=probe_layout,
+        env_config_overrides=env_config_overrides,
+    )
+    results = _run_parallel_episode_chunks(
+        _evaluate_baseline_chunk,
+        BaselineEvalWorkerConfig(
+            policy_name=str(policy_name),
+            flow_path=str(flow_path),
+            history_length=int(history_length),
+            probe_layout=str(probe_layout),
+            env_config_overrides=dict(env_config_overrides),
+        ),
+        episodes,
+        num_workers=max(1, int(num_workers)),
+    )
+    return _summarize_eval_results(
+        results,
+        reward_objective=reward_objective,
+        energy_cost_gain=energy_cost_gain,
+        safety_cost_gain=safety_cost_gain,
+        manifest_flow_path=(
+            benchmark_manifest.flow_path if benchmark_manifest is not None else None
+        ),
+    )
+
+
 def save_training_state(
     save_dir: Path,
     agent: Any,
@@ -254,123 +763,19 @@ def evaluate_agent(
     num_episodes: int,
     benchmark_manifest: BenchmarkManifest | None = None,
 ) -> dict[str, Any]:
-    if benchmark_manifest is not None:
-        episodes = benchmark_manifest.episodes
-    else:
-        episodes = None
-
-    results: list[dict[str, Any]] = []
-    n_rollouts = len(episodes) if episodes is not None else num_episodes
-    for idx in range(n_rollouts):
-        episode_reset_options = dict(reset_options)
-        rollout_seed = seed + idx
-        episode_id = f"seed_{rollout_seed}"
-        if episodes is not None:
-            spec = episodes[idx]
-            episode_reset_options.update(spec.reset_options)
-            rollout_seed = int(spec.seed)
-            episode_id = spec.episode_id
-
-        obs, info = env.reset(seed=rollout_seed, options=episode_reset_options)
-        policy_state = agent.reset_policy_state()
-        done = False
-        total_reward = 0.0
-        total_cost = 0.0
-        total_energy = 0.0
-        path_length = 0.0
-        speed_samples: list[float] = []
-        relative_speed_samples: list[float] = []
-        prev_pos = np.asarray(info["position_xy_m"], dtype=np.float32)
-        initial_distance = float(info["initial_distance_m"])
-
-        while not done:
-            action, policy_state = agent.act(obs, policy_state, deterministic=True)
-            obs, reward, terminated, truncated, info = env.step(action)
-            total_reward += float(reward)
-            total_cost += float(info["step_safety_cost"])
-            total_energy += float(info["energy_cost"])
-            pos = np.asarray(info["position_xy_m"], dtype=np.float32)
-            path_length += float(np.linalg.norm(pos - prev_pos))
-            prev_pos = pos
-            speed_samples.append(float(info["ground_speed_mps"]))
-            relative_speed_samples.append(float(info["water_relative_speed_mps"]))
-            done = terminated or truncated
-
-        final_distance = float(info["distance_to_goal_m"])
-        progress_m = initial_distance - final_distance
-        progress_ratio = progress_m / max(initial_distance, 1e-8)
-        path_efficiency = progress_m / max(path_length, 1e-8)
-        results.append(
-            {
-                "episode_id": episode_id,
-                "seed": rollout_seed,
-                "success": bool(info["success"]),
-                "reason": str(info["reason"]),
-                "return": total_reward,
-                "cost": total_cost,
-                "safety_cost": total_cost,
-                "energy": total_energy,
-                "elapsed_time_s": float(info["elapsed_time_s"]),
-                "path_length_m": path_length,
-                "initial_distance_m": initial_distance,
-                "final_distance_m": final_distance,
-                "progress_m": progress_m,
-                "progress_ratio": progress_ratio,
-                "path_efficiency": path_efficiency,
-                "mean_ground_speed_mps": float(np.mean(speed_samples)) if speed_samples else 0.0,
-                "mean_water_relative_speed_mps": (
-                    float(np.mean(relative_speed_samples)) if relative_speed_samples else 0.0
-                ),
-            }
-        )
-
-    returns = np.array([row["return"] for row in results], dtype=float)
-    costs = np.array([row["cost"] for row in results], dtype=float)
-    energies = np.array([row["energy"] for row in results], dtype=float)
-    times = np.array([row["elapsed_time_s"] for row in results], dtype=float)
-    path_lengths = np.array([row["path_length_m"] for row in results], dtype=float)
-    progress_ratios = np.array([row["progress_ratio"] for row in results], dtype=float)
-    path_efficiencies = np.array([row["path_efficiency"] for row in results], dtype=float)
-    successes = np.array([row["success"] for row in results], dtype=bool)
-    success_times = times[successes]
-    success_energies = energies[successes]
-    success_paths = path_lengths[successes]
-    termination_counts: dict[str, int] = {}
-    for row in results:
-        termination_counts[row["reason"]] = termination_counts.get(row["reason"], 0) + 1
-
-    return {
-        "num_eval_episodes": float(len(results)),
-        "eval_return": float(np.mean(returns)),
-        "eval_return_std": float(np.std(returns)),
-        "eval_cost": float(np.mean(costs)),
-        "eval_cost_std": float(np.std(costs)),
-        "eval_safety_cost": float(np.mean(costs)),
-        "eval_safety_cost_std": float(np.std(costs)),
-        "eval_success_rate": float(np.mean(successes.astype(float))),
-        "eval_time_s": float(np.mean(times)),
-        "eval_time_s_std": float(np.std(times)),
-        "eval_time_s_success": float(np.mean(success_times)) if len(success_times) else float("nan"),
-        "eval_energy": float(np.mean(energies)),
-        "eval_energy_std": float(np.std(energies)),
-        "eval_energy_success": (
-            float(np.mean(success_energies)) if len(success_energies) else float("nan")
-        ),
-        "eval_path_length_m": float(np.mean(path_lengths)),
-        "eval_path_length_m_std": float(np.std(path_lengths)),
-        "eval_path_length_success": (
-            float(np.mean(success_paths)) if len(success_paths) else float("nan")
-        ),
-        "eval_progress_ratio": float(np.mean(progress_ratios)),
-        "eval_progress_ratio_std": float(np.std(progress_ratios)),
-        "eval_path_efficiency": float(np.mean(path_efficiencies)),
-        "eval_path_efficiency_std": float(np.std(path_efficiencies)),
-        "eval_termination_counts": termination_counts,
-        "eval_episode_results": results,
-        "reward_objective": env.unwrapped.config.reward_objective,
-        "energy_cost_gain": float(env.unwrapped.config.energy_cost_gain),
-        "safety_cost_gain": float(env.unwrapped.config.safety_cost_gain),
-        "eval_manifest_flow_path": (
+    episodes = _resolved_eval_episodes(
+        reset_options=reset_options,
+        seed=seed,
+        num_episodes=num_episodes,
+        benchmark_manifest=benchmark_manifest,
+    )
+    results = _evaluate_episodes_serial(env, agent, episodes)
+    return _summarize_eval_results(
+        results,
+        reward_objective=str(env.unwrapped.config.reward_objective),
+        energy_cost_gain=float(env.unwrapped.config.energy_cost_gain),
+        safety_cost_gain=float(env.unwrapped.config.safety_cost_gain),
+        manifest_flow_path=(
             benchmark_manifest.flow_path if benchmark_manifest is not None else None
         ),
-    }
+    )

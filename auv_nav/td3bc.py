@@ -146,6 +146,81 @@ class DeterministicActor(_ModuleBase):
         return torch.tanh(self.net(obs))
 
 
+class TD3BCPolicy:
+    """Lightweight deterministic policy wrapper for evaluation workers."""
+
+    def __init__(
+        self,
+        config: TD3BCConfig,
+        *,
+        actor_state: dict[str, Any],
+        obs_normalizer: ObservationNormalizer | None = None,
+        device: str | "torch.device" = "cpu",
+    ) -> None:
+        require_torch()
+        self.config = config
+        self.device = torch.device(device)
+        self.obs_normalizer = (
+            obs_normalizer
+            if obs_normalizer is not None
+            else ObservationNormalizer.identity(
+                config.obs_dim,
+                eps=config.normalizer_eps,
+                device=self.device,
+            )
+        )
+        self.actor = DeterministicActor(config).to(self.device)
+        self.actor.load_state_dict(actor_state)
+        self.actor.eval()
+
+    @classmethod
+    def from_payload(
+        cls,
+        payload: dict[str, Any],
+        *,
+        device: str | "torch.device" = "cpu",
+    ) -> "TD3BCPolicy":
+        config = TD3BCConfig(**payload["config"])
+        normalizer_state = payload.get("obs_normalizer")
+        obs_normalizer = None
+        if normalizer_state is not None:
+            obs_normalizer = ObservationNormalizer(
+                ObservationNormalizerState(
+                    mean=np.asarray(normalizer_state["mean"], dtype=np.float32),
+                    std=np.asarray(normalizer_state["std"], dtype=np.float32),
+                    eps=float(normalizer_state.get("eps", config.normalizer_eps)),
+                ),
+                device=device,
+            )
+        return cls(
+            config,
+            actor_state=payload["actor"],
+            obs_normalizer=obs_normalizer,
+            device=device,
+        )
+
+    def reset_policy_state(self) -> None:
+        return None
+
+    @_no_grad()
+    def act(
+        self,
+        obs: np.ndarray,
+        policy_state: None = None,
+        deterministic: bool = True,
+    ) -> "tuple[np.ndarray, None]":
+        _ = policy_state, deterministic
+        obs_t = torch.as_tensor(obs, dtype=torch.float32, device=self.device)
+        is_batched = obs_t.ndim > 1
+        if not is_batched:
+            obs_t = obs_t.unsqueeze(0)
+        action = self.actor(self.obs_normalizer.normalize_tensor(obs_t))
+        action_np = action.cpu().numpy().astype(np.float32)
+        if not is_batched:
+            action_np = action_np[0]
+        return action_np, None
+
+
 class TD3BCAgent:
     def __init__(
         self,
@@ -183,6 +258,13 @@ class TD3BCAgent:
         self.q1_opt = torch.optim.Adam(self.q1.parameters(), lr=config.critic_lr)
         self.q2_opt = torch.optim.Adam(self.q2.parameters(), lr=config.critic_lr)
         self.update_count = 0
+        self._last_actor_metrics = {
+            "actor_loss": float("nan"),
+            "bc_loss": float("nan"),
+            "mean_q": float("nan"),
+            "lambda": float("nan"),
+        }
+        self._has_actor_metrics = False
 
     def reset_policy_state(self) -> None:
         return None
@@ -281,32 +363,38 @@ class TD3BCAgent:
             nn.utils.clip_grad_norm_(self.actor.parameters(), self.config.grad_clip_norm)
             self.actor_opt.step()
             self._soft_update_targets()
-            actor_loss_value = float(actor_loss.item())
-            bc_loss_value = float(bc_loss.item())
-            lambda_value = float(lambda_coef.item())
-            mean_q_value = float(q_pi.detach().mean().item())
-        else:
+            self._last_actor_metrics = {
+                "actor_loss": float(actor_loss.item()),
+                "bc_loss": float(bc_loss.item()),
+                "mean_q": float(q_pi.detach().mean().item()),
+                "lambda": float(lambda_coef.item()),
+            }
+            self._has_actor_metrics = True
+        elif not self._has_actor_metrics:
             with torch.no_grad():
                 pi = self.actor(obs)
                 q_pi = self.q1(obs, pi, actor_privileged_obs)
                 lambda_coef = self.config.alpha / q_pi.abs().mean().clamp_min(1e-6)
                 bc_loss = F.mse_loss(pi, actions)
                 actor_loss = -lambda_coef * q_pi.mean() + bc_loss
-            actor_loss_value = float(actor_loss.item())
-            bc_loss_value = float(bc_loss.item())
-            lambda_value = float(lambda_coef.item())
-            mean_q_value = float(q_pi.mean().item())
+            self._last_actor_metrics = {
+                "actor_loss": float(actor_loss.item()),
+                "bc_loss": float(bc_loss.item()),
+                "mean_q": float(q_pi.mean().item()),
+                "lambda": float(lambda_coef.item()),
+            }
+            self._has_actor_metrics = True
 
         return {
             "q1_loss": float(q1_loss.item()),
             "q2_loss": float(q2_loss.item()),
             "critic_loss": float(0.5 * (q1_loss.item() + q2_loss.item())),
-            "actor_loss": actor_loss_value,
-            "bc_loss": bc_loss_value,
-            "mean_q": mean_q_value,
+            "actor_loss": self._last_actor_metrics["actor_loss"],
+            "bc_loss": self._last_actor_metrics["bc_loss"],
+            "mean_q": self._last_actor_metrics["mean_q"],
             "target_q": float(q_target.detach().mean().item()),
             "td_abs_error": float((q1_pred.detach() - q_target.detach()).abs().mean().item()),
-            "lambda": lambda_value,
+            "lambda": self._last_actor_metrics["lambda"],
             "policy_updated": float(1.0 if should_update_actor else 0.0),
         }
 
@@ -327,6 +415,18 @@ class TD3BCAgent:
             "obs_normalizer": self.obs_normalizer.state_dict(),
         }
         torch.save(payload, path)
+
+    def export_policy_payload(self) -> dict[str, Any]:
+        require_torch()
+        actor_state = {
+            key: value.detach().cpu().clone()
+            for key, value in self.actor.state_dict().items()
+        }
+        return {
+            "config": asdict(self.config),
+            "actor": actor_state,
+            "obs_normalizer": self.obs_normalizer.state_dict(),
+        }
 
     def load(self, path: str) -> None:
         require_torch()

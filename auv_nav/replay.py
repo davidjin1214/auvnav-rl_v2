@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import numpy as np
 
@@ -282,6 +282,66 @@ class TransitionReplay:
                 self.next_privileged_obs[indices], device=device
             )
         return batch
+
+    def iter_batches(
+        self,
+        batch_size: int,
+        device: "torch.device",
+        *,
+        shuffle: bool = True,
+        drop_last: bool = False,
+    ) -> Iterator[dict[str, "torch.Tensor"]]:
+        require_torch()
+        if self.size <= 0:
+            raise RuntimeError("Replay buffer is empty.")
+
+        batch_size = max(1, int(batch_size))
+        cache_device = torch.device(device)
+
+        if self._tensor_cache is not None and self._tensor_cache_device == cache_device:
+            if shuffle:
+                order = torch.randperm(self.size, device=cache_device)
+            else:
+                order = torch.arange(self.size, device=cache_device)
+
+            for start in range(0, self.size, batch_size):
+                end = min(start + batch_size, self.size)
+                if drop_last and (end - start) < batch_size:
+                    break
+                indices = order[start:end]
+                yield {
+                    key: value.index_select(0, indices)
+                    for key, value in self._tensor_cache.items()
+                }
+            return
+
+        if shuffle:
+            order_np = np.random.permutation(self.size)
+        else:
+            order_np = np.arange(self.size, dtype=np.int64)
+
+        for start in range(0, self.size, batch_size):
+            end = min(start + batch_size, self.size)
+            if drop_last and (end - start) < batch_size:
+                break
+            indices = order_np[start:end]
+            batch = {
+                "obs": torch.as_tensor(self.observations[indices], device=device),
+                "actions": torch.as_tensor(self.actions[indices], device=device),
+                "rewards": torch.as_tensor(self.rewards[indices], device=device),
+                "costs": torch.as_tensor(self.costs[indices], device=device),
+                "next_obs": torch.as_tensor(self.next_observations[indices], device=device),
+                "dones": torch.as_tensor(self.dones[indices], device=device),
+            }
+            if self.privileged_obs is not None:
+                batch["privileged_obs"] = torch.as_tensor(
+                    self.privileged_obs[indices], device=device
+                )
+            if self.next_privileged_obs is not None:
+                batch["next_privileged_obs"] = torch.as_tensor(
+                    self.next_privileged_obs[indices], device=device
+                )
+            yield batch
 
 
 class DualBufferSampler:

@@ -94,3 +94,33 @@ def test_transition_replay_tensor_cache_and_invalidation():
         done=False,
     )
     assert not replay.has_tensor_cache()
+
+
+def test_transition_replay_iter_batches_without_replacement_covers_dataset():
+    replay = TransitionReplay(
+        obs_dim=3,
+        action_dim=1,
+        config=TransitionReplayConfig(capacity=8),
+    )
+    for idx in range(5):
+        replay.add(
+            obs=np.full(3, idx, dtype=np.float32),
+            action=np.asarray([idx], dtype=np.float32),
+            reward=float(idx),
+            cost=0.0,
+            next_obs=np.full(3, idx + 1, dtype=np.float32),
+            done=False,
+        )
+
+    batches = list(
+        replay.iter_batches(
+            batch_size=2,
+            device=torch.device("cpu"),
+            shuffle=False,
+            drop_last=False,
+        )
+    )
+
+    assert [batch["obs"].shape[0] for batch in batches] == [2, 2, 1]
+    recovered = np.concatenate([batch["obs"][:, 0].cpu().numpy() for batch in batches])
+    assert recovered.tolist() == [0.0, 1.0, 2.0, 3.0, 4.0]

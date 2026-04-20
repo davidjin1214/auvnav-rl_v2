@@ -1,0 +1,401 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+# Phase0c protocol:
+# 1. Stage A reuses phase0b_v2 checkpoints and re-evaluates them on a larger validation manifest.
+# 2. Stage B runs a narrow, low-cost screening sweep targeted by the current phase0b_v2 findings.
+# 3. Stage C promotes only one finalist per dataset size to a formal 5-seed confirmation run.
+
+MODE="${MODE:-all}"
+
+PYTHON_PREFIX="${PYTHON_PREFIX:-}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
+PYTHON_CMD=()
+if [[ -n "$PYTHON_PREFIX" ]]; then
+  read -r -a PYTHON_PREFIX_ARR <<< "$PYTHON_PREFIX"
+  PYTHON_CMD+=("${PYTHON_PREFIX_ARR[@]}")
+fi
+PYTHON_CMD+=("$PYTHON_BIN")
+
+DEVICE="${DEVICE:-cuda}"
+
+BENCHMARK_KEY="${BENCHMARK_KEY:-single_u10_cross_tgt15}"
+FLOW_PATH="${FLOW_PATH:-wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy}"
+TASK_GEOMETRY="${TASK_GEOMETRY:-cross_stream}"
+TARGET_SPEED="${TARGET_SPEED:-1.5}"
+OBJECTIVE="${OBJECTIVE:-efficiency_v2}"
+PROBE_LAYOUT="${PROBE_LAYOUT:-s0}"
+HISTORY_LENGTH="${HISTORY_LENGTH:-4}"
+
+DATASET_POLICY="${DATASET_POLICY:-crosscomp}"
+DATASET_POLICY_MIXTURE="${DATASET_POLICY_MIXTURE:-}"
+ACTION_NOISE_STD="${ACTION_NOISE_STD:-0.0}"
+ACTION_NOISE_CLIP="${ACTION_NOISE_CLIP:-0.5}"
+COLLECT_WORKERS="${COLLECT_WORKERS:-8}"
+
+BASE_DATASET_NAME="${BASE_DATASET_NAME:-${DATASET_POLICY}_${PROBE_LAYOUT}_h${HISTORY_LENGTH}_${OBJECTIVE}_re150_u10cross_fixdone}"
+BASE_DATASET_EPISODES="${BASE_DATASET_EPISODES:-500}"
+BASE_DATASET_SEED="${BASE_DATASET_SEED:-0}"
+SIZE_ABLATION_EPISODES="${SIZE_ABLATION_EPISODES:-500 1000 2000}"
+
+BATCH_SIZE="${BATCH_SIZE:-256}"
+DROP_LAST_BATCH="${DROP_LAST_BATCH:-0}"
+SAMPLING_MODE="${SAMPLING_MODE:-shuffle_no_replacement}"
+HIDDEN_DIM="${HIDDEN_DIM:-256}"
+ACTOR_LR="${ACTOR_LR:-3e-4}"
+CRITIC_LR="${CRITIC_LR:-3e-4}"
+GAMMA="${GAMMA:-0.99}"
+TAU="${TAU:-0.005}"
+POLICY_NOISE="${POLICY_NOISE:-0.2}"
+NOISE_CLIP="${NOISE_CLIP:-0.5}"
+POLICY_FREQ="${POLICY_FREQ:-2}"
+NORMALIZER_EPS="${NORMALIZER_EPS:-1e-3}"
+GRAD_CLIP_NORM="${GRAD_CLIP_NORM:-10.0}"
+LOG_EVERY="${LOG_EVERY:-1000}"
+USE_LAYERNORM="${USE_LAYERNORM:-0}"
+USE_ASYMMETRIC_CRITIC="${USE_ASYMMETRIC_CRITIC:-0}"
+PRIVILEGED_ACTOR_UPDATE_MODE="${PRIVILEGED_ACTOR_UPDATE_MODE:-zeros}"
+RUN_BASELINE_EVAL="${RUN_BASELINE_EVAL:-1}"
+EVAL_WORKERS="${EVAL_WORKERS:-6}"
+EVAL_WORKER_DEVICE="${EVAL_WORKER_DEVICE:-cpu}"
+VALIDATION_SEED="${VALIDATION_SEED:-123}"
+TEST_SEED="${TEST_SEED:-456}"
+FORCE_REEVAL="${FORCE_REEVAL:-0}"
+
+PHASE0B_V2_CHECKPOINT_ROOT="${PHASE0B_V2_CHECKPOINT_ROOT:-checkpoints/offline/td3bc/phase0b_v2}"
+PHASE0B_V2_RESULTS_ROOT="${PHASE0B_V2_RESULTS_ROOT:-results/offline/td3bc/phase0b_v2}"
+
+STAGE_A_EPISODES="${STAGE_A_EPISODES:-${SIZE_ABLATION_EPISODES}}"
+STAGE_A_ALPHAS="${STAGE_A_ALPHAS:-0.0 0.1 0.25 0.5}"
+STAGE_A_SEEDS="${STAGE_A_SEEDS:-42 43}"
+STAGE_A_VAL_MANIFEST_EPISODES="${STAGE_A_VAL_MANIFEST_EPISODES:-80}"
+STAGE_A_RESULTS_ROOT="${STAGE_A_RESULTS_ROOT:-results/offline/td3bc/phase0c/stage_a_reval}"
+STAGE_A_MANIFEST_ROOT="${STAGE_A_MANIFEST_ROOT:-benchmarks/offline_phase0c/stage_a_reval}"
+
+STAGE_B_EPISODES="${STAGE_B_EPISODES:-${SIZE_ABLATION_EPISODES}}"
+STAGE_B_SEEDS="${STAGE_B_SEEDS:-42 43}"
+STAGE_B_TRAIN_EPOCHS="${STAGE_B_TRAIN_EPOCHS:-64}"
+STAGE_B_CHECKPOINT_EVERY_EPOCHS="${STAGE_B_CHECKPOINT_EVERY_EPOCHS:-8}"
+STAGE_B_VAL_MANIFEST_EPISODES="${STAGE_B_VAL_MANIFEST_EPISODES:-40}"
+STAGE_B_TEST_MANIFEST_EPISODES="${STAGE_B_TEST_MANIFEST_EPISODES:-40}"
+STAGE_B_CHECKPOINT_ROOT="${STAGE_B_CHECKPOINT_ROOT:-checkpoints/offline/td3bc/phase0c/stage_b_screen}"
+STAGE_B_RESULTS_ROOT="${STAGE_B_RESULTS_ROOT:-results/offline/td3bc/phase0c/stage_b_screen}"
+STAGE_B_MANIFEST_ROOT="${STAGE_B_MANIFEST_ROOT:-benchmarks/offline_phase0c/stage_b_screen}"
+STAGE_B_ALPHAS_500="${STAGE_B_ALPHAS_500:-0.1 0.5}"
+STAGE_B_ALPHAS_1000="${STAGE_B_ALPHAS_1000:-0.1 0.25 0.5 0.75}"
+STAGE_B_ALPHAS_2000="${STAGE_B_ALPHAS_2000:-0.0 0.05 0.1 0.15 0.2 0.25}"
+
+STAGE_C_EPISODES="${STAGE_C_EPISODES:-${SIZE_ABLATION_EPISODES}}"
+STAGE_C_SEEDS="${STAGE_C_SEEDS:-42 43 44 45 46}"
+STAGE_C_TRAIN_EPOCHS="${STAGE_C_TRAIN_EPOCHS:-96}"
+STAGE_C_CHECKPOINT_EVERY_EPOCHS="${STAGE_C_CHECKPOINT_EVERY_EPOCHS:-4}"
+STAGE_C_VAL_MANIFEST_EPISODES="${STAGE_C_VAL_MANIFEST_EPISODES:-40}"
+STAGE_C_TEST_MANIFEST_EPISODES="${STAGE_C_TEST_MANIFEST_EPISODES:-100}"
+STAGE_C_CHECKPOINT_ROOT="${STAGE_C_CHECKPOINT_ROOT:-checkpoints/offline/td3bc/phase0c/stage_c_final}"
+STAGE_C_RESULTS_ROOT="${STAGE_C_RESULTS_ROOT:-results/offline/td3bc/phase0c/stage_c_final}"
+STAGE_C_MANIFEST_ROOT="${STAGE_C_MANIFEST_ROOT:-benchmarks/offline_phase0c/stage_c_final}"
+STAGE_C_ALPHA_500="${STAGE_C_ALPHA_500:-}"
+STAGE_C_ALPHA_1000="${STAGE_C_ALPHA_1000:-}"
+STAGE_C_ALPHA_2000="${STAGE_C_ALPHA_2000:-}"
+STAGE_C_FALLBACK_ALPHA_500="${STAGE_C_FALLBACK_ALPHA_500:-0.5}"
+STAGE_C_FALLBACK_ALPHA_1000="${STAGE_C_FALLBACK_ALPHA_1000:-0.5}"
+STAGE_C_FALLBACK_ALPHA_2000="${STAGE_C_FALLBACK_ALPHA_2000:-0.1}"
+
+run_cmd() {
+  echo
+  echo "[cmd] $*"
+  "$@"
+}
+
+dataset_name_for_episodes() {
+  local episodes="$1"
+  if [[ "$episodes" == "$BASE_DATASET_EPISODES" ]]; then
+    echo "$BASE_DATASET_NAME"
+  else
+    echo "${BASE_DATASET_NAME}_ep${episodes}"
+  fi
+}
+
+stage_b_alphas_for_episodes() {
+  local episodes="$1"
+  case "$episodes" in
+    500) echo "$STAGE_B_ALPHAS_500" ;;
+    1000) echo "$STAGE_B_ALPHAS_1000" ;;
+    2000) echo "$STAGE_B_ALPHAS_2000" ;;
+    *)
+      echo "Unsupported Stage B dataset size: $episodes" >&2
+      exit 1
+      ;;
+  esac
+}
+
+stage_c_override_alpha_for_episodes() {
+  local episodes="$1"
+  case "$episodes" in
+    500) echo "$STAGE_C_ALPHA_500" ;;
+    1000) echo "$STAGE_C_ALPHA_1000" ;;
+    2000) echo "$STAGE_C_ALPHA_2000" ;;
+    *)
+      echo "" ;;
+  esac
+}
+
+stage_c_fallback_alpha_for_episodes() {
+  local episodes="$1"
+  case "$episodes" in
+    500) echo "$STAGE_C_FALLBACK_ALPHA_500" ;;
+    1000) echo "$STAGE_C_FALLBACK_ALPHA_1000" ;;
+    2000) echo "$STAGE_C_FALLBACK_ALPHA_2000" ;;
+    *)
+      echo "Unsupported Stage C dataset size: $episodes" >&2
+      exit 1
+      ;;
+  esac
+}
+
+stage_c_alpha_from_stage_b() {
+  local episodes="$1"
+  local override_alpha
+  override_alpha="$(stage_c_override_alpha_for_episodes "$episodes")"
+  if [[ -n "$override_alpha" ]]; then
+    echo "$override_alpha"
+    return
+  fi
+
+  local dataset_name summary_path
+  dataset_name="$(dataset_name_for_episodes "$episodes")"
+  summary_path="${STAGE_B_RESULTS_ROOT}/summaries/${dataset_name}_summary.json"
+  if [[ -f "$summary_path" ]]; then
+    "${PYTHON_CMD[@]}" - "$summary_path" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(payload["best_alpha"])
+PY
+    return
+  fi
+
+  stage_c_fallback_alpha_for_episodes "$episodes"
+}
+
+run_phase0b_v2_child() {
+  local child_mode="$1"
+  shift
+
+  local -a env_args=(
+    "MODE=${child_mode}"
+    "PYTHON_BIN=${PYTHON_BIN}"
+    "DEVICE=${DEVICE}"
+    "BENCHMARK_KEY=${BENCHMARK_KEY}"
+    "FLOW_PATH=${FLOW_PATH}"
+    "TASK_GEOMETRY=${TASK_GEOMETRY}"
+    "TARGET_SPEED=${TARGET_SPEED}"
+    "OBJECTIVE=${OBJECTIVE}"
+    "PROBE_LAYOUT=${PROBE_LAYOUT}"
+    "HISTORY_LENGTH=${HISTORY_LENGTH}"
+    "DATASET_POLICY=${DATASET_POLICY}"
+    "DATASET_POLICY_MIXTURE=${DATASET_POLICY_MIXTURE}"
+    "ACTION_NOISE_STD=${ACTION_NOISE_STD}"
+    "ACTION_NOISE_CLIP=${ACTION_NOISE_CLIP}"
+    "COLLECT_WORKERS=${COLLECT_WORKERS}"
+    "BASE_DATASET_NAME=${BASE_DATASET_NAME}"
+    "BASE_DATASET_EPISODES=${BASE_DATASET_EPISODES}"
+    "BASE_DATASET_SEED=${BASE_DATASET_SEED}"
+    "BATCH_SIZE=${BATCH_SIZE}"
+    "DROP_LAST_BATCH=${DROP_LAST_BATCH}"
+    "SAMPLING_MODE=${SAMPLING_MODE}"
+    "HIDDEN_DIM=${HIDDEN_DIM}"
+    "ACTOR_LR=${ACTOR_LR}"
+    "CRITIC_LR=${CRITIC_LR}"
+    "GAMMA=${GAMMA}"
+    "TAU=${TAU}"
+    "POLICY_NOISE=${POLICY_NOISE}"
+    "NOISE_CLIP=${NOISE_CLIP}"
+    "POLICY_FREQ=${POLICY_FREQ}"
+    "NORMALIZER_EPS=${NORMALIZER_EPS}"
+    "GRAD_CLIP_NORM=${GRAD_CLIP_NORM}"
+    "LOG_EVERY=${LOG_EVERY}"
+    "USE_LAYERNORM=${USE_LAYERNORM}"
+    "USE_ASYMMETRIC_CRITIC=${USE_ASYMMETRIC_CRITIC}"
+    "PRIVILEGED_ACTOR_UPDATE_MODE=${PRIVILEGED_ACTOR_UPDATE_MODE}"
+    "RUN_BASELINE_EVAL=${RUN_BASELINE_EVAL}"
+    "EVAL_WORKERS=${EVAL_WORKERS}"
+    "EVAL_WORKER_DEVICE=${EVAL_WORKER_DEVICE}"
+    "VALIDATION_SEED=${VALIDATION_SEED}"
+    "TEST_SEED=${TEST_SEED}"
+    "FORCE_REEVAL=${FORCE_REEVAL}"
+  )
+  if [[ -n "$PYTHON_PREFIX" ]]; then
+    env_args+=("PYTHON_PREFIX=${PYTHON_PREFIX}")
+  fi
+  while (($#)); do
+    env_args+=("$1")
+    shift
+  done
+  run_cmd env "${env_args[@]}" bash scripts/run_offline_td3bc_phase0b_v2.sh
+}
+
+run_stage_a() {
+  run_phase0b_v2_child validate \
+    "SIZE_ABLATION_EPISODES=${STAGE_A_EPISODES}" \
+    "SIZE_ABLATION_ALPHAS=${STAGE_A_ALPHAS}" \
+    "SIZE_ABLATION_SEEDS=${STAGE_A_SEEDS}" \
+    "CHECKPOINT_ROOT=${PHASE0B_V2_CHECKPOINT_ROOT}" \
+    "RESULTS_ROOT=${STAGE_A_RESULTS_ROOT}" \
+    "MANIFEST_ROOT=${STAGE_A_MANIFEST_ROOT}" \
+    "VAL_MANIFEST_EPISODES=${STAGE_A_VAL_MANIFEST_EPISODES}" \
+    "TEST_MANIFEST_EPISODES=${STAGE_A_VAL_MANIFEST_EPISODES}"
+
+  run_phase0b_v2_child select \
+    "SIZE_ABLATION_EPISODES=${STAGE_A_EPISODES}" \
+    "SIZE_ABLATION_ALPHAS=${STAGE_A_ALPHAS}" \
+    "SIZE_ABLATION_SEEDS=${STAGE_A_SEEDS}" \
+    "CHECKPOINT_ROOT=${PHASE0B_V2_CHECKPOINT_ROOT}" \
+    "RESULTS_ROOT=${STAGE_A_RESULTS_ROOT}" \
+    "MANIFEST_ROOT=${STAGE_A_MANIFEST_ROOT}" \
+    "VAL_MANIFEST_EPISODES=${STAGE_A_VAL_MANIFEST_EPISODES}" \
+    "TEST_MANIFEST_EPISODES=${STAGE_A_VAL_MANIFEST_EPISODES}"
+
+  run_phase0b_v2_child analyze \
+    "SIZE_ABLATION_EPISODES=${STAGE_A_EPISODES}" \
+    "SIZE_ABLATION_ALPHAS=${STAGE_A_ALPHAS}" \
+    "SIZE_ABLATION_SEEDS=${STAGE_A_SEEDS}" \
+    "CHECKPOINT_ROOT=${PHASE0B_V2_CHECKPOINT_ROOT}" \
+    "RESULTS_ROOT=${STAGE_A_RESULTS_ROOT}" \
+    "MANIFEST_ROOT=${STAGE_A_MANIFEST_ROOT}" \
+    "VAL_MANIFEST_EPISODES=${STAGE_A_VAL_MANIFEST_EPISODES}" \
+    "TEST_MANIFEST_EPISODES=${STAGE_A_VAL_MANIFEST_EPISODES}" \
+    "RUN_BC_TEST_ANALYSIS=0" \
+    "SKIP_ANALYSIS_PLOTS=1"
+}
+
+run_stage_b() {
+  local episodes alphas
+  for episodes in $STAGE_B_EPISODES; do
+    alphas="$(stage_b_alphas_for_episodes "$episodes")"
+    run_phase0b_v2_child train \
+      "SIZE_ABLATION_EPISODES=${episodes}" \
+      "SIZE_ABLATION_ALPHAS=${alphas}" \
+      "SIZE_ABLATION_SEEDS=${STAGE_B_SEEDS}" \
+      "TRAIN_EPOCHS=${STAGE_B_TRAIN_EPOCHS}" \
+      "CHECKPOINT_EVERY_EPOCHS=${STAGE_B_CHECKPOINT_EVERY_EPOCHS}" \
+      "CHECKPOINT_ROOT=${STAGE_B_CHECKPOINT_ROOT}" \
+      "RESULTS_ROOT=${STAGE_B_RESULTS_ROOT}" \
+      "MANIFEST_ROOT=${STAGE_B_MANIFEST_ROOT}" \
+      "VAL_MANIFEST_EPISODES=${STAGE_B_VAL_MANIFEST_EPISODES}" \
+      "TEST_MANIFEST_EPISODES=${STAGE_B_TEST_MANIFEST_EPISODES}"
+
+    run_phase0b_v2_child validate \
+      "SIZE_ABLATION_EPISODES=${episodes}" \
+      "SIZE_ABLATION_ALPHAS=${alphas}" \
+      "SIZE_ABLATION_SEEDS=${STAGE_B_SEEDS}" \
+      "TRAIN_EPOCHS=${STAGE_B_TRAIN_EPOCHS}" \
+      "CHECKPOINT_EVERY_EPOCHS=${STAGE_B_CHECKPOINT_EVERY_EPOCHS}" \
+      "CHECKPOINT_ROOT=${STAGE_B_CHECKPOINT_ROOT}" \
+      "RESULTS_ROOT=${STAGE_B_RESULTS_ROOT}" \
+      "MANIFEST_ROOT=${STAGE_B_MANIFEST_ROOT}" \
+      "VAL_MANIFEST_EPISODES=${STAGE_B_VAL_MANIFEST_EPISODES}" \
+      "TEST_MANIFEST_EPISODES=${STAGE_B_TEST_MANIFEST_EPISODES}"
+
+    run_phase0b_v2_child summarize \
+      "SIZE_ABLATION_EPISODES=${episodes}" \
+      "SIZE_ABLATION_ALPHAS=${alphas}" \
+      "SIZE_ABLATION_SEEDS=${STAGE_B_SEEDS}" \
+      "TRAIN_EPOCHS=${STAGE_B_TRAIN_EPOCHS}" \
+      "CHECKPOINT_EVERY_EPOCHS=${STAGE_B_CHECKPOINT_EVERY_EPOCHS}" \
+      "CHECKPOINT_ROOT=${STAGE_B_CHECKPOINT_ROOT}" \
+      "RESULTS_ROOT=${STAGE_B_RESULTS_ROOT}" \
+      "MANIFEST_ROOT=${STAGE_B_MANIFEST_ROOT}" \
+      "VAL_MANIFEST_EPISODES=${STAGE_B_VAL_MANIFEST_EPISODES}" \
+      "TEST_MANIFEST_EPISODES=${STAGE_B_TEST_MANIFEST_EPISODES}"
+  done
+
+  run_phase0b_v2_child analyze \
+    "SIZE_ABLATION_EPISODES=${STAGE_B_EPISODES}" \
+    "SIZE_ABLATION_ALPHAS=0.0 0.05 0.1 0.15 0.2 0.25 0.5 0.75" \
+    "SIZE_ABLATION_SEEDS=${STAGE_B_SEEDS}" \
+    "CHECKPOINT_ROOT=${STAGE_B_CHECKPOINT_ROOT}" \
+    "RESULTS_ROOT=${STAGE_B_RESULTS_ROOT}" \
+    "MANIFEST_ROOT=${STAGE_B_MANIFEST_ROOT}" \
+    "VAL_MANIFEST_EPISODES=${STAGE_B_VAL_MANIFEST_EPISODES}" \
+    "TEST_MANIFEST_EPISODES=${STAGE_B_TEST_MANIFEST_EPISODES}"
+}
+
+run_stage_c() {
+  local episodes finalist_alpha
+  for episodes in $STAGE_C_EPISODES; do
+    finalist_alpha="$(stage_c_alpha_from_stage_b "$episodes")"
+    run_phase0b_v2_child train \
+      "SIZE_ABLATION_EPISODES=${episodes}" \
+      "SIZE_ABLATION_ALPHAS=${finalist_alpha}" \
+      "SIZE_ABLATION_SEEDS=${STAGE_C_SEEDS}" \
+      "TRAIN_EPOCHS=${STAGE_C_TRAIN_EPOCHS}" \
+      "CHECKPOINT_EVERY_EPOCHS=${STAGE_C_CHECKPOINT_EVERY_EPOCHS}" \
+      "CHECKPOINT_ROOT=${STAGE_C_CHECKPOINT_ROOT}" \
+      "RESULTS_ROOT=${STAGE_C_RESULTS_ROOT}" \
+      "MANIFEST_ROOT=${STAGE_C_MANIFEST_ROOT}" \
+      "VAL_MANIFEST_EPISODES=${STAGE_C_VAL_MANIFEST_EPISODES}" \
+      "TEST_MANIFEST_EPISODES=${STAGE_C_TEST_MANIFEST_EPISODES}"
+
+    run_phase0b_v2_child validate \
+      "SIZE_ABLATION_EPISODES=${episodes}" \
+      "SIZE_ABLATION_ALPHAS=${finalist_alpha}" \
+      "SIZE_ABLATION_SEEDS=${STAGE_C_SEEDS}" \
+      "TRAIN_EPOCHS=${STAGE_C_TRAIN_EPOCHS}" \
+      "CHECKPOINT_EVERY_EPOCHS=${STAGE_C_CHECKPOINT_EVERY_EPOCHS}" \
+      "CHECKPOINT_ROOT=${STAGE_C_CHECKPOINT_ROOT}" \
+      "RESULTS_ROOT=${STAGE_C_RESULTS_ROOT}" \
+      "MANIFEST_ROOT=${STAGE_C_MANIFEST_ROOT}" \
+      "VAL_MANIFEST_EPISODES=${STAGE_C_VAL_MANIFEST_EPISODES}" \
+      "TEST_MANIFEST_EPISODES=${STAGE_C_TEST_MANIFEST_EPISODES}"
+
+    run_phase0b_v2_child summarize \
+      "SIZE_ABLATION_EPISODES=${episodes}" \
+      "SIZE_ABLATION_ALPHAS=${finalist_alpha}" \
+      "SIZE_ABLATION_SEEDS=${STAGE_C_SEEDS}" \
+      "TRAIN_EPOCHS=${STAGE_C_TRAIN_EPOCHS}" \
+      "CHECKPOINT_EVERY_EPOCHS=${STAGE_C_CHECKPOINT_EVERY_EPOCHS}" \
+      "CHECKPOINT_ROOT=${STAGE_C_CHECKPOINT_ROOT}" \
+      "RESULTS_ROOT=${STAGE_C_RESULTS_ROOT}" \
+      "MANIFEST_ROOT=${STAGE_C_MANIFEST_ROOT}" \
+      "VAL_MANIFEST_EPISODES=${STAGE_C_VAL_MANIFEST_EPISODES}" \
+      "TEST_MANIFEST_EPISODES=${STAGE_C_TEST_MANIFEST_EPISODES}"
+  done
+
+  run_phase0b_v2_child analyze \
+    "SIZE_ABLATION_EPISODES=${STAGE_C_EPISODES}" \
+    "SIZE_ABLATION_ALPHAS=0.0 0.05 0.1 0.25 0.5 0.75 1.0" \
+    "SIZE_ABLATION_SEEDS=${STAGE_C_SEEDS}" \
+    "CHECKPOINT_ROOT=${STAGE_C_CHECKPOINT_ROOT}" \
+    "RESULTS_ROOT=${STAGE_C_RESULTS_ROOT}" \
+    "MANIFEST_ROOT=${STAGE_C_MANIFEST_ROOT}" \
+    "VAL_MANIFEST_EPISODES=${STAGE_C_VAL_MANIFEST_EPISODES}" \
+    "TEST_MANIFEST_EPISODES=${STAGE_C_TEST_MANIFEST_EPISODES}"
+}
+
+case "$MODE" in
+  all)
+    run_stage_a
+    run_stage_b
+    run_stage_c
+    ;;
+  stage_a)
+    run_stage_a
+    ;;
+  stage_b)
+    run_stage_b
+    ;;
+  stage_c)
+    run_stage_c
+    ;;
+  *)
+    echo "Unsupported MODE: ${MODE}"
+    echo "Supported MODE values: all, stage_a, stage_b, stage_c"
+    exit 1
+    ;;
+esac

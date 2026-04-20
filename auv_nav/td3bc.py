@@ -30,7 +30,7 @@ class TD3BCConfig:
     hidden_dim: int = 256
     actor_lr: float = 3e-4
     critic_lr: float = 3e-4
-    gamma: float = 0.995
+    gamma: float = 0.99
     tau: float = 0.005
     alpha: float = 2.5
     policy_noise: float = 0.2

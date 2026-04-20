@@ -6,7 +6,7 @@ import math
 import random
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import numpy as np
 
@@ -52,6 +52,9 @@ class OfflineTrainConfig:
     skip_final_eval: bool = False
     eval_workers: int = 1
     eval_worker_device: str = "cpu"
+    sampling_mode: str = "uniform"
+    num_epochs: int | None = None
+    drop_last_batch: bool = False
 
 
 def _json_ready(value: Any) -> Any:
@@ -158,6 +161,56 @@ def _metric_score(metrics: dict[str, Any]) -> tuple[float, float]:
         float(metrics["eval_success_rate"]),
         float(metrics["eval_return"]),
     )
+
+
+def _steps_per_epoch(
+    num_transitions: int,
+    batch_size: int,
+    *,
+    drop_last: bool,
+) -> int:
+    if num_transitions <= 0:
+        raise ValueError("Offline dataset is empty.")
+    batch_size = max(1, int(batch_size))
+    if drop_last:
+        steps = num_transitions // batch_size
+        if steps <= 0:
+            raise ValueError(
+                "drop_last_batch=True requires num_transitions >= batch_size."
+            )
+        return steps
+    return max(1, math.ceil(num_transitions / batch_size))
+
+
+def _training_batches(
+    offline_replay: TransitionReplay,
+    train_cfg: OfflineTrainConfig,
+    device: "torch.device | str",
+) -> Iterator[tuple[int | None, int | None, dict[str, "torch.Tensor"]]]:
+    if train_cfg.sampling_mode == "uniform":
+        for _ in range(train_cfg.total_steps):
+            yield None, None, offline_replay.sample_batch(train_cfg.batch_size, device)
+        return
+
+    if train_cfg.sampling_mode != "shuffle_no_replacement":
+        raise ValueError(f"Unsupported sampling mode: {train_cfg.sampling_mode!r}")
+    if train_cfg.num_epochs is None or train_cfg.num_epochs <= 0:
+        raise ValueError(
+            "--num-epochs must be set to a positive integer when "
+            "--sampling-mode=shuffle_no_replacement."
+        )
+
+    for epoch_idx in range(1, train_cfg.num_epochs + 1):
+        for epoch_step, batch in enumerate(
+            offline_replay.iter_batches(
+                train_cfg.batch_size,
+                device,
+                shuffle=True,
+                drop_last=train_cfg.drop_last_batch,
+            ),
+            start=1,
+        ):
+            yield epoch_idx, epoch_step, batch
 
 
 def _evaluate_current_policy(
@@ -272,6 +325,9 @@ def train(args: argparse.Namespace) -> None:
         skip_final_eval=args.skip_final_eval,
         eval_workers=max(1, int(args.eval_workers)),
         eval_worker_device=args.eval_worker_device,
+        sampling_mode=args.sampling_mode,
+        num_epochs=args.num_epochs,
+        drop_last_batch=args.drop_last_batch,
     )
 
     random.seed(train_cfg.seed)
@@ -306,6 +362,18 @@ def train(args: argparse.Namespace) -> None:
     offline_data_path = Path(args.offline_data)
     offline_replay = TransitionReplay.from_npz(offline_data_path)
     offline_metadata = _load_offline_metadata(offline_data_path)
+    if train_cfg.sampling_mode == "shuffle_no_replacement":
+        steps_per_epoch = _steps_per_epoch(
+            len(offline_replay),
+            train_cfg.batch_size,
+            drop_last=train_cfg.drop_last_batch,
+        )
+        if train_cfg.num_epochs is None or train_cfg.num_epochs <= 0:
+            raise ValueError(
+                "--num-epochs must be set to a positive integer when "
+                "--sampling-mode=shuffle_no_replacement."
+            )
+        train_cfg.total_steps = steps_per_epoch * train_cfg.num_epochs
     eval_flow_path = _resolve_eval_flow_path(
         args,
         offline_metadata,
@@ -382,21 +450,29 @@ def train(args: argparse.Namespace) -> None:
         f"[offline] transitions={len(offline_replay)} obs_dim={offline_replay.obs_dim} "
         f"action_dim={offline_replay.action_dim} protocol={protocol_label} "
         f"tensor_replay={'on' if offline_replay.has_tensor_cache(agent.device) else 'off'} "
-        f"eval_workers={train_cfg.eval_workers}"
+        f"eval_workers={train_cfg.eval_workers} "
+        f"sampling={train_cfg.sampling_mode} total_steps={train_cfg.total_steps}"
     )
 
-    for step in range(1, train_cfg.total_steps + 1):
-        batch = offline_replay.sample_batch(train_cfg.batch_size, agent.device)
+    for step, (epoch_idx, epoch_step, batch) in enumerate(
+        _training_batches(offline_replay, train_cfg, agent.device),
+        start=1,
+    ):
         metrics = agent.update(batch)
 
         if step % train_cfg.log_every_steps == 0 or step == 1:
             log_row = {
                 "train_step": step,
+                "epoch": epoch_idx,
+                "epoch_step": epoch_step,
                 **metrics,
             }
             append_jsonl(train_log_path, log_row)
+            train_prefix = f"[train] step={step}"
+            if epoch_idx is not None and epoch_step is not None:
+                train_prefix += f" epoch={epoch_idx} epoch_step={epoch_step}"
             print(
-                f"[train] step={step} q={metrics['mean_q']:.3f} "
+                f"{train_prefix} q={metrics['mean_q']:.3f} "
                 f"critic={metrics['critic_loss']:.3f} actor={metrics['actor_loss']:.3f} "
                 f"bc={metrics['bc_loss']:.3f} lambda={metrics['lambda']:.3f}"
             )
@@ -466,6 +542,7 @@ def train(args: argparse.Namespace) -> None:
             next_eval_step += train_cfg.eval_every_steps
 
         if next_checkpoint_step is not None and step >= next_checkpoint_step:
+            agent.save(str(save_dir / f"agent_step_{step:08d}.pt"))
             _save_offline_training_state(
                 save_dir,
                 agent,
@@ -571,6 +648,31 @@ def main() -> None:
     parser.add_argument("--safety-cost-gain", type=float, default=None)
     parser.add_argument("--total-steps", type=int, default=200_000)
     parser.add_argument("--batch-size", type=int, default=256)
+    parser.add_argument(
+        "--sampling-mode",
+        choices=["uniform", "shuffle_no_replacement"],
+        default="uniform",
+        help=(
+            "Offline mini-batch sampling protocol. "
+            "'uniform' matches standard replay sampling with replacement. "
+            "'shuffle_no_replacement' iterates over the dataset once per epoch."
+        ),
+    )
+    parser.add_argument(
+        "--num-epochs",
+        type=int,
+        default=None,
+        help=(
+            "Number of offline epochs when --sampling-mode=shuffle_no_replacement. "
+            "Ignored for uniform replay sampling."
+        ),
+    )
+    parser.add_argument(
+        "--drop-last-batch",
+        action="store_true",
+        default=False,
+        help="Drop the final partial batch in shuffle_no_replacement mode.",
+    )
     parser.add_argument(
         "--eval-every",
         type=int,

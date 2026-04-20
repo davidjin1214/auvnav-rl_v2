@@ -19,6 +19,7 @@ import json
 import multiprocessing as mp
 import time
 from concurrent.futures import ProcessPoolExecutor
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -48,16 +49,29 @@ POLICY_MAP = {
     "privileged": PrivilegedCorridorPolicy,
 }
 
+TERMINATION_REASON_TO_CODE = {
+    "running": 0,
+    "goal": 1,
+    "timeout": 2,
+    "out_of_bounds": 3,
+}
+BEHAVIOR_POLICY_TO_CODE = {
+    policy_name: index for index, policy_name in enumerate(sorted(POLICY_MAP.keys()))
+}
+
 
 @dataclass(slots=True)
 class CollectWorkerConfig:
     policy_name: str
+    policy_mixture: tuple[tuple[str, float], ...]
     flow_path: str
     history_length: int
     probe_layout: str
     env_config_overrides: dict[str, Any]
     reset_options: dict[str, Any]
     base_seed: int
+    action_noise_std: float
+    action_noise_clip: float
 
 
 @dataclass(slots=True)
@@ -68,12 +82,57 @@ class CollectChunkResult:
     successes: int
     episode_returns: list[float]
     episode_lengths: list[int]
+    episode_reasons: list[str]
+    episode_policy_names: list[str]
 
 
 def _make_policy(policy_name: str) -> Any:
     if policy_name not in POLICY_MAP:
         raise ValueError(f"Unsupported baseline policy: {policy_name!r}")
     return POLICY_MAP[policy_name]()
+
+
+def _parse_policy_mixture(
+    policy_name: str,
+    policy_mixture: str | None,
+) -> tuple[tuple[str, float], ...]:
+    if policy_mixture is None or not str(policy_mixture).strip():
+        return ((policy_name, 1.0),)
+
+    entries: list[tuple[str, float]] = []
+    for raw_entry in str(policy_mixture).split(","):
+        entry = raw_entry.strip()
+        if not entry:
+            continue
+        if ":" not in entry:
+            raise ValueError(
+                "Each --policy-mixture entry must have the form policy:weight."
+            )
+        item_policy, raw_weight = (part.strip() for part in entry.split(":", 1))
+        if item_policy not in POLICY_MAP:
+            raise ValueError(f"Unsupported policy in --policy-mixture: {item_policy!r}")
+        weight = float(raw_weight)
+        if weight <= 0.0:
+            raise ValueError("Policy mixture weights must be positive.")
+        entries.append((item_policy, weight))
+
+    if not entries:
+        raise ValueError("--policy-mixture produced no valid entries.")
+
+    total_weight = sum(weight for _, weight in entries)
+    return tuple((name, weight / total_weight) for name, weight in entries)
+
+
+def _sample_policy_name(
+    policy_mixture: tuple[tuple[str, float], ...],
+    rng: np.random.Generator,
+) -> str:
+    if len(policy_mixture) == 1:
+        return policy_mixture[0][0]
+    names = [name for name, _ in policy_mixture]
+    probs = np.asarray([weight for _, weight in policy_mixture], dtype=np.float64)
+    index = int(rng.choice(len(names), p=probs))
+    return names[index]
 
 
 def _collect_episode(
@@ -83,7 +142,11 @@ def _collect_episode(
     *,
     seed: int,
     reset_options: dict[str, Any],
-) -> tuple[dict[str, list[Any]], bool, float, int]:
+    action_noise_std: float,
+    action_noise_clip: float,
+    episode_rng: np.random.Generator,
+    behavior_policy_name: str,
+) -> tuple[dict[str, list[Any]], bool, float, int, str]:
     obs, info = env.reset(seed=seed, options=reset_options)
     current_privileged_obs = info.get("privileged_obs")
     ep_return = 0.0
@@ -96,6 +159,10 @@ def _collect_episode(
         "costs": [],
         "next_obs": [],
         "dones": [],
+        "terminateds": [],
+        "truncateds": [],
+        "terminal_reason_codes": [],
+        "behavior_policy_codes": [],
         "privileged_obs": [],
         "next_privileged_obs": [],
     }
@@ -107,15 +174,38 @@ def _collect_episode(
         else:
             single_obs = np.asarray(obs, dtype=np.float32)
 
-        action = policy.act(base_env, single_obs)
+        action = np.asarray(policy.act(base_env, single_obs), dtype=np.float32)
+        if action_noise_std > 0.0:
+            noise = episode_rng.normal(
+                loc=0.0,
+                scale=action_noise_std,
+                size=action.shape,
+            ).astype(np.float32)
+            if action_noise_clip > 0.0:
+                noise = np.clip(noise, -action_noise_clip, action_noise_clip)
+            action = np.clip(
+                action + noise,
+                env.action_space.low,
+                env.action_space.high,
+            ).astype(np.float32)
         next_obs, reward, terminated, truncated, info = env.step(action)
+        done = terminated or truncated
+        terminal_reason = str(info.get("reason", "running")) if done else "running"
+        terminal_reason_code = TERMINATION_REASON_TO_CODE.get(
+            terminal_reason,
+            TERMINATION_REASON_TO_CODE["running"],
+        )
 
         transitions["obs"].append(np.asarray(obs, dtype=np.float32))
         transitions["actions"].append(np.asarray(action, dtype=np.float32))
         transitions["rewards"].append(float(reward))
         transitions["costs"].append(float(info.get("step_safety_cost", 0.0)))
         transitions["next_obs"].append(np.asarray(next_obs, dtype=np.float32))
-        transitions["dones"].append(bool(terminated))
+        transitions["dones"].append(bool(done))
+        transitions["terminateds"].append(bool(terminated))
+        transitions["truncateds"].append(bool(truncated))
+        transitions["terminal_reason_codes"].append(int(terminal_reason_code))
+        transitions["behavior_policy_codes"].append(BEHAVIOR_POLICY_TO_CODE[behavior_policy_name])
         if current_privileged_obs is not None:
             transitions["privileged_obs"].append(
                 np.asarray(current_privileged_obs, dtype=np.float32)
@@ -130,9 +220,14 @@ def _collect_episode(
         ep_length += 1
         obs = next_obs
         current_privileged_obs = next_privileged_obs
-        done = terminated or truncated
 
-    return transitions, bool(info.get("success", False)), ep_return, ep_length
+    return (
+        transitions,
+        bool(info.get("success", False)),
+        ep_return,
+        ep_length,
+        str(info.get("reason", "running")),
+    )
 
 
 def _collect_episode_range(
@@ -148,7 +243,9 @@ def _collect_episode_range(
     )
     try:
         base_env = env.env if isinstance(env, ObservationHistoryWrapper) else env
-        policy = _make_policy(worker_config.policy_name)
+        policy_cache = {
+            name: _make_policy(name) for name, _ in worker_config.policy_mixture
+        }
         transitions: dict[str, list[Any]] = {
             "obs": [],
             "actions": [],
@@ -156,26 +253,42 @@ def _collect_episode_range(
             "costs": [],
             "next_obs": [],
             "dones": [],
+            "terminateds": [],
+            "truncateds": [],
+            "terminal_reason_codes": [],
+            "behavior_policy_codes": [],
             "privileged_obs": [],
             "next_privileged_obs": [],
         }
         successes = 0
         episode_returns: list[float] = []
         episode_lengths: list[int] = []
+        episode_reasons: list[str] = []
+        episode_policy_names: list[str] = []
 
         for ep in range(start_episode, end_episode):
-            episode_transitions, success, ep_return, ep_length = _collect_episode(
+            episode_seed = worker_config.base_seed + ep
+            episode_rng = np.random.default_rng(episode_seed)
+            policy_name = _sample_policy_name(worker_config.policy_mixture, episode_rng)
+            policy = policy_cache[policy_name]
+            episode_transitions, success, ep_return, ep_length, ep_reason = _collect_episode(
                 env,
                 base_env,
                 policy,
-                seed=worker_config.base_seed + ep,
+                seed=episode_seed,
                 reset_options=worker_config.reset_options,
+                action_noise_std=worker_config.action_noise_std,
+                action_noise_clip=worker_config.action_noise_clip,
+                episode_rng=episode_rng,
+                behavior_policy_name=policy_name,
             )
             for key, values in episode_transitions.items():
                 transitions[key].extend(values)
             successes += int(success)
             episode_returns.append(ep_return)
             episode_lengths.append(ep_length)
+            episode_reasons.append(ep_reason)
+            episode_policy_names.append(policy_name)
 
         payload = {
             "obs": np.asarray(transitions["obs"], dtype=np.float32),
@@ -184,6 +297,16 @@ def _collect_episode_range(
             "costs": np.asarray(transitions["costs"], dtype=np.float32),
             "next_obs": np.asarray(transitions["next_obs"], dtype=np.float32),
             "dones": np.asarray(transitions["dones"], dtype=np.float32),
+            "terminateds": np.asarray(transitions["terminateds"], dtype=np.float32),
+            "truncateds": np.asarray(transitions["truncateds"], dtype=np.float32),
+            "terminal_reason_codes": np.asarray(
+                transitions["terminal_reason_codes"],
+                dtype=np.int8,
+            ),
+            "behavior_policy_codes": np.asarray(
+                transitions["behavior_policy_codes"],
+                dtype=np.int8,
+            ),
         }
         if transitions["privileged_obs"]:
             payload["privileged_obs"] = np.asarray(
@@ -203,6 +326,8 @@ def _collect_episode_range(
             successes=successes,
             episode_returns=episode_returns,
             episode_lengths=episode_lengths,
+            episode_reasons=episode_reasons,
+            episode_policy_names=episode_policy_names,
         )
     finally:
         env.close()
@@ -228,6 +353,10 @@ def _merge_chunk_payloads(results: list[CollectChunkResult]) -> dict[str, np.nda
         "costs",
         "next_obs",
         "dones",
+        "terminateds",
+        "truncateds",
+        "terminal_reason_codes",
+        "behavior_policy_codes",
         "privileged_obs",
         "next_privileged_obs",
     ]
@@ -303,12 +432,15 @@ def collect(args: argparse.Namespace) -> None:
 
     worker_config = CollectWorkerConfig(
         policy_name=args.policy,
+        policy_mixture=_parse_policy_mixture(args.policy, args.policy_mixture),
         flow_path=str(flow_path),
         history_length=history_length,
         probe_layout=probe_layout,
         env_config_overrides=dict(env_config_overrides),
         reset_options=dict(reset_options),
         base_seed=int(args.seed),
+        action_noise_std=float(args.action_noise_std),
+        action_noise_clip=float(args.action_noise_clip),
     )
 
     t0 = time.time()
@@ -340,6 +472,22 @@ def collect(args: argparse.Namespace) -> None:
         for result in sorted(results, key=lambda item: item.start_episode)
         for value in result.episode_lengths
     ]
+    episode_reasons = [
+        value
+        for result in sorted(results, key=lambda item: item.start_episode)
+        for value in result.episode_reasons
+    ]
+    reason_counts = Counter(episode_reasons)
+    policy_counts = Counter(
+        value
+        for result in sorted(results, key=lambda item: item.start_episode)
+        for value in result.episode_policy_names
+    )
+    other_reasons = sum(
+        count
+        for reason, count in reason_counts.items()
+        if reason not in {"goal", "timeout", "out_of_bounds"}
+    )
 
     # Save transitions as compressed npz.
     output_dir = Path(args.output_dir)
@@ -351,6 +499,11 @@ def collect(args: argparse.Namespace) -> None:
     n_transitions = int(payload["obs"].shape[0])
     metadata = {
         "policy": args.policy,
+        "policy_mixture": [
+            {"policy": name, "weight": weight} for name, weight in worker_config.policy_mixture
+        ],
+        "action_noise_std": float(args.action_noise_std),
+        "action_noise_clip": float(args.action_noise_clip),
         "flow_path": str(flow_path),
         "probe_layout": args.probe_layout,
         "history_length": args.history_length,
@@ -368,6 +521,14 @@ def collect(args: argparse.Namespace) -> None:
         "num_episodes": args.episodes,
         "num_transitions": n_transitions,
         "success_rate": successes / max(1, args.episodes),
+        "goal_rate": reason_counts.get("goal", 0) / max(1, args.episodes),
+        "timeout_rate": reason_counts.get("timeout", 0) / max(1, args.episodes),
+        "out_of_bounds_rate": reason_counts.get("out_of_bounds", 0) / max(1, args.episodes),
+        "other_terminal_rate": other_reasons / max(1, args.episodes),
+        "episode_outcome_counts": dict(sorted(reason_counts.items())),
+        "policy_episode_counts": dict(sorted(policy_counts.items())),
+        "terminal_reason_vocab": TERMINATION_REASON_TO_CODE,
+        "behavior_policy_vocab": BEHAVIOR_POLICY_TO_CODE,
         "mean_return": float(np.mean(episode_returns)),
         "std_return": float(np.std(episode_returns)),
         "mean_episode_length": float(np.mean(episode_lengths)),
@@ -423,6 +584,27 @@ def main() -> None:
     parser.add_argument("--safety-cost-gain", type=float, default=None)
     parser.add_argument("--episodes", type=int, default=500)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--policy-mixture",
+        type=str,
+        default=None,
+        help=(
+            "Optional episode-level behavior mixture, e.g. "
+            "'crosscomp:0.8,goalseek:0.2'. Overrides the single-policy collector."
+        ),
+    )
+    parser.add_argument(
+        "--action-noise-std",
+        type=float,
+        default=0.0,
+        help="Gaussian action noise std applied to the baseline actions during collection.",
+    )
+    parser.add_argument(
+        "--action-noise-clip",
+        type=float,
+        default=0.5,
+        help="Per-dimension clip applied to the action noise before action-space clipping.",
+    )
     parser.add_argument(
         "--num-workers",
         type=int,

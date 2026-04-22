@@ -155,6 +155,7 @@ def _collect_episode(
     transitions: dict[str, list[Any]] = {
         "obs": [],
         "actions": [],
+        "next_actions": [],
         "rewards": [],
         "costs": [],
         "next_obs": [],
@@ -221,6 +222,14 @@ def _collect_episode(
         obs = next_obs
         current_privileged_obs = next_privileged_obs
 
+    episode_actions = transitions["actions"]
+    for idx, action in enumerate(episode_actions):
+        if idx + 1 < len(episode_actions) and not transitions["dones"][idx]:
+            next_action = episode_actions[idx + 1]
+        else:
+            next_action = np.zeros_like(action, dtype=np.float32)
+        transitions["next_actions"].append(np.asarray(next_action, dtype=np.float32))
+
     return (
         transitions,
         bool(info.get("success", False)),
@@ -249,6 +258,7 @@ def _collect_episode_range(
         transitions: dict[str, list[Any]] = {
             "obs": [],
             "actions": [],
+            "next_actions": [],
             "rewards": [],
             "costs": [],
             "next_obs": [],
@@ -293,6 +303,7 @@ def _collect_episode_range(
         payload = {
             "obs": np.asarray(transitions["obs"], dtype=np.float32),
             "actions": np.asarray(transitions["actions"], dtype=np.float32),
+            "next_actions": np.asarray(transitions["next_actions"], dtype=np.float32),
             "rewards": np.asarray(transitions["rewards"], dtype=np.float32),
             "costs": np.asarray(transitions["costs"], dtype=np.float32),
             "next_obs": np.asarray(transitions["next_obs"], dtype=np.float32),
@@ -349,6 +360,7 @@ def _merge_chunk_payloads(results: list[CollectChunkResult]) -> dict[str, np.nda
     payload_keys = [
         "obs",
         "actions",
+        "next_actions",
         "rewards",
         "costs",
         "next_obs",

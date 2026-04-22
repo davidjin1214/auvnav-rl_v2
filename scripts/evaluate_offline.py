@@ -1,4 +1,4 @@
-"""Evaluate a saved offline TD3+BC checkpoint."""
+"""Evaluate a saved offline checkpoint."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import json
 import math
 from pathlib import Path
 
+from auv_nav.offline_registry import make_agent_from_config_dict, normalize_offline_algo
 from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
-from auv_nav.td3bc import TD3BCAgent, TD3BCConfig
 from .train_utils import (
     default_device,
     evaluate_agent,
@@ -65,7 +65,7 @@ def _print_metrics(metrics: dict[str, float], manifest_path: Path | None) -> Non
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate a saved offline TD3+BC checkpoint.")
+    parser = argparse.ArgumentParser(description="Evaluate a saved offline checkpoint.")
     parser.add_argument("--checkpoint", type=str, required=True,
                         help="Run directory or trainer_state.json path.")
     parser.add_argument(
@@ -120,9 +120,7 @@ def main() -> None:
     args = parser.parse_args()
 
     trainer_state = load_trainer_state(args.checkpoint)
-    algo = trainer_state.get("algo") or trainer_state.get("algorithm")
-    if algo != "td3bc":
-        raise ValueError(f"Unsupported offline algorithm: {algo!r}")
+    algo = normalize_offline_algo(trainer_state.get("algo") or trainer_state.get("algorithm"))
 
     agent_cfg_dict = trainer_state["agent_config"]
     reset_options = {**trainer_state.get("reset_options", {}), **make_reset_options(args)}
@@ -173,6 +171,7 @@ def main() -> None:
 
     if args.num_workers > 1:
         metrics = evaluate_offline_checkpoint_parallel(
+            algo=algo,
             checkpoint_path=checkpoint_path,
             agent_config=agent_cfg_dict,
             flow_path=str(flow_path),
@@ -194,7 +193,7 @@ def main() -> None:
             env_config_overrides=env_config_overrides,
         )
         try:
-            agent = TD3BCAgent(TD3BCConfig(**agent_cfg_dict), device=args.device)
+            agent = make_agent_from_config_dict(algo, agent_cfg_dict, device=args.device)
             agent.load(checkpoint_path)
             metrics = evaluate_agent(
                 env=env,

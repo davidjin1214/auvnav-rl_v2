@@ -3,24 +3,29 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+from auv_nav.rebrac import ReBRACAgent, ReBRACConfig
 from auv_nav.replay import TransitionReplay, TransitionReplayConfig
 from auv_nav.td3bc import ObservationNormalizer, TD3BCAgent, TD3BCConfig
 
 
-def _make_batch(batch_size: int, obs_dim: int, action_dim: int):
+def _make_batch(batch_size: int, obs_dim: int, action_dim: int, *, include_next_actions: bool = False):
     rng = np.random.default_rng(0)
     obs = rng.normal(size=(batch_size, obs_dim)).astype(np.float32)
     next_obs = rng.normal(size=(batch_size, obs_dim)).astype(np.float32)
     actions = np.clip(rng.normal(size=(batch_size, action_dim)), -1.0, 1.0).astype(np.float32)
+    next_actions = np.clip(rng.normal(size=(batch_size, action_dim)), -1.0, 1.0).astype(np.float32)
     rewards = rng.normal(size=(batch_size,)).astype(np.float32)
     dones = rng.integers(0, 2, size=(batch_size,), endpoint=False).astype(np.float32)
-    return {
+    batch = {
         "obs": torch.as_tensor(obs),
         "actions": torch.as_tensor(actions),
         "rewards": torch.as_tensor(rewards),
         "next_obs": torch.as_tensor(next_obs),
         "dones": torch.as_tensor(dones),
-    }, obs
+    }
+    if include_next_actions:
+        batch["next_actions"] = torch.as_tensor(next_actions)
+    return batch, obs
 
 
 def test_td3bc_update_and_save_roundtrip(tmp_path):
@@ -59,6 +64,48 @@ def test_td3bc_update_and_save_roundtrip(tmp_path):
     assert np.allclose(action_before, action_after, atol=1e-6)
 
 
+def test_rebrac_update_and_save_roundtrip(tmp_path):
+    obs_dim = 10
+    action_dim = 2
+    batch, obs = _make_batch(
+        batch_size=32,
+        obs_dim=obs_dim,
+        action_dim=action_dim,
+        include_next_actions=True,
+    )
+    normalizer = ObservationNormalizer.from_observations(obs, device="cpu")
+    agent = ReBRACAgent(
+        ReBRACConfig(
+            obs_dim=obs_dim,
+            action_dim=action_dim,
+            batch_size=32,
+            policy_freq=1,
+        ),
+        obs_normalizer=normalizer,
+        device="cpu",
+    )
+
+    metrics = agent.update(batch)
+    assert np.isfinite(metrics["critic_loss"])
+    assert np.isfinite(metrics["actor_loss"])
+    assert np.isfinite(metrics["bc_loss"])
+    assert np.isfinite(metrics["mean_q"])
+    assert np.isfinite(metrics["critic_penalty"])
+
+    sample_obs = obs[0]
+    action_before, _ = agent.act(sample_obs, deterministic=True)
+    checkpoint = tmp_path / "rebrac.pt"
+    agent.save(str(checkpoint))
+
+    loaded = ReBRACAgent(
+        ReBRACConfig(obs_dim=obs_dim, action_dim=action_dim),
+        device="cpu",
+    )
+    loaded.load(str(checkpoint))
+    action_after, _ = loaded.act(sample_obs, deterministic=True)
+    assert np.allclose(action_before, action_after, atol=1e-6)
+
+
 def test_transition_replay_tensor_cache_and_invalidation():
     replay = TransitionReplay(
         obs_dim=4,
@@ -82,6 +129,7 @@ def test_transition_replay_tensor_cache_and_invalidation():
     batch = replay.sample_batch(3, device=torch.device("cpu"))
     assert batch["obs"].shape == (3, 4)
     assert batch["actions"].shape == (3, 2)
+    assert batch["next_actions"].shape == (3, 2)
     assert batch["privileged_obs"].shape == (3, 3)
     assert batch["obs"].device.type == "cpu"
 
@@ -124,3 +172,21 @@ def test_transition_replay_iter_batches_without_replacement_covers_dataset():
     assert [batch["obs"].shape[0] for batch in batches] == [2, 2, 1]
     recovered = np.concatenate([batch["obs"][:, 0].cpu().numpy() for batch in batches])
     assert recovered.tolist() == [0.0, 1.0, 2.0, 3.0, 4.0]
+
+
+def test_transition_replay_from_npz_derives_next_actions(tmp_path):
+    path = tmp_path / "offline.npz"
+    np.savez_compressed(
+        path,
+        obs=np.zeros((3, 4), dtype=np.float32),
+        actions=np.asarray([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]], dtype=np.float32),
+        rewards=np.zeros(3, dtype=np.float32),
+        costs=np.zeros(3, dtype=np.float32),
+        next_obs=np.zeros((3, 4), dtype=np.float32),
+        dones=np.asarray([0.0, 1.0, 0.0], dtype=np.float32),
+    )
+    replay = TransitionReplay.from_npz(path)
+    assert np.allclose(
+        replay.next_actions[:3],
+        np.asarray([[0.3, 0.4], [0.0, 0.0], [0.0, 0.0]], dtype=np.float32),
+    )

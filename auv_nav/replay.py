@@ -33,6 +33,7 @@ class TransitionReplay:
         self.observations = np.zeros((capacity, self.obs_dim), dtype=np.float32)
         self.next_observations = np.zeros((capacity, self.obs_dim), dtype=np.float32)
         self.actions = np.zeros((capacity, self.action_dim), dtype=np.float32)
+        self.next_actions = np.zeros((capacity, self.action_dim), dtype=np.float32)
         self.rewards = np.zeros(capacity, dtype=np.float32)
         self.costs = np.zeros(capacity, dtype=np.float32)
         self.dones = np.zeros(capacity, dtype=np.float32)
@@ -63,6 +64,7 @@ class TransitionReplay:
         cost: float,
         next_obs: np.ndarray,
         done: bool,
+        next_action: np.ndarray | None = None,
         privileged_obs: np.ndarray | None = None,
         next_privileged_obs: np.ndarray | None = None,
     ) -> None:
@@ -74,6 +76,10 @@ class TransitionReplay:
         self.rewards[idx] = float(reward)
         self.costs[idx] = float(cost)
         self.next_observations[idx] = np.asarray(next_obs, dtype=np.float32)
+        if next_action is not None:
+            self.next_actions[idx] = np.asarray(next_action, dtype=np.float32)
+        else:
+            self.next_actions[idx] = 0.0
         self.dones[idx] = float(done)
         if self.privileged_obs is not None:
             if privileged_obs is not None:
@@ -110,6 +116,11 @@ class TransitionReplay:
             ),
             "actions": torch.as_tensor(
                 self.actions[: self.size],
+                dtype=torch.float32,
+                device=target_device,
+            ),
+            "next_actions": torch.as_tensor(
+                self.next_actions[: self.size],
                 dtype=torch.float32,
                 device=target_device,
             ),
@@ -166,6 +177,7 @@ class TransitionReplay:
             "observations": self.observations,
             "next_observations": self.next_observations,
             "actions": self.actions,
+            "next_actions": self.next_actions,
             "rewards": self.rewards,
             "costs": self.costs,
             "dones": self.dones,
@@ -195,6 +207,10 @@ class TransitionReplay:
         self.observations[...] = np.asarray(state["observations"], dtype=np.float32)
         self.next_observations[...] = np.asarray(state["next_observations"], dtype=np.float32)
         self.actions[...] = np.asarray(state["actions"], dtype=np.float32)
+        self.next_actions[...] = np.asarray(
+            state.get("next_actions", self.next_actions),
+            dtype=np.float32,
+        )
         self.rewards[...] = np.asarray(state["rewards"], dtype=np.float32)
         self.costs[...] = np.asarray(state["costs"], dtype=np.float32)
         self.dones[...] = np.asarray(state["dones"], dtype=np.float32)
@@ -216,15 +232,21 @@ class TransitionReplay:
         """Create a read-only TransitionReplay pre-filled from a .npz file.
 
         The .npz must contain arrays: obs, actions, rewards, costs, next_obs, dones.
-        Optional arrays: privileged_obs, next_privileged_obs.
+        Optional arrays: next_actions, privileged_obs, next_privileged_obs.
         """
         data = np.load(str(path))
         obs = data["obs"]
         actions = data["actions"]
+        dones = data["dones"].astype(np.float32)
         n_transitions, obs_dim = obs.shape
         action_dim = actions.shape[1]
         priv = data["privileged_obs"] if "privileged_obs" in data.files else None
         next_priv = data["next_privileged_obs"] if "next_privileged_obs" in data.files else None
+        next_actions = (
+            data["next_actions"]
+            if "next_actions" in data.files
+            else cls._derive_next_actions(actions, dones)
+        )
         priv_dim = 0
         if priv is not None:
             priv_dim = int(priv.shape[1])
@@ -240,10 +262,11 @@ class TransitionReplay:
         replay = cls(obs_dim, action_dim, config)
         replay.observations[:n_transitions] = obs.astype(np.float32)
         replay.actions[:n_transitions] = actions.astype(np.float32)
+        replay.next_actions[:n_transitions] = next_actions.astype(np.float32)
         replay.rewards[:n_transitions] = data["rewards"].astype(np.float32)
         replay.costs[:n_transitions] = data["costs"].astype(np.float32)
         replay.next_observations[:n_transitions] = data["next_obs"].astype(np.float32)
-        replay.dones[:n_transitions] = data["dones"].astype(np.float32)
+        replay.dones[:n_transitions] = dones
         if replay.privileged_obs is not None and priv is not None:
             replay.privileged_obs[:n_transitions] = priv.astype(np.float32)
         if replay.next_privileged_obs is not None and next_priv is not None:
@@ -251,6 +274,21 @@ class TransitionReplay:
         replay.size = n_transitions
         replay.ptr = 0  # offline buffer is read-only
         return replay
+
+    @staticmethod
+    def _derive_next_actions(
+        actions: np.ndarray,
+        dones: np.ndarray,
+    ) -> np.ndarray:
+        actions = np.asarray(actions, dtype=np.float32)
+        dones = np.asarray(dones, dtype=np.float32)
+        next_actions = np.zeros_like(actions, dtype=np.float32)
+        if len(actions) <= 1:
+            return next_actions
+        next_actions[:-1] = actions[1:]
+        terminal_mask = dones[:-1] >= 0.5
+        next_actions[:-1][terminal_mask] = 0.0
+        return next_actions
 
     def sample_batch(self, batch_size: int, device: "torch.device") -> "dict[str, torch.Tensor]":
         require_torch()
@@ -268,6 +306,7 @@ class TransitionReplay:
         batch = {
             "obs":      torch.as_tensor(self.observations[indices], device=device),
             "actions":  torch.as_tensor(self.actions[indices], device=device),
+            "next_actions": torch.as_tensor(self.next_actions[indices], device=device),
             "rewards":  torch.as_tensor(self.rewards[indices], device=device),
             "costs":    torch.as_tensor(self.costs[indices], device=device),
             "next_obs": torch.as_tensor(self.next_observations[indices], device=device),
@@ -328,6 +367,7 @@ class TransitionReplay:
             batch = {
                 "obs": torch.as_tensor(self.observations[indices], device=device),
                 "actions": torch.as_tensor(self.actions[indices], device=device),
+                "next_actions": torch.as_tensor(self.next_actions[indices], device=device),
                 "rewards": torch.as_tensor(self.rewards[indices], device=device),
                 "costs": torch.as_tensor(self.costs[indices], device=device),
                 "next_obs": torch.as_tensor(self.next_observations[indices], device=device),

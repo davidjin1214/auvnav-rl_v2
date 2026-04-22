@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
+from auv_nav.rebrac import ReBRACAgent, ReBRACConfig
 from auv_nav.td3bc import TD3BCAgent, TD3BCConfig
 from scripts.benchmark_utils import (
     BenchmarkEpisode,
@@ -148,6 +149,55 @@ def test_parallel_policy_eval_matches_serial() -> None:
             env_config_overrides={},
             reset_options=reset_options,
             seed=123,
+            num_episodes=2,
+            benchmark_manifest=None,
+            num_workers=2,
+            worker_device="cpu",
+        )
+    finally:
+        env.close()
+
+    assert serial_metrics.keys() == parallel_metrics.keys()
+    for key in serial_metrics:
+        serial_value = serial_metrics[key]
+        parallel_value = parallel_metrics[key]
+        if isinstance(serial_value, float):
+            if math.isnan(serial_value):
+                assert math.isnan(parallel_value), key
+            else:
+                assert serial_value == parallel_value, key
+        else:
+            assert serial_value == parallel_value, key
+
+
+def test_parallel_rebrac_policy_eval_matches_serial() -> None:
+    env = make_planar_env(_flow_path(), history_length=1, probe_layout="s0")
+    try:
+        agent = ReBRACAgent(
+            ReBRACConfig(obs_dim=int(env.observation_space.shape[0]), action_dim=2),
+            device="cpu",
+        )
+        reset_options = {
+            "task_geometry": "downstream",
+            "action_mode": "absolute_heading",
+            "target_auv_max_speed_mps": 1.0,
+            "initial_speed": 0.3,
+        }
+        serial_metrics = evaluate_agent(
+            env=env,
+            agent=agent,
+            reset_options=reset_options,
+            seed=321,
+            num_episodes=2,
+        )
+        parallel_metrics = evaluate_offline_policy_parallel(
+            policy_payload=agent.export_policy_payload(),
+            flow_path=str(_flow_path()),
+            history_length=1,
+            probe_layout="s0",
+            env_config_overrides={},
+            reset_options=reset_options,
+            seed=321,
             num_episodes=2,
             benchmark_manifest=None,
             num_workers=2,

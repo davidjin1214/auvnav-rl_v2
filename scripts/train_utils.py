@@ -448,6 +448,7 @@ def make_baseline_agent_adapter(env: Any, policy_name: str) -> Any:
 
 @dataclass(slots=True)
 class OfflineEvalWorkerConfig:
+    algo: str
     checkpoint_path: str
     agent_config: dict[str, Any]
     flow_path: str
@@ -480,7 +481,7 @@ def _evaluate_offline_chunk(
     worker_config: OfflineEvalWorkerConfig,
     episodes: list[BenchmarkEpisode],
 ) -> list[dict[str, Any]]:
-    from auv_nav.td3bc import TD3BCAgent, TD3BCConfig
+    from auv_nav.offline_registry import make_agent_from_config_dict
 
     env = make_planar_env(
         worker_config.flow_path,
@@ -489,8 +490,9 @@ def _evaluate_offline_chunk(
         env_config_overrides=worker_config.env_config_overrides,
     )
     try:
-        agent = TD3BCAgent(
-            TD3BCConfig(**worker_config.agent_config),
+        agent = make_agent_from_config_dict(
+            worker_config.algo,
+            worker_config.agent_config,
             device=worker_config.device,
         )
         agent.load(worker_config.checkpoint_path)
@@ -503,7 +505,7 @@ def _evaluate_offline_policy_chunk(
     worker_config: OfflinePolicyEvalWorkerConfig,
     episodes: list[BenchmarkEpisode],
 ) -> list[dict[str, Any]]:
-    from auv_nav.td3bc import TD3BCPolicy
+    from auv_nav.offline_registry import policy_from_payload
 
     env = make_planar_env(
         worker_config.flow_path,
@@ -512,7 +514,7 @@ def _evaluate_offline_policy_chunk(
         env_config_overrides=worker_config.env_config_overrides,
     )
     try:
-        agent = TD3BCPolicy.from_payload(
+        agent = policy_from_payload(
             worker_config.policy_payload,
             device=worker_config.device,
         )
@@ -540,6 +542,7 @@ def _evaluate_baseline_chunk(
 
 def evaluate_offline_checkpoint_parallel(
     *,
+    algo: str,
     checkpoint_path: str,
     agent_config: dict[str, Any],
     flow_path: str,
@@ -568,6 +571,7 @@ def evaluate_offline_checkpoint_parallel(
     results = _run_parallel_episode_chunks(
         _evaluate_offline_chunk,
         OfflineEvalWorkerConfig(
+            algo=str(algo),
             checkpoint_path=str(checkpoint_path),
             agent_config=dict(agent_config),
             flow_path=str(flow_path),

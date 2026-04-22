@@ -10,10 +10,16 @@ from typing import Any, Iterator
 
 import numpy as np
 
+from auv_nav.offline_registry import (
+    default_offline_save_dir,
+    make_agent,
+    make_agent_config,
+    normalize_offline_algo,
+)
 from auv_nav.replay import TransitionReplay
 from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
-from auv_nav.td3bc import ObservationNormalizer, TD3BCAgent, TD3BCConfig
 from auv_nav.networks import require_torch
+from auv_nav.td3bc import ObservationNormalizer
 
 try:
     import torch
@@ -55,6 +61,73 @@ class OfflineTrainConfig:
     sampling_mode: str = "uniform"
     num_epochs: int | None = None
     drop_last_batch: bool = False
+
+
+def _resolve_num_hidden_layers(args: argparse.Namespace, algo: str) -> int:
+    if args.num_hidden_layers is not None:
+        return int(args.num_hidden_layers)
+    return 3 if algo == "rebrac" else 2
+
+
+def _resolve_rebrac_actor_layernorm(args: argparse.Namespace) -> bool:
+    if args.actor_layernorm is not None:
+        return bool(args.actor_layernorm)
+    return bool(args.use_layernorm)
+
+
+def _resolve_rebrac_critic_layernorm(args: argparse.Namespace) -> bool:
+    if args.critic_layernorm is not None:
+        return bool(args.critic_layernorm)
+    if args.use_layernorm:
+        return True
+    return True
+
+
+def _build_agent_config(
+    algo: str,
+    args: argparse.Namespace,
+    *,
+    obs_dim: int,
+    action_dim: int,
+    batch_size: int,
+    privileged_obs_dim: int,
+) -> Any:
+    common = dict(
+        obs_dim=obs_dim,
+        action_dim=action_dim,
+        hidden_dim=args.hidden_dim,
+        num_hidden_layers=_resolve_num_hidden_layers(args, algo),
+        actor_lr=args.actor_lr,
+        critic_lr=args.critic_lr,
+        gamma=args.gamma,
+        tau=args.tau,
+        policy_noise=args.policy_noise,
+        noise_clip=args.noise_clip,
+        policy_freq=args.policy_freq,
+        batch_size=batch_size,
+        grad_clip_norm=args.grad_clip_norm,
+        dropout_rate=args.dropout_rate,
+        privileged_obs_dim=privileged_obs_dim,
+        privileged_actor_update_mode=args.privileged_actor_update_mode,
+        normalizer_eps=args.normalizer_eps,
+    )
+    if algo == "td3bc":
+        return make_agent_config(
+            algo,
+            **common,
+            alpha=args.alpha,
+            use_layernorm=bool(args.use_layernorm),
+        )
+
+    return make_agent_config(
+        algo,
+        **common,
+        actor_bc_coef=args.actor_penalty_coef,
+        critic_bc_coef=args.critic_penalty_coef,
+        actor_use_layernorm=_resolve_rebrac_actor_layernorm(args),
+        critic_use_layernorm=_resolve_rebrac_critic_layernorm(args),
+        normalize_q=not args.disable_q_normalization,
+    )
 
 
 def _json_ready(value: Any) -> Any:
@@ -216,7 +289,7 @@ def _training_batches(
 def _evaluate_current_policy(
     *,
     eval_env: Any,
-    agent: TD3BCAgent,
+    agent: Any,
     eval_flow_path: str,
     train_cfg: OfflineTrainConfig,
     reset_options: dict[str, Any],
@@ -252,10 +325,11 @@ def _evaluate_current_policy(
 
 def _save_offline_training_state(
     save_dir: Path,
-    agent: TD3BCAgent,
+    agent: Any,
     *,
+    algo: str,
     train_cfg: OfflineTrainConfig,
-    agent_cfg: TD3BCConfig,
+    agent_cfg: Any,
     reset_options: dict[str, Any],
     env_config_overrides: dict[str, Any],
     flow_path: str,
@@ -280,8 +354,8 @@ def _save_offline_training_state(
         pickle.dump(capture_rng_state(), fp)
 
     metadata = {
-        "algo": "td3bc",
-        "algorithm": "td3bc",
+        "algo": algo,
+        "algorithm": algo,
         "train_step": int(step),
         "train_config": asdict(train_cfg),
         "agent_config": asdict(agent_cfg),
@@ -310,6 +384,7 @@ def _save_offline_training_state(
 
 def train(args: argparse.Namespace) -> None:
     require_torch()
+    algo = normalize_offline_algo(args.algo)
     train_cfg = OfflineTrainConfig(
         total_steps=args.total_steps,
         seed=args.seed,
@@ -317,7 +392,7 @@ def train(args: argparse.Namespace) -> None:
         eval_every_steps=args.eval_every,
         eval_episodes=args.eval_episodes,
         log_every_steps=args.log_every,
-        save_dir=args.save_dir,
+        save_dir=args.save_dir or default_offline_save_dir(algo),
         device=args.device,
         checkpoint_every_steps=args.checkpoint_every,
         history_length=args.history_length,
@@ -406,27 +481,18 @@ def train(args: argparse.Namespace) -> None:
     )
     if train_cfg.tensor_replay:
         offline_replay.enable_tensor_cache(train_cfg.device)
-    agent_cfg = TD3BCConfig(
+    agent_cfg = _build_agent_config(
+        algo,
+        args,
         obs_dim=obs_dim,
         action_dim=action_dim,
-        hidden_dim=args.hidden_dim,
-        actor_lr=args.actor_lr,
-        critic_lr=args.critic_lr,
-        gamma=args.gamma,
-        tau=args.tau,
-        alpha=args.alpha,
-        policy_noise=args.policy_noise,
-        noise_clip=args.noise_clip,
-        policy_freq=args.policy_freq,
         batch_size=train_cfg.batch_size,
-        grad_clip_norm=args.grad_clip_norm,
-        use_layernorm=args.use_layernorm,
-        dropout_rate=args.dropout_rate,
-        privileged_obs_dim=offline_replay.config.privileged_obs_dim if args.use_asymmetric_critic else 0,
-        privileged_actor_update_mode=args.privileged_actor_update_mode,
-        normalizer_eps=args.normalizer_eps,
+        privileged_obs_dim=(
+            offline_replay.config.privileged_obs_dim if args.use_asymmetric_critic else 0
+        ),
     )
-    agent = TD3BCAgent(
+    agent = make_agent(
+        algo,
         agent_cfg,
         obs_normalizer=obs_normalizer,
         device=train_cfg.device,
@@ -447,7 +513,8 @@ def train(args: argparse.Namespace) -> None:
     )
 
     print(
-        f"[offline] transitions={len(offline_replay)} obs_dim={offline_replay.obs_dim} "
+        f"[offline] algo={algo} transitions={len(offline_replay)} "
+        f"obs_dim={offline_replay.obs_dim} "
         f"action_dim={offline_replay.action_dim} protocol={protocol_label} "
         f"tensor_replay={'on' if offline_replay.has_tensor_cache(agent.device) else 'off'} "
         f"eval_workers={train_cfg.eval_workers} "
@@ -471,10 +538,14 @@ def train(args: argparse.Namespace) -> None:
             train_prefix = f"[train] step={step}"
             if epoch_idx is not None and epoch_step is not None:
                 train_prefix += f" epoch={epoch_idx} epoch_step={epoch_step}"
+            critic_penalty_suffix = ""
+            if "critic_penalty" in metrics:
+                critic_penalty_suffix = f" critic_pen={metrics['critic_penalty']:.3f}"
             print(
                 f"{train_prefix} q={metrics['mean_q']:.3f} "
                 f"critic={metrics['critic_loss']:.3f} actor={metrics['actor_loss']:.3f} "
                 f"bc={metrics['bc_loss']:.3f} lambda={metrics['lambda']:.3f}"
+                f"{critic_penalty_suffix}"
             )
 
         if next_eval_step is not None and step >= next_eval_step:
@@ -524,6 +595,7 @@ def train(args: argparse.Namespace) -> None:
             _save_offline_training_state(
                 save_dir,
                 agent,
+                algo=algo,
                 train_cfg=train_cfg,
                 agent_cfg=agent_cfg,
                 reset_options=reset_options,
@@ -546,6 +618,7 @@ def train(args: argparse.Namespace) -> None:
             _save_offline_training_state(
                 save_dir,
                 agent,
+                algo=algo,
                 train_cfg=train_cfg,
                 agent_cfg=agent_cfg,
                 reset_options=reset_options,
@@ -588,6 +661,7 @@ def train(args: argparse.Namespace) -> None:
     _save_offline_training_state(
         save_dir,
         agent,
+        algo=algo,
         train_cfg=train_cfg,
         agent_cfg=agent_cfg,
         reset_options=reset_options,
@@ -621,7 +695,13 @@ def train(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train TD3+BC on a fixed offline dataset.")
+    parser = argparse.ArgumentParser(description="Train an offline RL agent on a fixed dataset.")
+    parser.add_argument(
+        "--algo",
+        choices=["td3bc", "rebrac"],
+        default="td3bc",
+        help="Offline RL algorithm to train.",
+    )
     parser.add_argument("--offline-data", type=Path, required=True)
     parser.add_argument("--flow", type=Path, default=None, help="Optional evaluation flow path.")
     parser.add_argument("--manifest", type=Path, default=None,
@@ -700,20 +780,61 @@ def main() -> None:
         default=default_device(),
         help="Torch device. Defaults to cuda:0 when CUDA is available, otherwise cpu.",
     )
-    parser.add_argument("--save-dir", type=str, default="checkpoints/offline/td3bc")
+    parser.add_argument(
+        "--save-dir",
+        type=str,
+        default=None,
+        help="Checkpoint directory. Defaults to checkpoints/offline/<algo>.",
+    )
     parser.add_argument("--hidden-dim", type=int, default=256)
+    parser.add_argument(
+        "--num-hidden-layers",
+        type=int,
+        default=None,
+        help="Shared hidden-layer depth. Defaults to 2 for TD3BC and 3 for ReBRAC.",
+    )
     parser.add_argument("--actor-lr", type=float, default=3e-4)
     parser.add_argument("--critic-lr", type=float, default=3e-4)
     parser.add_argument("--gamma", type=float, default=0.995)
     parser.add_argument("--tau", type=float, default=0.005)
     parser.add_argument("--alpha", type=float, default=2.5)
+    parser.add_argument(
+        "--actor-penalty-coef",
+        type=float,
+        default=1.0,
+        help="ReBRAC actor behavior-cloning penalty coefficient.",
+    )
+    parser.add_argument(
+        "--critic-penalty-coef",
+        type=float,
+        default=1.0,
+        help="ReBRAC critic target behavior penalty coefficient.",
+    )
     parser.add_argument("--policy-noise", type=float, default=0.2)
     parser.add_argument("--noise-clip", type=float, default=0.5)
     parser.add_argument("--policy-freq", type=int, default=2)
     parser.add_argument("--grad-clip-norm", type=float, default=10.0)
     parser.add_argument("--normalizer-eps", type=float, default=1e-3)
     parser.add_argument("--use-layernorm", action="store_true", default=False)
+    parser.add_argument(
+        "--actor-layernorm",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Override actor LayerNorm. ReBRAC defaults to off unless --use-layernorm is set.",
+    )
+    parser.add_argument(
+        "--critic-layernorm",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Override critic LayerNorm. ReBRAC defaults to on.",
+    )
     parser.add_argument("--dropout-rate", type=float, default=0.0)
+    parser.add_argument(
+        "--disable-q-normalization",
+        action="store_true",
+        default=False,
+        help="Disable ReBRAC Q normalization in the actor loss.",
+    )
     parser.add_argument(
         "--checkpoint-every",
         type=int,

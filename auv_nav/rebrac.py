@@ -1,4 +1,4 @@
-"""TD3+BC agent for pure offline reinforcement learning."""
+"""ReBRAC agent for pure offline reinforcement learning."""
 
 from __future__ import annotations
 
@@ -9,6 +9,10 @@ import numpy as np
 
 from .networks import MLP, require_torch
 from .sac import AsymmetricQNetwork, QNetwork
+from .td3bc import (
+    ObservationNormalizer,
+    ObservationNormalizerState,
+)
 
 try:
     import torch
@@ -24,122 +28,40 @@ _no_grad = torch.no_grad if torch is not None else (lambda: (lambda f: f))
 
 
 @dataclass(slots=True)
-class TD3BCConfig:
+class ReBRACConfig:
     obs_dim: int
     action_dim: int
     hidden_dim: int = 256
-    num_hidden_layers: int = 2
+    num_hidden_layers: int = 3
     actor_lr: float = 3e-4
     critic_lr: float = 3e-4
     gamma: float = 0.99
     tau: float = 0.005
-    alpha: float = 2.5
+    actor_bc_coef: float = 1.0
+    critic_bc_coef: float = 1.0
     policy_noise: float = 0.2
     noise_clip: float = 0.5
     policy_freq: int = 2
     batch_size: int = 256
     grad_clip_norm: float = 10.0
-    use_layernorm: bool = False
+    actor_use_layernorm: bool = False
+    critic_use_layernorm: bool = True
     dropout_rate: float = 0.0
     privileged_obs_dim: int = 0
     privileged_actor_update_mode: Literal["zeros", "batch"] = "zeros"
     normalizer_eps: float = 1e-3
-
-
-@dataclass(slots=True)
-class ObservationNormalizerState:
-    mean: np.ndarray
-    std: np.ndarray
-    eps: float = 1e-3
-
-    def to_json_dict(self) -> dict[str, Any]:
-        return {
-            "enabled": True,
-            "mean": self.mean.astype(np.float32).tolist(),
-            "std": self.std.astype(np.float32).tolist(),
-            "eps": float(self.eps),
-        }
-
-
-class ObservationNormalizer:
-    def __init__(
-        self,
-        state: ObservationNormalizerState,
-        device: str | "torch.device" = "cpu",
-    ) -> None:
-        require_torch()
-        self.state = ObservationNormalizerState(
-            mean=np.asarray(state.mean, dtype=np.float32),
-            std=np.asarray(state.std, dtype=np.float32),
-            eps=float(state.eps),
-        )
-        self.device = torch.device(device)
-        self.mean_t = torch.as_tensor(self.state.mean, dtype=torch.float32, device=self.device)
-        self.std_t = torch.as_tensor(self.state.std, dtype=torch.float32, device=self.device)
-
-    @classmethod
-    def from_observations(
-        cls,
-        observations: np.ndarray,
-        *,
-        eps: float = 1e-3,
-        device: str | "torch.device" = "cpu",
-    ) -> "ObservationNormalizer":
-        obs = np.asarray(observations, dtype=np.float32)
-        if obs.ndim != 2:
-            raise ValueError(f"Expected observations with shape [N, D], got {obs.shape}.")
-        mean = obs.mean(axis=0, dtype=np.float64).astype(np.float32)
-        std = obs.std(axis=0, dtype=np.float64).astype(np.float32)
-        std = np.maximum(std, float(eps))
-        return cls(
-            ObservationNormalizerState(mean=mean, std=std, eps=float(eps)),
-            device=device,
-        )
-
-    @classmethod
-    def identity(
-        cls,
-        obs_dim: int,
-        *,
-        eps: float = 1e-3,
-        device: str | "torch.device" = "cpu",
-    ) -> "ObservationNormalizer":
-        return cls(
-            ObservationNormalizerState(
-                mean=np.zeros(obs_dim, dtype=np.float32),
-                std=np.ones(obs_dim, dtype=np.float32),
-                eps=float(eps),
-            ),
-            device=device,
-        )
-
-    def normalize_tensor(self, obs: "torch.Tensor") -> "torch.Tensor":
-        return (obs - self.mean_t) / self.std_t
-
-    def normalize_numpy(self, obs: np.ndarray) -> np.ndarray:
-        obs_array = np.asarray(obs, dtype=np.float32)
-        return (obs_array - self.state.mean) / self.state.std
-
-    def state_dict(self) -> dict[str, Any]:
-        return {
-            "mean": self.state.mean.astype(np.float32).tolist(),
-            "std": self.state.std.astype(np.float32).tolist(),
-            "eps": float(self.state.eps),
-        }
-
-    def json_dict(self) -> dict[str, Any]:
-        return self.state.to_json_dict()
+    normalize_q: bool = True
 
 
 class DeterministicActor(_ModuleBase):
-    def __init__(self, config: TD3BCConfig) -> None:
+    def __init__(self, config: ReBRACConfig) -> None:
         require_torch()
         super().__init__()
         self.net = MLP(
             config.obs_dim,
             config.hidden_dim,
             config.action_dim,
-            use_layernorm=config.use_layernorm,
+            use_layernorm=config.actor_use_layernorm,
             dropout_rate=config.dropout_rate,
             num_hidden_layers=config.num_hidden_layers,
         )
@@ -148,12 +70,12 @@ class DeterministicActor(_ModuleBase):
         return torch.tanh(self.net(obs))
 
 
-class TD3BCPolicy:
+class ReBRACPolicy:
     """Lightweight deterministic policy wrapper for evaluation workers."""
 
     def __init__(
         self,
-        config: TD3BCConfig,
+        config: ReBRACConfig,
         *,
         actor_state: dict[str, Any],
         obs_normalizer: ObservationNormalizer | None = None,
@@ -181,8 +103,8 @@ class TD3BCPolicy:
         payload: dict[str, Any],
         *,
         device: str | "torch.device" = "cpu",
-    ) -> "TD3BCPolicy":
-        config = TD3BCConfig(**payload["config"])
+    ) -> "ReBRACPolicy":
+        config = ReBRACConfig(**payload["config"])
         normalizer_state = payload.get("obs_normalizer")
         obs_normalizer = None
         if normalizer_state is not None:
@@ -223,10 +145,10 @@ class TD3BCPolicy:
         return action_np, None
 
 
-class TD3BCAgent:
+class ReBRACAgent:
     def __init__(
         self,
-        config: TD3BCConfig,
+        config: ReBRACConfig,
         *,
         obs_normalizer: ObservationNormalizer | None = None,
         device: str | "torch.device" = "cpu",
@@ -284,7 +206,7 @@ class TD3BCAgent:
             privileged_obs = batch.get("privileged_obs")
             if privileged_obs is None:
                 raise ValueError(
-                    "TD3+BC actor update requested batch privileged_obs, "
+                    "ReBRAC actor update requested batch privileged_obs, "
                     "but the batch does not provide it."
                 )
             return privileged_obs
@@ -317,12 +239,37 @@ class TD3BCAgent:
             for src, tgt in zip(self.q2.parameters(), self.q2_target.parameters(), strict=True):
                 tgt.data.mul_(1.0 - self.config.tau).add_(self.config.tau * src.data)
 
+    def _actor_loss_terms(
+        self,
+        obs: "torch.Tensor",
+        actions: "torch.Tensor",
+        actor_privileged_obs: "torch.Tensor | None",
+    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor"]:
+        pi = self.actor(obs)
+        q_pi = torch.min(
+            self.q1(obs, pi, actor_privileged_obs),
+            self.q2(obs, pi, actor_privileged_obs),
+        )
+        if self.config.normalize_q:
+            lambda_coef = q_pi.abs().mean().detach().clamp_min(1e-6).reciprocal()
+        else:
+            lambda_coef = torch.ones((), dtype=torch.float32, device=obs.device)
+        bc_loss = (pi - actions).pow(2).sum(dim=-1).mean()
+        actor_loss = -lambda_coef * q_pi.mean() + self.config.actor_bc_coef * bc_loss
+        return actor_loss, bc_loss, q_pi, lambda_coef
+
     def update(self, batch: "dict[str, torch.Tensor]") -> dict[str, float]:
         obs = self._normalize_obs(batch["obs"])
         next_obs = self._normalize_obs(batch["next_obs"])
         actions = batch["actions"]
         rewards = batch["rewards"]
         dones = batch["dones"]
+        next_actions_data = batch.get("next_actions")
+        if next_actions_data is None:
+            raise ValueError(
+                "ReBRAC requires batch['next_actions']; recollect the dataset or "
+                "load it via TransitionReplay.from_npz so the field can be derived."
+            )
         privileged_obs = batch.get("privileged_obs")
         next_privileged_obs = batch.get("next_privileged_obs")
 
@@ -330,9 +277,14 @@ class TD3BCAgent:
             noise = torch.randn_like(actions) * self.config.policy_noise
             noise = noise.clamp(-self.config.noise_clip, self.config.noise_clip)
             next_actions = (self.actor_target(next_obs) + noise).clamp(-1.0, 1.0)
-            q1_next = self.q1_target(next_obs, next_actions, next_privileged_obs)
-            q2_next = self.q2_target(next_obs, next_actions, next_privileged_obs)
-            q_target = rewards + self.config.gamma * (1.0 - dones) * torch.min(q1_next, q2_next)
+            target_q = torch.min(
+                self.q1_target(next_obs, next_actions, next_privileged_obs),
+                self.q2_target(next_obs, next_actions, next_privileged_obs),
+            )
+            critic_penalty = (next_actions - next_actions_data).pow(2).sum(dim=-1)
+            q_target = rewards + self.config.gamma * (1.0 - dones) * (
+                target_q - self.config.critic_bc_coef * critic_penalty
+            )
 
         q1_pred = self.q1(obs, actions, privileged_obs)
         q2_pred = self.q2(obs, actions, privileged_obs)
@@ -354,12 +306,11 @@ class TD3BCAgent:
         actor_privileged_obs = self._actor_privileged_obs(batch)
 
         if should_update_actor:
-            pi = self.actor(obs)
-            q_pi = self.q1(obs, pi, actor_privileged_obs)
-            lambda_coef = self.config.alpha / q_pi.abs().mean().detach().clamp_min(1e-6)
-            bc_loss = F.mse_loss(pi, actions)
-            actor_loss = -lambda_coef * q_pi.mean() + bc_loss
-
+            actor_loss, bc_loss, q_pi, lambda_coef = self._actor_loss_terms(
+                obs,
+                actions,
+                actor_privileged_obs,
+            )
             self.actor_opt.zero_grad(set_to_none=True)
             actor_loss.backward()
             nn.utils.clip_grad_norm_(self.actor.parameters(), self.config.grad_clip_norm)
@@ -374,11 +325,11 @@ class TD3BCAgent:
             self._has_actor_metrics = True
         elif not self._has_actor_metrics:
             with torch.no_grad():
-                pi = self.actor(obs)
-                q_pi = self.q1(obs, pi, actor_privileged_obs)
-                lambda_coef = self.config.alpha / q_pi.abs().mean().clamp_min(1e-6)
-                bc_loss = F.mse_loss(pi, actions)
-                actor_loss = -lambda_coef * q_pi.mean() + bc_loss
+                actor_loss, bc_loss, q_pi, lambda_coef = self._actor_loss_terms(
+                    obs,
+                    actions,
+                    actor_privileged_obs,
+                )
             self._last_actor_metrics = {
                 "actor_loss": float(actor_loss.item()),
                 "bc_loss": float(bc_loss.item()),
@@ -395,6 +346,7 @@ class TD3BCAgent:
             "bc_loss": self._last_actor_metrics["bc_loss"],
             "mean_q": self._last_actor_metrics["mean_q"],
             "target_q": float(q_target.detach().mean().item()),
+            "critic_penalty": float(critic_penalty.detach().mean().item()),
             "td_abs_error": float((q1_pred.detach() - q_target.detach()).abs().mean().item()),
             "lambda": self._last_actor_metrics["lambda"],
             "policy_updated": float(1.0 if should_update_actor else 0.0),
@@ -425,7 +377,7 @@ class TD3BCAgent:
             for key, value in self.actor.state_dict().items()
         }
         return {
-            "algo": "td3bc",
+            "algo": "rebrac",
             "config": asdict(self.config),
             "actor": actor_state,
             "obs_normalizer": self.obs_normalizer.state_dict(),

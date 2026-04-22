@@ -23,6 +23,30 @@ _ModuleBase = nn.Module if nn is not None else object
 _no_grad = torch.no_grad if torch is not None else (lambda: (lambda f: f))
 
 
+def _resolve_num_hidden_layers(config: object, *, role: str) -> int:
+    specific = getattr(config, f"{role}_num_hidden_layers", None)
+    if specific is not None:
+        return int(specific)
+    shared = getattr(config, "num_hidden_layers", None)
+    if shared is not None:
+        return int(shared)
+    return 2
+
+
+def _resolve_use_layernorm(config: object, *, role: str) -> bool:
+    specific = getattr(config, f"{role}_use_layernorm", None)
+    if specific is not None:
+        return bool(specific)
+    return bool(getattr(config, "use_layernorm", False))
+
+
+def _resolve_dropout_rate(config: object, *, role: str) -> float:
+    specific = getattr(config, f"{role}_dropout_rate", None)
+    if specific is not None:
+        return float(specific)
+    return float(getattr(config, "dropout_rate", 0.0))
+
+
 @dataclass(slots=True)
 class SACConfig:
     obs_dim: int
@@ -52,7 +76,11 @@ class SquashedGaussianActor(_ModuleBase):
         super().__init__()
         self.config = config
         self.backbone = nn.Sequential(*build_hidden_layers(
-            config.obs_dim, config.hidden_dim, config.use_layernorm, config.dropout_rate
+            config.obs_dim,
+            config.hidden_dim,
+            _resolve_use_layernorm(config, role="actor"),
+            _resolve_dropout_rate(config, role="actor"),
+            num_hidden_layers=_resolve_num_hidden_layers(config, role="actor"),
         ))
         self.mean = nn.Linear(config.hidden_dim, config.action_dim)
         self.log_std = nn.Linear(config.hidden_dim, config.action_dim)
@@ -91,8 +119,9 @@ class QNetwork(_ModuleBase):
             config.obs_dim + config.action_dim,
             config.hidden_dim,
             1,
-            use_layernorm=config.use_layernorm,
-            dropout_rate=config.dropout_rate,
+            use_layernorm=_resolve_use_layernorm(config, role="critic"),
+            dropout_rate=_resolve_dropout_rate(config, role="critic"),
+            num_hidden_layers=_resolve_num_hidden_layers(config, role="critic"),
         )
 
     def forward(
@@ -121,8 +150,9 @@ class AsymmetricQNetwork(_ModuleBase):
             total_in,
             config.hidden_dim,
             1,
-            use_layernorm=config.use_layernorm,
-            dropout_rate=config.dropout_rate,
+            use_layernorm=_resolve_use_layernorm(config, role="critic"),
+            dropout_rate=_resolve_dropout_rate(config, role="critic"),
+            num_hidden_layers=_resolve_num_hidden_layers(config, role="critic"),
         )
 
     def forward(

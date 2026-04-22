@@ -108,7 +108,14 @@ def main() -> None:
 
     checkpoint_root = Path(args.checkpoint)
     run_root = checkpoint_root if checkpoint_root.is_dir() else checkpoint_root.parent
-    agent_relative_path = args.agent_file or trainer_state["agent_path"]
+    agent_relative_path = (
+        args.agent_file
+        or trainer_state.get("agent_path")
+        or trainer_state.get("best_agent_path")
+        or trainer_state.get("final_agent_path")
+    )
+    if agent_relative_path is None:
+        raise ValueError("Checkpoint metadata does not specify an agent file.")
     agent_file = run_root / agent_relative_path
     agent.load(str(agent_file))
 

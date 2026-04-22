@@ -9,6 +9,37 @@ from pathlib import Path
 from typing import Any
 
 
+def _resolve_existing(run_dir: Path, *relative_paths: str) -> Path:
+    for relative_path in relative_paths:
+        candidate = run_dir / relative_path
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"None of the expected paths exist under {run_dir}: {', '.join(relative_paths)}"
+    )
+
+
+def _resolve_saved_path(run_dir: Path, path_value: str | None) -> Path | None:
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if path.is_absolute():
+        return path
+    return run_dir / path
+
+
+def _unique_paths(paths: list[Path]) -> list[Path]:
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(path)
+    return unique
+
+
 def load_eval_rows(path: Path) -> list[dict[str, str]]:
     with path.open("r", encoding="utf-8", newline="") as fp:
         return list(csv.DictReader(fp))
@@ -36,7 +67,7 @@ def main() -> None:
         "--run-dir",
         type=Path,
         required=True,
-        help="Training run directory containing eval_log.csv and agent_step_<N>.pt checkpoints.",
+        help="Training run directory containing periodic evaluation logs and checkpoints.",
     )
     parser.add_argument(
         "--output-json",
@@ -46,16 +77,51 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    eval_log_path = args.run_dir / "eval_log.csv"
-    if not eval_log_path.exists():
-        raise FileNotFoundError(f"Missing eval_log.csv under {args.run_dir}")
+    eval_log_path = _resolve_existing(
+        args.run_dir,
+        "results/eval_log.csv",
+        "eval_log.csv",
+    )
 
     row = best_eval_row(load_eval_rows(eval_log_path))
     env_step = int(row["env_step"])
-    agent_file = f"agent_step_{env_step}.pt"
-    agent_path = args.run_dir / agent_file
-    if not agent_path.exists():
-        raise FileNotFoundError(f"Missing checkpoint file: {agent_path}")
+    trainer_state_path = args.run_dir / "trainer_state.json"
+    trainer_state: dict[str, Any] = {}
+    if trainer_state_path.exists():
+        with trainer_state_path.open("r", encoding="utf-8") as fp:
+            trainer_state = json.load(fp)
+
+    candidate_bases = [args.run_dir / "checkpoints", args.run_dir]
+    checkpoint_dir = _resolve_saved_path(args.run_dir, trainer_state.get("checkpoint_dir"))
+    if checkpoint_dir is not None:
+        candidate_bases.append(checkpoint_dir)
+    for key in ("latest_agent_path", "best_agent_path", "final_agent_path", "agent_path"):
+        resolved = _resolve_saved_path(args.run_dir, trainer_state.get(key))
+        if resolved is not None:
+            candidate_bases.append(resolved.parent)
+    candidate_bases = _unique_paths(candidate_bases)
+
+    agent_path = None
+    for base_dir in candidate_bases:
+        for filename in (
+            f"agent_step_{env_step}.pt",
+            f"agent_step_{env_step:08d}.pt",
+        ):
+            candidate = base_dir / filename
+            if candidate.exists():
+                agent_path = candidate
+                break
+        if agent_path is not None:
+            break
+    if agent_path is None:
+        searched = ", ".join(str(path) for path in candidate_bases)
+        raise FileNotFoundError(
+            f"Could not find periodic checkpoint for env_step={env_step} under: {searched}"
+        )
+    try:
+        agent_file = str(agent_path.relative_to(args.run_dir))
+    except ValueError:
+        agent_file = str(agent_path)
 
     payload: dict[str, Any] = {
         "run_dir": str(args.run_dir),

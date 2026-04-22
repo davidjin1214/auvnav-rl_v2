@@ -16,6 +16,14 @@ def load_json(path: Path) -> dict[str, Any]:
         return json.load(fp)
 
 
+def resolve_run_file(run_dir: Path, *relative_paths: str) -> Path | None:
+    for relative_path in relative_paths:
+        candidate = run_dir / relative_path
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def load_train_log_tail(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
@@ -137,12 +145,16 @@ def main() -> None:
         "--output-dir",
         type=str,
         default=None,
-        help="Directory for summary CSV/JSON/Markdown files. Defaults to suite root.",
+        help="Directory for summary CSV/JSON/Markdown files. Defaults to <suite-root>/summary.",
     )
     args = parser.parse_args()
 
     suite_root = Path(args.suite_root)
-    output_dir = Path(args.output_dir) if args.output_dir is not None else suite_root
+    output_dir = (
+        Path(args.output_dir)
+        if args.output_dir is not None
+        else suite_root / "summary"
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest_path = suite_root / "suite_manifest.json"
@@ -164,13 +176,15 @@ def main() -> None:
     for run in runs:
         run_dir = Path(run["run_dir"])
         trainer_state_path = run_dir / "trainer_state.json"
-        final_eval_path = run_dir / "final_eval.json"
-        if not trainer_state_path.exists() or not final_eval_path.exists():
+        final_eval_path = resolve_run_file(run_dir, "results/final_eval.json", "final_eval.json")
+        if not trainer_state_path.exists() or final_eval_path is None:
             continue
 
         trainer_state = load_json(trainer_state_path)
         final_eval = load_json(final_eval_path)
-        train_tail = load_train_log_tail(run_dir / "train_log.jsonl") or {}
+        train_log_path = resolve_run_file(run_dir, "logs/train_log.jsonl", "train_log.jsonl")
+        train_tail = load_train_log_tail(train_log_path) if train_log_path is not None else {}
+        train_tail = train_tail or {}
         benchmark_key = run.get("benchmark")
         benchmark_meta = benchmark_specs.get(benchmark_key, {})
         objective = str(

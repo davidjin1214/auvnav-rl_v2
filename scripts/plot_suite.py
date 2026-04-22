@@ -324,7 +324,7 @@ def main() -> None:
         "--suite-root",
         type=str,
         required=True,
-        help="Directory containing ablation_summary.csv and ablation_runs.csv.",
+        help="Stage root or summary directory containing ablation_summary.csv and ablation_runs.csv.",
     )
     parser.add_argument(
         "--output-prefix",
@@ -334,7 +334,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    suite_root = Path(args.suite_root)
+    requested_root = Path(args.suite_root)
+    if (requested_root / "ablation_summary.csv").exists():
+        suite_root = requested_root
+    elif (requested_root / "summary" / "ablation_summary.csv").exists():
+        suite_root = requested_root / "summary"
+    else:
+        suite_root = requested_root
     summary_rows = load_csv_rows(suite_root / "ablation_summary.csv")
     run_rows = load_csv_rows(suite_root / "ablation_runs.csv")
     if not summary_rows:

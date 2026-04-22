@@ -40,6 +40,15 @@ from .train_utils import (
 )
 
 
+def _metric_score(metrics: dict[str, Any]) -> tuple[float, float, float, float]:
+    return (
+        float(metrics["eval_success_rate"]),
+        float(metrics["eval_return"]),
+        -float(metrics["eval_safety_cost"]),
+        -float(metrics["eval_time_s"]),
+    )
+
+
 @dataclass(slots=True)
 class TrainConfig:
     total_env_steps: int = 50_000
@@ -148,6 +157,7 @@ def apply_resume_defaults(args: argparse.Namespace, parser: argparse.ArgumentPar
     }
     for arg_name, state_name in train_arg_map.items():
         apply_default(arg_name, train_state.get(state_name))
+    apply_default("checkpoint_dir", trainer_state.get("checkpoint_dir"))
 
     apply_default("flow", trainer_state.get("flow_path"))
     apply_default("eval_manifest", trainer_state.get("eval_manifest"))
@@ -187,6 +197,22 @@ def _build_extra_state(
         state["offline_ratio"] = args.offline_ratio
         state["offline_transitions"] = len(offline_replay)
     return state
+
+
+def _extra_state_with_selection(
+    base_state: dict[str, Any],
+    *,
+    best_metrics: dict[str, Any] | None,
+    best_step: int | None,
+) -> dict[str, Any]:
+    return base_state | {
+        "best_eval_metrics": best_metrics,
+        "best_eval_step": best_step,
+    }
+
+
+def _metadata_path_ref(meta_root: Path, path: Path) -> str:
+    return os.path.relpath(path.resolve(), start=meta_root.resolve())
 
 
 def train(args: argparse.Namespace) -> None:
@@ -351,9 +377,30 @@ def train(args: argparse.Namespace) -> None:
         dual_sampler = None
 
     save_dir = Path(train_cfg.save_dir)
-    save_dir.mkdir(parents=True, exist_ok=True)
-    train_log_path = save_dir / "train_log.jsonl"
-    eval_log_path = save_dir / "eval_log.csv"
+    checkpoints_dir = Path(args.checkpoint_dir) if args.checkpoint_dir is not None else save_dir / "checkpoints"
+    results_dir = save_dir / "results"
+    logs_dir = save_dir / "logs"
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    train_log_path = logs_dir / "train_log.jsonl"
+    eval_log_path = results_dir / "eval_log.csv"
+    final_eval_path = results_dir / "final_eval.json"
+    best_metrics: dict[str, Any] | None = None
+    best_step: int | None = None
+    best_score = (-np.inf, -np.inf, -np.inf, -np.inf)
+    latest_agent_ref = _metadata_path_ref(save_dir, checkpoints_dir / "agent_latest.pt")
+    best_agent_ref = _metadata_path_ref(save_dir, checkpoints_dir / "agent_best.pt")
+    final_agent_ref = _metadata_path_ref(save_dir, checkpoints_dir / "agent_final.pt")
+    base_extra_state = _build_extra_state(
+        args,
+        train_cfg,
+        probe_layout,
+        offline_replay,
+        env_config_overrides,
+    ) | {
+        "checkpoint_dir": _metadata_path_ref(save_dir, checkpoints_dir),
+    }
 
     start_step, start_episode = maybe_resume(
         agent=agent,
@@ -608,7 +655,14 @@ def train(args: argparse.Namespace) -> None:
                     "eval_path_efficiency": metrics["eval_path_efficiency"],
                 },
             )
-            agent.save(str(save_dir / f"agent_step_{global_step}.pt"))
+            step_agent_path = checkpoints_dir / f"agent_step_{global_step:08d}.pt"
+            agent.save(str(step_agent_path))
+            score = _metric_score(metrics)
+            if score > best_score:
+                best_score = score
+                best_metrics = metrics
+                best_step = global_step
+                agent.save(str(checkpoints_dir / "agent_best.pt"))
             save_training_state(
                 save_dir=save_dir,
                 agent=agent,
@@ -619,13 +673,16 @@ def train(args: argparse.Namespace) -> None:
                 flow_path=str(flow_path),
                 env_step=global_step,
                 episode_idx=episode_idx,
-                extra_state=_build_extra_state(
-                    args,
-                    train_cfg,
-                    probe_layout,
-                    offline_replay,
-                    env_config_overrides,
+                extra_state=_extra_state_with_selection(
+                    base_extra_state,
+                    best_metrics=best_metrics,
+                    best_step=best_step,
                 ),
+                latest_agent_name=latest_agent_ref,
+                replay_name="state/replay_latest.pkl",
+                rng_state_name="state/rng_state.pkl",
+                agent_path_name=latest_agent_ref,
+                best_agent_name=best_agent_ref if best_metrics is not None else None,
             )
             next_eval_step = (
                 (global_step // train_cfg.eval_every_steps) + 1
@@ -642,19 +699,36 @@ def train(args: argparse.Namespace) -> None:
                 flow_path=str(flow_path),
                 env_step=global_step,
                 episode_idx=episode_idx,
-                extra_state=_build_extra_state(
-                    args,
-                    train_cfg,
-                    probe_layout,
-                    offline_replay,
-                    env_config_overrides,
+                extra_state=_extra_state_with_selection(
+                    base_extra_state,
+                    best_metrics=best_metrics,
+                    best_step=best_step,
                 ),
+                latest_agent_name=latest_agent_ref,
+                replay_name="state/replay_latest.pkl",
+                rng_state_name="state/rng_state.pkl",
+                agent_path_name=latest_agent_ref,
+                best_agent_name=best_agent_ref if best_metrics is not None else None,
             )
             next_checkpoint_step = (
                 (global_step // train_cfg.checkpoint_every_steps) + 1
             ) * train_cfg.checkpoint_every_steps
 
-    agent.save(str(save_dir / "agent_final.pt"))
+    agent.save(str(checkpoints_dir / "agent_final.pt"))
+    final_metrics = evaluate_agent(
+        env=eval_env,
+        agent=agent,
+        reset_options=reset_options,
+        seed=train_cfg.seed + 20_000,
+        num_episodes=train_cfg.eval_episodes,
+        benchmark_manifest=benchmark_manifest,
+    )
+    if _metric_score(final_metrics) > best_score:
+        best_metrics = final_metrics
+        best_step = train_cfg.total_env_steps
+        agent.save(str(checkpoints_dir / "agent_best.pt"))
+    with final_eval_path.open("w", encoding="utf-8") as fp:
+        json.dump(final_metrics, fp, indent=2)
     save_training_state(
         save_dir=save_dir,
         agent=agent,
@@ -665,25 +739,19 @@ def train(args: argparse.Namespace) -> None:
         flow_path=str(flow_path),
         env_step=train_cfg.total_env_steps,
         episode_idx=episode_idx,
-        extra_state=_build_extra_state(
-            args,
-            train_cfg,
-            probe_layout,
-            offline_replay,
-            env_config_overrides,
+        extra_state=_extra_state_with_selection(
+            base_extra_state,
+            best_metrics=best_metrics,
+            best_step=best_step,
         ),
+        latest_agent_name=latest_agent_ref,
+        replay_name="state/replay_latest.pkl",
+        rng_state_name="state/rng_state.pkl",
+        agent_path_name=latest_agent_ref,
+        best_agent_name=best_agent_ref if best_metrics is not None else None,
+        final_agent_name=final_agent_ref,
     )
-    final_metrics = evaluate_agent(
-        env=eval_env,
-        agent=agent,
-        reset_options=reset_options,
-        seed=train_cfg.seed + 20_000,
-        num_episodes=train_cfg.eval_episodes,
-        benchmark_manifest=benchmark_manifest,
-    )
-    with (save_dir / "final_eval.json").open("w", encoding="utf-8") as fp:
-        json.dump(final_metrics, fp, indent=2)
-    with (save_dir / "train_config.txt").open("w", encoding="utf-8") as fp:
+    with (results_dir / "train_config.txt").open("w", encoding="utf-8") as fp:
         fp.write("TrainConfig\n")
         for key, value in asdict(train_cfg).items():
             fp.write(f"{key}={value}\n")
@@ -744,6 +812,16 @@ def main() -> None:
         help="Torch device. Defaults to cuda:0 when CUDA is available, otherwise cpu.",
     )
     parser.add_argument("--save-dir", type=str, default="checkpoints/sac")
+    parser.add_argument(
+        "--checkpoint-dir",
+        type=str,
+        default=None,
+        help=(
+            "Optional directory for large checkpoint .pt files. "
+            "Defaults to <save-dir>/checkpoints. "
+            "Use this to store checkpoints on a separate volume."
+        ),
+    )
     parser.add_argument("--hidden-dim", type=int, default=256)
     parser.add_argument(
         "--use-layernorm", action="store_true", default=False,

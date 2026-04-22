@@ -8,6 +8,14 @@ from pathlib import Path
 import numpy as np
 
 
+def _resolve_existing(run_dir: Path, *relative_paths: str) -> Path:
+    for relative_path in relative_paths:
+        candidate = run_dir / relative_path
+        if candidate.exists():
+            return candidate
+    return run_dir / relative_paths[0]
+
+
 def load_train_log(path: Path) -> list[dict]:
     rows = []
     if not path.exists():
@@ -47,8 +55,12 @@ def main() -> None:
         raise ImportError("Plotting requires matplotlib.") from exc
 
     run_dir = Path(args.run_dir)
-    train_rows = load_train_log(run_dir / "train_log.jsonl")
-    eval_rows = load_eval_log(run_dir / "eval_log.csv")
+    train_rows = load_train_log(
+        _resolve_existing(run_dir, "logs/train_log.jsonl", "train_log.jsonl")
+    )
+    eval_rows = load_eval_log(
+        _resolve_existing(run_dir, "results/eval_log.csv", "eval_log.csv")
+    )
 
     fig, axes = plt.subplots(2, 3, figsize=(18, 9))
 

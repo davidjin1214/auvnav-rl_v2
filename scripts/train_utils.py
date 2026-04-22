@@ -704,11 +704,20 @@ def save_training_state(
     env_step: int,
     episode_idx: int,
     extra_state: dict[str, Any] | None = None,
+    latest_agent_name: str = "checkpoints/agent_latest.pt",
+    replay_name: str = "state/replay_latest.pkl",
+    rng_state_name: str = "state/rng_state.pkl",
+    agent_path_name: str | None = None,
+    best_agent_name: str | None = None,
+    final_agent_name: str | None = None,
 ) -> None:
-    agent_path = save_dir / "agent_latest.pt"
+    agent_path = save_dir / latest_agent_name
     meta_path = save_dir / "trainer_state.json"
-    replay_path = save_dir / "replay_latest.pkl"
-    rng_state_path = save_dir / "rng_state.pkl"
+    replay_path = save_dir / replay_name
+    rng_state_path = save_dir / rng_state_name
+    agent_path.parent.mkdir(parents=True, exist_ok=True)
+    replay_path.parent.mkdir(parents=True, exist_ok=True)
+    rng_state_path.parent.mkdir(parents=True, exist_ok=True)
     agent.save(str(agent_path))
     with replay_path.open("wb") as fp:
         pickle.dump(replay.state_dict(), fp)
@@ -721,9 +730,12 @@ def save_training_state(
         "agent_config": agent_config,
         "reset_options": reset_options,
         "flow_path": flow_path,
-        "agent_path": agent_path.name,
-        "replay_path": replay_path.name,
-        "rng_state_path": rng_state_path.name,
+        "agent_path": agent_path_name or latest_agent_name,
+        "latest_agent_path": latest_agent_name,
+        "best_agent_path": best_agent_name,
+        "final_agent_path": final_agent_name,
+        "replay_path": replay_name,
+        "rng_state_path": rng_state_name,
     }
     if extra_state:
         meta.update(extra_state)

@@ -401,6 +401,7 @@ def build_command(
     method: MethodSpec,
     seed: int,
     save_dir: Path,
+    checkpoint_dir: Path | None,
     cli_args: argparse.Namespace,
     objective: str | None = None,
     benchmark: BenchmarkSpec | None = None,
@@ -452,6 +453,7 @@ def build_command(
     append_optional_arg(cmd, "--checkpoint-every", cli_args.checkpoint_every)
     append_optional_arg(cmd, "--seed", seed)
     append_optional_arg(cmd, "--save-dir", save_dir)
+    append_optional_arg(cmd, "--checkpoint-dir", checkpoint_dir)
     append_optional_arg(cmd, "--batch-size", cli_args.batch_size)
     append_optional_arg(cmd, "--replay-capacity", cli_args.replay_capacity)
     append_optional_arg(cmd, "--hidden-dim", cli_args.hidden_dim)
@@ -470,6 +472,20 @@ def default_suite_root(args: argparse.Namespace, benchmarks: list[BenchmarkSpec]
     return "experiments/ablation_suite"
 
 
+def default_checkpoint_root_for_suite(suite_root: Path) -> Path | None:
+    parts = suite_root.parts
+    if not parts:
+        return None
+    if "experiments" in parts:
+        idx = max(i for i, part in enumerate(parts) if part == "experiments")
+        prefix = Path(*parts[:idx]) if idx > 0 else Path()
+        suffix = Path(*parts[idx + 1:]) if idx + 1 < len(parts) else Path()
+        return prefix / "checkpoints" / suffix
+    if suite_root.is_absolute():
+        return None
+    return Path("checkpoints") / suite_root
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run factorized RL suites over benchmark x method x seed.",
@@ -486,6 +502,15 @@ def main() -> None:
         type=str,
         default=None,
         help="Root directory for all benchmark/method/seed run folders.",
+    )
+    parser.add_argument(
+        "--checkpoint-root",
+        type=str,
+        default=None,
+        help=(
+            "Optional root directory for storing large checkpoint files separately from "
+            "suite logs/results. The benchmark/method/seed subdirectory structure is mirrored here."
+        ),
     )
     parser.add_argument(
         "--methods",
@@ -647,6 +672,11 @@ def main() -> None:
     gain_specs = parse_gain_pairs(args.gain_pairs) if args.gain_pairs is not None else [None]
     seeds = parse_seed_list(args.seeds)
     suite_root = Path(args.suite_root)
+    checkpoint_root = (
+        Path(args.checkpoint_root)
+        if args.checkpoint_root is not None
+        else default_checkpoint_root_for_suite(suite_root)
+    )
     suite_root.mkdir(parents=True, exist_ok=True)
 
     if benchmarks:
@@ -661,6 +691,7 @@ def main() -> None:
 
     manifest = {
         "suite_root": str(suite_root),
+        "checkpoint_root": None if checkpoint_root is None else str(checkpoint_root),
         "methods": method_keys,
         "seeds": seeds,
         "benchmarks": [
@@ -739,10 +770,14 @@ def main() -> None:
                                         / method.key
                                         / f"seed_{seed}"
                                     )
+                        checkpoint_dir = None
+                        if checkpoint_root is not None:
+                            checkpoint_dir = checkpoint_root / run_dir.relative_to(suite_root)
                         cmd = build_command(
                             method,
                             seed,
                             run_dir,
+                            checkpoint_dir,
                             args,
                             objective=objective,
                             benchmark=benchmark,
@@ -774,6 +809,7 @@ def main() -> None:
                             "method": method.key,
                             "seed": seed,
                             "run_dir": str(run_dir),
+                            "checkpoint_dir": None if checkpoint_dir is None else str(checkpoint_dir),
                             "train_module": method.train_module,
                             "description": method.description,
                             "command": cmd,
@@ -785,8 +821,11 @@ def main() -> None:
                             )
                         manifest["runs"].append(run_record)
 
-                        final_eval_path = run_dir / "final_eval.json"
-                        if args.skip_existing and final_eval_path.exists():
+                        final_eval_path = run_dir / "results" / "final_eval.json"
+                        legacy_final_eval_path = run_dir / "final_eval.json"
+                        if args.skip_existing and (
+                            final_eval_path.exists() or legacy_final_eval_path.exists()
+                        ):
                             label_parts = [
                                 benchmark.key if benchmark is not None else None,
                                 objective,

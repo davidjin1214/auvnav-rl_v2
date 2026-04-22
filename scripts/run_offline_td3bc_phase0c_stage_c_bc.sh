@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+# Stage-C BC confirmation protocol:
+# - Reuse the exact Stage-C manifests for strict comparability with phase0c finalists.
+# - Run alpha=0.0 only, under the same budget as stage_c_final.
+# - Default to episodes 1000 and 2000 because they are the highest-value formal BC controls.
+
+MODE="${MODE:-all}"
+
+PYTHON_PREFIX="${PYTHON_PREFIX:-}"
+PYTHON_BIN="${PYTHON_BIN:-python}"
+
+DEVICE="${DEVICE:-cuda}"
+
+BENCHMARK_KEY="${BENCHMARK_KEY:-single_u10_cross_tgt15}"
+FLOW_PATH="${FLOW_PATH:-wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy}"
+TASK_GEOMETRY="${TASK_GEOMETRY:-cross_stream}"
+TARGET_SPEED="${TARGET_SPEED:-1.5}"
+OBJECTIVE="${OBJECTIVE:-efficiency_v2}"
+PROBE_LAYOUT="${PROBE_LAYOUT:-s0}"
+HISTORY_LENGTH="${HISTORY_LENGTH:-4}"
+
+DATASET_POLICY="${DATASET_POLICY:-crosscomp}"
+DATASET_POLICY_MIXTURE="${DATASET_POLICY_MIXTURE:-}"
+ACTION_NOISE_STD="${ACTION_NOISE_STD:-0.0}"
+ACTION_NOISE_CLIP="${ACTION_NOISE_CLIP:-0.5}"
+COLLECT_WORKERS="${COLLECT_WORKERS:-8}"
+
+BASE_DATASET_NAME="${BASE_DATASET_NAME:-${DATASET_POLICY}_${PROBE_LAYOUT}_h${HISTORY_LENGTH}_${OBJECTIVE}_re150_u10cross_fixdone}"
+BASE_DATASET_EPISODES="${BASE_DATASET_EPISODES:-500}"
+BASE_DATASET_SEED="${BASE_DATASET_SEED:-0}"
+
+SIZE_ABLATION_EPISODES="${SIZE_ABLATION_EPISODES:-1000 2000}"
+SIZE_ABLATION_ALPHAS="${SIZE_ABLATION_ALPHAS:-0.0}"
+SIZE_ABLATION_SEEDS="${SIZE_ABLATION_SEEDS:-42 43 44 45 46}"
+
+BATCH_SIZE="${BATCH_SIZE:-256}"
+TRAIN_EPOCHS="${TRAIN_EPOCHS:-96}"
+CHECKPOINT_EVERY_EPOCHS="${CHECKPOINT_EVERY_EPOCHS:-4}"
+DROP_LAST_BATCH="${DROP_LAST_BATCH:-0}"
+SAMPLING_MODE="${SAMPLING_MODE:-shuffle_no_replacement}"
+
+HIDDEN_DIM="${HIDDEN_DIM:-256}"
+ACTOR_LR="${ACTOR_LR:-3e-4}"
+CRITIC_LR="${CRITIC_LR:-3e-4}"
+GAMMA="${GAMMA:-0.99}"
+TAU="${TAU:-0.005}"
+POLICY_NOISE="${POLICY_NOISE:-0.2}"
+NOISE_CLIP="${NOISE_CLIP:-0.5}"
+POLICY_FREQ="${POLICY_FREQ:-2}"
+NORMALIZER_EPS="${NORMALIZER_EPS:-1e-3}"
+GRAD_CLIP_NORM="${GRAD_CLIP_NORM:-10.0}"
+LOG_EVERY="${LOG_EVERY:-1000}"
+USE_LAYERNORM="${USE_LAYERNORM:-0}"
+USE_ASYMMETRIC_CRITIC="${USE_ASYMMETRIC_CRITIC:-0}"
+PRIVILEGED_ACTOR_UPDATE_MODE="${PRIVILEGED_ACTOR_UPDATE_MODE:-zeros}"
+
+VAL_MANIFEST_EPISODES="${VAL_MANIFEST_EPISODES:-40}"
+TEST_MANIFEST_EPISODES="${TEST_MANIFEST_EPISODES:-100}"
+MANIFEST_ROOT="${MANIFEST_ROOT:-benchmarks/offline_phase0c/stage_c_final}"
+
+RUN_BASELINE_EVAL="${RUN_BASELINE_EVAL:-1}"
+EVAL_WORKERS="${EVAL_WORKERS:-6}"
+EVAL_WORKER_DEVICE="${EVAL_WORKER_DEVICE:-cpu}"
+VALIDATION_SEED="${VALIDATION_SEED:-123}"
+TEST_SEED="${TEST_SEED:-456}"
+FORCE_REEVAL="${FORCE_REEVAL:-0}"
+
+CHECKPOINT_ROOT="${CHECKPOINT_ROOT:-checkpoints/offline/td3bc/phase0c/stage_c_bc_final}"
+RESULTS_ROOT="${RESULTS_ROOT:-results/offline/td3bc/phase0c/stage_c_bc_final}"
+ANALYSIS_OUTPUT_DIR="${ANALYSIS_OUTPUT_DIR:-${RESULTS_ROOT}/analysis}"
+RUN_BC_TEST_ANALYSIS="${RUN_BC_TEST_ANALYSIS:-1}"
+SKIP_ANALYSIS_PLOTS="${SKIP_ANALYSIS_PLOTS:-0}"
+
+run_cmd() {
+  echo
+  echo "[cmd] $*"
+  "$@"
+}
+
+run_phase0b_v2_child() {
+  local child_mode="$1"
+  shift
+
+  local -a env_args=(
+    "MODE=${child_mode}"
+    "PYTHON_BIN=${PYTHON_BIN}"
+    "DEVICE=${DEVICE}"
+    "BENCHMARK_KEY=${BENCHMARK_KEY}"
+    "FLOW_PATH=${FLOW_PATH}"
+    "TASK_GEOMETRY=${TASK_GEOMETRY}"
+    "TARGET_SPEED=${TARGET_SPEED}"
+    "OBJECTIVE=${OBJECTIVE}"
+    "PROBE_LAYOUT=${PROBE_LAYOUT}"
+    "HISTORY_LENGTH=${HISTORY_LENGTH}"
+    "DATASET_POLICY=${DATASET_POLICY}"
+    "DATASET_POLICY_MIXTURE=${DATASET_POLICY_MIXTURE}"
+    "ACTION_NOISE_STD=${ACTION_NOISE_STD}"
+    "ACTION_NOISE_CLIP=${ACTION_NOISE_CLIP}"
+    "COLLECT_WORKERS=${COLLECT_WORKERS}"
+    "BASE_DATASET_NAME=${BASE_DATASET_NAME}"
+    "BASE_DATASET_EPISODES=${BASE_DATASET_EPISODES}"
+    "BASE_DATASET_SEED=${BASE_DATASET_SEED}"
+    "SIZE_ABLATION_EPISODES=${SIZE_ABLATION_EPISODES}"
+    "SIZE_ABLATION_ALPHAS=${SIZE_ABLATION_ALPHAS}"
+    "SIZE_ABLATION_SEEDS=${SIZE_ABLATION_SEEDS}"
+    "BATCH_SIZE=${BATCH_SIZE}"
+    "TRAIN_EPOCHS=${TRAIN_EPOCHS}"
+    "CHECKPOINT_EVERY_EPOCHS=${CHECKPOINT_EVERY_EPOCHS}"
+    "DROP_LAST_BATCH=${DROP_LAST_BATCH}"
+    "SAMPLING_MODE=${SAMPLING_MODE}"
+    "HIDDEN_DIM=${HIDDEN_DIM}"
+    "ACTOR_LR=${ACTOR_LR}"
+    "CRITIC_LR=${CRITIC_LR}"
+    "GAMMA=${GAMMA}"
+    "TAU=${TAU}"
+    "POLICY_NOISE=${POLICY_NOISE}"
+    "NOISE_CLIP=${NOISE_CLIP}"
+    "POLICY_FREQ=${POLICY_FREQ}"
+    "NORMALIZER_EPS=${NORMALIZER_EPS}"
+    "GRAD_CLIP_NORM=${GRAD_CLIP_NORM}"
+    "LOG_EVERY=${LOG_EVERY}"
+    "USE_LAYERNORM=${USE_LAYERNORM}"
+    "USE_ASYMMETRIC_CRITIC=${USE_ASYMMETRIC_CRITIC}"
+    "PRIVILEGED_ACTOR_UPDATE_MODE=${PRIVILEGED_ACTOR_UPDATE_MODE}"
+    "VAL_MANIFEST_EPISODES=${VAL_MANIFEST_EPISODES}"
+    "TEST_MANIFEST_EPISODES=${TEST_MANIFEST_EPISODES}"
+    "MANIFEST_ROOT=${MANIFEST_ROOT}"
+    "RUN_BASELINE_EVAL=${RUN_BASELINE_EVAL}"
+    "EVAL_WORKERS=${EVAL_WORKERS}"
+    "EVAL_WORKER_DEVICE=${EVAL_WORKER_DEVICE}"
+    "VALIDATION_SEED=${VALIDATION_SEED}"
+    "TEST_SEED=${TEST_SEED}"
+    "FORCE_REEVAL=${FORCE_REEVAL}"
+    "CHECKPOINT_ROOT=${CHECKPOINT_ROOT}"
+    "RESULTS_ROOT=${RESULTS_ROOT}"
+    "ANALYSIS_OUTPUT_DIR=${ANALYSIS_OUTPUT_DIR}"
+    "RUN_BC_TEST_ANALYSIS=${RUN_BC_TEST_ANALYSIS}"
+    "SKIP_ANALYSIS_PLOTS=${SKIP_ANALYSIS_PLOTS}"
+  )
+
+  if [[ -n "$PYTHON_PREFIX" ]]; then
+    env_args+=("PYTHON_PREFIX=${PYTHON_PREFIX}")
+  fi
+  while (($#)); do
+    env_args+=("$1")
+    shift
+  done
+
+  run_cmd env "${env_args[@]}" bash scripts/run_offline_td3bc_phase0b_v2.sh
+}
+
+run_manifests() {
+  run_phase0b_v2_child manifests
+}
+
+run_train() {
+  run_phase0b_v2_child train
+}
+
+run_validate() {
+  run_phase0b_v2_child validate
+}
+
+run_summarize() {
+  run_phase0b_v2_child summarize
+}
+
+run_analyze() {
+  run_phase0b_v2_child analyze
+}
+
+case "$MODE" in
+  manifests)
+    run_manifests
+    ;;
+  train)
+    run_train
+    ;;
+  validate)
+    run_validate
+    ;;
+  summarize)
+    run_summarize
+    ;;
+  analyze)
+    run_analyze
+    ;;
+  all)
+    run_manifests
+    run_train
+    run_validate
+    run_summarize
+    run_analyze
+    ;;
+  *)
+    echo "Unsupported MODE: $MODE" >&2
+    echo "Supported MODE values: manifests, train, validate, summarize, analyze, all" >&2
+    exit 1
+    ;;
+esac

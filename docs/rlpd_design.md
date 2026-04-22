@@ -2,10 +2,28 @@
 
 > 本文档对应代码库中 RLPD（RL with Prior Data）方法的引入，详细阐述算法选择依据、实现规划与实验设计，可作为代码实现和论文写作的参考。
 > 前序：离线-在线 RL 综述见 `docs/world_model_and_offline_rl_survey.md` Part 3
+> 当前状态（截至 `phase0c`）：RLPD 基础设施已经落地到当前仓库，但尚未形成与 TD3BC `phase0c` 主线同等级的正式实验闭环；当前纯离线 RL 的主线收口已经完成，下一算法优先级应转向 ReBRAC，而不是立即重开 RLPD 主线。
+> 当前阅读建议：若关注“固定离线数据上的纯 offline RL”，请优先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md) 与 [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)；本文更适合作为 offline-to-online 路线的设计档案。
 
 ---
 
 ## 1. 背景与动机
+
+### 1.0 本文与当前 offline RL 主线的关系
+
+截至当前仓库进展，离线 RL 相关工作已经分成两条互补路线：
+
+- **纯 offline RL 主线**：以 TD3BC `phase0b_v2 / phase0c` 为代表，回答固定离线数据上能学到什么；
+- **offline-to-online 主线**：以 RLPD 为代表，回答先验离线数据能否加速后续在线 SAC 训练。
+
+这两条路线共享数据接口、行为策略与 teacher-gap 背景，但研究问题不同：
+
+- TD3BC 主线更关注 `crosscomp` 支持集结构问题与 `worldcomp` information gap；
+- RLPD 更关注在线收敛速度、分布偏移下的 warm-start 效果，以及不同 teacher 数据作为 prior 的利弊。
+
+因此，本文现在不应被理解为“下一步最高优先级执行计划”，而应被理解为：
+
+> 在纯 offline RL 主线已经收口之后，离线-在线混合路线的一份保留设计文档。
 
 ### 1.1 为什么在本项目中引入离线 RL
 

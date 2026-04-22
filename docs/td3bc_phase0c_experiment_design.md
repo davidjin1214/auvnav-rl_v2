@@ -1,5 +1,7 @@
 # TD3BC `phase0c` 实验设计文档
 
+> 说明：`phase0c` 主实验及其补充实验现已完成。本文档保留为**原始设计协议说明**，用于解释当时为什么这样设计；实际结果、补充实验和最终结论请优先阅读 [td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md) 与 [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)。
+
 ## 1. 文档目的
 
 本文档用于说明 `scripts/run_offline_td3bc_phase0c.sh` 所定义的 `phase0c` 实验协议，重点覆盖以下内容：
@@ -10,7 +12,13 @@
 - 训练、验证、测试、checkpoint 选择、`alpha` 选择的具体方法
 - 如何在有限计算预算下，同时兼顾论文式 ablation 的完整性与实验结论的可靠性
 
-本文档**不包含实验结果本身**。待 `phase0c` 实验完成后，可在本文档预留章节中补充结果、图表和讨论。
+本文档**不包含实验结果本身**。需要注意的是，当前仓库中的 `phase0c` 最终已经超出了本设计文档最初定义的三阶段 `crosscomp` 主实验，后续又补充了：
+
+- `stage_c_bc_final`
+- `noisy_support_screen`
+- `worldcomp_teacher_gap`
+
+这些补充实验并不改变本设计文档对 Stage A / B / C 的原始意图说明，但它们的结果与解释应以正式实验报告为准。
 
 ---
 
@@ -634,11 +642,20 @@ os.environ["MODE"] = "all"
 
 ---
 
-## 14. 待补充的结果章节
+## 14. 结果补充说明
 
-待实验跑完后，建议在本文档后续补充如下内容。
+`phase0c` 结果现已完整产出，但不再建议把结果继续回填到本设计文档里；更合适的做法是把本文件作为协议档案保留，把结果与讨论集中放在正式实验报告中。
 
-### 14.1 Stage A 结果
+当前对应关系为：
+
+- `crosscomp` 主线与补充诊断：
+  - [td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)
+- `worldcomp teacher-gap`：
+  - [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
+
+如果未来继续扩展 `phase0c`，建议新增补充报告，而不是把结果继续混写回原始设计文档。
+
+### 14.1 原本预留的结果位置
 
 - 更大 validation 下的 winner 是否稳定
 - 是否有配置在小 validation 下被高估或低估
@@ -655,7 +672,7 @@ os.environ["MODE"] = "all"
 - TD3BC vs BC vs baseline 对比
 - 失败模式统计
 
-### 14.4 综合讨论
+### 14.4 原本预留的综合讨论
 
 - 数据规模效应是否稳定
 - 最优 `alpha` 是否随数据规模单调变化
@@ -676,7 +693,7 @@ os.environ["MODE"] = "all"
 - 它继承了 `phase0b_v2` 在方法学上的修正；
 - 同时进一步解决了“科学完整性”与“计算可承受性”之间的矛盾。
 
-因此，若 `phase0c` 按计划顺利完成，它应当能够同时支撑：
+从当前结果回看，`phase0c` 的原始设计目标已经被满足。它最终确实支撑了：
 
 - 论文中的 size-ablation 图表；
 - 最优 `alpha` 与 BC/Q 权衡的讨论；

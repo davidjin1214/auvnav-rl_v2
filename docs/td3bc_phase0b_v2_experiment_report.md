@@ -1,5 +1,8 @@
 # TD3BC `phase0b_v2` 实验报告
 
+> 文档定位：`phase0b_v2` 是 `phase0c` 之前的协议修正与 pilot 结果报告；截至当前，它的主要价值在于解释为什么旧 `phase0` 的负 size trend 不可信，以及为什么后续需要升级到 `phase0c`。
+> 当前阅读建议：若需要截至目前最完整的正式主结论，请优先阅读 [td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)；本文保留为 `phase0 -> phase0b_v2 -> phase0c` 演化链中的关键档案。
+
 ## 1. 报告概述
 
 本文档整理了 `results/offline/td3bc/phase0b_v2/` 下已经取回的 TD3BC 离线训练实验结果，并从研究问题、实验设计、结果、分析、局限性与后续工作几个方面，对这组实验进行系统说明。
@@ -412,15 +415,32 @@ BC test success 为：
 
 ---
 
-## 11. 对后续实验的建议
+## 11. 这份报告在当前项目中的位置
 
-结合本次结果，下一轮正式实验建议如下：
+从当前仓库状态回看，`phase0b_v2` 给出的后续建议已经大体被 `phase0c` 执行并验证：
 
-1. 保持 `phase0b_v2` 的整体协议思想不变。
-2. 将 `stage_b`/`stage_c` 形式的分阶段协议作为正式 ablation 的主流程。
-3. 对 `500/1000` 扩展更大的 `alpha` 网格，例如继续探索 `0.75, 1.0, 1.5`。
-4. 对 `2000` 细化小 `alpha` 区间，例如 `0.0, 0.05, 0.1, 0.15, 0.2, 0.25`。
-5. 提升 seeds 数与 validation/test manifest 规模，将当前 pilot 结论升级为 formal 论文结果。
+1. `phase0b_v2` 的核心协议思想被保留了下来：
+   - epoch-aligned 训练预算
+   - `shuffle_no_replacement`
+   - validation/test 分离
+   - checkpoint 与 `alpha` 的后验选择
+2. `stage_b` / `stage_c` 形式的分阶段协议已经在 `phase0c` 中成为正式主流程。
+3. `500/1000/2000` 的更细 `alpha` 搜索、更多 seed、更大的 validation/test manifest，都已经在 `phase0c` 主线与其补充实验中得到落实。
+4. `stage_c_bc_final`、`noisy_support_screen` 与 `worldcomp_teacher_gap` 进一步补齐了 `phase0b_v2` 当时尚未回答的两个关键问题：
+   - `1000 > 2000` 是否只是 TD3BC 特有现象
+   - 更强 teacher 下 deployable critic 的信息瓶颈有多大
+
+因此，从今天看，`phase0b_v2` 的意义应当被理解为：
+
+- 它不是当前最终主表；
+- 它是旧 `phase0` 负趋势被纠正的关键转折点；
+- 它为 `phase0c` 的正式协议设计提供了方法学依据。
+
+如果要一句话概括这份报告现在的角色，可以写成：
+
+> `phase0b_v2` 不是 TD3BC 主线的最终答案，但它完成了最关键的一步：把“数据越大越差”从算法现象纠正回协议伪象，并为后续 `phase0c` 的正式收口建立了正确的实验框架。
+
+在当前时间点，离线 RL 主线的下一步已经不再是继续扩展 `phase0b_v2`，而是基于 `phase0c` 与 `worldcomp teacher-gap` 的完整结论进入 ReBRAC。
 
 ---
 
@@ -437,4 +457,3 @@ BC test success 为：
 用于动机与对照的旧版 `phase0` 文件包括：
 
 - `results/offline/td3bc/phase0/summaries/*_summary_per_dataset.csv`
-

@@ -1,7 +1,8 @@
 # 离线 RL 快速验证方案
 
-> 文档版本：2026-04-17 rev.3
-> 定位：`offline_rl_implementation_plan.md` 的 Phase 0，目标是在 1-2 天内得到**可信**的离线 RL 先验结论
+> 文档版本：2026-04-22 rev.5
+> 定位：`offline_rl_implementation_plan.md` 的历史 Phase 0 记录；截至 `phase0c`，本文件已不再是主实验协议，而是用于说明“最初的 quick-validation 想验证什么、后来哪些结论已经被正式实验回答”
+> 当前入口：部署级主结论请优先阅读 [td3bc_phase0b_v2_experiment_report.md](./td3bc_phase0b_v2_experiment_report.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md) 与 [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
 > 核心问题：**在当前 repo 的数据接口和评估协议下，纯离线 RL 是否能稳定优于纯 BC，并在 deployable teacher 数据上显示真实价值？**
 
 ---
@@ -15,17 +16,41 @@
 - `未实现`：文档中的建议尚未编码。
 - `未跑实验`：代码已可执行，但仓库中尚未提交对应 Phase 0 正式实验结果。
 
-截至目前，Phase 0 **没有全部实现完**。当前状态更准确地说是：
+截至 `phase0c`，这里的状态应更新为：
 
-- `已实现`：`TD3+BC` agent、`train_offline.py`、`evaluate_offline.py`、`evaluate_baseline_on_manifest.py`、observation normalizer、checkpoint 中的 `obs_normalizer` 持久化、`privileged-critic` 可选协议、Phase 0 启动脚本 [`scripts/run_offline_td3bc_phase0.sh`](../scripts/run_offline_td3bc_phase0.sh)。
-- `部分实现`：训练/评估协议校验、离线数据 metadata 对齐检查、`best agent` 选择与最终评估。
-- `未实现`：support-broadened collector（如 `--action-noise-std`）、`mixed-deployable` 数据收集、holdout/index-aware sampler。
-- `未跑实验`：文档中 Step A / B / C 的正式实验结论还没有在仓库内固化。
+- `已实现`：`TD3+BC` agent、[`scripts/train_offline.py`](../scripts/train_offline.py)、[`scripts/evaluate_offline.py`](../scripts/evaluate_offline.py)、[`scripts/evaluate_baseline_on_manifest.py`](../scripts/evaluate_baseline_on_manifest.py)、observation normalizer、checkpoint 中的 `obs_normalizer` 持久化、`privileged-critic` 可选协议、[`scripts/run_offline_td3bc_phase0.sh`](../scripts/run_offline_td3bc_phase0.sh)、[`scripts/run_offline_td3bc_phase0b_v2.sh`](../scripts/run_offline_td3bc_phase0b_v2.sh)、[`scripts/run_offline_td3bc_phase0c.sh`](../scripts/run_offline_td3bc_phase0c.sh)。
+- `已完成实验`：`phase0`、`phase0b_v2` 与 `phase0c` 三轮 TD3BC deployable 主线实验，以及 `phase0c` 下的 `stage_c_bc_final`、`noisy_support_screen` 和 `worldcomp_teacher_gap` 补充实验。
+- `部分实现`：训练/评估协议校验、离线数据 metadata 对齐检查、`best agent` 选择与最终评估；`support-broadened collector` 中的最小噪声注入能力已经落地，且最小 noisy-support 诊断已经完成，但更系统的 noisy / mixed 数据线仍未完成。
+- `未实现`：`mixed-deployable` 数据收集流程、holdout/index-aware sampler。
+- `未跑正式实验`：ReBRAC / XQL / FQL 等后续算法。
 
 说明：
 
 - 文档中的命令前缀请按运行环境替换，可用 `python`，也可用 `conda run -n <env> python`。
-- 下文标题后的状态标签，表示“当前代码实现状态”，不是“研究上已经得到结论”。
+- 下文标题后的状态标签，优先表示“当前代码/实验推进状态”；若与后续正式实验报告冲突，应以 `phase0b_v2` / `phase0c` 报告为准。
+
+### 0.1 截至 `phase0c` 已经得到的结论
+
+当前 quick-validation 想回答的主问题，实际上已经被后续实验大体回答：
+
+- 在 deployable `crosscomp` 数据上，TD3BC 已经证明不仅能跑通，而且相对 BC 具有真实增益；因此“纯离线 RL 是否对当前 AUV 任务有价值”这一问题，答案已经是**肯定的**。
+- 旧 `phase0` 中观察到的“数据越大越差”主要是协议伪象；这一点已经被 `phase0b_v2` 修正并记录在 [td3bc_phase0b_v2_experiment_report.md](./td3bc_phase0b_v2_experiment_report.md)。
+- 在更正式的 `phase0c` 协议下，当前最优离线数据规模并不是越大越好，而是在 `1000` episodes 左右达到最佳；这一点见 [td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)。
+- `worldcomp teacher-gap` 主线已经正式完成，结果表明 privileged critic 可以关闭约一半 deployable teacher gap；这一点见 [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)。
+
+### 0.2 本文件现在该怎么用
+
+本文件仍然有价值，但价值已经从“待执行计划”转变为：
+
+- 说明最初的 Phase 0 要验证哪些前提；
+- 记录为什么 `crosscomp + deployable protocol` 是主线；
+- 作为后续 ReBRAC / XQL / teacher-gap 实验的起点约束。
+
+如果需要当前最可信的实验事实，应直接引用：
+
+- [td3bc_phase0b_v2_experiment_report.md](./td3bc_phase0b_v2_experiment_report.md)
+- [td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)
+- [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
 
 ---
 
@@ -157,7 +182,7 @@ Phase 0 的主数据集应从 `crosscomp` 收集，因为它更接近 deployable
 推荐命令：
 
 ```bash
-conda run -n mytorch1 python -m scripts.collect_offline_data \
+conda run -n mycuda1 python -m scripts.collect_offline_data \
     --policy crosscomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -177,7 +202,7 @@ conda run -n mytorch1 python -m scripts.collect_offline_data \
 推荐命令：
 
 ```bash
-conda run -n mytorch1 python -m scripts.collect_offline_data \
+conda run -n mycuda1 python -m scripts.collect_offline_data \
     --policy worldcomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -190,9 +215,9 @@ conda run -n mytorch1 python -m scripts.collect_offline_data \
     --output-dir offline_data/worldcomp_s0_h4_effv2_re150_u10cross
 ```
 
-### 4.3 可选后续：support-broadened 数据集 `【未实现】`
+### 4.3 可选后续：support-broadened 数据集 `【部分实现，已完成最小诊断】`
 
-当前 [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) 默认执行确定性 baseline，不带动作噪声，也不混合多个 teacher。
+当前 [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) 默认仍执行确定性 baseline，但代码已经支持 `--action-noise-std` 与 `--action-noise-clip`。基于这些接口的最小 noisy-support 诊断已经在 `phase0c/noisy_support_screen` 中完成；尚未完成的是更系统的 noisy / mixed dataset 实验。
 
 所以如果出现下面这种情况：
 
@@ -204,7 +229,7 @@ conda run -n mytorch1 python -m scripts.collect_offline_data \
 
 Phase 0 之后最小的正确扩展方向是：
 
-- 给 collector 增加 `--action-noise-std`；
+- 使用 collector 中已经落地的 `--action-noise-std`；
 - 或新增 `mixed-deployable` 数据收集；
 - 或显式加入 recovery transitions。
 
@@ -373,7 +398,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 
 - [`auv_nav/td3bc.py`](../auv_nav/td3bc.py) 已支持 `privileged_obs_dim > 0` 的 critic。
 - actor update 的语义已显式做成 `privileged_actor_update_mode ∈ {zeros, batch}`，不再隐含在实现细节里。
-- 但 `worldcomp + privileged-critic` 的正式实验结果还没有在仓库里沉淀。
+- `worldcomp + privileged-critic` 的正式实验结果已经在仓库中沉淀，对应 [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)。
 
 ### 6.4 关键超参 `【已实现】`
 
@@ -390,9 +415,11 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 
 ---
 
-## 七、训练与评估协议
+## 七、训练与评估协议（历史 quick-validation 版本）
 
-### 7.1 Step A：`crosscomp` smoke test `【可执行，未跑正式实验】`
+以下 Step A / B / C 是最初 quick-validation 设计时的建议入口。它们在方法论上仍然有参考价值，但后续正式工作已经演化为 `phase0b_v2` 与 `phase0c`，因此这里应视为“历史协议记录”，不是当前最推荐的主实验入口。
+
+### 7.1 Step A：`crosscomp` smoke test `【历史入口，已被后续阶段覆盖】`
 
 - 数据集：`crosscomp_s0_h4_effv2_re150_u10cross`
 - `alpha ∈ {0.0, 2.5}`
@@ -405,7 +432,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 - 确认状态归一化闭环正确；
 - 先判断 `alpha > 0` 相对 BC 是否出现正信号。
 
-### 7.2 Step B：`crosscomp` full quick validation `【可执行，未跑正式实验】`
+### 7.2 Step B：`crosscomp` full quick validation `【历史入口，已被后续阶段覆盖】`
 
 - `alpha ∈ {0.0, 1.0, 2.5, 5.0}`
 - `seed ∈ {42, 43}`
@@ -413,7 +440,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 
 只有当 Step A 正常时才做 Step B。
 
-### 7.3 Step C：`worldcomp` teacher-gap diagnostic `【可执行，未跑正式实验】`
+### 7.3 Step C：`worldcomp` teacher-gap diagnostic `【已完成正式实验】`
 
 在 `crosscomp` 得到 best alpha 之后，再去 `worldcomp` 上做诊断：
 
@@ -426,7 +453,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 先跑 `crosscomp` smoke test：
 
 ```bash
-conda run -n mytorch1 python -m scripts.train_offline \
+conda run -n mycuda1 python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 0.0 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
@@ -445,7 +472,7 @@ conda run -n mytorch1 python -m scripts.train_offline \
 ```
 
 ```bash
-conda run -n mytorch1 python -m scripts.train_offline \
+conda run -n mycuda1 python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 2.5 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
@@ -475,7 +502,7 @@ conda run -n mytorch1 python -m scripts.train_offline \
 最终结果必须在固定 manifest 上重新评估，建议 100 episodes：
 
 ```bash
-conda run -n mytorch1 python -m scripts.evaluate_offline \
+conda run -n mycuda1 python -m scripts.evaluate_offline \
     --checkpoint checkpoints/offline/td3bc/crosscomp_u10cross_alpha2p5_seed42 \
     --manifest benchmarks/single_u10_cross_tgt15.json \
     --episodes 100 \
@@ -566,7 +593,11 @@ conda run -n mytorch1 python -m scripts.evaluate_offline \
 - `TD3+BC(best alpha)` 在 `crosscomp` 上稳定优于 BC；
 - 或虽然增益有限，但诊断显示主要瓶颈是数据支持集，而不是算法直接崩溃。
 
-如果连 `crosscomp` 上的 BC 都稳定赢不了，就不建议直接上 FQL/XQL，应该先修数据协议、normalizer 或数据来源。
+这一判据在当前仓库里已经被满足：`phase0b_v2` 与 `phase0c` 已经证明 TD3BC 在 deployable `crosscomp` 主线上具有真实价值，而 `worldcomp teacher-gap` 也已经给出正式结果。因此这里的“推进完整方案”不再是一个未来条件，而是已经发生的状态转移。当前更合理的下一步是：
+
+- 在同一 canonical protocol 下实现并评估 ReBRAC；
+- 将 noisy / support-broadened dataset 从“接口已具备”推进到“更系统的正式实验”；
+- 以 `crosscomp` 的支持集问题和 `worldcomp` 的信息瓶颈为参照，组织下一阶段算法比较。
 
 ---
 
@@ -576,7 +607,7 @@ conda run -n mytorch1 python -m scripts.evaluate_offline \
 
 ```bash
 # 1. 收集主数据集：crosscomp
-conda run -n mytorch1 python -m scripts.collect_offline_data \
+conda run -n mycuda1 python -m scripts.collect_offline_data \
     --policy crosscomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -589,7 +620,7 @@ conda run -n mytorch1 python -m scripts.collect_offline_data \
     --output-dir offline_data/crosscomp_s0_h4_effv2_re150_u10cross
 
 # 2. 收集二级数据集：worldcomp
-conda run -n mytorch1 python -m scripts.collect_offline_data \
+conda run -n mycuda1 python -m scripts.collect_offline_data \
     --policy worldcomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -602,7 +633,7 @@ conda run -n mytorch1 python -m scripts.collect_offline_data \
     --output-dir offline_data/worldcomp_s0_h4_effv2_re150_u10cross
 
 # 3. 先跑 crosscomp smoke test: alpha=0
-conda run -n mytorch1 python -m scripts.train_offline \
+conda run -n mycuda1 python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 0.0 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
@@ -620,7 +651,7 @@ conda run -n mytorch1 python -m scripts.train_offline \
     --device cuda
 
 # 4. 再跑 crosscomp smoke test: alpha=2.5
-conda run -n mytorch1 python -m scripts.train_offline \
+conda run -n mycuda1 python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 2.5 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
@@ -643,6 +674,12 @@ conda run -n mytorch1 python -m scripts.train_offline \
 - 若 `crosscomp` 上 `alpha=2.5 > alpha=0`：说明纯离线 Q-learning 在该任务上提供了真实增益。
 - 若该增益在多个种子和固定 manifest 上稳定：说明 deployable offline RL 在当前 AUV 流场导航问题上具有现实可行性。
 - 若只在 `worldcomp` 上失败：优先检查信息差和 protocol label，不要直接否定 offline RL。
+
+### 10.3 截至 `phase0c` 的实际一句话结论
+
+截至当前仓库状态，更准确的一句话应改为：
+
+- `crosscomp` deployable 主线上，TD3BC 已经稳定证明了相对 BC 的价值；但性能对数据规模并非单调增加，而是在当前协议下于 `1000` episodes 左右达到最佳；`worldcomp teacher-gap` 则进一步表明，deployable 上限同时受到真实的信息瓶颈约束。
 
 ---
 

@@ -1,11 +1,34 @@
 # 离线强化学习实现方案与计划
 
-> 文档版本：2026-04-17 rev.3
-> 适用范围：当前仓库的 SAC / RLPD 基础设施，计划引入纯离线 RL
-> 核心结论：**实现优先级应调整为 `TD3+BC -> ReBRAC -> XQL -> FQL`，而不是直接以 FQL 为主线**
-> 交叉验证来源：原始论文 + 官方代码仓库 + 当前 repo 现有实现接口
+> 文档版本：2026-04-22 rev.5
+> 适用范围：当前仓库的 SAC / RLPD 基础设施，以及截至 `phase0c` 已经落地的 TD3BC 离线实验主线
+> 核心结论：**实现优先级仍应保持 `TD3+BC -> ReBRAC -> XQL -> FQL`；截至当前，TD3BC 主线收口已基本完成，下一阶段的重点应转向 ReBRAC，并以现有 teacher-gap 与数据支持集结论作为约束**
+> 交叉验证来源：原始论文 + 官方代码仓库 + 当前 repo 现有实现接口 + 仓库内 `phase0b_v2` / `phase0c` 正式实验结果
 
 ---
+
+## 0. 当前执行状态（截至 `phase0c`）
+
+这份计划最初写于离线 RL 代码尚未完全落地、实验尚未形成闭环的时候。到当前仓库状态为止，需要先明确一件事：
+
+> 计划主线没有失效，但项目已经不再处在“准备做 Phase 0”的阶段，而是已经完成了 Phase 0/1 的主体工作，并进入“收口 TD3BC、准备下一算法”的阶段。
+
+当前状态可概括为：
+
+| 模块 | 当前状态 | 说明 |
+|---|---|---|
+| Phase 0 基础设施 | **已完成** | `train_offline.py`、`evaluate_offline.py`、`evaluate_baseline_on_manifest.py`、TD3BC agent、normalizer 持久化、deployable / privileged-critic 协议均已落地 |
+| Phase 1 TD3BC deployable 主线 | **已完成** | `phase0`、`phase0b_v2`、`phase0c` 已形成从协议修正到正式结果的完整链路 |
+| `crosscomp` 主结论 | **已完成** | TD3BC 在 deployable 数据上已证明相对 BC 的价值；当前最优数据规模在 `1000` episodes 左右 |
+| `worldcomp` teacher-gap 主线 | **已完成** | 已形成正式 screening / formal 结果与专项实验报告，证明 privileged critic 可关闭约一半 deployable teacher gap |
+| 数据支持集扩展 | **部分完成** | collector 已支持动作噪声，且最小 noisy-support 诊断已完成；mixed-deployable 与更系统的数据线仍未完成 |
+| ReBRAC / XQL / FQL | **未开始** | 目前仓库中还没有对应实现与结果目录 |
+
+因此，本文档后续各章节应这样理解：
+
+- 涉及 Phase 0 / Phase 1 的段落，属于“已经被执行并验证过的计划”；
+- 涉及 ReBRAC / XQL / FQL 的段落，仍然是当前有效的下一阶段路线；
+- 涉及数据支持集、teacher-gap、holdout 的段落，是理解当前 TD3BC 结果并约束后续算法设计的关键背景。
 
 ## 一、背景与目标
 
@@ -319,7 +342,7 @@ train_indices = ...
 
 ### 5.3 单一确定性 teacher 数据会窄化支持集
 
-当前 [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) 直接执行 baseline policy，默认没有动作噪声，也没有 multi-policy mixing。
+当前 [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) 默认仍执行确定性 baseline，不做 multi-policy mixing；但与本计划初稿不同，代码中已经支持 `--action-noise-std` 与 `--action-noise-clip`。基于这些接口的最小 noisy-support 诊断已经完成；真正尚未完成的是把这些接口进一步系统地用于更大规模的 noisy / broadened-support / mixed-deployable 数据实验。
 
 这意味着单一 teacher 数据很可能出现：
 
@@ -332,8 +355,8 @@ train_indices = ...
 
 - 第一轮 Phase 0 可以先用确定性 `crosscomp-500` 跑通链路；
 - 但如果 `alpha=0` 与 `alpha>0` 难分高下，优先扩数据支持集，而不是直接升级到 FQL；
-- 最小可行的扩展方向是：
-  - 给 collector 增加 `--action-noise-std`；
+- 最小可行的扩展方向现在应改成：
+  - 用已经落地的 `--action-noise-std` 生成 noisy `crosscomp` 数据；
   - 或支持 `mixed-deployable` 数据收集；
   - 或显式注入 recovery transitions。
 
@@ -390,7 +413,7 @@ train_indices = ...
 
 ## 七、修订后的算法实施路线
 
-### 7.1 Phase 0：基础设施与协议锁定
+### 7.1 Phase 0：基础设施与协议锁定 `【已完成】`
 
 目标：
 
@@ -402,9 +425,16 @@ train_indices = ...
 - 明确 normalizer schema
 - 明确 privileged-critic protocol
 
-只有这一层完成后，算法实验结果才可解释。
+这一层在当前仓库中已经基本完成。对应的核心落地点包括：
 
-### 7.2 Phase 1：TD3+BC
+- [`scripts/train_offline.py`](../scripts/train_offline.py)
+- [`scripts/evaluate_offline.py`](../scripts/evaluate_offline.py)
+- [`scripts/evaluate_baseline_on_manifest.py`](../scripts/evaluate_baseline_on_manifest.py)
+- [`auv_nav/td3bc.py`](../auv_nav/td3bc.py)
+
+因此，后续讨论不再以“能否跑通离线训练链路”为主问题，而以“在已锁死协议上，哪类算法与数据策略更有效”为主问题。
+
+### 7.2 Phase 1：TD3+BC `【已完成 deployable 主线】`
 
 目标：
 
@@ -418,7 +448,16 @@ Phase 1 的主问题不是“超过 `worldcomp` 没有”，而是：
 - 是否已经出现明显的 OOD backup 问题；
 - 状态归一化和 checkpoint 是否真正闭环。
 
-### 7.3 Phase 2：ReBRAC
+截至 `phase0c`，这些问题已经有了明确答案：
+
+- deployable `crosscomp` 主线已经证明 TD3BC 相对 BC 具有真实价值；
+- 旧 `phase0` 中“数据越大越差”是协议伪象，已被 `phase0b_v2` 修正；
+- 在更正式的 `phase0c` 中，当前最优数据规模在 `1000` episodes 左右，而不是单调偏向更大数据集。
+- `worldcomp teacher-gap` 也已经完成，证明 privileged critic 可以关闭约一半 deployable teacher gap。
+
+因此，Phase 1 现在应视为**已完成并沉淀出正式结论**，而不是待执行任务。
+
+### 7.3 Phase 2：ReBRAC `【当前最优先下一阶段】`
 
 目标：
 
@@ -430,7 +469,13 @@ Phase 1 的主问题不是“超过 `worldcomp` 没有”，而是：
 - deployable dataset 上的正增益；
 - 而不是 privileged teacher 上的追分能力。
 
-### 7.4 Phase 3：XQL
+在当前项目状态下，我建议把 ReBRAC 设为**下一步最高优先级**，原因是：
+
+- `phase0c` 已经表明问题不在“TD3BC 完全无效”，而在“更大数据集没有继续转化成收益”；
+- 这更像 critic regularization / dual penalty / optimization regime 的问题，而不像必须立刻升级到更复杂 actor family 的问题；
+- ReBRAC 正好是对 TD3BC 的最自然、最可解释的下一层增强。
+
+### 7.4 Phase 3：XQL `【ReBRAC 之后的主候选】`
 
 目标：
 
@@ -442,7 +487,12 @@ Phase 1 的主问题不是“超过 `worldcomp` 没有”，而是：
 - 说明本问题的第一瓶颈未必是 policy multimodality；
 - 那么 FQL 的收益未必能 justify 它的复杂度。
 
-### 7.5 Phase 4：FQL
+换句话说，XQL 的进入条件并不是“TD3BC 已经做完，所以顺序轮到它”，而是：
+
+- ReBRAC 仍不能解释或改善 `1000 > 2000` 的现象；
+- 我们需要一个更强的 in-sample 基线来区分“critic backup 问题”和“数据支持集/行为建模问题”。
+
+### 7.5 Phase 4：FQL `【继续后置】`
 
 只有在满足以下条件之一时，才建议推进 FQL：
 
@@ -458,7 +508,7 @@ FQL 的问题定义应改成：
 
 > FQL 是否天然比 XQL 更适合作为主方法？
 
-### 7.6 Phase 5：数据与泛化
+### 7.6 Phase 5：数据与泛化 `【优先级前移】`
 
 建议把数据消融分成两条主线：
 
@@ -470,6 +520,13 @@ FQL 的问题定义应改成：
    - `privileged`
 
 这样可以把“覆盖率不足”与“teacher 特权信息”分开分析。
+
+与本计划初稿相比，这一阶段现在应当**前移优先级**。原因是 `phase0c` 已经给出一个很强的信号：
+
+- `2000` 比 `1000` 更大，但并没有更好；
+- 当前解释最像“数据支持集更宽，但算法没有有效消化这些额外样本”。
+
+因此，数据与泛化不再只是“后面有空再做”的延伸题，而是理解当前 TD3BC 结果的关键诊断线。
 
 泛化实验的触发条件也不应建立在“必须显著超过 `worldcomp`”之上。
 
@@ -595,10 +652,12 @@ FQL 的问题定义应改成：
 - **`crosscomp` 应该是 Phase 0 / 1 的主数据集**，`worldcomp` 只能作为二级 teacher-gap 分析。
 - **当前 `privileged_obs` 只对应局部等效流，不等于完整特权流场信息**。
 - **算法优先级应调整为 `TD3+BC -> ReBRAC -> XQL -> FQL`**。
+- **截至 `phase0c`，Phase 0 / 1 已基本完成；当前最优 deployable TD3BC 配置出现在 `1000` episodes 左右，而不是单调偏向更大数据集。**
+- **下一阶段不应直接跳到 FQL；更合适的顺序是：在现有 teacher-gap / 数据支持集结论约束下，实现 ReBRAC。**
 
 ### 11.2 如果只保留一句路线建议
 
-> 先把 offline 训练、评估、归一化和协议做对，再用 TD3+BC / ReBRAC / XQL 在 deployable dataset 上建立可信基线，最后再让 FQL 去回答“flow-based expressive actor 是否真的值得”。
+> 以已经完成的 TD3BC 主线收口结果为约束，先用 ReBRAC / XQL 在同一 deployable protocol 上建立更强基线，最后才让 FQL 去回答“flow-based expressive actor 是否真的值得”。
 
 ---
 

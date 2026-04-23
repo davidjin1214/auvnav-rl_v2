@@ -182,7 +182,7 @@ Phase 0 的主数据集应从 `crosscomp` 收集，因为它更接近 deployable
 推荐命令：
 
 ```bash
-conda run -n mycuda1 python -m scripts.collect_offline_data \
+python -m scripts.collect_offline_data \
     --policy crosscomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -202,7 +202,7 @@ conda run -n mycuda1 python -m scripts.collect_offline_data \
 推荐命令：
 
 ```bash
-conda run -n mycuda1 python -m scripts.collect_offline_data \
+python -m scripts.collect_offline_data \
     --policy worldcomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -453,7 +453,7 @@ TD3+BC 的最小正确实现必须包含 observation normalization。
 先跑 `crosscomp` smoke test：
 
 ```bash
-conda run -n mycuda1 python -m scripts.train_offline \
+python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 0.0 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
@@ -472,7 +472,7 @@ conda run -n mycuda1 python -m scripts.train_offline \
 ```
 
 ```bash
-conda run -n mycuda1 python -m scripts.train_offline \
+python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 2.5 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
@@ -502,7 +502,7 @@ conda run -n mycuda1 python -m scripts.train_offline \
 最终结果必须在固定 manifest 上重新评估，建议 100 episodes：
 
 ```bash
-conda run -n mycuda1 python -m scripts.evaluate_offline \
+python -m scripts.evaluate_offline \
     --checkpoint checkpoints/offline/td3bc/crosscomp_u10cross_alpha2p5_seed42 \
     --manifest benchmarks/single_u10_cross_tgt15.json \
     --episodes 100 \
@@ -607,7 +607,7 @@ conda run -n mycuda1 python -m scripts.evaluate_offline \
 
 ```bash
 # 1. 收集主数据集：crosscomp
-conda run -n mycuda1 python -m scripts.collect_offline_data \
+python -m scripts.collect_offline_data \
     --policy crosscomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -620,7 +620,7 @@ conda run -n mycuda1 python -m scripts.collect_offline_data \
     --output-dir offline_data/crosscomp_s0_h4_effv2_re150_u10cross
 
 # 2. 收集二级数据集：worldcomp
-conda run -n mycuda1 python -m scripts.collect_offline_data \
+python -m scripts.collect_offline_data \
     --policy worldcomp \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --probe-layout s0 \
@@ -633,7 +633,7 @@ conda run -n mycuda1 python -m scripts.collect_offline_data \
     --output-dir offline_data/worldcomp_s0_h4_effv2_re150_u10cross
 
 # 3. 先跑 crosscomp smoke test: alpha=0
-conda run -n mycuda1 python -m scripts.train_offline \
+python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 0.0 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
@@ -651,7 +651,7 @@ conda run -n mycuda1 python -m scripts.train_offline \
     --device cuda
 
 # 4. 再跑 crosscomp smoke test: alpha=2.5
-conda run -n mycuda1 python -m scripts.train_offline \
+python -m scripts.train_offline \
     --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
     --alpha 2.5 \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \

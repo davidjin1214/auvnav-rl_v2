@@ -34,10 +34,9 @@
 
 ## 2. 运行前准备
 
-从仓库根目录运行，并按仓库约定切换到 Conda 环境 `mytorch1`：
+从仓库根目录运行，并切换到你本机可用的项目 Python / Conda 环境：
 
 ```bash
-conda activate mytorch1
 python -m scripts.generate_wake --help
 ```
 

@@ -10,7 +10,10 @@
 - 环境：由 LBM 生成的单圆柱或多圆柱尾迹流场
 - 目标：在动态流场中从起点到目标点导航
 - 难点：流场强、非均匀、时变，且存在欠驱动场景
-- 方法：基于改进版 Soft Actor-Critic (SAC) 学习策略，支持 RLPD（RL with Prior Data）利用离线基线数据加速训练
+- 方法：
+  - 在线主线：基于改进版 Soft Actor-Critic (SAC) 学习策略
+  - 离线-在线主线：支持 RLPD（RL with Prior Data）利用离线基线数据加速训练
+  - 纯离线主线：已落地 TD3BC/BC 训练与评估基础设施，并完成 `phase0b_v2` / `phase0c` 系列实验
 
 这不是一个“静态路径规划”仓库。它更接近一个闭环控制与决策系统：
 
@@ -26,26 +29,32 @@
 如果你想直接看已经整理好的实验结论，而不是翻 `experiments/` 下的原始日志，见：
 
 - [`results/rl_navigation_experiment_report.md`](results/rl_navigation_experiment_report.md)
+- offline RL 主线：
+  - [`docs/td3bc_phase0c_experiment_report.md`](docs/td3bc_phase0c_experiment_report.md)
+  - [`docs/td3bc_worldcomp_teacher_gap_experiment_report.md`](docs/td3bc_worldcomp_teacher_gap_experiment_report.md)
 
 ## 当前状态
 
-如果你只想先建立正确的全局认识，而不想立刻深入源码，可以先记住下面 6 点：
+如果你只想先建立正确的全局认识，而不想立刻深入源码，可以先记住下面几件事：
 
 - 这是一个“流场感知 + AUV 动力学 + RL 控制”的研究仓库，不是静态路径规划仓库。
-- 环境核心在 `auv_nav/env.py`，流场读取在 `auv_nav/flow.py`，算法核心在 `auv_nav/sac.py`。
-- 训练入口是 `scripts/train_sac.py`，标准化批量实验入口是 `scripts/run_suite.py`。
+- 环境核心在 `auv_nav/env.py`，流场读取在 `auv_nav/flow.py`，在线算法核心在 `auv_nav/sac.py`，pure offline 算法核心在 `auv_nav/td3bc.py`。
+- 在线训练入口是 `scripts/train_sac.py`，pure offline 训练入口是 `scripts/train_offline.py`，标准化批量实验入口是 `scripts/run_suite.py`。
 - 当前主研究 benchmark 是 `single_u15_upstream_tgt15`，也就是 `U_flow = 1.5 m/s`、`target-speed = 1.5 m/s` 的单圆柱逆流任务。
 - 当前推荐的主实验目标函数是 `efficiency_v2`，不是旧的 `efficiency_v1`。
-- 已整理好的实验结论在 `results/rl_navigation_experiment_report.md`，建议先看它再决定下一轮实验。
+- 在线 SAC 线的已整理结论在 `results/rl_navigation_experiment_report.md`。
+- pure offline RL 主线已经完成 TD3BC `phase0c` 收口：当前最优 deployable 数据规模约在 `1000` episodes，`worldcomp` teacher-gap 与 noisy-support 诊断也已完成。
+- 如果你关心当前 offline RL 的下一步，推荐直接看 [`docs/offline_rl_implementation_plan.md`](docs/offline_rl_implementation_plan.md)；当前优先级已经转向 ReBRAC。
 
 ## 推荐阅读顺序
 
 如果你第一次进入这个仓库，建议按下面顺序理解：
 
 1. 先读本文档，建立整体闭环和当前推荐实验路线。
-2. 再看 [`results/rl_navigation_experiment_report.md`](results/rl_navigation_experiment_report.md)，了解目前已经得到的结论。
-3. 然后读 [`docs/environment_design.md`](docs/environment_design.md)，理解流场与任务设计。
-4. 最后进入源码：先看 [`auv_nav/env.py`](auv_nav/env.py)，再看 [`auv_nav/flow.py`](auv_nav/flow.py) 和 [`auv_nav/sac.py`](auv_nav/sac.py)。
+2. 如果你关心在线 SAC 主线，先看 [`results/rl_navigation_experiment_report.md`](results/rl_navigation_experiment_report.md)。
+3. 如果你关心 pure offline RL 主线，先看 [`docs/td3bc_phase0c_experiment_report.md`](docs/td3bc_phase0c_experiment_report.md) 和 [`docs/td3bc_worldcomp_teacher_gap_experiment_report.md`](docs/td3bc_worldcomp_teacher_gap_experiment_report.md)。
+4. 然后读 [`docs/environment_design.md`](docs/environment_design.md)，理解流场与任务设计。
+5. 最后进入源码：先看 [`auv_nav/env.py`](auv_nav/env.py)，再看算法入口 [`auv_nav/sac.py`](auv_nav/sac.py) 与 [`scripts/train_offline.py`](scripts/train_offline.py)。
 
 ## 这个仓库的整体闭环
 
@@ -61,6 +70,8 @@ SAC / baseline policies
 checkpoint / logs / metrics    collect_offline_data.py → offline_data/
     ↓                                                      ↓
 evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
+    ↓
+train_offline.py / evaluate_offline.py (pure offline TD3BC/BC)
 ```
 
 按实验流程理解这个仓库，通常最清晰：
@@ -70,6 +81,7 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 3. （可选）用 `scripts/collect_offline_data.py` 收集基线策略的离线数据，再用 RLPD 模式训练。
 4. 用 `scripts/evaluate.py` 批量评估 checkpoint。
 5. 用 `scripts/demo.py`、`scripts/visualize.py`、`scripts/figure_paper.py` 做行为分析和结果展示。
+6. 如果做 pure offline RL，则使用 `scripts/train_offline.py`、`scripts/evaluate_offline.py` 和 `scripts/evaluate_baseline_on_manifest.py`。
 
 做严格算法对比时，建议优先使用仓库内置的标准 benchmark：
 
@@ -210,10 +222,16 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
   生成流场数据。
 - `train_sac.py`
   训练 SAC 智能体。支持 `--offline-data` 和 `--offline-ratio` 参数开启 RLPD 模式。
+- `train_offline.py`
+  纯离线 RL 训练入口。当前已支持 TD3BC / BC、validation/test 分离、`shuffle_no_replacement` epoch 训练、deployable / privileged-critic 协议。
 - `collect_offline_data.py`
   用基线策略（goalseek / crosscomp / worldcomp / privileged）收集离线 transition 数据，输出 `.npz` + `metadata.json`。
 - `evaluate.py`
   用训练好的 checkpoint 做批量评估；支持固定 benchmark manifest 进行可复现评测。
+- `evaluate_offline.py`
+  评估离线 agent checkpoint，在固定 manifest 上输出 success / return / termination 统计。
+- `evaluate_baseline_on_manifest.py`
+  在与 offline agent 相同的 manifest 上评估 baseline teacher，便于做 BC / TD3BC / baseline 对照。
 - `generate_benchmark_manifest.py`
   预先采样并固化一组评估 episode，供算法间公平对比。
 - `generate_standard_benchmarks.py`
@@ -278,7 +296,10 @@ evaluate / demo / visualize    train_sac.py --offline-data (RLPD mode)
 - `docs/SAC_improvements_survey.md`
 - `docs/world_model_and_offline_rl_survey.md`
 - `docs/systematic_improved_sac_experiment_plan.md` — 针对 SAC 改进项（LayerNorm / Dropout / 非对称 Critic / RLPD）的系统实验方案，包含可归因、可复现的对照设计
-- `docs/offline_rl_implementation_plan.md` — 纯离线 RL 算法实现方案（FQL / XQL / TD3+BC / REBRAC），含算法原理、代码骨架、数据策略与实验规划
+- `docs/offline_rl_implementation_plan.md` — 当前 pure offline RL 总路线文档；截至当前，TD3BC 主线已收口，下一算法优先级是 ReBRAC
+- `docs/td3bc_phase0c_experiment_report.md` — 当前最完整的 TD3BC pure offline 主线报告
+- `docs/td3bc_worldcomp_teacher_gap_experiment_report.md` — `worldcomp` teacher-gap 专项报告
+- `docs/rlpd_design.md` — RLPD 设计档案；属于 offline-to-online 路线，不是当前 pure offline 主线的最高优先级
 
 ### `wake_data/`
 
@@ -426,32 +447,76 @@ python -m scripts.train_sac \
 
 支持的离线数据策略：`goalseek`（无特权）、`crosscomp`（无特权）、`worldcomp`（中度特权）、`privileged`（强特权）。详见 `docs/rlpd_design.md`。
 
-### 5. 做目标函数对照实验（objective ablation）
+### 5. 运行 pure offline TD3BC 主线
+
+如果你要复现当前已经完成的 pure offline RL 主线，推荐先阅读：
+
+- [`docs/td3bc_phase0c_experiment_report.md`](docs/td3bc_phase0c_experiment_report.md)
+- [`docs/offline_rl_implementation_plan.md`](docs/offline_rl_implementation_plan.md)
+
+最小示例：
 
 ```bash
-conda run -n mytorch1 python -m scripts.run_suite \
+python -m scripts.train_offline \
+    --offline-data offline_data/crosscomp_s0_h4_effv2_re150_u10cross/transitions.npz \
+    --alpha 0.25 \
+    --objective efficiency_v2 \
+    --probe-layout s0 \
+    --history-length 4 \
+    --device cuda
+```
+
+在固定 manifest 上评估：
+
+```bash
+python -m scripts.evaluate_offline \
+    --checkpoint checkpoints/offline/td3bc/<run_dir> \
+    --manifest benchmarks/<benchmark>.json
+```
+
+baseline 对照：
+
+```bash
+python -m scripts.evaluate_baseline_on_manifest \
+    --policy crosscomp \
+    --objective efficiency_v2 \
+    --probe-layout s0 \
+    --history-length 4 \
+    --manifest benchmarks/<benchmark>.json
+```
+
+仓库中更完整的 protocol runner 见：
+
+- `scripts/run_offline_td3bc_phase0b_v2.sh`
+- `scripts/run_offline_td3bc_phase0c.sh`
+- `scripts/run_offline_td3bc_phase0c_worldcomp_teacher_gap.sh`
+
+### 6. 做目标函数对照实验（objective ablation）
+
+```bash
+python -m scripts.run_suite \
     --preset objective_ablation_v1
 
-conda run -n mytorch1 python -m scripts.summarize_suite \
+python -m scripts.summarize_suite \
     --suite-root experiments/objective_ablation_v1
 
-conda run -n mytorch1 python -m scripts.plot_suite \
+python -m scripts.plot_suite \
     --suite-root experiments/objective_ablation_v1
 ```
 
 这个 preset 会在 `single_u15_upstream_tgt15` 上，用 `sac_stack4`、3 个 seeds，直接比较
 `arrival_v1` 和 `efficiency_v1`。
 
-### 6. 做 efficiency gain sweep
+### 7. 做 efficiency gain sweep
 
 ```bash
-conda run -n mytorch1 python -m scripts.run_suite \
+python -m scripts.run_suite \
     --preset efficiency_gain_sweep_v1
 
-conda run -n mytorch1 python -m scripts.summarize_suite \
+python -m scripts.summarize_suite \
     --suite-root experiments/efficiency_gain_sweep_v1
 
-conda run -n mytorch1 python -m scripts.plot_suite \
+python -m scripts.plot_suite \
     --suite-root experiments/efficiency_gain_sweep_v1
 ```
 
@@ -462,15 +527,15 @@ conda run -n mytorch1 python -m scripts.plot_suite \
 如果你要在 factorized benchmark suites 上直接使用当前推荐的新目标函数，可以显式覆盖：
 
 ```bash
-conda run -n mytorch1 python -m scripts.run_suite \
+python -m scripts.run_suite \
     --preset study_core_v1 \
     --objective efficiency_v2
 ```
 
-### 7. 按最佳周期评估选 checkpoint
+### 8. 按最佳周期评估选 checkpoint
 
 ```bash
-conda run -n mytorch1 python -m scripts.evaluate_best_checkpoint \
+python -m scripts.evaluate_best_checkpoint \
     --run-dir experiments/efficiency_gain_sweep_v1/single_u15_upstream_tgt15/efficiency_v1/e0_s0p25/sac_stack4/seed_44
 ```
 
@@ -478,7 +543,7 @@ conda run -n mytorch1 python -m scripts.evaluate_best_checkpoint \
 `eval_success_rate -> eval_return -> -eval_safety_cost -> -eval_time_s`
 选择最佳周期评估点，并给出对应的 `scripts.evaluate` 命令。
 
-### 8. 生成更复杂的多圆柱流场
+### 9. 生成更复杂的多圆柱流场
 
 ```bash
 python -m scripts.generate_wake --profile tandem_G35_nav
@@ -489,7 +554,7 @@ python -m scripts.generate_wake --profile side_by_side_G35_nav
 
 - 所有脚本都建议从仓库根目录以模块方式运行：
   `python -m scripts.<name>`
-- 本仓库本地运行约定使用 Conda 环境 `mytorch1`
+- 若你使用 Conda，请切换到你本机对应的项目环境；不要假定环境名在所有设备上都一致
 - 如果 `wake_data/` 下没有流场文件，训练和演示脚本会先报缺少数据
 - 训练时如果不显式指定 `--flow`，会自动发现 `wake_data/` 下的第一个 `wake_*_roi.npy`
 
@@ -569,15 +634,30 @@ python -m scripts.generate_wake --profile side_by_side_G35_nav
 3. [`scripts/collect_offline_data.py`](scripts/collect_offline_data.py) — 离线数据收集
 4. [`scripts/train_sac.py`](scripts/train_sac.py) — `--offline-data` 参数入口
 
+### 目标是理解“pure offline RL 主线目前到了哪一步”
+
+建议顺序：
+
+1. [`docs/td3bc_phase0c_experiment_report.md`](docs/td3bc_phase0c_experiment_report.md)
+2. [`docs/td3bc_worldcomp_teacher_gap_experiment_report.md`](docs/td3bc_worldcomp_teacher_gap_experiment_report.md)
+3. [`docs/offline_rl_implementation_plan.md`](docs/offline_rl_implementation_plan.md)
+4. [`scripts/train_offline.py`](scripts/train_offline.py)
+5. [`scripts/evaluate_offline.py`](scripts/evaluate_offline.py)
+
 ## 快速索引
 
 - 想生成流场：[`scripts/generate_wake.py`](scripts/generate_wake.py)
 - 想可视化流场（独立，无需 checkpoint）：[`scripts/visualize_flow_field.py`](scripts/visualize_flow_field.py)
 - 想看流场生成文档：[`docs/generate_wake_usage.md`](docs/generate_wake_usage.md)
 - 想训练 agent：[`scripts/train_sac.py`](scripts/train_sac.py)
+- 想训练 pure offline agent：[`scripts/train_offline.py`](scripts/train_offline.py)
 - 想收集离线数据：[`scripts/collect_offline_data.py`](scripts/collect_offline_data.py)
 - 想了解 RLPD 设计：[`docs/rlpd_design.md`](docs/rlpd_design.md)
+- 想看 pure offline RL 总路线：[`docs/offline_rl_implementation_plan.md`](docs/offline_rl_implementation_plan.md)
+- 想看 TD3BC 主线总报告：[`docs/td3bc_phase0c_experiment_report.md`](docs/td3bc_phase0c_experiment_report.md)
+- 想看 `worldcomp` teacher-gap：[`docs/td3bc_worldcomp_teacher_gap_experiment_report.md`](docs/td3bc_worldcomp_teacher_gap_experiment_report.md)
 - 想评估 checkpoint：[`scripts/evaluate.py`](scripts/evaluate.py)
+- 想评估 offline checkpoint：[`scripts/evaluate_offline.py`](scripts/evaluate_offline.py)
 - 想按最佳周期评估选择 checkpoint：[`scripts/evaluate_best_checkpoint.py`](scripts/evaluate_best_checkpoint.py)
 - 想看环境定义：[`auv_nav/env.py`](auv_nav/env.py)
 - 想看流场读取：[`auv_nav/flow.py`](auv_nav/flow.py)

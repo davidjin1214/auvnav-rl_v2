@@ -4,7 +4,13 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-Research codebase for training autonomous underwater vehicles (AUVs) — specifically REMUS-100 class — to navigate wake fields using reinforcement learning. The primary algorithm is Soft Actor-Critic (SAC), with RLPD (RL with Prior Data) support for leveraging offline baseline data to accelerate online training.
+Research codebase for training autonomous underwater vehicles (AUVs) — specifically REMUS-100 class — to navigate wake fields using reinforcement learning. The repo currently has three active lines:
+
+- online SAC / improved SAC
+- RLPD (offline-to-online, SAC with prior data)
+- pure offline RL built around TD3BC / BC evaluation protocols
+
+As of the current repo state, the TD3BC mainline has already completed its `phase0c` closure; the next offline RL algorithm priority is ReBRAC.
 
 ## Common Commands
 
@@ -52,6 +58,28 @@ python -m scripts.train_sac \
   --offline-ratio 0.5 \
   --use-layernorm --difficulty hard --target-speed 1.5
 
+# Pure offline TD3BC training
+python -m scripts.train_offline \
+  --offline-data offline_data/crosscomp/transitions.npz \
+  --alpha 0.25 \
+  --objective efficiency_v2 \
+  --probe-layout s0 \
+  --history-length 4 \
+  --device cuda
+
+# Evaluate an offline checkpoint on a fixed manifest
+python -m scripts.evaluate_offline \
+  --checkpoint checkpoints/offline/td3bc/ \
+  --manifest benchmarks/single_u10_cross_tgt15.json
+
+# Evaluate a baseline on the same manifest
+python -m scripts.evaluate_baseline_on_manifest \
+  --policy crosscomp \
+  --objective efficiency_v2 \
+  --probe-layout s0 \
+  --history-length 4 \
+  --manifest benchmarks/single_u10_cross_tgt15.json
+
 # Visualize trajectories and plot training curves
 python -m scripts.visualize --checkpoint checkpoints/sac/
 python -m scripts.plot_training --log-dir checkpoints/sac/
@@ -76,16 +104,28 @@ The core library. Components are loosely coupled; non-ML parts work without PyTo
 | `replay.py` | `TransitionReplay` off-policy buffer, `DualBufferSampler` for RLPD symmetric sampling |
 | `reward.py` | `RewardModel` (progress, success, timeout) + `SafetyCostModel` |
 | `baselines.py` | Non-learning policies for comparison (goal-seek, current compensation) |
+| `td3bc.py` | TD3+BC style offline agent with observation normalization and optional privileged critic |
 
 ### Scripts: `scripts/`
 
 | Script | Role |
 |--------|------|
 | `train_sac.py` | Main training entry point; supports pure SAC and RLPD modes via `--offline-data` |
+| `train_offline.py` | Main pure offline RL entry point; currently used for TD3BC / BC and deployable vs privileged-critic protocols |
 | `train_utils.py` | Shared helpers: env creation, checkpointing, evaluation loop, CSV/JSONL logging |
 | `run_suite.py` | Coordinates multi-seed experiment sweeps; defines `METHOD_SPECS` and `SUITE_PRESETS` |
 | `collect_offline_data.py` | Collects transition data from baseline policies for RLPD training |
 | `evaluate.py` | Loads a checkpoint and runs deterministic evaluation |
+| `evaluate_offline.py` | Evaluates an offline checkpoint on a fixed manifest |
+| `evaluate_baseline_on_manifest.py` | Evaluates a baseline teacher on the same manifest used by offline agents |
+
+## Current Offline RL Status
+
+- `phase0b_v2` corrected the old negative size trend caused by unfair fixed-step training.
+- `phase0c` completed the formal TD3BC closure on deployable `crosscomp` data.
+- The current best deployable TD3BC regime is around `1000` episodes, not monotonically larger datasets.
+- `worldcomp` teacher-gap experiments show a real information bottleneck; privileged critic closes about half of the deployable-to-baseline gap.
+- The next algorithm priority is ReBRAC, not another large TD3BC sweep.
 
 ### Key Architectural Patterns
 

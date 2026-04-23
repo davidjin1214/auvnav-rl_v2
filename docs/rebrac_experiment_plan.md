@@ -149,7 +149,58 @@ ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化，至�
 
 这一阶段的意义不是产出可报告结果，而是先确认后续 screening 不会因为基础设施问题污染解释。
 
-## 6.2 Stage B：最小 screening `【当前立即执行】`
+## 6.2 Stage B0：训练预算 probe `【已完成】`
+
+### 目标
+
+在正式 Stage B screening 开跑之前，先用尽量小的代价确认 `TRAIN_EPOCHS=64` 是不是合适的训练预算——这个值从 TD3BC `phase0c` 直接继承而来，没有在 ReBRAC 口径下单独验证过。
+
+### 为什么单独做这一步
+
+TD3BC 主线之所以最后选用 `TRAIN_EPOCHS=64`，是因为它在 Stage B screening 下已经足够拉平 winner 的排序；但这不意味着切换到 ReBRAC 后仍然成立：
+
+- ReBRAC 的 actor 更新里多了 `β1 · (π - a)²` 正则项，早期梯度构成与 TD3BC 不完全一致；
+- critic 端的 `β2 · (π_target(s') - a')²` penalty 会改变 target 的大致尺度；
+- 正式 Stage B screening 涉及 36 个 run（3 × 2 × 2 × 3），预算敏感；如果 64 epoch 不够，后续所有结论都会受到 "训练没训完" 的系统性干扰。
+
+所以这一步的目标不是 "调最优 epoch 数"，而是回答 "64 epoch 在 ReBRAC 口径下是偏紧还是有余量？"
+
+### 方法
+
+**不做** `TRAIN_EPOCHS ∈ {32, 64, 96, 128}` 的笛卡尔 sweep（浪费）。利用 Stage B 协议已经对齐的 `CHECKPOINT_EVERY_EPOCHS=8` + 每个 checkpoint 都走 val 的特性，**把一个 cell 训长一次（128 epoch），读中间 checkpoint 的 val 曲线**——16 个 val 点免费拿到。
+
+等价前提：当前 `scripts/train_offline.py` 用常数 LR AdamW，`sampling_mode=shuffle_no_replacement` 每个 epoch 独立 shuffle，因此 "长训至 step N" 在优化动力学上 ≈ "只训到 N 结束"。notebook 里有一段可选 sanity check 通过权重 L2 距离交叉确认这一假设。
+
+### 实验范围
+
+| 轴 | 配置 | 说明 |
+| --- | --- | --- |
+| β1 / β2 | `2.0 / 1.0` | 对齐 TD3BC α=0.25 的 phase0c `1000` winner；也是正式 screening 网格的中心点 |
+| dataset | `crosscomp-1000` + `crosscomp-2000` | 本次核心假设：`2000` 是否需要比 `1000` 更大预算 |
+| seeds | `42 / 43 / 44` | 与正式 screening 同，不浪费 |
+| TRAIN_EPOCHS | `128` | 产出 16 个 ckpt，每 8 epoch 一个 |
+| manifest | val = 40 / test = 40 | 与 Stage B 协议一致 |
+
+预算约为正式 screening 的 `1/6 × 128/64 ≈ 1/3`。
+
+### 结论
+
+详见 [rebrac_experiment_report.md](./rebrac_experiment_report.md) §5。执行要点：
+
+1. `TRAIN_EPOCHS=64` 对两个数据集都已足够：`crosscomp-1000/2000` 上典型 seed（42、43）在 epoch 40~50 处就已经接近 val plateau，之后的增益主要来自曲线波动，不是稳定的上升趋势。
+2. 真正值得警惕的信号不是 "训练不够"，而是 **seed 方差**——seed 44 在 `crosscomp-1000` 上 peak 只有 `0.775`，远低于 42、43 的 `0.95`。
+3. 因此正式 Stage B 维持 `TRAIN_EPOCHS=64`，但在结果分析阶段必须把 `std_test_success_rate` 作为一等公民看待，尤其是在 `β1=2.0` 这一列。
+
+### 输出位置
+
+刻意与正式 screening 隔离：
+
+- `checkpoints/offline/rebrac/screening_epoch_probe/`
+- `results/offline/rebrac/screening_epoch_probe/`
+
+执行入口：[notebooks/rebrac_epoch_probe.ipynb](../notebooks/rebrac_epoch_probe.ipynb)。
+
+## 6.3 Stage B：最小 screening `【当前立即执行】`
 
 ### 目标
 
@@ -219,7 +270,7 @@ ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化，至�
 
 该比值提供一个粗略健康指标：当 `β2 · mean_critic_penalty_ratio` 接近 1 时，critic 会被 penalty 支配，可能出现过度悲观；当它显著低于 1 时，critic penalty 基本是“锦上添花”，主要信号来自真实 target Q。`scripts/run_offline_rebrac_screen.sh` 的 `overview.csv` 已经把这三列作为首屏列输出。
 
-## 6.3 Stage C：正式确认 `【Stage B 成功后】`
+## 6.4 Stage C：正式确认 `【Stage B 成功后】`
 
 ### 目标
 
@@ -248,7 +299,7 @@ ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化，至�
 
 这一步不是为了“再刷一次最好成绩”，而是为了把 ReBRAC 的结论从“screening 观察”提升成“正式基线”。
 
-## 6.4 Stage D：`worldcomp` teacher-gap follow-up `【只在 Stage C 有正信号时做】`
+## 6.5 Stage D：`worldcomp` teacher-gap follow-up `【只在 Stage C 有正信号时做】`
 
 ### 目标
 
@@ -276,7 +327,7 @@ ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化，至�
 - privileged critic 是否比 TD3BC 更能压缩剩余 gap；
 - `out_of_bounds / timeout` 是否发生结构性变化。
 
-## 6.5 Stage E：必要时的最小 ablation
+## 6.6 Stage E：必要时的最小 ablation
 
 如果 ReBRAC 有正信号，但解释还不够清楚，建议只做最小机制消融，而不是大扫网格。
 
@@ -378,10 +429,11 @@ checkpoint 与超参选择规则不改，继续使用：
 
 如果把这一阶段压缩成最小行动清单，推荐顺序是：
 
-1. 跑 `crosscomp-1000/2000` 的 2x2 screening。
-2. 只要出现正信号，就推进 5-seed formal。
-3. 只有 formal 结果成立，才进入 `worldcomp-1000` follow-up。
-4. 如果 formal 不成立，就停止扩 ReBRAC，转向 XQL。
+1. **Stage B0**：跑 `(β1=2.0, β2=1.0) × {crosscomp-1000, crosscomp-2000} × {42,43,44}, TRAIN_EPOCHS=128` 的训练预算 probe，确认 `TRAIN_EPOCHS=64` 是否足够（已完成）。
+2. **Stage B**：跑 `crosscomp-1000/2000` 的 `3 × 2` screening（β1 ∈ {1.0, 2.0, 4.0} × β2 ∈ {1.0, 2.0}），3 seeds，TRAIN_EPOCHS=64。
+3. 只要 Stage B 出现正信号，就推进 **Stage C** 5-seed formal。
+4. 只有 formal 结果成立，才进入 **Stage D**（`worldcomp-1000` follow-up）。
+5. 如果 formal 不成立，就停止扩 ReBRAC，转向 XQL。
 
 ---
 

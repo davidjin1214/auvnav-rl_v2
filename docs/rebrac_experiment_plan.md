@@ -116,12 +116,14 @@ ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化，至�
 当前仓库里的 ReBRAC 实现约定如下：
 
 - actor：deterministic policy，与 TD3BC 保持同类接口；
-- actor penalty：对行为动作的平方误差正则；
+- actor penalty：对行为动作的平方误差正则（`(pi - a).pow(2).sum(dim=-1).mean()`，**未除以 action_dim**）；
 - critic penalty：在 target 端约束 next action 偏离数据中的 `next_actions`；
 - Q normalization：默认开启；
 - 网络：默认 `hidden_dim=256`、`num_hidden_layers=3`；
 - LayerNorm：默认 critic 开启，actor 关闭；
 - privileged critic：沿用现有 offline 协议，可作为 `worldcomp` 诊断轨道使用。
+
+> **实现口径注记（Q-normalized ReBRAC 变体）**：当前 `auv_nav/rebrac.py` 的 actor loss 会将 deterministic policy gradient 除以 `|Q|.detach()`（与 TD3+BC 的 `lambda = alpha / |Q|` 同一尺度约定），而非 ReBRAC 原始论文所用的未归一化形式。因此本实验计划内的所有 `actor_penalty_coef` 数值都应在“Q-normalized ReBRAC 变体”口径下解释。与 TD3BC 的等价关系（在 `action_dim=2` 下）约为：`actor_penalty_coef ≈ 1 / (2 · alpha_TD3BC)`。
 
 换句话说，这一实现要表达的是：
 
@@ -167,17 +169,23 @@ ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化，至�
 ### 协议
 
 - protocol：`deployable`
-- seeds：`42, 43`
+- seeds：`42, 43, 44`（3 seeds 是用于识别 seed 方差的最低门槛；2 seeds 下 phase0c Stage A 曾在更大 val 下多次翻转赢家）
 - sampling：`shuffle_no_replacement`
 - train epochs：`64`
-- checkpoint 选择：沿用当前离线主线标准
-- 评估：固定 `single_u10_cross_tgt15` manifest
+- checkpoint 策略：**与 phase0c Stage B 对齐**（即 `scripts/run_offline_td3bc_phase0b_v2.sh` 所定义）
+  - 训练阶段 `--eval-every 0 --skip-final-eval`，仅按 `CHECKPOINT_EVERY_EPOCHS=8` 周期保存 `agent_step_*.pt`；
+  - 训练结束后，对每个 `agent_step_*.pt` 与 `agent_final.pt` 在**独立 val manifest**（`single_u10_cross_tgt15`，40 episodes）上评估；
+  - 按 `success_rate → return → -safety_cost → -time` 选择最佳 checkpoint；
+  - 将选定 checkpoint 在**独立 test manifest**（40 episodes）上重跑，作为该 (β1, β2, seed) 的最终成绩。
 
 ### 第一轮推荐搜索范围
 
-为了控制预算，第一轮只做最小 2x2 screening：
+第一轮做 3×2 screening（在 Q-normalized 变体口径下，三档 BC 强度对齐 TD3BC 已验证的三个 regime）：
 
-- `actor_penalty_coef ∈ {1.0, 2.0}`
+- `actor_penalty_coef ∈ {1.0, 2.0, 4.0}`
+  - `1.0` ≈ TD3BC α=0.5（phase0c 500 winner）
+  - `2.0` ≈ TD3BC α=0.25（phase0c 1000 winner）
+  - `4.0` ≈ TD3BC α=0.125（覆盖 2000 所需的更弱 BC 约束）
 - `critic_penalty_coef ∈ {1.0, 2.0}`
 
 其余默认：
@@ -196,10 +204,20 @@ ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化，至�
 2. `crosscomp-2000` 上 ReBRAC 明显优于当前 TD3BC 主线。
 3. `2000` 至少不再比 `1000` 明显更差。
 
-如果 2x2 screening 全部弱于 TD3BC，不建议立刻扩大搜索网格；应先看训练日志与 checkpoint 行为，再决定是：
+如果 3×2 screening 全部弱于 TD3BC，不建议立刻扩大搜索网格；应先看训练日志与 checkpoint 行为，再决定是：
 
 - 小幅扩参数；
 - 还是直接转向 XQL。
+
+### 训练侧诊断（与 screening summary 一同输出）
+
+为判断“critic penalty 是否处在合理量级”，screening summary 还需要附带报告每个 (β1, β2) 组合的训练后期 25% 窗口内以下均值：
+
+- `mean_critic_penalty`：`E[||π_target(next_obs) + noise - a'||²]`（与 β2 无关的原始量）；
+- `mean_target_q`：`E[Q_target(s', a')]`（bootstrap 前端，未减 penalty）；
+- `mean_critic_penalty_ratio`：`|critic_penalty| / max(|target_q|, 1e-6)`（未乘 β2，方便跨 β2 对比原始尺度；β2 加权效应请自行乘以 `critic_penalty_coef`）。
+
+该比值提供一个粗略健康指标：当 `β2 · mean_critic_penalty_ratio` 接近 1 时，critic 会被 penalty 支配，可能出现过度悲观；当它显著低于 1 时，critic penalty 基本是“锦上添花”，主要信号来自真实 target Q。`scripts/run_offline_rebrac_screen.sh` 的 `overview.csv` 已经把这三列作为首屏列输出。
 
 ## 6.3 Stage C：正式确认 `【Stage B 成功后】`
 
@@ -346,8 +364,8 @@ checkpoint 与超参选择规则不改，继续使用：
 
 本阶段结束后，至少应形成以下输出：
 
-1. 一份 screening summary
-2. 一份 formal summary（如果进入 Stage C）
+1. 一份 screening summary：test 指标（success/return/safety/time 的 mean/std）+ 训练侧诊断（`mean_critic_penalty`、`mean_target_q`、`mean_critic_penalty_ratio`）。
+2. 一份 formal summary（如果进入 Stage C）。
 3. 一张对比表，至少包含：
    - TD3BC vs BC vs ReBRAC on `crosscomp-1000`
    - TD3BC vs BC vs ReBRAC on `crosscomp-2000`

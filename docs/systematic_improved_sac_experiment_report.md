@@ -1,6 +1,6 @@
 # 改进 SAC 的系统实验报告
 
-> 文档版本：2026-04-22  
+> 文档版本：2026-04-23  
 > 对应计划：[`docs/systematic_improved_sac_experiment_plan.md`](systematic_improved_sac_experiment_plan.md)
 
 ---
@@ -49,13 +49,13 @@
 
 原始汇总文件：
 
-- [`experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/ablation_summary.csv`](../experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/ablation_summary.csv)
+- [`experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/summary/ablation_summary.csv`](../experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/summary/ablation_summary.csv)
 - [`experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/arrival_v1/ablation_summary.csv`](../experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/arrival_v1/ablation_summary.csv)
 
 说明：
 
 - 本轮 A0 是在在线实验输出目录重构之前完成的，因此该批 run 目录仍然使用旧的扁平结构。
-- 结果本身有效，不需要重跑；后续实验统一切换到新的 `checkpoints/results/logs/state` 分层结构。
+- 结果本身有效，不需要重跑；后续实验统一切换到新的“`experiments/` 放结果、`checkpoints/` 放权重”的镜像目录结构。
 - 若后续 run 需要把大体积模型权重完全剥离到单独磁盘，可通过 `--checkpoint-dir` 或 `CHECKPOINT_ROOT` 把 `.pt` 文件外置存储。
 
 ### 2.3 汇总结果：`efficiency_v2`
@@ -121,7 +121,7 @@ A0 的真实曲线说明，部分配置在 `300k` 之前仍接近“尚未学会
 1. A1 主实验采用 `single_u10_upstream_tgt15 + efficiency_v2 + s0/s1/s2 + 600k`。
 2. A1 先不并行跑 `arrival_v1`，仅在主实验结果不足以区分方法时补做。
 3. 后续计划中的 `100k` 级别预算全部作废，统一按 `600k` 重写。
-4. 在线实验目录结构改为分层保存，避免 checkpoint 与分析文件混杂。
+4. 在线实验目录结构改为 `experiments/` 与 `checkpoints/` 镜像分离，并在阶段根目录单独维护 `summary/`。
 
 ---
 
@@ -148,6 +148,11 @@ A0 的真实曲线说明，部分配置在 `300k` 之前仍接近“尚未学会
 阶段级汇总建议统一写到：
 
 - `experiments/protocol_screen_v2/A1_single_u10_upstream_tgt15/efficiency_v2/sac_vanilla/summary/`
+
+当前执行与汇总脚本：
+
+- 运行：[`scripts/run_stage_a1_layout_main.sh`](../scripts/run_stage_a1_layout_main.sh)
+- 汇总：[`scripts/summarize_stage_a1_layout_main.sh`](../scripts/summarize_stage_a1_layout_main.sh)
 
 ### A1 诊断线
 

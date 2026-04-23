@@ -1,6 +1,6 @@
 # 改进 SAC 的系统实验方案
 
-> 文档版本：2026-04-22  
+> 文档版本：2026-04-23  
 > 对应报告：[`docs/systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md)  
 > 适用范围：当前仓库中的 `SAC / LayerNorm / Dropout / Asymmetric Critic / RLPD`
 
@@ -57,17 +57,27 @@
 
 ### 2.3 输出目录规范
 
-从本计划开始，在线训练输出按以下结构组织：
+当前在线实验的默认约定已经更新为“两棵镜像目录树”：
 
-| 子目录 | 内容 |
+1. `experiments/` 只放结果与日志
+2. `checkpoints/` 只放模型权重
+
+单个 run 的结果目录默认结构为：
+
+| 位置 | 内容 |
 |------|------|
-| `checkpoints/` | `agent_step_*.pt`, `agent_best.pt`, `agent_latest.pt`, `agent_final.pt` |
+| `trainer_state.json` | run 级索引文件，记录配置、关键路径、best step 等 |
 | `results/` | `eval_log.csv`, `final_eval.json`, `train_config.txt` |
 | `logs/` | `train_log.jsonl` |
 | `state/` | `replay_latest.pkl`, `rng_state.pkl` |
-| 根目录 | `trainer_state.json` |
 
-这样做的目的不是改变算法行为，而是把“分析结果”和“恢复训练所需状态”明确分离，便于后续实验归档和对比。
+对应的 checkpoint 目录只保存：
+
+| 位置 | 内容 |
+|------|------|
+| 外部 `checkpoints/.../seed_xx/` | `agent_step_*.pt`, `agent_best.pt`, `agent_latest.pt`, `agent_final.pt` |
+
+这样做的目的不是改变算法行为，而是把“分析结果”和“大体积模型文件”彻底剥离，便于后续实验归档、跨机器传输和只复制分析产物。
 
 如果需要进一步节省主实验目录的存储压力，可以在训练时使用外置 checkpoint 目录：
 
@@ -97,6 +107,13 @@
 - `summary/ablation_overview.png`
 
 这样单个 `seed_xx/` 目录只包含该 run 自己的结果，而不会混入整阶段汇总文件。
+
+当前阶段脚本已经按这个约定组织：
+
+- 运行模板：[`scripts/run_protocol_stage_common.sh`](../scripts/run_protocol_stage_common.sh)
+- 汇总模板：[`scripts/summarize_protocol_stage_common.sh`](../scripts/summarize_protocol_stage_common.sh)
+- A0 封装：[`scripts/run_stage_a0_layout_screen.sh`](../scripts/run_stage_a0_layout_screen.sh), [`scripts/summarize_stage_a0_layout_screen.sh`](../scripts/summarize_stage_a0_layout_screen.sh)
+- A1 封装：[`scripts/run_stage_a1_layout_main.sh`](../scripts/run_stage_a1_layout_main.sh), [`scripts/summarize_stage_a1_layout_main.sh`](../scripts/summarize_stage_a1_layout_main.sh)
 
 ### 2.4 指标解释顺序
 
@@ -137,7 +154,7 @@
 
 更详细的 A0 数据与分析见：
 
-- [`experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/ablation_summary.csv`](../experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/ablation_summary.csv)
+- [`experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/summary/ablation_summary.csv`](../experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/summary/ablation_summary.csv)
 - [`experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/arrival_v1/ablation_summary.csv`](../experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/arrival_v1/ablation_summary.csv)
 - [`docs/systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md)
 

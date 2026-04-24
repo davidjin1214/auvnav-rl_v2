@@ -1,6 +1,6 @@
 # ReBRAC 实验计划
 
-> 文档版本：2026-04-22 rev.1
+> 文档版本：2026-04-24 rev.2
 > 适用范围：当前仓库中已完成实现的 ReBRAC 离线主线，以及它与 `phase0c / worldcomp teacher-gap` 结论之间的衔接
 > 当前前提：请先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)、[td3bc_mainline_closure_plan.md](./td3bc_mainline_closure_plan.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)、[td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
 
@@ -200,7 +200,7 @@ TD3BC 主线之所以最后选用 `TRAIN_EPOCHS=64`，是因为它在 Stage B sc
 
 执行入口：[notebooks/rebrac_epoch_probe.ipynb](../notebooks/rebrac_epoch_probe.ipynb)。
 
-## 6.3 Stage B：最小 screening `【当前立即执行】`
+## 6.3 Stage B：最小 screening `【已完成】`
 
 ### 目标
 
@@ -270,21 +270,47 @@ TD3BC 主线之所以最后选用 `TRAIN_EPOCHS=64`，是因为它在 Stage B sc
 
 该比值提供一个粗略健康指标：当 `β2 · mean_critic_penalty_ratio` 接近 1 时，critic 会被 penalty 支配，可能出现过度悲观；当它显著低于 1 时，critic penalty 基本是“锦上添花”，主要信号来自真实 target Q。`scripts/run_offline_rebrac_screen.sh` 的 `overview.csv` 已经把这三列作为首屏列输出。
 
-## 6.4 Stage C：正式确认 `【Stage B 成功后】`
+### 结论
+
+详见 [rebrac_experiment_report.md §6](./rebrac_experiment_report.md)。要点：
+
+1. **screening winner = `(β1=4.0, β2=2.0)`**，两个 dataset 共享。test success 分别为 `0.883 ± 0.031 (ep1000)` 与 `0.917 ± 0.012 (ep2000)`；`β2 · mean_critic_penalty_ratio` 分别为 `0.129 / 0.311`，远低于一票否决阈值。
+2. **与 TD3BC phase0c 正式结果对比**：`+21.1pp (ep1000)` / `+32.1pp (ep2000)`；均值和 std 两项同时改善。
+3. **机制观察**：ReBRAC 首次翻转了 TD3BC 主线 "`2000` 差于 `1000`" 的趋势（ReBRAC 下 ep2000 好于 ep1000）。
+4. **优化方差的主控杠杆是 β1**：`β1 ≤ 2.0` 时 seed 44 系统性崩盘；`β1 = 4.0` 时 seed 44 恢复到与 seed 42/43 同量级。
+5. **Stage C finalist 已锁定**：见 §6.4。
+
+### 输出位置
+
+- `checkpoints/offline/rebrac/screening/`
+- `results/offline/rebrac/screening/`
+- `results/offline/rebrac/screening/summaries/overview.{csv,json}`
+
+执行入口：[notebooks/rebrac_screen.ipynb](../notebooks/rebrac_screen.ipynb)（执行归档 `rebrac_screen_completed.ipynb`）。
+
+## 6.4 Stage C：正式确认 `【当前立即执行】`
 
 ### 目标
 
-把 screening 中最好的 ReBRAC 配置升级到正式 5-seed 结果。
+把 Stage B screening 的 winner 升级到正式 5-seed 结果，与 TD3BC phase0c 的正式成绩同口径可比。
+
+### Finalist（由 Stage B 锁定）
+
+- **主 finalist**：`(β1=4.0, β2=2.0)`，在 `crosscomp-1000` 和 `crosscomp-2000` 上共用。
+- **ep2000 backup finalist**：`(β1=4.0, β2=1.0)`——仅在 `crosscomp-2000` 上追加一组 5-seed，作为 "主 finalist 若在更多 seed 下方差放大" 的接盘配置。
+  - 理由见 [rebrac_experiment_report.md §6.7](./rebrac_experiment_report.md)：ep2000 上它与主 finalist 的 Δmean 只有 1.7pp、Δstd 只有 0.008，再添加一组只多 5 runs 的代价，但能显著减少 Stage C 复核崩盘时的 rework 风险。
+- **`crosscomp-1000` 不追加 backup**：主 finalist 相对第二名（`β1=2.0, β2=2.0`）的差距是 3.3pp，没有合适的 backup 候选。
 
 ### 推荐矩阵
 
-- `crosscomp-1000`
-- `crosscomp-2000`
+- `crosscomp-1000`：1 个 finalist × 5 seeds = 5 runs
+- `crosscomp-2000`：2 个 finalist × 5 seeds = 10 runs
+- 合计：15 runs
 
 ### 预算
 
-- seeds：`42 / 43 / 44 / 45 / 46`
-- train epochs：`96`
+- seeds：`42 / 43 / 44 / 45 / 46`（前 3 个与 Stage B 重叠，后 2 个为新增 held-out）
+- train epochs：`64`（与 Stage B 对齐；Stage B0 已经验证足够）
 - val manifest episodes：`40`
 - test manifest episodes：`100`
 
@@ -292,12 +318,27 @@ TD3BC 主线之所以最后选用 `TRAIN_EPOCHS=64`，是因为它在 Stage B sc
 
 必须与以下结果同表报告：
 
-- TD3BC formal result
-- BC formal result
+- TD3BC `phase0c` Stage C 正式 5-seed（即 `success 0.672 ± 0.045 @ crosscomp-1000, α=0.25` 与 `success 0.596 ± 0.036 @ crosscomp-2000, α=0.15`）
+- BC formal result（如果 `phase0c` 留有相应 checkpoint）
+- 作为 internal 对照：Stage B 的 3-seed 结果（检查新增 seed 45/46 是否改变 winner 判定）
 
 ### 这一阶段的作用
 
-这一步不是为了“再刷一次最好成绩”，而是为了把 ReBRAC 的结论从“screening 观察”提升成“正式基线”。
+这一步不是为了"再刷一次最好成绩"，而是为了把 ReBRAC 的结论从"screening 观察"提升成"正式基线"。如果 Stage C 5-seed 下 ReBRAC 仍然稳定超越 TD3BC phase0c，则：
+
+1. Stage B 的阳性结论正式成立；
+2. ReBRAC 成为新的 deployable 主基线；
+3. 才进入 Stage D `worldcomp` teacher-gap follow-up。
+
+### 触发 Stage C 失败的条件
+
+以下任一条件若在 Stage C 复核时出现，视为 Stage B 结论"未通过 5-seed 复核"，需要回到 Stage B 做 follow-up：
+
+1. ep1000 上主 finalist 的 `mean_test_success_rate` 跌破 TD3BC phase0c 正式成绩 `0.672`；
+2. ep2000 上两个 finalist 的 `mean_test_success_rate` 都跌破 `0.75`；
+3. 任一 finalist 的 `std_test_success_rate > 0.10`（即 Stage B 的低 std 不可复现）。
+
+如果只有 ep2000 主 finalist 掉队、backup 撑住，直接用 backup 作为 ep2000 正式成绩，不做 rework。
 
 ## 6.5 Stage D：`worldcomp` teacher-gap follow-up `【只在 Stage C 有正信号时做】`
 
@@ -430,10 +471,10 @@ checkpoint 与超参选择规则不改，继续使用：
 如果把这一阶段压缩成最小行动清单，推荐顺序是：
 
 1. **Stage B0**：跑 `(β1=2.0, β2=1.0) × {crosscomp-1000, crosscomp-2000} × {42,43,44}, TRAIN_EPOCHS=128` 的训练预算 probe，确认 `TRAIN_EPOCHS=64` 是否足够（已完成）。
-2. **Stage B**：跑 `crosscomp-1000/2000` 的 `3 × 2` screening（β1 ∈ {1.0, 2.0, 4.0} × β2 ∈ {1.0, 2.0}），3 seeds，TRAIN_EPOCHS=64。
-3. 只要 Stage B 出现正信号，就推进 **Stage C** 5-seed formal。
-4. 只有 formal 结果成立，才进入 **Stage D**（`worldcomp-1000` follow-up）。
-5. 如果 formal 不成立，就停止扩 ReBRAC，转向 XQL。
+2. **Stage B**：跑 `crosscomp-1000/2000` 的 `3 × 2` screening（β1 ∈ {1.0, 2.0, 4.0} × β2 ∈ {1.0, 2.0}），3 seeds，TRAIN_EPOCHS=64。**已完成**，winner = `(β1=4.0, β2=2.0)`；详见 [rebrac_experiment_report.md §6](./rebrac_experiment_report.md)。
+3. **Stage C**（当前）：跑 5-seed 正式复核，finalist 为 `crosscomp-1000: (β1=4.0, β2=2.0)` + `crosscomp-2000: (β1=4.0, β2=2.0) 与 (β1=4.0, β2=1.0)`，合计 15 runs。seeds `42/43/44/45/46`，TRAIN_EPOCHS=64，test manifest 升到 100 episodes。
+4. 只有 Stage C 结果成立（详见 §6.4 的失败条件），才进入 **Stage D**（`worldcomp-1000` follow-up）。
+5. 如果 Stage C 不成立，按 §6.4 末尾的条件分类分流：单 finalist 掉队用 backup 接；全员崩盘则回到 Stage B 扩网格；扩网格仍无进展则停止扩 ReBRAC，转向 XQL。
 
 ---
 

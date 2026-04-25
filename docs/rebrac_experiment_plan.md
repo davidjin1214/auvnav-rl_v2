@@ -406,7 +406,7 @@ ReBRAC 在 `crosscomp` 主线上拿到 Stage C 阳性结论后，曾经有一个
 - **核心问题**：ReBRAC 在 `worldcomp-1000` deployable 下是否打破了 TD3BC 退化为 BC 的现象？具体来说，ReBRAC 主 finalist 的 `mean_test_success_rate` 是显著超越 `0.858`（TD3BC deployable formal）、与之持平、还是反而更差？
 - **次要目标**：钉死 Stage D 在 `worldcomp` 数据上的 `TRAIN_EPOCHS` 预算，避免 "训练不够" 污染解释。
 
-#### Step 1：epoch-probe（2 runs）
+#### Step 1：epoch-probe（2 runs）`【已完成】`
 
 - 配置：`(β1=4.0, β2=2.0) × 2 seeds (42/43) × TRAIN_EPOCHS=128 × CHECKPOINT_EVERY_EPOCHS=8` on `worldcomp-1000`，**deployable 轨道**。
 - 复用 Stage B0 的 "长训读中间 ckpt 当作多 epoch sweep" 方法（详见 [rebrac_experiment_report.md §5.2](./rebrac_experiment_report.md)）。
@@ -414,6 +414,43 @@ ReBRAC 在 `crosscomp` 主线上拿到 Stage C 阳性结论后，曾经有一个
   - 若两个 seed 的 val peak epoch 都 ≤ 64 → Phase 1 formal 取 `TRAIN_EPOCHS=64`；
   - 若任一 seed 的 peak ∈ (64, 96] → Phase 1 formal 取 `TRAIN_EPOCHS=96`（对齐 TD3BC worldcomp teacher-gap）；
   - 若 > 96 → Phase 1 暂停，回查 `worldcomp` 训练动力学（怀疑 critic penalty 与 noisy teacher target 的相互作用）。
+
+##### Step 1 实测结果
+
+执行入口：[notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb](../notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb)。
+
+**val 曲线 first-peak（按简化决策规则）**：seed 42 在 ep64 首次达到 `val_succ=1.0`；seed 43 在 ep56 首次达到 `val_succ=1.0`。两者都 ≤ 64。
+
+**完整选择规则下的 selected ckpt**（`success → return → -safety → -time`）：
+
+| seed | selected ckpt | val_succ | val_return | val_safety_cost |
+| ---: | ---: | ---: | ---: | ---: |
+| 42 | ep112 (`agent_step_00045696`) | 1.0 | 33.80 | 5.76 |
+| 43 | ep104 (`agent_step_00042432`) | 1.0 | 37.45 | 5.03 |
+
+**probe test 成绩**（test=40，2 seeds）：
+
+| 指标 | 数值 | 对照 |
+| --- | ---: | --- |
+| `mean_test_success_rate` | **1.0 ± 0.0** | TD3BC deployable formal: `0.858 ± 0.080`；TD3BC privileged-critic formal: `0.922 ± 0.086` |
+| `mean_test_return` | **35.62 ± 1.83** | TD3BC deployable formal: `−14.29`；TD3BC privileged-critic formal: `16.49`；teacher baseline: `32.19` |
+| `mean_test_safety_cost` | 5.39 | TD3BC deployable formal: `7.91`；TD3BC privileged-critic formal: `5.73` |
+| `β2 · mean_critic_penalty_ratio` | **0.0067** | crosscomp Stage C 是 `0.086 / 0.219 / 0.358` |
+
+**Phase 1 formal `TRAIN_EPOCHS` 决策**：取 `64`。理由：
+
+1. 简化决策规则（`max(first-peak-epoch) ≤ 64`）通过；
+2. 即便用更严格的 selection 规则（return 也参与排序）会落在 ep104/ep112，**TRAIN_EPOCHS=64 budget 内的 best ckpt 仍然是 `val_succ=1.0` 级别**（seed 42 ep64=1.0 / 30.85；seed 43 ep56=1.0 / 30.87），相对 TD3BC `0.858` 已经有 +14pp 量级的 head room；
+3. 与 Stage B / Stage C 的 `TRAIN_EPOCHS=64` 一致，`TRAIN_EPOCHS` 不再是变量；
+4. 若 Phase 1 formal 出现新 seed 在 ep ≤ 64 内峰值低于 `0.95` 的情况，可针对该 seed 单点扩到 `TRAIN_EPOCHS=96` 重跑。
+
+**注意点**：
+
+- seed 43 在 `ep64` 出现 `val_succ=0.90` 的 dip，随后在 `ep96` 恢复到 `1.0`——这与 Stage B0 seed_42 的 dip 类似，是 ReBRAC 训练曲线非单调的常见模式，selection 规则在 ep ≤ 64 budget 内会自动选 ep56（而非 ep64）规避这个 dip。
+- `β2 · mean_critic_penalty_ratio = 0.0067` 比 crosscomp 上低 **一到两个数量级**——critic penalty 在 worldcomp 数据上几乎无作用（next_actions 与 `π_target(s')` 的预测高度一致）。这间接说明 worldcomp 的 deterministic teacher 让 critic penalty 退化为接近恒等约束，主要约束来自 actor penalty。这一发现降低了原本担心的 "noisy teacher target 让 critic penalty 放大 bias" 风险。
+- `mean_test_return = 35.62` 实际**超过 worldcomp teacher baseline online 成绩 `32.19`**——这是一个非常强但同时需要在 5-seed × test=100 下重新验证的早期信号。可能解释：(a) test=40 manifest 上的 sampling noise；(b) ReBRAC policy 在 efficient_v2 reward 下走出了比 teacher 更短/更省的路径（`progress_ratio=0.91`、`path_efficiency=0.80`）。
+
+**对 Phase 2 触发情景的早期推断**：probe 已经强烈暗示 Phase 1 formal 落在 **情景 A**（mean > 0.90），可能甚至接近 `1.0`。等 Phase 1 formal 5-seed × test=100 完成后再正式定档。
 
 #### Step 2：Phase 1 deployable formal（5 runs）
 

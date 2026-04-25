@@ -488,6 +488,19 @@ Stage D 共同设定（两 Phase 共享）：
 - **seeds 取 `42 / 43 / 44 / 45 / 46`**（与 Stage C、TD3BC worldcomp teacher-gap 对齐）；test manifest 100 episodes（与 Stage C 对齐）。
 - **驱动脚本**：新建 `scripts/run_offline_rebrac_worldcomp_teacher_gap.sh`，对齐 TD3BC 侧的 `phase0c_worldcomp_teacher_gap` 命名 pattern；不在现有 `run_offline_rebrac_screen.sh` 上扩展。
 
+#### Stage D Phase 1 Step 1（epoch-probe）已完成结果（2 seeds × test=40）
+
+| 指标 | 实测 | 对照 |
+| --- | ---: | --- |
+| `mean_test_success_rate` | **1.0 ± 0.0** | TD3BC deployable formal `0.858 ± 0.080`；TD3BC privileged formal `0.922 ± 0.086`；teacher baseline `0.990` |
+| `mean_test_return` | **35.62 ± 1.83** | TD3BC deployable `−14.29`；TD3BC privileged `16.49`；teacher baseline `32.19`（probe 实际**超过** teacher baseline，需 5-seed × test=100 复核） |
+| `mean_test_safety_cost` | 5.39 | TD3BC privileged 5.73 |
+| `β2 · mean_critic_penalty_ratio` | **0.0067** | crosscomp Stage C `0.086 / 0.219 / 0.358`，低 **一到两个数量级**——critic penalty 在 worldcomp 数据上几乎无作用 |
+
+**TRAIN_EPOCHS 决策**：取 `64`（与 Stage B/C 一致；selection 规则在 ep ≤ 64 budget 内自动选 ep64/ep56 ckpt 规避 seed 43 的 ep64 dip）。Phase 1 deployable formal 进入执行：5 seeds（`42-46`）× TRAIN_EPOCHS=64 × test=100 episodes。
+
+**早期推断**：probe 已经强烈暗示 Phase 1 formal 落在 **情景 A**（mean > 0.90）甚至可能接近 `1.0`——意味着 ReBRAC 的 dual penalty **完全治好了** TD3BC 在 worldcomp 上退化为 BC 的现象。如果 Phase 1 formal 确认这一结果，Phase 2 privileged-critic 的角色将从 "信息瓶颈诊断" 退化为 "ceiling 边际确认"。详见 [plan §6.5.2 Step 1 实测结果](./rebrac_experiment_plan.md)。
+
 ### 7.10 局限性
 
 1. **seed 45 在 backup 上的离群未深挖**：`(β1=4.0, β2=1.0)` 在 seed 45 上得到 `0.810`，比同 seed 主 finalist 低 7pp。可能是 seed 45 本身对 β2=1.0 更敏感，也可能是单点噪声。如果 Stage D 或后续 ablation 再次观察到 "β2 小一档在新 seed 上方差放大" 的模式，可把它作为 critic penalty 敏感性的起点；目前不追加 7-seed rework。

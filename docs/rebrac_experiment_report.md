@@ -1,6 +1,6 @@
 # ReBRAC 实验报告
 
-> 文档版本：2026-04-24 rev.2
+> 文档版本：2026-04-24 rev.3
 > 文档定位：这是 ReBRAC 阶段所有已经**实际跑完**的实验的统一结果报告。与 [rebrac_experiment_plan.md](./rebrac_experiment_plan.md) 不同，本文只写 "跑了什么 / 看到了什么 / 意味着什么"，不讨论尚未执行的计划。
 > 阅读建议：先读 [rebrac_experiment_plan.md](./rebrac_experiment_plan.md) §1-§5 理解动机与口径，再回到这里看已有结果。
 
@@ -8,12 +8,13 @@
 
 ## 1. 报告概述
 
-本文档整理 `results/offline/rebrac/` 下已经完成的全部 ReBRAC 实验，并把每一组实验的结论并入一条完整的 "主线解释" 里。当前（`rev.2`）包含的实验包为：
+本文档整理 `results/offline/rebrac/` 下已经完成的全部 ReBRAC 实验，并把每一组实验的结论并入一条完整的 "主线解释" 里。当前（`rev.3`）包含的实验包为：
 
 - `screening_epoch_probe`（Stage B0，训练预算 probe）
 - `screening`（Stage B，最小 screening —— 3×2 penalty 网格 × 2 datasets × 3 seeds）
+- `formal`（Stage C，5-seed 正式复核 —— 3 finalists × 5 seeds × test 100 episodes）
 
-后续实验（Stage C formal、Stage D teacher-gap follow-up）完成后，会在本文档内续写对应章节，不再分散到独立文件中。
+后续实验（Stage D `worldcomp` teacher-gap follow-up）完成后，会在本文档内续写对应章节，不再分散到独立文件中。
 
 本文档要回答的核心问题与 [rebrac_experiment_plan.md §2](./rebrac_experiment_plan.md) 一致：
 
@@ -21,15 +22,15 @@
 2. ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化？
 3. 如果 ReBRAC 在 `worldcomp-1000` 上也有改善，这种改善来自 deployable 轨道还是 privileged critic 轨道？
 
-截至当前（`rev.2`）：
+截至当前（`rev.3`）：
 
-- **问题 1 已出 screening 级别的强阳性信号**：ReBRAC 的 Stage B winner 在两个 `crosscomp` 数据集上相对 TD3BC phase0c Stage C 的正式成绩都给出了大幅改进（+21.1pp / +32.1pp）。是否稳住要看 Stage C 5-seed 复核。
-- **问题 2 同样在 Stage B 级别拿到初步正向**：ReBRAC 下 `crosscomp-2000` 比 `crosscomp-1000` 还略好（0.917 vs 0.883 在 winner 格子），首次翻转了 TD3BC 主线下 "`2000` 系统性差于 `1000`" 的趋势。
-- **问题 3 未触及**：需要 Stage D 才能回答。
+- **问题 1 已由 Stage C 5-seed 正式确认**：ReBRAC 的主 finalist 在 `crosscomp-1000` 上拿到 `0.902 ± 0.021`，在 `crosscomp-2000` 上拿到 `0.918 ± 0.030`；相对 TD3BC phase0c 正式成绩分别高出 `+23.0pp` 和 `+32.2pp`；std 也同时等于或低于 TD3BC phase0c 正式 std。
+- **问题 2 同样成立**：Stage C 下 `crosscomp-2000`（0.918）仍然高于 `crosscomp-1000`（0.902），Stage B 观察到的 "2000 不再差于 1000" 的翻转在 5-seed 下延续。
+- **问题 3 未触及**：需要 Stage D 才能回答；Stage C 的阳性结论已触发 Stage D `worldcomp-1000` 的 follow-up。
 
 一句话当前状态：
 
-> `TRAIN_EPOCHS=64` 已经够用，Stage B 最小 screening 跑完并给出干净的 winner `(β1=4.0, β2=2.0)`；ReBRAC 在两个 `crosscomp` 数据集上都显著超越 TD3BC phase0c。下一步直接进入 Stage C 5-seed 正式复核。
+> Stage C 5-seed 正式复核已完成并通过三项阈值，ReBRAC 正式升级为 deployable 主基线：`crosscomp-1000` 上 `0.902 ± 0.021`（ΔvsTD3BC +23.0pp），`crosscomp-2000` 上 `0.918 ± 0.030`（Δ +32.2pp）；backup finalist `(β1=4.0, β2=1.0)` 同样达标但在新 seed 45 上出现 `0.810` 的离群点，因此只做 fallback、不升级为正式成绩。下一步进入 Stage D `worldcomp-1000` teacher-gap follow-up。
 
 ---
 
@@ -101,14 +102,14 @@ ReBRAC 实现约定见 [rebrac_experiment_plan.md §5](./rebrac_experiment_plan.
 
 ## 4. 实验矩阵回顾
 
-截至 `rev.2`：
+截至 `rev.3`：
 
 | 实验包 | 编号 | 状态 | 入口 |
 | --- | --- | --- | --- |
 | 训练预算 probe | Stage B0 | 已完成 | [notebooks/rebrac_epoch_probe.ipynb](../notebooks/rebrac_epoch_probe.ipynb) |
-| 最小 screening | Stage B | **已完成** | [notebooks/rebrac_screen.ipynb](../notebooks/rebrac_screen.ipynb) |
-| 正式 5-seed 确认 | Stage C | 待执行（finalist 已锁定） | — |
-| `worldcomp` teacher-gap follow-up | Stage D | 待定（依赖 Stage C 成绩） | — |
+| 最小 screening | Stage B | 已完成 | [notebooks/rebrac_screen.ipynb](../notebooks/rebrac_screen.ipynb) |
+| 正式 5-seed 确认 | Stage C | **已完成** | [notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb) |
+| `worldcomp` teacher-gap follow-up | Stage D | 当前执行（Stage C 阳性已触发） | — |
 
 ---
 
@@ -363,13 +364,145 @@ ReBRAC Stage B winner vs TD3BC phase0c **Stage C 正式 5-seed** 成绩（注意
 
 ---
 
-## 7. 综合分析
+## 7. Stage C：5-seed 正式复核
 
-### 7.1 "预算够不够" 已经不是解释变量
+### 7.1 目标与口径
+
+按 [rebrac_experiment_plan.md §6.4](./rebrac_experiment_plan.md) 的定义，把 Stage B screening 的 winner 升级到与 TD3BC phase0c 同口径的正式 5-seed 基线：
+
+- 3 个 finalist 配置（`crosscomp-1000: (β1=4.0, β2=2.0)`；`crosscomp-2000: (β1=4.0, β2=2.0) + (β1=4.0, β2=1.0)`）；
+- 每个 finalist 跑 5 seeds（`42 / 43 / 44 / 45 / 46`）；
+- test manifest 从 Stage B 的 40 episodes 升到 **100 episodes**；
+- 其余协议（`TRAIN_EPOCHS=64`，`CHECKPOINT_EVERY_EPOCHS=8`，val=40 episodes，选择规则 `success_rate → return → -safety_cost → -time`）与 Stage B 对齐。
+
+### 7.2 Stage B checkpoint 重用
+
+为节省算力并保证对齐，Stage C 对 seed 42/43/44（与 Stage B 重叠的三个 seed）**直接重用 Stage B 的 `agent_step_*.pt`**：notebook §2.5 通过 `shutil.copytree(..., dirs_exist_ok=True)` 物理复制 Stage B 的 checkpoint 到 Stage C 的输出目录，而**不使用 `os.symlink`**（Google Drive 的 FUSE 层对 symlink 支持不稳定）。seed 45 / 46 是新训的。
+
+含义：seed 42/43/44 的 Stage C 数字 ≠ Stage B 数字（Stage C 在 100 ep manifest 上重评），但 checkpoint 相同；这让 "manifest 扩容带来的打分差异" 与 "seed 扩展带来的分布差异" 可以清晰解耦。
+
+### 7.3 实验范围
+
+| 轴 | 配置 |
+| --- | --- |
+| dataset | `crosscomp-1000` + `crosscomp-2000` |
+| finalist | `(β1=4.0, β2=2.0)`（两个 dataset）+ `(β1=4.0, β2=1.0)`（仅 ep2000，backup） |
+| seeds | `42 / 43 / 44 / 45 / 46` |
+| TRAIN_EPOCHS | `64`（与 Stage B0 / Stage B 对齐） |
+| val manifest | 40 episodes |
+| test manifest | **100 episodes** |
+
+总计 3 × 5 = 15 test runs；其中 9 个 seed 重用 Stage B checkpoint，6 个 seed 新训。
+
+输出路径：
+
+- `checkpoints/offline/rebrac/formal/`
+- `results/offline/rebrac/formal/`
+- `results/offline/rebrac/formal/summaries/overview.{csv,json}`
+
+执行入口：[notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb)（归档 [notebooks/rebrac_formal_completed.ipynb](../notebooks/rebrac_formal_completed.ipynb)）。
+
+### 7.4 主结果：test-split overview
+
+test manifest = 100 episodes，5 seeds 均值 ± std：
+
+| dataset | β1 | β2 | success (mean ± std) | `β2 · mean_critic_penalty_ratio` |
+| --- | ---: | ---: | ---: | ---: |
+| `crosscomp-1000` | **4.0** | **2.0** | **0.902 ± 0.021** | 0.086 |
+| `crosscomp-2000` | **4.0** | **2.0** | **0.918 ± 0.030** | 0.219 |
+| `crosscomp-2000` | 4.0 | 1.0 | 0.894 ± 0.048 | 0.358 |
+
+三个 finalist 的 `β2 · mean_critic_penalty_ratio` 都远低于一票否决阈值 `1.5`（也低于 `1.0` 的 "critic 被 penalty 支配" 警戒值）。
+
+### 7.5 Per-seed 分布
+
+| dataset | β1 | β2 | seed_42 | seed_43 | seed_44 | seed_45 | seed_46 | spread |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `crosscomp-1000` | **4.0** | **2.0** | 0.890 | 0.930 | 0.870 | 0.900 | 0.920 | **0.060** |
+| `crosscomp-2000` | **4.0** | **2.0** | 0.960 | 0.940 | 0.890 | 0.880 | 0.920 | **0.080** |
+| `crosscomp-2000` | 4.0 | 1.0 | 0.930 | 0.930 | 0.930 | **0.810** | 0.870 | 0.120 |
+
+四条观察：
+
+1. **seed 44 在主 finalist 上已经不是 outlier**：ep1000 上 `0.870`（Stage B 是 `0.850`，40→100 ep 抖动量级），ep2000 上 `0.890`（Stage B `0.900`）。Stage B §6.4 提出的 "β1=4.0 回收 seed 44" 被 100 episodes 的更大 test 样本进一步确认。
+2. **新增 seed 45 / 46 在主 finalist 上表现正常**：两个 dataset 的主 finalist 在 seed 45/46 都落在 `0.880 ~ 0.920` 区间，与 seed 42/43 混合后未拉大方差。
+3. **backup finalist `(β1=4.0, β2=1.0)` 在 ep2000 上首次暴露 seed 45 离群**：seed 42/43/44 都是 `0.930`（重用 Stage B ckpt），但新 seed 45 只有 `0.810`——比主 finalist 在同 seed 上的 `0.880` 低 7pp，把 spread 从 Stage B 的 `0.05` 放大到 `0.12`。
+4. **backup 的 `std = 0.048` 仍通过 Rule 3 阈值（≤ 0.10）**，但 spread 拉大说明 "Stage B 下 backup 与主 finalist 无代价等价" 这一论断在更多 seed 下不再完全成立；backup 仅作 "主 finalist 完全崩盘" 的 fallback 保留，当前主 finalist 稳住，backup 不启用。
+
+### 7.6 与 Stage B 3-seed 的差异
+
+| dataset | β1 | β2 | Stage B (3 seeds, 40 ep) | Stage C (5 seeds, 100 ep) | Δ |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `crosscomp-1000` | 4.0 | 2.0 | 0.883 ± 0.031 | 0.902 ± 0.021 | **+1.9pp mean / −0.010 std** |
+| `crosscomp-2000` | 4.0 | 2.0 | 0.917 ± 0.012 | 0.918 ± 0.030 | +0.1pp mean / +0.018 std |
+| `crosscomp-2000` | 4.0 | 1.0 | 0.900 ± 0.020 | 0.894 ± 0.048 | −0.6pp mean / +0.028 std |
+
+读数：
+
+- ep1000 主 finalist 的 std 从 `0.031` 继续下降到 `0.021`——在完全没有换 ckpt 的前提下，单纯把 test manifest 从 40 扩到 100、再加入 seed 45/46，反而更稳。这说明 Stage B 的方差估计里有 "40 episodes 噪声" 的成分，真实算法方差被高估。
+- ep2000 主 finalist 的 std 从 `0.012` 扩到 `0.030` 属于正常的样本放大（3→5 seeds 本身就会让极端 seed 被记入）；mean 几乎不变（`0.917 → 0.918`）说明 winner 判定未被改变。
+- backup finalist 的 std 从 `0.020` 扩到 `0.048` 是 seed 45 造成的，而不是均值漂移——这是 Stage B 阶段不可见的信息，Stage C 第一次暴露它。
+
+### 7.7 与 TD3BC phase0c 的最终对比
+
+都在 5-seed 口径下：
+
+| dataset | TD3BC phase0c Stage C（5 seeds, 100 ep） | ReBRAC Stage C（5 seeds, 100 ep） | Δ success |
+| --- | --- | --- | ---: |
+| `crosscomp-1000` | `0.672 ± 0.045 @ α=0.25` | `0.902 ± 0.021 @ (β1=4.0, β2=2.0)` | **+23.0pp** |
+| `crosscomp-2000` | `0.596 ± 0.036 @ α=0.15` | `0.918 ± 0.030 @ (β1=4.0, β2=2.0)` | **+32.2pp** |
+
+两点强调：
+
+1. ReBRAC 的 std 在两个 dataset 上都**等于或低于** TD3BC phase0c 正式 5-seed 的 std（0.021 vs 0.045；0.030 vs 0.036）——"均值改进同时方差不增" 在正式口径下继续成立。
+2. "`2000` 不再差于 `1000`" 这一 TD3BC 主线下的老问题，在 ReBRAC Stage C 下翻转为 `ep2000 (0.918) > ep1000 (0.902)`，与 Stage B 观察一致。
+
+### 7.8 Stage C 通过判据核对
+
+按 [plan §6.4 失败条件](./rebrac_experiment_plan.md)：
+
+| 条件 | 阈值 | Stage C 实测 | 是否通过 |
+| --- | --- | --- | --- |
+| Rule 1：ep1000 主 finalist `mean_test_success_rate` 不得跌破 TD3BC phase0c 的 `0.672` | `> 0.672` | `0.902` | **通过**（大幅超出） |
+| Rule 2：ep2000 两个 finalist `mean_test_success_rate` 都不得跌破 `0.75` | `> 0.75` | `0.918 / 0.894` | **通过** |
+| Rule 3：任一 finalist `std_test_success_rate` 不得超过 `0.10` | `≤ 0.10` | `0.021 / 0.030 / 0.048` | **通过** |
+
+Stage C 阳性结论成立：ReBRAC 正式升级为 deployable 主基线，Stage D 触发条件满足。
+
+### 7.9 Stage D 对接口径
+
+Stage D 由 Stage C 阳性结论触发，但 **不直接复刻 TD3BC worldcomp teacher-gap 的两轨道 10-run 矩阵**。原因：`crosscomp`（Stage C 的数据）与 `worldcomp`（Stage D 的数据）的瓶颈性质不同——前者是 "数据支持集结构 + 算法 critic robustness"，后者是 "deployable obs 下 critic 的信息瓶颈"，TD3BC 在 `worldcomp` deployable 下退化为 pure BC 是 `crosscomp` 上根本不存在的现象。ReBRAC 在 `worldcomp` 下可能 "进一步治好 critic 退化"，也可能 "在 noisy teacher target 下放大 bias"——两种结果都是论文级 finding，但所需的 follow-up 实验形态不同。
+
+因此 Stage D 拆为 Phase 1 / Phase 2 两段（详见 [plan §6.5](./rebrac_experiment_plan.md)）：
+
+- **Phase 1**（必做，~7 runs）：`worldcomp-1000` deployable 轨道的 epoch-probe（2 runs）+ deployable formal（5 seeds）。回答核心问题 "ReBRAC 在 worldcomp deployable 下是否打破 TD3BC 退化为 BC 的现象"。
+- **Phase 2**（条件触发，0~5 runs）：privileged-critic 轨道。规模由 Phase 1 三档情景决定：
+  - **情景 A**（Phase 1 mean > 0.90，显著超 TD3BC `0.858`）：privileged-critic 降级为 3-seed 边际确认或跳过。
+  - **情景 B**（Phase 1 mean ∈ [0.84, 0.90]，与 TD3BC 持平）：privileged-critic 跑满 5 seeds，作为 algorithm vs observation 瓶颈分离的诊断。
+  - **情景 C**（Phase 1 mean < 0.84，弱于 TD3BC）：privileged-critic 跑满 5 seeds + 追加 critic-penalty-off ablation 理解机制。
+
+Stage D 共同设定（两 Phase 共享）：
+
+- **finalist 配置锁定为 `(β1=4.0, β2=2.0)`**，不扫超参；`(β1=4.0, β2=1.0)` 不带入 Stage D（Stage C 下已暴露 seed 敏感，在 `worldcomp` 上再做冗余对照无信息价值）。
+- **TRAIN_EPOCHS 由 Phase 1 epoch-probe 决定**：peak ≤ 64 → 取 64；peak ∈ (64, 96] → 取 96（对齐 TD3BC worldcomp teacher-gap）；peak > 96 → 暂停 Stage D 回查。
+- **seeds 取 `42 / 43 / 44 / 45 / 46`**（与 Stage C、TD3BC worldcomp teacher-gap 对齐）；test manifest 100 episodes（与 Stage C 对齐）。
+- **驱动脚本**：新建 `scripts/run_offline_rebrac_worldcomp_teacher_gap.sh`，对齐 TD3BC 侧的 `phase0c_worldcomp_teacher_gap` 命名 pattern；不在现有 `run_offline_rebrac_screen.sh` 上扩展。
+
+### 7.10 局限性
+
+1. **seed 45 在 backup 上的离群未深挖**：`(β1=4.0, β2=1.0)` 在 seed 45 上得到 `0.810`，比同 seed 主 finalist 低 7pp。可能是 seed 45 本身对 β2=1.0 更敏感，也可能是单点噪声。如果 Stage D 或后续 ablation 再次观察到 "β2 小一档在新 seed 上方差放大" 的模式，可把它作为 critic penalty 敏感性的起点；目前不追加 7-seed rework。
+2. **没有做 7-seed / 10-seed follow-up**：三项阈值都已通过，再扩样本的边际收益低；如果 Stage D 在 `worldcomp privileged-critic` 再次出现不稳，再回头决定是否补样本。
+3. **与 TD3BC phase0c 的对比仍跨实验批次**：两边都在 canonical protocol 下执行，但 `TRAIN_EPOCHS` 历史上有过调整（TD3BC 主线 64，worldcomp teacher-gap 96），ReBRAC 统一 64。这对 `crosscomp` 的直接对比无影响，但对 Stage D `worldcomp` 对比需要在 Stage D 报告中单独澄清预算口径。
+
+---
+
+## 8. 综合分析
+
+### 8.1 "预算够不够" 已经不是解释变量
 
 TD3BC phase0c 的报告曾担心 `2000` 没有进一步改善是不是训练预算不够。Stage B0 直接排除了这个可能性（至少在 ReBRAC 侧）。Stage B 结果进一步证实：在 `TRAIN_EPOCHS=64` 的预算下，ReBRAC 在 `crosscomp-2000` 上已经可以超过 ep1000——因此原来 TD3BC 下的 "2000 差于 1000" 现象不能再归咎于 "epoch 不够"，它来自算法能力 ceiling。
 
-### 7.2 优化方差是一个被 β1 直接调控的现象
+### 8.2 优化方差是一个被 β1 直接调控的现象
 
 Stage B0 暴露了 seed 44 在 `β1=2.0` 下的异常；Stage B 把这个观察完整展开成 β1 维度的曲线：
 
@@ -380,58 +513,73 @@ Stage B0 暴露了 seed 44 在 `β1=2.0` 下的异常；Stage B 把这个观察�
 
 含义：dual penalty 里的 **actor 侧 penalty 是控制优化方差的核心杠杆**，而不是 critic 侧。critic penalty (β2) 更像是锦上添花，β2 从 1.0 升到 2.0 的收益在两个 dataset 上都远小于 β1 从 2.0 升到 4.0 的收益。
 
-### 7.3 ReBRAC 相对 TD3BC 的收益不是 "再调一次超参"，而是 "稳住难 seed"
+### 8.3 ReBRAC 相对 TD3BC 的收益不是 "再调一次超参"，而是 "稳住难 seed"
 
 TD3BC phase0c 在 `crosscomp-1000` 下 `α=0.25` 的 std 是 `0.045`。ReBRAC winner 在同 dataset 下 std 降到 `0.031`；更重要的是，具体是 seed 44 这个 "难 seed" 的 test success 从 TD3BC 下未知（phase0c 只报告了 mean±std）被 ReBRAC 拉到 `0.850`。考虑到 Stage B0 下 seed 44 在 β1=2.0 也只有 0.500，Stage B winner 完整地把这个 seed 回收——这正是 [rebrac_experiment_plan.md §1.2](./rebrac_experiment_plan.md) 提出的 "ReBRAC 能吃下 TD3BC 没吃到的那部分收益" 的最具体形式。
 
-### 7.4 关于 "长训 ≈ 单独训到" 的等价性（回扣 Stage B0）
+### 8.4 关于 "长训 ≈ 单独训到" 的等价性（回扣 Stage B0）
 
-Stage B 单独训到 `TRAIN_EPOCHS=64` 后，结果上与 Stage B0 的 ep64 读数（验证曲线从 128-epoch 训练中取的 val 点）在同 `(β1=2.0, β2=1.0)` 上具有一致的量级（ep2000 seed_42 在 Stage B0 ep64 是 0.900，Stage B test 得 0.950；同 seed 的 Stage B0 与 Stage B 本就采用不同 manifest，0.05 量级的差距属于 manifest 抖动）。这间接验证了 Stage B0 的 "长训读中间 ckpt ≈ 单独训到该 epoch" 这一核心假设，但严格的 `state_dict_l2_distance` 交叉比对仍未做——这是 Stage C 的 sanity check 清单项。
+Stage B 单独训到 `TRAIN_EPOCHS=64` 后，结果上与 Stage B0 的 ep64 读数（验证曲线从 128-epoch 训练中取的 val 点）在同 `(β1=2.0, β2=1.0)` 上具有一致的量级（ep2000 seed_42 在 Stage B0 ep64 是 0.900，Stage B test 得 0.950；同 seed 的 Stage B0 与 Stage B 本就采用不同 manifest，0.05 量级的差距属于 manifest 抖动）。这间接验证了 Stage B0 的 "长训读中间 ckpt ≈ 单独训到该 epoch" 这一核心假设，但严格的 `state_dict_l2_distance` 交叉比对仍未做——这一项列入 §9 局限性。
+
+### 8.5 Stage C 延续：5-seed 稳住了 Stage B 的所有定性结论
+
+Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值上全部通过。对 §8.1–§8.4 综合分析的影响：
+
+- §8.1（"预算够不够" 不再是解释变量）：Stage C 没有新证据挑战这一结论，维持。
+- §8.2（β1 是优化方差的主杠杆）：Stage C 下 seed 44 在 β1=4.0 主 finalist 的 `0.870 / 0.890` 进一步确认；但 seed 45 在 **β2=1.0** backup 上的 `0.810` 显示 β2 也在 robustness 中扮演 non-zero 角色，只是强度低于 β1——把 §8.2 的结论从 "actor 侧 penalty 是主杠杆、critic 侧只是锦上添花" 轻度修订为 "actor 侧是主杠杆，critic 侧在新 seed 分布下会贡献 5~10pp 级别的额外 robustness"。
+- §8.3（ReBRAC 的收益是 "稳住难 seed"）：Stage C 下 std 的直接对比（ep1000 `0.021` vs TD3BC phase0c `0.045`；ep2000 `0.030` vs `0.036`）比 Stage B 更直接地证实这一机制，且在更大的 100-episode test manifest 下仍然成立。
+- §8.4（"长训 ≈ 单独训到" 的等价性）：Stage C 没有额外证据，也没有跑严格的 `state_dict_l2_distance` 比对——移入 §9 局限性。
 
 ---
 
-## 8. 局限性
+## 9. 局限性
 
-1. **仍未完成 Stage C 5-seed 正式复核**——所有 Stage B 的超越 TD3BC 的结论都是 3-seed 级别的，严格意义上属于 screening 强信号。
-2. Stage B 的 test manifest 是 40 episodes；Stage C 会升到 100 episodes，届时 test success 的置信区间会显著收窄。
-3. `worldcomp` 轨道完全未触及——Stage B 的所有结论都不能外推到 deterministic teacher 数据上。
+1. **`state_dict_l2_distance` 交叉验证仍未做**——Stage B0 的 "长训 ≈ 单独训到" 假设在 Stage B / Stage C 结果层面一致，但仍未从权重层面直接验证。这是遗留在 Stage C 清单上的 sanity check 项，但不影响当前结论。
+2. **backup finalist 的 seed 敏感未解释**——seed 45 在 `(β1=4.0, β2=1.0)` 上得到 `0.810`，Stage B 阶段不可见，Stage C 第一次暴露。如果 Stage D 再次观察到 "β2 小一档在新 seed 上方差放大"，会回来做 critic penalty 敏感性 ablation；当前不 rework。
+3. `worldcomp` 轨道完全未触及——Stage B / Stage C 的所有结论都不能外推到 deterministic teacher 数据上。这是 Stage D 的范围。
 4. 只观察了 `β2 ∈ {1.0, 2.0}`；`β2 = 0.5` 下 ReBRAC 是否退化到 TD3BC-like 行为（critic penalty 几乎不起作用）未知。这对理解 "critic penalty 到底贡献多少" 很重要，但位于 Stage E ablation 范围，不是当前执行序列的前置条件。
 
 ---
 
-## 9. 最终结论
+## 10. 最终结论
 
-1. **`TRAIN_EPOCHS=64` 在 ReBRAC 口径下足够**，且 Stage B 的独立 64-epoch 结果与 Stage B0 的长训中间读数一致，间接验证了 Stage B0 的等价性假设。
-2. **ReBRAC 的 Stage B winner 是 `(β1=4.0, β2=2.0)`**，两个 `crosscomp` 数据集共享。这个 winner 在 mean 和 std 两项上都优于 TD3BC phase0c 的对应最优。
-3. **ReBRAC 相对 TD3BC 的收益主要来自 "稳住难 seed"**——seed 44 从 TD3BC / 弱 penalty 下的系统性崩盘被 β1=4.0 完整回收。Actor 侧 penalty 是优化方差控制的主杠杆。
-4. **ReBRAC 在 `crosscomp-2000` 上翻转了 TD3BC 主线的 "2000 差于 1000" 趋势**（ReBRAC: ep2000 0.917 > ep1000 0.883；TD3BC phase0c: ep2000 0.596 < ep1000 0.672）。这是 [plan §2.2](./rebrac_experiment_plan.md) 机制问题的初步正向答案。
-5. **Stage C 进入 5-seed 正式复核**，finalist: `(β1=4.0, β2=2.0)` 两 dataset 共用；`crosscomp-2000` 上额外跑 `(β1=4.0, β2=1.0)` 作为 backup。
+1. **`TRAIN_EPOCHS=64` 在 ReBRAC 口径下足够**，且 Stage B 的独立 64-epoch 结果与 Stage B0 的长训中间读数一致，间接验证了 Stage B0 的等价性假设。Stage C 在相同 `TRAIN_EPOCHS=64` 下再度成立。
+2. **ReBRAC 的正式 finalist 是 `(β1=4.0, β2=2.0)`**，两个 `crosscomp` 数据集共享。Stage C 下 `crosscomp-1000` 得 `0.902 ± 0.021`，`crosscomp-2000` 得 `0.918 ± 0.030`；两个 dataset 的 std 都等于或低于 TD3BC phase0c 正式 std。
+3. **ReBRAC 相对 TD3BC 的收益主要来自 "稳住难 seed"**——seed 44 在 β1=4.0 下完整回收（Stage C 仍为 `0.870 / 0.890`）。Actor 侧 penalty 是优化方差控制的主杠杆；critic penalty (β2) 在 Stage C 下被观察到贡献 non-zero 的额外 robustness（主 finalist vs backup 在 seed 45 上差 7pp）。
+4. **ReBRAC 在 `crosscomp-2000` 上翻转了 TD3BC 主线的 "2000 差于 1000" 趋势**：Stage C 下 ep2000 `0.918` > ep1000 `0.902`（TD3BC phase0c: 0.596 < 0.672）。这是 [plan §2.2](./rebrac_experiment_plan.md) 机制问题的正向答案。
+5. **Stage C 通过 Rule 1/2/3 三项阈值**：ep1000 mean > 0.672、ep2000 两 finalist mean > 0.75、所有 finalist std ≤ 0.10。ReBRAC 正式升级为 deployable 主基线。
+6. **Stage D 进入当前执行**：`worldcomp-1000` teacher-gap follow-up，finalist 锁定 `(β1=4.0, β2=2.0)`，轨道分 `deployable` + `privileged-critic`。预算口径待 Stage D epoch-probe sanity check 后确定（64 或 96）。
 
 一句话总结：
 
-> ReBRAC 的 Stage B screening 给出了强阳性信号：winner 统一、与 TD3BC 对比的差距显著、seed 44 类型的优化方差被 β1 直接压下去；接下来用 Stage C 5-seed 把这个结论升级到 "正式基线"。
+> ReBRAC 的 Stage C 5-seed 正式复核完整延续了 Stage B 的所有定性结论：均值大幅超越 TD3BC phase0c（+23pp / +32pp）、std 不增反降、"2000 不再差于 1000" 翻转继续成立；接下来进入 Stage D 的 `worldcomp` teacher-gap 轨道。
 
 ---
 
-## 10. 结果文件索引
+## 11. 结果文件索引
 
 本报告基于以下文件：
 
 - Stage B0 训练预算 probe
-  - `checkpoints/offline/rebrac/screening_epoch_probe/crosscomp-1000/actorb_2p0__criticb_1p0/seed_{42,43,44}/agent_step_*.pt`
-  - `checkpoints/offline/rebrac/screening_epoch_probe/crosscomp-2000/actorb_2p0__criticb_1p0/seed_{42,43,44}/agent_step_*.pt`
+  - `checkpoints/offline/rebrac/screening_epoch_probe/crosscomp-{1000,2000}/actorb_2p0__criticb_1p0/seed_{42,43,44}/agent_step_*.pt`
   - `results/offline/rebrac/screening_epoch_probe/crosscomp-{1000,2000}/actorb_2p0__criticb_1p0/selection/seed_{42,43,44}/selected_checkpoint.json`
 - Stage B 最小 screening
   - `checkpoints/offline/rebrac/screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep{1000,2000}/actorb_{1p0,2p0,4p0}__criticb_{1p0,2p0}/seed_{42,43,44}/agent_step_*.pt`
   - `results/offline/rebrac/screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep{1000,2000}/actorb_*__criticb_*/{validation,test,selection}/seed_*.json`
   - `results/offline/rebrac/screening/summaries/overview.{csv,json}`
+- Stage C 正式 5-seed
+  - `checkpoints/offline/rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep{1000,2000}/actorb_4p0__criticb_{1p0,2p0}/seed_{42,43,44,45,46}/agent_step_*.pt`（seed 42/43/44 物理复制自 Stage B）
+  - `results/offline/rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep{1000,2000}/actorb_4p0__criticb_*/{validation,test,selection}/seed_*.json`
+  - `results/offline/rebrac/formal/summaries/overview.{csv,json}`
 
 执行入口：
 
 - [notebooks/rebrac_epoch_probe.ipynb](../notebooks/rebrac_epoch_probe.ipynb) — Stage B0
 - [notebooks/rebrac_screen.ipynb](../notebooks/rebrac_screen.ipynb) — Stage B
 - [notebooks/rebrac_screen_completed.ipynb](../notebooks/rebrac_screen_completed.ipynb) — Stage B 执行归档
-- [scripts/run_offline_rebrac_screen.sh](../scripts/run_offline_rebrac_screen.sh)
+- [notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb) — Stage C
+- [notebooks/rebrac_formal_completed.ipynb](../notebooks/rebrac_formal_completed.ipynb) — Stage C 执行归档
+- [scripts/run_offline_rebrac_screen.sh](../scripts/run_offline_rebrac_screen.sh)（Stage B / Stage C 共用）
 
 背景阅读：
 

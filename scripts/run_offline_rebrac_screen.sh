@@ -81,6 +81,13 @@ GRAD_CLIP_NORM="${GRAD_CLIP_NORM:-10.0}"
 NORMALIZER_EPS="${NORMALIZER_EPS:-1e-3}"
 LOG_EVERY="${LOG_EVERY:-1000}"
 
+# Asymmetric critic (privileged-critic) support. Off by default so existing
+# Stage B/C behavior is unchanged. When USE_ASYMMETRIC_CRITIC=1, the train
+# call adds --use-asymmetric-critic and --privileged-actor-update-mode flags.
+# Used by Stage D (worldcomp teacher-gap) to share screen.sh as the worker.
+USE_ASYMMETRIC_CRITIC="${USE_ASYMMETRIC_CRITIC:-0}"
+PRIVILEGED_ACTOR_UPDATE_MODE="${PRIVILEGED_ACTOR_UPDATE_MODE:-zeros}"
+
 # Fraction of the training timeline used to summarize late-training
 # critic_penalty / target_q diagnostics. Default is the last 25% of logged
 # steps so that early instability does not contaminate the statistic.
@@ -277,6 +284,10 @@ train_one() {
   mkdir -p "$run_dir"
   if [[ "$DROP_LAST_BATCH" == "1" ]]; then
     extra_flags+=(--drop-last-batch)
+  fi
+  if [[ "$USE_ASYMMETRIC_CRITIC" == "1" ]]; then
+    extra_flags+=(--use-asymmetric-critic)
+    extra_flags+=(--privileged-actor-update-mode "$PRIVILEGED_ACTOR_UPDATE_MODE")
   fi
 
   run_cmd "${PYTHON_CMD[@]}" -m scripts.train_offline \

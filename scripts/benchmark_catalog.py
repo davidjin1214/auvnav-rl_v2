@@ -250,3 +250,23 @@ def default_manifest_path(
     manifest_dir: str = "benchmarks",
 ) -> str:
     return f"{manifest_dir.rstrip('/')}/{benchmark.key}.json"
+
+
+def resolve_benchmark_protocol(benchmark_key: str) -> dict[str, str]:
+    """Look up the flow file / task geometry / target speed for a benchmark key.
+
+    Notebooks set ``BENCHMARK_KEY`` and call this helper to fill in the
+    matching ``FLOW_PATH`` / ``TASK_GEOMETRY`` / ``TARGET_SPEED`` env vars.
+    A single source of truth prevents train/test flow mismatches.
+    """
+    if benchmark_key not in BENCHMARK_SPECS:
+        raise ValueError(
+            f"Unknown benchmark key: {benchmark_key!r}. "
+            f"Known keys: {sorted(BENCHMARK_SPECS)}"
+        )
+    spec = BENCHMARK_SPECS[benchmark_key]
+    return {
+        "flow_path": spec.flow_path,
+        "task_geometry": spec.task_geometry,
+        "target_speed": str(spec.target_speed),
+    }

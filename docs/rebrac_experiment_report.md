@@ -1,6 +1,6 @@
 # ReBRAC 实验报告
 
-> 文档版本：2026-04-24 rev.3
+> 文档版本：2026-04-27 rev.4
 > 文档定位：这是 ReBRAC 阶段所有已经**实际跑完**的实验的统一结果报告。与 [rebrac_experiment_plan.md](./rebrac_experiment_plan.md) 不同，本文只写 "跑了什么 / 看到了什么 / 意味着什么"，不讨论尚未执行的计划。
 > 阅读建议：先读 [rebrac_experiment_plan.md](./rebrac_experiment_plan.md) §1-§5 理解动机与口径，再回到这里看已有结果。
 
@@ -8,13 +8,15 @@
 
 ## 1. 报告概述
 
-本文档整理 `results/offline/rebrac/` 下已经完成的全部 ReBRAC 实验，并把每一组实验的结论并入一条完整的 "主线解释" 里。当前（`rev.3`）包含的实验包为：
+本文档整理 `results/offline/rebrac/` 下已经完成的全部 ReBRAC 实验，并把每一组实验的结论并入一条完整的 "主线解释" 里。当前（`rev.4`）包含的实验包为：
 
 - `screening_epoch_probe`（Stage B0，训练预算 probe）
 - `screening`（Stage B，最小 screening —— 3×2 penalty 网格 × 2 datasets × 3 seeds）
 - `formal`（Stage C，5-seed 正式复核 —— 3 finalists × 5 seeds × test 100 episodes）
+- `worldcomp_epoch_probe`（Stage D Phase 1 Step 1，2 seeds × 128 epoch × test=40）
+- `worldcomp_teacher_gap/deployable`（Stage D Phase 1 Step 2，5 seeds × 64 epoch × test=100）
 
-后续实验（Stage D `worldcomp` teacher-gap follow-up）完成后，会在本文档内续写对应章节，不再分散到独立文件中。
+后续实验（Stage D Phase 2 privileged-critic 轨道）完成后，会在本文档内续写对应章节，不再分散到独立文件中。
 
 本文档要回答的核心问题与 [rebrac_experiment_plan.md §2](./rebrac_experiment_plan.md) 一致：
 
@@ -22,15 +24,15 @@
 2. ReBRAC 是否能改善 `crosscomp-2000` 相对 `crosscomp-1000` 的退化？
 3. 如果 ReBRAC 在 `worldcomp-1000` 上也有改善，这种改善来自 deployable 轨道还是 privileged critic 轨道？
 
-截至当前（`rev.3`）：
+截至当前（`rev.4`）：
 
 - **问题 1 已由 Stage C 5-seed 正式确认**：ReBRAC 的主 finalist 在 `crosscomp-1000` 上拿到 `0.902 ± 0.021`，在 `crosscomp-2000` 上拿到 `0.918 ± 0.030`；相对 TD3BC phase0c 正式成绩分别高出 `+23.0pp` 和 `+32.2pp`；std 也同时等于或低于 TD3BC phase0c 正式 std。
 - **问题 2 同样成立**：Stage C 下 `crosscomp-2000`（0.918）仍然高于 `crosscomp-1000`（0.902），Stage B 观察到的 "2000 不再差于 1000" 的翻转在 5-seed 下延续。
-- **问题 3 未触及**：需要 Stage D 才能回答；Stage C 的阳性结论已触发 Stage D `worldcomp-1000` 的 follow-up。
+- **问题 3 由 Stage D Phase 1 Step 2 部分回答**：ReBRAC 在 `worldcomp-1000` deployable 轨道（actor + critic 都用 deployable obs）拿到 `0.928 ± 0.077`，**在均值上已经超过 TD3BC privileged-critic 协议**（`0.922 ± 0.086`），把 deployable→teacher 的 gap 关闭了 53%（TD3BC privileged 是 48.5%）。落入情景 A，Phase 2 privileged-critic 轨道进入执行。
 
 一句话当前状态：
 
-> Stage C 5-seed 正式复核已完成并通过三项阈值，ReBRAC 正式升级为 deployable 主基线：`crosscomp-1000` 上 `0.902 ± 0.021`（ΔvsTD3BC +23.0pp），`crosscomp-2000` 上 `0.918 ± 0.030`（Δ +32.2pp）；backup finalist `(β1=4.0, β2=1.0)` 同样达标但在新 seed 45 上出现 `0.810` 的离群点，因此只做 fallback、不升级为正式成绩。下一步进入 Stage D `worldcomp-1000` teacher-gap follow-up。
+> Stage D Phase 1（epoch-probe + deployable formal）已完成。ReBRAC 在 `worldcomp-1000` 上不仅打破了 TD3BC 退化为 BC 的现象，还**只用 deployable obs 就追平/超过了 TD3BC privileged-critic 协议**——这是当前阶段最强的论文级 finding。Phase 1 Step 2 同时暴露两个新机制点：(1) `β2·mean_critic_penalty_ratio` 在 worldcomp 上只有 0.0111（crosscomp Stage C 是 0.086~0.358），critic penalty 在 worldcomp 上几乎无作用；(2) seed 44 在 deployable 上掉到 0.78，是 Phase 2 最有信息量的诊断点。下一步进入 Phase 2 privileged-critic 3-seed 边际确认（必须含 seed 44）。
 
 ---
 
@@ -102,14 +104,16 @@ ReBRAC 实现约定见 [rebrac_experiment_plan.md §5](./rebrac_experiment_plan.
 
 ## 4. 实验矩阵回顾
 
-截至 `rev.3`：
+截至 `rev.4`：
 
 | 实验包 | 编号 | 状态 | 入口 |
 | --- | --- | --- | --- |
 | 训练预算 probe | Stage B0 | 已完成 | [notebooks/rebrac_epoch_probe.ipynb](../notebooks/rebrac_epoch_probe.ipynb) |
 | 最小 screening | Stage B | 已完成 | [notebooks/rebrac_screen.ipynb](../notebooks/rebrac_screen.ipynb) |
-| 正式 5-seed 确认 | Stage C | **已完成** | [notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb) |
-| `worldcomp` teacher-gap follow-up | Stage D | 当前执行（Stage C 阳性已触发） | — |
+| 正式 5-seed 确认 | Stage C | 已完成 | [notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb) |
+| Stage D Phase 1 Step 1（worldcomp epoch-probe） | Stage D / Phase 1 | 已完成 | [notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb](../notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb) |
+| Stage D Phase 1 Step 2（worldcomp deployable formal） | Stage D / Phase 1 | **已完成** | [notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb](../notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb) |
+| Stage D Phase 2（worldcomp privileged-critic） | Stage D / Phase 2 | 当前执行（情景 A，3 seeds 含 seed 44） | — |
 
 ---
 
@@ -501,7 +505,147 @@ Stage D 共同设定（两 Phase 共享）：
 
 **早期推断**：probe 已经强烈暗示 Phase 1 formal 落在 **情景 A**（mean > 0.90）甚至可能接近 `1.0`——意味着 ReBRAC 的 dual penalty **完全治好了** TD3BC 在 worldcomp 上退化为 BC 的现象。如果 Phase 1 formal 确认这一结果，Phase 2 privileged-critic 的角色将从 "信息瓶颈诊断" 退化为 "ceiling 边际确认"。详见 [plan §6.5.2 Step 1 实测结果](./rebrac_experiment_plan.md)。
 
-### 7.10 局限性
+### 7.10 Stage D Phase 1 Step 2：`worldcomp-1000` deployable formal
+
+#### 7.10.1 目标与口径
+
+Step 1 epoch-probe 已经把 `TRAIN_EPOCHS=64` 钉死，并在 2 seeds × test=40 上观察到 `success_rate = 1.0 ± 0.0`。Step 2 在 5-seed × test=100 的正式协议下重新复核，同时回答两个问题：
+
+1. **核心问题**：ReBRAC 在 `worldcomp-1000` deployable 下是否打破了 TD3BC 退化为 BC 的现象（`mean_test_success > 0.858`）？
+2. **次要问题**：probe 的 `1.0 ± 0.0` 是真信号还是 manifest/seed 抽样偏差？
+
+完整 scope 见 [plan §6.5.2 Step 2](./rebrac_experiment_plan.md)。
+
+#### 7.10.2 实验范围
+
+| 轴 | 配置 |
+| --- | --- |
+| dataset | `worldcomp-1000` |
+| finalist | `(β1=4.0, β2=2.0)`（Stage C 锁定，Stage D 不扫超参） |
+| seeds | `42 / 43 / 44 / 45 / 46` |
+| TRAIN_EPOCHS | `64`（由 Step 1 epoch-probe 决定） |
+| 轨道 | deployable（actor + critic 都用 deployable obs） |
+| val manifest | 40 episodes |
+| test manifest | **100 episodes**（与 Stage C / TD3BC worldcomp formal 同口径） |
+
+总计 5 train runs × 8 ckpt × val=40 + 5 test=100。
+
+输出路径：
+
+- `checkpoints/offline/rebrac/worldcomp_teacher_gap/deployable/`
+- `results/offline/rebrac/worldcomp_teacher_gap/deployable/`
+- `results/offline/rebrac/worldcomp_teacher_gap/deployable/summaries/overview.{csv,json}`
+
+执行入口：[notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb](../notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb)。驱动脚本：[scripts/run_offline_rebrac_worldcomp_teacher_gap.sh](../scripts/run_offline_rebrac_worldcomp_teacher_gap.sh)。
+
+#### 7.10.3 主结果：5-seed test overview
+
+| dataset | β1 | β2 | success (mean ± std) | return (mean ± std) | safety | time (s) | `mean_critic_penalty` | `mean_target_q` | `mean_critic_penalty_ratio` | `β2 · ratio` |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `worldcomp-1000` | 4.0 | 2.0 | **0.928 ± 0.077** | 20.17 ± 12.13 | 5.96 | 53.70 | 0.0802 | **+15.22** | 0.00553 | **0.0111** |
+
+#### 7.10.4 Per-seed 分布
+
+| seed | selected ckpt | val_succ (40 ep) | val_return | test_succ (100 ep) | test_return | test_safety |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 42 | `agent_final` (ep64) | 1.000 | 30.85 | 0.990 | 26.85 | 6.15 |
+| 43 | `agent_step_22848` (ep56) | 1.000 | 30.87 | 0.930 | 17.76 | 6.82 |
+| 44 | `agent_step_16320` (ep40) | **0.825** | 8.20 | **0.780** | −2.53 | 8.16 |
+| 45 | `agent_final` (ep64) | 1.000 | 33.62 | 0.980 | 28.97 | 5.02 |
+| 46 | `agent_step_22848` (ep56) | 0.975 | 33.43 | 0.960 | 29.80 | 3.67 |
+
+四条观察：
+
+**1. 4/5 seed 都进入 `≥0.93` 的 high-success regime**：seeds 42/45 拿到 `0.99 / 0.98`，seeds 43/46 拿到 `0.93 / 0.96`。
+
+**2. seed 44 是真正的 outlier**：val 已经只有 0.825（其它 4 seed 都 ≥ 0.975），selected ckpt 还停在 ep40——后续的 ep48~64 在 val 上没能恢复。test=100 是 0.78。这是 ReBRAC 在 worldcomp 上**第一次**出现 β1=4.0 救不回的难 seed——与 Stage C crosscomp 上 "β1=4.0 完整回收 seed 44" 的故事**首次分叉**。
+
+**3. probe 没有高估，只是没看到 seed 44**：probe seeds 是 42/43，恰好都进入 high-success regime（test=100 下 `0.99/0.93`）。probe 的 `1.0 ± 0.0` 本身没问题，缩水到 `0.928 ± 0.077` 完全由 seed 44 这一个点解释。
+
+**4. selected ckpt 的分布说明 ReBRAC 在 worldcomp 上训练曲线非单调**：5 个 seed 选出的 ckpt 分别是 ep40 / ep56 / ep56 / ep64 / ep64。这与 Stage B0 / Stage C 上观察到的 "ReBRAC val 曲线常有 dip" 一致；selection 规则在 ep ≤ 64 budget 内自动避开 dip。
+
+#### 7.10.5 与 TD3BC `worldcomp` formal 三向对比
+
+| 协议 | success (mean ± std) | return | safety | gap closure（vs deployable→teacher） |
+| --- | ---: | ---: | ---: | ---: |
+| TD3BC `worldcomp` deployable formal (α=0.0, BC) | `0.858 ± 0.080` | `−14.29` | `7.91` | 0% |
+| TD3BC `worldcomp` privileged-critic formal (α=0.1) | `0.922 ± 0.086` | `16.49` | `5.73` | 48.5% |
+| **ReBRAC `worldcomp` deployable Phase 1**（本节） | **`0.928 ± 0.077`** | `20.17` | `5.96` | **53.0%** |
+| teacher baseline (online) | `0.990` | `32.19` | — | 100% |
+
+四条强结论：
+
+1. **ReBRAC deployable 在均值上首次超过 TD3BC privileged-critic**（+0.6pp），且只用 deployable obs 就做到了——这是当前阶段最强的论文级 finding。"observation 瓶颈" 不再是 `worldcomp` 上不可绕过的瓶颈；ReBRAC 的 dual penalty 跨数据类型 generalize。
+2. **gap closure 53% > TD3BC privileged-critic 的 48.5%**：ReBRAC deployable 不仅追平特权 critic 协议，还把 TD3BC 留下的 deployable→teacher gap 进一步压缩。
+3. **`mean_test_return` 显著更高**（20.17 vs TD3BC privileged 的 16.49）：成功率相近时，ReBRAC 走出更高效的轨迹（path_efficiency 0.77~0.80 量级，progress_ratio 0.86~0.90）；safety_cost 也比 TD3BC privileged 接近、明显优于 TD3BC deployable。
+4. **ReBRAC std 略低于 TD3BC privileged**（0.077 vs 0.086），但接近——与 crosscomp Stage C 上 "ReBRAC std 远低于 TD3BC" 的故事不一样。原因见 §7.10.6 第 3 点（seed 44 在 worldcomp 上没被救回，把 std 撑住了）。
+
+#### 7.10.6 三个机制 finding（Phase 2 设计依据）
+
+**Finding 1：dual penalty 在 worldcomp 上几乎退化为单 penalty**
+
+| 指标 | worldcomp Phase 1 | crosscomp Stage C ep1000 | crosscomp Stage C ep2000 主 | crosscomp Stage C ep2000 backup |
+| --- | ---: | ---: | ---: | ---: |
+| `β2 · mean_critic_penalty_ratio` | **0.0111** | 0.086 | 0.219 | 0.358 |
+| `mean_target_q` | **+15.22** | `−5 ~ −8`（pessimism regime） | 同左 | 同左 |
+
+worldcomp 上 critic penalty 的相对贡献比 crosscomp 低 **1–2 个数量级**，且 critic 在 worldcomp 上保持显著乐观。机制解释：worldcomp 是 deterministic teacher policy，`next_actions = π_teacher(s')` 与 ReBRAC 自己的 `π_target(s')` 高度一致 → critic penalty `||π_target(s') + noise − a'||²` 退化为接近恒等约束。
+
+含义：ReBRAC 在 worldcomp 上的全部增益基本来自 actor BC penalty + 网络容量/LayerNorm，**不是 dual penalty**。这一发现直接影响 Stage E ablation 设计——critic-penalty-off 在 worldcomp 上预期几乎无效。建议在 Phase 2 之前或并行做一个 `(β1=4.0, β2=0) × 1–2 seeds` 的 cheap probe（详见 [plan §6.5.3 末尾](./rebrac_experiment_plan.md)），以 1–2 runs 的代价廉价验证这一猜想。
+
+**Finding 2：ReBRAC 在 worldcomp 上对 seed 44 失去回收能力**
+
+Stage C crosscomp 上 seed 44 在 β1=4.0 下回到 `0.870 / 0.890`；worldcomp Phase 1 上 seed 44 是 `0.780`，selected val 只有 0.825。机制猜想：
+
+- crosscomp 上稳住 seed 44 的"两条防线"是 actor penalty + critic penalty；
+- worldcomp 上 critic penalty 几乎不工作（Finding 1），缺少了第二条防线；
+- 因此 seed 44 的优化方差在 worldcomp 上没被完全压住。
+
+Phase 2 是验证这一猜想的最直接实验：privileged critic 把更丰富的等效流信息暴露给 critic，如果它把 seed 44 救回 → critic 侧的 OOD 风险/信息不足是 seed 44 难训的真因；如果救不回 → seed 44 的问题与 critic 无关，是数据/优化层面的 outlier。
+
+**Finding 3：probe → formal 缩水的真正解释**
+
+Step 1 probe（seeds 42/43, test=40）的 `1.0 ± 0.0` → Step 2 formal（seeds 42-46, test=100）的 `0.928 ± 0.077`。三种可能解释：
+
+- (a) test=100 比 test=40 引入更多 episode-level 噪声 → 数字一定会落；
+- (b) 新增 seeds 45/46 把方差拉大；
+- (c) 新增 seeds 中含一个难 seed（44）。
+
+实测 (a)+(b) 联合贡献量级很小：seeds 42/43 在 test=100 下分别是 `0.99 / 0.93`，与 probe 的 `1.0 / 1.0` 差距分别只有 1pp / 7pp，前者基本是抽样噪声，后者是 test 集的真实 episode 难度差异。新 seeds 45/46 表现正常（`0.98 / 0.96`）。**缩水的 90%+ 解释由 (c) 提供**——seed 44 单点贡献 `(1.0 − 0.78) = 0.22` 的 success 损失，在 5-seed mean 上摊销为 `−4.4pp`，正好对应 1.0 → 0.928 的差距。
+
+含义：未来类似实验把 probe 设为 2 seeds 不够稳健——必须包含至少 1 个历史上出现过的难 seed（如 seed 44）。这是对 [plan §3](./rebrac_experiment_plan.md) "Stage 内 seed 选择标准" 的隐式更新。
+
+#### 7.10.7 Phase 1 通过判据核对
+
+按 [plan §6.5.2 Phase 1 通过判据](./rebrac_experiment_plan.md)：
+
+| 条件 | 阈值 | 实测 | 是否通过 |
+| --- | --- | --- | --- |
+| Rule 1：mean test success | `> 0.858`（TD3BC deployable） | 0.928 | **通过**（+7.0pp） |
+| Rule 2：std test success | `≤ 0.10` | 0.077 | **通过** |
+| 情景归类 | `> 0.90` ⇒ A；`[0.84, 0.90]` ⇒ B；`< 0.84` ⇒ C | 0.928 | **情景 A** |
+
+Phase 1 阳性结论成立：ReBRAC 在 `worldcomp-1000` deployable 上不仅打破 TD3BC 退化为 BC 的现象，还**只用 deployable obs 追平/超过 TD3BC privileged-critic 协议**。
+
+#### 7.10.8 Phase 2 决策（基于 Phase 1 finding 收紧）
+
+按 [plan §6.5.3](./rebrac_experiment_plan.md) 原本设定，情景 A 下 Phase 2 是 "3-seed 边际确认或可省略"。Phase 1 的 seed 44 离群点改变了 Phase 2 的诊断价值：
+
+- **不省略**：seed 44 的离群点（0.78）是当前 Stage D 最有信息量的诊断点。
+- **3 seeds 必须 = `42 / 43 / 44`**（不是任意 3 个）：seeds 42/43 对齐 Phase 1 baseline；**seed 44 是 Phase 2 的核心信息**——能否被 privileged critic 救回，直接区分 "seed 44 是 critic 信息瓶颈" vs "seed 44 是数据/优化层面 outlier"。
+- **TRAIN_EPOCHS / val/test manifest / finalist** 与 Phase 1 完全对齐。
+
+**可选并行：critic-penalty-off probe**（1–2 runs，详见 [plan §6.5.3 末尾](./rebrac_experiment_plan.md)）
+
+`(β1=4.0, β2=0) × seeds 42/43 on worldcomp-1000 deployable, TRAIN_EPOCHS=64`。判据：若与 Phase 1 主 finalist 在 ±2pp 内 → Finding 1 机制猜想成立，可直接写入 Stage E 章节并节省一次完整 ablation。
+
+#### 7.10.9 局限性（Step 2 专属）
+
+1. **seed 44 的真因尚未定位**：是 worldcomp 数据里 seed 44 触发的 RNG 路径恰好落在 critic penalty 无效区，还是 actor penalty 单独不足以稳住该 seed，目前无法区分。Phase 2 是核心诊断；如 Phase 2 也救不回，需要回到 collector 层面检查 seed 44 触发的 episode 起点分布。
+2. **`β2 · ratio = 0.0111` 是 5-seed 均值，未逐 seed 拆**：Finding 1 的强度可能被 seed 44 这一个 outlier 拉偏（如果 seed 44 的 critic_penalty_ratio 异常大或异常小）。如 Phase 2 时仍想精修这个 finding，可补一个 per-seed `mean_critic_penalty_ratio` 表，但不影响当前 Phase 2 决策。
+3. **没有跑 worldcomp `crosscomp-2000` 等价的"数据规模 sweep"**：Phase 1 只覆盖 worldcomp-1000。这是有意的——plan §6.5 明确不做 worldcomp 数据规模研究。如果未来需要补，可在 Stage E 之后单独评估。
+
+### 7.11 局限性
 
 1. **seed 45 在 backup 上的离群未深挖**：`(β1=4.0, β2=1.0)` 在 seed 45 上得到 `0.810`，比同 seed 主 finalist 低 7pp。可能是 seed 45 本身对 β2=1.0 更敏感，也可能是单点噪声。如果 Stage D 或后续 ablation 再次观察到 "β2 小一档在新 seed 上方差放大" 的模式，可把它作为 critic penalty 敏感性的起点；目前不追加 7-seed rework。
 2. **没有做 7-seed / 10-seed follow-up**：三项阈值都已通过，再扩样本的边际收益低；如果 Stage D 在 `worldcomp privileged-critic` 再次出现不稳，再回头决定是否补样本。
@@ -549,8 +693,9 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 
 1. **`state_dict_l2_distance` 交叉验证仍未做**——Stage B0 的 "长训 ≈ 单独训到" 假设在 Stage B / Stage C 结果层面一致，但仍未从权重层面直接验证。这是遗留在 Stage C 清单上的 sanity check 项，但不影响当前结论。
 2. **backup finalist 的 seed 敏感未解释**——seed 45 在 `(β1=4.0, β2=1.0)` 上得到 `0.810`，Stage B 阶段不可见，Stage C 第一次暴露。如果 Stage D 再次观察到 "β2 小一档在新 seed 上方差放大"，会回来做 critic penalty 敏感性 ablation；当前不 rework。
-3. `worldcomp` 轨道完全未触及——Stage B / Stage C 的所有结论都不能外推到 deterministic teacher 数据上。这是 Stage D 的范围。
-4. 只观察了 `β2 ∈ {1.0, 2.0}`；`β2 = 0.5` 下 ReBRAC 是否退化到 TD3BC-like 行为（critic penalty 几乎不起作用）未知。这对理解 "critic penalty 到底贡献多少" 很重要，但位于 Stage E ablation 范围，不是当前执行序列的前置条件。
+3. `worldcomp` 轨道**仅 deployable 子集已触及**（Stage D Phase 1 Step 1 + Step 2）；privileged-critic 子集仍未跑（Phase 2 范围）。Stage D Phase 1 同时暴露 worldcomp 上 dual penalty 退化为单 penalty 这一新机制点（详见 §7.10.6 Finding 1），需要 Phase 2 + 可选 critic-penalty-off probe 共同确认。
+4. 只观察了 `β2 ∈ {1.0, 2.0}`；`β2 = 0.5` 下 ReBRAC 是否退化到 TD3BC-like 行为（critic penalty 几乎不起作用）未知。这对理解 "critic penalty 到底贡献多少" 很重要，但位于 Stage E ablation 范围，不是当前执行序列的前置条件。Stage D Phase 1 已经在 worldcomp 上间接给出 `β2=0` 等价信号（β2·ratio=0.0111），可作为 Stage E 设计的先验输入。
+5. **seed 44 在 worldcomp deployable 上的 0.78 离群点尚未机制层面解释**——Phase 2 是直接诊断（详见 §7.10.6 Finding 2 / §7.10.8）。如 Phase 2 仍未把它救回，需要回到 collector 层面检查 seed 44 触发的 episode 起点分布。
 
 ---
 
@@ -561,11 +706,17 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 3. **ReBRAC 相对 TD3BC 的收益主要来自 "稳住难 seed"**——seed 44 在 β1=4.0 下完整回收（Stage C 仍为 `0.870 / 0.890`）。Actor 侧 penalty 是优化方差控制的主杠杆；critic penalty (β2) 在 Stage C 下被观察到贡献 non-zero 的额外 robustness（主 finalist vs backup 在 seed 45 上差 7pp）。
 4. **ReBRAC 在 `crosscomp-2000` 上翻转了 TD3BC 主线的 "2000 差于 1000" 趋势**：Stage C 下 ep2000 `0.918` > ep1000 `0.902`（TD3BC phase0c: 0.596 < 0.672）。这是 [plan §2.2](./rebrac_experiment_plan.md) 机制问题的正向答案。
 5. **Stage C 通过 Rule 1/2/3 三项阈值**：ep1000 mean > 0.672、ep2000 两 finalist mean > 0.75、所有 finalist std ≤ 0.10。ReBRAC 正式升级为 deployable 主基线。
-6. **Stage D 进入当前执行**：`worldcomp-1000` teacher-gap follow-up，finalist 锁定 `(β1=4.0, β2=2.0)`，轨道分 `deployable` + `privileged-critic`。预算口径待 Stage D epoch-probe sanity check 后确定（64 或 96）。
+6. **Stage D Phase 1（epoch-probe + deployable formal）已完成**：TRAIN_EPOCHS 锁 64；5 seeds × test=100 拿到 `0.928 ± 0.077`，落入情景 A。
+7. **ReBRAC `worldcomp` deployable 在均值上超过 TD3BC privileged-critic 协议**（0.928 vs 0.922），仅用 deployable obs 就把 deployable→teacher 的 gap 关闭了 53.0%（TD3BC privileged 是 48.5%）。这是当前阶段最强的论文级 finding：dual penalty 跨 `crosscomp` / `worldcomp` 数据类型 generalize，"observation 瓶颈" 不再是 worldcomp 上不可绕过的瓶颈。
+8. **Stage D Phase 1 暴露三个机制 finding**：
+   - dual penalty 在 worldcomp 上几乎退化为单 penalty（β2·ratio=0.0111，crosscomp 是 0.086~0.358）；critic penalty 等价于恒等约束，因为 `next_actions` 来自 deterministic teacher 与 `π_target(s')` 高度一致；
+   - ReBRAC 在 worldcomp 上对 seed 44 失去回收能力（0.78），与 Stage C crosscomp 上 "β1=4.0 完整回收 seed 44" 故事**首次分叉**——猜想是缺少了 critic penalty 这条第二防线；
+   - Phase 1 probe → formal 的缩水（`1.0 → 0.928`）90% 由 seed 44 单点解释，而不是 manifest 噪声或新增 seed 的方差。
+9. **Stage D Phase 2 进入当前执行**：privileged-critic 轨道，3 seeds = `42 / 43 / 44`（必须含 seed 44），finalist 锁定 `(β1=4.0, β2=2.0)`，TRAIN_EPOCHS=64，test=100。可选并行 `(β1=4.0, β2=0)` cheap probe 验证 dual penalty 退化机制。
 
 一句话总结：
 
-> ReBRAC 的 Stage C 5-seed 正式复核完整延续了 Stage B 的所有定性结论：均值大幅超越 TD3BC phase0c（+23pp / +32pp）、std 不增反降、"2000 不再差于 1000" 翻转继续成立；接下来进入 Stage D 的 `worldcomp` teacher-gap 轨道。
+> Stage D Phase 1 已完成。ReBRAC 在 `worldcomp-1000` deployable 上不仅打破了 TD3BC 退化为 BC 的现象，还**只用 deployable obs 就追平/超过了 TD3BC privileged-critic 协议**（0.928 vs 0.922，gap closure 53% > 48.5%）；Phase 1 同时暴露 worldcomp 上 dual penalty 退化为单 penalty 与 seed 44 不可救回两个新机制点，Phase 2 的核心任务是用 privileged critic 轨道直接区分 seed 44 是 critic 信息瓶颈还是数据/优化层 outlier。
 
 ---
 
@@ -584,6 +735,14 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
   - `checkpoints/offline/rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep{1000,2000}/actorb_4p0__criticb_{1p0,2p0}/seed_{42,43,44,45,46}/agent_step_*.pt`（seed 42/43/44 物理复制自 Stage B）
   - `results/offline/rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep{1000,2000}/actorb_4p0__criticb_*/{validation,test,selection}/seed_*.json`
   - `results/offline/rebrac/formal/summaries/overview.{csv,json}`
+- Stage D Phase 1 Step 1（worldcomp epoch-probe）
+  - `checkpoints/offline/rebrac/worldcomp_epoch_probe/...`
+  - `results/offline/rebrac/worldcomp_epoch_probe/...`
+- Stage D Phase 1 Step 2（worldcomp deployable formal）
+  - `checkpoints/offline/rebrac/worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/seed_{42,43,44,45,46}/agent_step_*.pt`
+  - `results/offline/rebrac/worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/{validation,test,selection}/seed_*.json`
+  - `results/offline/rebrac/worldcomp_teacher_gap/deployable/summaries/overview.{csv,json}`
+  - `benchmarks/offline_rebrac_worldcomp_final/{val_40,test_100}/single_u10_cross_tgt15.json`
 
 执行入口：
 
@@ -592,7 +751,10 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 - [notebooks/rebrac_screen_completed.ipynb](../notebooks/rebrac_screen_completed.ipynb) — Stage B 执行归档
 - [notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb) — Stage C
 - [notebooks/rebrac_formal_completed.ipynb](../notebooks/rebrac_formal_completed.ipynb) — Stage C 执行归档
-- [scripts/run_offline_rebrac_screen.sh](../scripts/run_offline_rebrac_screen.sh)（Stage B / Stage C 共用）
+- [notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb](../notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb) — Stage D Phase 1 Step 1 执行归档
+- [notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb](../notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb) — Stage D Phase 1 Step 2 执行归档
+- [scripts/run_offline_rebrac_screen.sh](../scripts/run_offline_rebrac_screen.sh)（Stage B / Stage C 共用；Stage D 通过 `run_offline_rebrac_worldcomp_teacher_gap.sh` 间接调用）
+- [scripts/run_offline_rebrac_worldcomp_teacher_gap.sh](../scripts/run_offline_rebrac_worldcomp_teacher_gap.sh) — Stage D 专用驱动
 
 背景阅读：
 

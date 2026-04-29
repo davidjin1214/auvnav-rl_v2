@@ -1,6 +1,6 @@
 # ReBRAC 实验报告
 
-> 文档版本：2026-04-29 rev.5
+> 文档版本：2026-04-29 rev.6
 > 文档定位：这是 ReBRAC 阶段所有已经**实际跑完**的实验的统一结果报告。与 [rebrac_experiment_plan.md](./rebrac_experiment_plan.md) 不同，本文只写 "跑了什么 / 看到了什么 / 意味着什么"，不讨论尚未执行的计划。
 > 阅读建议：先读 [rebrac_experiment_plan.md](./rebrac_experiment_plan.md) §1-§5 理解动机与口径，再回到这里看已有结果。
 
@@ -8,7 +8,7 @@
 
 ## 1. 报告概述
 
-本文档整理 `results/offline/rebrac/` 下已经完成的全部 ReBRAC 实验，并把每一组实验的结论并入一条完整的 "主线解释" 里。当前（`rev.5`）包含的实验包为：
+本文档整理 `results/offline/rebrac/` 下已经完成的全部 ReBRAC 实验，并把每一组实验的结论并入一条完整的 "主线解释" 里。当前（`rev.6`）包含的实验包为：
 
 - `screening_epoch_probe`（Stage B0，训练预算 probe）
 - `screening`（Stage B，最小 screening —— 3×2 penalty 网格 × 2 datasets × 3 seeds）
@@ -17,8 +17,9 @@
 - `worldcomp_teacher_gap/deployable`（Stage D Phase 1 Step 2，5 seeds × 64 epoch × test=100）
 - `worldcomp_teacher_gap/privileged_critic`（Stage D Phase 2，3 seeds × 64 epoch × test=100）
 - `worldcomp_critic_penalty_off_probe`（Stage D Phase 1 Finding 1 验证 probe，2 seeds × 64 epoch × test=100）
+- `stage_e_critic_penalty_off`（Stage E (a)，crosscomp-1000 critic-penalty-off cross-dataset 二次验证，5 seeds × 64 epoch × test=100）**当前执行**
 
-Stage D 三个阶段（Phase 1 + Phase 2 + critic-penalty-off probe）现已**全部完成**。后续实验（Stage E 收口范围）会在本文档内续写对应章节，不再分散到独立文件中。
+Stage D 已全部完成；Stage E 按 [plan rev.6 §6.6](./rebrac_experiment_plan.md) 收紧后只剩两个 track，(a) 当前执行，(b) seed 44 collector inspection 推迟（Phase 2 假设 A 已成立，降级为 root-cause sanity）。Stage E (a) 完成后视为 ReBRAC 主线收口。
 
 本文档要回答的核心问题与 [rebrac_experiment_plan.md §2](./rebrac_experiment_plan.md) 一致：
 
@@ -106,7 +107,7 @@ ReBRAC 实现约定见 [rebrac_experiment_plan.md §5](./rebrac_experiment_plan.
 
 ## 4. 实验矩阵回顾
 
-截至 `rev.5`：
+截至 `rev.6`：
 
 | 实验包 | 编号 | 状态 | 入口 |
 | --- | --- | --- | --- |
@@ -115,8 +116,10 @@ ReBRAC 实现约定见 [rebrac_experiment_plan.md §5](./rebrac_experiment_plan.
 | 正式 5-seed 确认 | Stage C | 已完成 | [notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb) |
 | Stage D Phase 1 Step 1（worldcomp epoch-probe） | Stage D / Phase 1 | 已完成 | [notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb](../notebooks/rebrac_worldcomp_epoch_probe_completed.ipynb) |
 | Stage D Phase 1 Step 2（worldcomp deployable formal） | Stage D / Phase 1 | 已完成 | [notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb](../notebooks/rebrac_worldcomp_phase1_deployable_completed.ipynb) |
-| Stage D Phase 2（worldcomp privileged-critic） | Stage D / Phase 2 | **已完成**（4 / 4 判据通过） | [notebooks/rebrac_worldcomp_phase2_privileged_completed.ipynb](../notebooks/rebrac_worldcomp_phase2_privileged_completed.ipynb) |
-| Stage D — critic-penalty-off probe | Stage D / Finding 1 验证 | **已完成**（落入情形 B） | [notebooks/rebrac_worldcomp_critic_penalty_off_probe_completed.ipynb](../notebooks/rebrac_worldcomp_critic_penalty_off_probe_completed.ipynb) |
+| Stage D Phase 2（worldcomp privileged-critic） | Stage D / Phase 2 | 已完成（4 / 4 判据通过） | [notebooks/rebrac_worldcomp_phase2_privileged_completed.ipynb](../notebooks/rebrac_worldcomp_phase2_privileged_completed.ipynb) |
+| Stage D — critic-penalty-off probe | Stage D / Finding 1 验证 | 已完成（落入情形 B） | [notebooks/rebrac_worldcomp_critic_penalty_off_probe_completed.ipynb](../notebooks/rebrac_worldcomp_critic_penalty_off_probe_completed.ipynb) |
+| Stage E (a)（crosscomp-1000 critic-penalty-off） | Stage E / cross-dataset 验证 | **当前执行** | [notebooks/rebrac_stage_e_critic_penalty_off_crosscomp.ipynb](../notebooks/rebrac_stage_e_critic_penalty_off_crosscomp.ipynb) |
+| Stage E (b)（seed 44 collector 起点 inspection） | Stage E / root-cause sanity | 推迟（Phase 2 假设 A 已成立） | — |
 
 ---
 

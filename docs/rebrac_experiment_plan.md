@@ -1,6 +1,6 @@
 # ReBRAC 实验计划
 
-> 文档版本：2026-04-29 rev.5
+> 文档版本：2026-04-29 rev.6
 > 适用范围：当前仓库中已完成实现的 ReBRAC 离线主线，以及它与 `phase0c / worldcomp teacher-gap` 结论之间的衔接
 > 当前前提：请先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)、[td3bc_mainline_closure_plan.md](./td3bc_mainline_closure_plan.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)、[td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
 
@@ -613,22 +613,63 @@ Phase 1 Step 2 暴露的关键机制 finding 是 **β2·ratio = 0.0111**（cross
 - `β2 · mean_critic_penalty_ratio` 在 `worldcomp` 数据上是否仍然落在 "<1.0 健康区"（若显著高于 `crosscomp` 上的 0.086~0.358，要回查 `worldcomp` 数据 `mean_target_q` 的尺度差异）；
 - 训练后期 25% 窗口的 `mean_critic_penalty` 是否在 `worldcomp` 上明显高于 `crosscomp`——这一指标如果异常大，是 "ReBRAC 的 next_actions target 在 noisy teacher 下不再代表 in-distribution action" 的直接诊断信号。
 
-## 6.6 Stage E：必要时的最小 ablation
+## 6.6 Stage E：收口 ablation `【当前执行 — Stage E (a) 进行中；(b) 推迟至 Phase 2 假设 A 复检需要时】`
 
-如果 ReBRAC 有正信号，但解释还不够清楚，建议只做最小机制消融，而不是大扫网格。
+> rev.6 修订（2026-04-29）：原 rev.4 的"3 项最小机制消融（full / critic-penalty-off / normalize_q-off）" 已被 Phase 2 + critic-penalty-off probe 显著收紧。Phase 2 的"privileged ≈ deployable"二阶 finding 削弱了 normalize_q-off 的优先级（actor BC penalty 主导），critic-penalty-off probe 已经把方向钉死。Stage E 在 rev.6 中只剩两个 track：
 
-优先级建议：
+### 6.6.1 Stage E (a) — `crosscomp-1000` critic-penalty-off cross-dataset 二次验证 `【当前执行】`
 
-1. `full ReBRAC`
-2. `critic penalty off`
-3. `normalize_q off`
+**目的**：把 [report §7.13](./rebrac_experiment_report.md) 在 worldcomp 上做的 critic-penalty-off probe 扩展到 crosscomp，回答 Finding 1 修正版（"对 mean 贡献小但非零，对 Q 稳定性大且必要"）是否跨 dataset 成立。
 
-这三组足够回答两个关键问题：
+**配置**：
 
-- dual penalty 里的 critic 侧约束是否真的重要；
-- Q normalization 是否是当前收益的重要组成部分。
+- 算法 / 协议：ReBRAC deployable（与 Stage C 主 finalist 完全对齐，仅 β2 不同）；
+- 超参：`(β1=4.0, β2=0)`；
+- dataset：`crosscomp-1000`；
+- seeds：`42 / 43 / 44 / 45 / 46`（5 seeds，与 Stage C 完全对齐）；
+- TRAIN_EPOCHS=64，val=40，test=100；
+- val/test manifests 复用 Stage C `benchmarks/offline_rebrac_screen/`；
+- 输出隔离到 `results/offline/rebrac/stage_e_critic_penalty_off/`。
 
-不建议一开始就把 actor/critic LayerNorm、网络深度、dropout 等全部摊开做全因子实验。
+**判定区间**（与 Stage D probe 对齐）：
+
+| 情形 | mean_test_success | 解读 |
+| --- | --- | --- |
+| **A** 几乎一致 | `0.882 ~ 0.922`（Stage C ± 2pp） | dual penalty 在 crosscomp 上也几乎可省 → Finding 1 跨 dataset 成立；Stage E 收口 |
+| **B** 略有下降 | `0.85 ~ 0.88` | 与 worldcomp probe 量级一致；Finding 1 修正版跨 dataset 成立 |
+| **C** 显著下降 | `< 0.85` | crosscomp 与 worldcomp 不同，Finding 1 需在 dataset 维度上分别表述 |
+
+**核心诊断量**：`mean_target_q` 跳升幅度（worldcomp probe 是 +46%，15.22 → 22.30）。这才是 critic penalty 真正的作用渠道，比 mean success 更基础。
+
+**预算**：5 runs × 1 finalist × 64 epoch × test=100，≈ Stage C 主 finalist 的一半（仅 1 dataset）。
+
+**入口**：[notebooks/rebrac_stage_e_critic_penalty_off_crosscomp.ipynb](../notebooks/rebrac_stage_e_critic_penalty_off_crosscomp.ipynb)
+
+**驱动**：复用 `scripts/run_offline_rebrac_screen.sh`，单 config 覆盖（`ACTOR_PENALTY_COEFS=4.0`, `CRITIC_PENALTY_COEFS=0.0`）。
+
+### 6.6.2 Stage E (b) — seed 44 collector 起点分布 inspection `【推迟】`
+
+**当前状态**：Phase 2 假设 A 已成立（critic 信息瓶颈是 seed 44 outlier 的真因），(b) 从 fallback 触发条件降级为"已知机制 + 未做 root-cause sanity"，不阻塞结论。
+
+**触发恢复条件**（Stage E (a) 完成后再决策）：
+
+- 触发条件 1：Stage E (a) 落入情形 C（crosscomp 上 critic penalty 影响远大于 worldcomp）；
+- 触发条件 2：seed 44 在 Stage E (a) 上 < 0.85（critic penalty 在 crosscomp 上对 seed 44 也是必需 → 与 Phase 2 假设 A 闭环加固）；
+- 触发条件 3：论文 review 反馈"想看 seed 44 outlier 的 root cause 而非仅 critic 信息层面解释"。
+
+**如果触发**：分析维度建议——
+
+1. **per-seed 早期训练 batch 触达的 episode 子集**：在 `shuffle_no_replacement` 下，每个训练 seed 决定首个 epoch 内 batch 抽样到的 episode 顺序。比较 seed 44 的前 ~1k batch 触达的 episode 子集与其它 seed 的差异。
+2. **首批触达 episode 的起点分布**：用 `transitions.npz` 内的 `done` 列重建 episode 边界，看 seed 44 早期触达 episode 的初始 (x, y, ψ, U_flow) 是否系统性偏向某种困难起点（如距 goal 远、流场方向不利）。
+3. **首批 batch 的 Q-target 估计偏差**：把 seed 44 / seed 42 的首 ~5k 步 critic_loss / mean_target_q 的逐步序列画出来，对比是否在某个 batch 边界处 Q 估计开始发散。
+
+**预算**：纯分析脚本，无需训练，~30 分钟（一次性）。
+
+### 6.6.3 不再做的事
+
+- ~~`normalize_q off` 5-seed 完整 ablation~~：被 Phase 2 二阶 finding（actor BC penalty 主导）削弱优先级；除非 Stage E (a) 出现意外，不再列入主线；
+- ~~3 项消融全因子（full / critic-off / normalize_off）~~：rev.4 原计划，已被 rev.6 收紧；
+- ~~LayerNorm / dropout / 网络容量扫~~：rev.4 已经明确不做，维持。
 
 ---
 
@@ -725,7 +766,10 @@ checkpoint 与超参选择规则不改，继续使用：
    - 关键 finding：`β2·ratio=0.0111`，dual penalty 在 worldcomp 上几乎退化为单 penalty；seed 44 在 deployable 上掉到 0.78，是 Phase 2 最有信息量的诊断点。详见 §6.5.2。
 6. **Stage D Phase 2**（**已完成**）：privileged-critic 轨道，3 seeds = `42 / 43 / 44`（含 seed 44），finalist `(β1=4.0, β2=2.0)`，TRAIN_EPOCHS=64，test=100 → `mean=0.9267, std=0.025`，4 条判据全部通过；二阶 finding：privileged ≈ deployable（Δ -0.1pp），seed 44 独立救回 +12pp（0.78 → 0.90），假设 A 成立（critic 信息瓶颈是 seed 44 outlier 的真因）。详见 §6.5.3 + [report §7.12](./rebrac_experiment_report.md)。
 6'. **critic-penalty-off probe**（**已完成**）：`(β1=4.0, β2=0) × seeds 42/43` on worldcomp-1000 deployable → `mean=0.910, std=0.014`，落入**情形 B**；同 seeds 比 Phase 1 -5.0pp。关键 evidence：`mean_target_q` 从 15.22 跳到 22.30（+46%）。**Finding 1 部分被证伪**："β2·ratio 小"不等于"critic penalty 贡献为零"——critic penalty 仍在显著抑制 Q 高估。详见 §6.5.3 + [report §7.13](./rebrac_experiment_report.md)。
-7. **Stage E** 决策：probe 已经把 critic-penalty-off 的方向钉死（5pp 量级 mean drop + 大幅 Q 高估），不能仅凭 probe 收口；但 Phase 2 的 "privileged ≈ deployable" 削弱了 normalize_q-off 的优先级（actor BC penalty 已主导）。建议范围收紧为：(a) `(β1=4.0, β2=0) × 5 seeds × test=100` 在 crosscomp-1000 上做"是否在 normal regime 下也只是 5pp 量级 drop"的对照（与 worldcomp probe 形成 cross-dataset finding 1 的二次验证）；(b) seed 44 collector 起点分布检查（沿用假设 B 的 fallback 触发条件）。Stage E 不再做 dual penalty / normalize_q 全因子扫。
+7. **Stage E（当前执行）**：按 §6.6 收紧后的两轨设计：
+   - **(a) crosscomp-1000 critic-penalty-off cross-dataset 二次验证**（**当前执行**）：5 seeds × `(β1=4.0, β2=0)` × test=100，复用 Stage C manifests + 离线数据；目的是验证 Finding 1 修正版（"对 mean 贡献小但非零，对 Q 稳定性大且必要"）跨 dataset 成立。入口 [notebooks/rebrac_stage_e_critic_penalty_off_crosscomp.ipynb](../notebooks/rebrac_stage_e_critic_penalty_off_crosscomp.ipynb)。
+   - **(b) seed 44 collector 起点分布 inspection**（**推迟**）：Phase 2 假设 A 已成立，(b) 降级为 root-cause sanity，不阻塞结论；触发恢复条件见 §6.6.2。
+8. **不再做的事**（rev.6 明确删除）：normalize_q-off 5-seed ablation、3 项全因子消融、LayerNorm/dropout/网络容量扫。Stage E (a) 完成后视为 ReBRAC 主线收口。
 
 ---
 

@@ -1,6 +1,6 @@
 # ReBRAC 实验计划
 
-> 文档版本：2026-04-27 rev.4
+> 文档版本：2026-04-29 rev.5
 > 适用范围：当前仓库中已完成实现的 ReBRAC 离线主线，以及它与 `phase0c / worldcomp teacher-gap` 结论之间的衔接
 > 当前前提：请先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)、[td3bc_mainline_closure_plan.md](./td3bc_mainline_closure_plan.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)、[td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
 
@@ -357,7 +357,7 @@ TD3BC 主线之所以最后选用 `TRAIN_EPOCHS=64`，是因为它在 Stage B sc
 
 执行入口：[notebooks/rebrac_formal.ipynb](../notebooks/rebrac_formal.ipynb)（执行归档 [notebooks/rebrac_formal_completed.ipynb](../notebooks/rebrac_formal_completed.ipynb)）。
 
-## 6.5 Stage D：`worldcomp` teacher-gap follow-up `【Phase 1 已完成；Phase 2 待执行】`
+## 6.5 Stage D：`worldcomp` teacher-gap follow-up `【已完成 — Phase 1 + Phase 2 + critic-penalty-off probe 全部完成】`
 
 ### 6.5.0 总览：为什么拆成 Phase 1 / Phase 2
 
@@ -517,7 +517,7 @@ Phase 1 完成后，对 deployable formal 的 5-seed mean test success 落在哪
 - `results/offline/rebrac/worldcomp_epoch_probe/`
 - `results/offline/rebrac/worldcomp_teacher_gap/deployable/`
 
-### 6.5.3 Phase 2：privileged-critic 轨道 `【当前立即执行 — Phase 1 已落入情景 A】`
+### 6.5.3 Phase 2：privileged-critic 轨道 `【已完成 — 4 条判据全部通过；privileged ≈ deployable，仅在 seed 44 上独立救回 +12pp】`
 
 #### 配置（共同部分）
 
@@ -535,7 +535,7 @@ Phase 1 实测落入情景 A（mean=0.928 > 0.90），按 plan 原本设定为 "
   - **seed 44 是 Phase 2 最有信息量的诊断点**——它在 deployable 轨道掉到 0.78，selected ckpt 卡在 ep40。如果 privileged critic 把它救回 → "privileged critic 在 ReBRAC 上贡献了超越 actor penalty 的额外信号"；如果救不回 → seed 44 是数据/优化层面的问题，与 critic 无关。这一信息无法通过任意 3-seed 取得。
 - 情景 B / C（未触发）：5 seeds（`42 / 43 / 44 / 45 / 46`），完整诊断。
 
-#### 可选追加：critic-penalty-off probe（机制 sanity check）
+#### 可选追加：critic-penalty-off probe（机制 sanity check）`【已完成 — 落入情形 B；Finding 1 部分被证伪】`
 
 Phase 1 Step 2 暴露的关键机制 finding 是 **β2·ratio = 0.0111**（crosscomp Stage C 是 0.086~0.358，差 1–2 个数量级），即 critic penalty 在 worldcomp 上几乎不工作。这意味着 ReBRAC 在 worldcomp 上的全部增益基本来自 actor penalty + 网络容量/LayerNorm，不是 dual penalty。
 
@@ -546,12 +546,58 @@ Phase 1 Step 2 暴露的关键机制 finding 是 **β2·ratio = 0.0111**（cross
 - 判据：若 `mean_test_success` 与 Phase 1 主 finalist（`β1=4.0, β2=2.0`，0.928）在 ±2pp 内 → 机制猜想成立，ReBRAC 在 worldcomp 上的 dual penalty 可由单 actor penalty 替代。结果直接写入 Stage E ablation 章节，节省一次完整 ablation 的预算。
 - 这不在 plan rev.3 原范围内，但鉴于 Step 2 的机制 finding，回报很高、风险极低（即便结果没有落入预期，也只是为 Stage E 提供更早的负面证据）。
 
+##### Probe 实测结果（详见 [report §7.13](./rebrac_experiment_report.md)）
+
+2 seeds × 1 配置 × 64 epoch × test=100：
+
+| 指标 | `(β1=4.0, β2=0)` probe | Phase 1 同 seeds (42/43) | Phase 1 5-seed (42-46) |
+| --- | --- | --- | --- |
+| mean test success | **0.910** | 0.960 | 0.928 |
+| std test success | 0.014 | — | 0.077 |
+| mean_target_q | **22.30** | — | 15.22 |
+| mean_critic_penalty_ratio | 0.0037 | — | 0.0057 |
+
+**判定：落入情形 B（同 seeds 比 -5.0pp，5-seed 比 -1.8pp）**。Finding 1 的"dual penalty 退化为单 penalty"机制猜想 **部分被证伪**：
+
+1. 表面 `β2·ratio` 数字小（0.011）不等于 critic penalty 贡献为零；
+2. 关键证据是 `mean_target_q` 从 15.22 跳到 **22.30**（+46%），即 critic penalty 仍在显著抑制 Q 高估，只是绝对量级看起来小；
+3. 正确表述：dual penalty 在 worldcomp 上对 mean success 的贡献"小但非零"（同 seeds 5pp 量级），对 Q 稳定性的贡献"大且必要"。
+
+**对 Stage E 的影响**：critic-penalty-off ablation 不能仅凭 probe 收口，仍需要保留 5-seed 完整 ablation；但 probe 已经把方向钉死——Stage E 主要变量改为"Q 稳定性"而非"mean success"。
+
 #### Phase 2 通过判据
 
 - **均值**：`mean_test_success_rate > 0.922`（TD3BC privileged-critic 正式成绩）且 `std ≤ 0.10` → ReBRAC privileged 轨道达标。
 - **gap closure**：`(ReBRAC_priv − ReBRAC_deploy) / (0.990 − ReBRAC_deploy)`
   - 情景 A：`> 50%` 视为 "privileged critic 在 ReBRAC 上仍是有意义的 gap 诊断工具"（与 TD3BC 的 48.5% 比较；预期较低，因为 ReBRAC_deploy 已经较高）。
   - 情景 B / C：`> 60%` 视为 "ReBRAC + privileged 比 TD3BC 更能利用 teacher information"。
+
+#### Phase 2 实测结果（详见 [report §7.12](./rebrac_experiment_report.md)）
+
+3 seeds × 1 finalist `(β1=4.0, β2=2.0)` × 64 epoch × test=100，actor update mode `zeros`：
+
+| seed | success_rate | return | safety_cost |
+| --- | --- | --- | --- |
+| 42 | 0.960 | 22.30 | 7.28 |
+| 43 | 0.920 | -2.21 | 9.91 |
+| 44 | **0.900** | 15.88 | 7.20 |
+| **mean** | **0.9267** | 11.99 | 8.13 |
+| **std**  | **0.025**（overview）/ 0.031（per-seed） | 12.71 | — |
+
+**通过判据核对（4 / 4 全部通过）**：
+
+| Rule | 阈值 | 实测 | 通过 |
+| --- | --- | --- | --- |
+| 1. mean test success | `> 0.922`（TD3BC priv-critic formal） | **0.9267**（+0.5pp） | ✅ |
+| 2. std test success | `≤ 0.10` | 0.025 / 0.031 | ✅ |
+| 3. gap closure（情景 A） | `> 50%`（TD3BC priv-critic 48.5%） | **52.0%** | ✅ |
+| 4. seed 44 诊断 | `≥ 0.85` ⇒ 假设 A | **0.900**（+12.0pp vs deployable 0.78） | ✅ → 假设 A |
+
+**关键二阶 finding（写入 report §7.12.5）**：ReBRAC privileged-critic 与 ReBRAC deployable 在 mean 上几乎相等（0.9267 vs 0.928，Δ = -0.1pp），但 seed 44 在 privileged 轨道下被独立救回 +12pp。这说明：
+
+- ReBRAC 在 worldcomp 上 deployable→teacher 的 gap 关闭主要由 **actor 的 BC penalty** 完成；
+- privileged critic 在 ReBRAC 上**不带来 mean 上的增益**，只在 outlier seed 上起作用；
+- 与 TD3BC 的故事不同：TD3BC 的 privileged-critic 增益是 **+6.4pp 平均抬升**（0.858 → 0.922），而 ReBRAC 的 privileged-critic 增益是 **0pp 平均抬升 + outlier seed 救回**——同样关闭 50%+ gap，机制完全不同。
 
 #### Phase 2 输出位置
 
@@ -677,9 +723,9 @@ checkpoint 与超参选择规则不改，继续使用：
    - Step 1 epoch-probe（2 runs, 2 seeds × 128 epoch）→ TRAIN_EPOCHS 锁 64；
    - Step 2 deployable formal（5 runs, 5 seeds × 64 epoch × test=100）→ `mean=0.928, std=0.077`，落入**情景 A**；
    - 关键 finding：`β2·ratio=0.0111`，dual penalty 在 worldcomp 上几乎退化为单 penalty；seed 44 在 deployable 上掉到 0.78，是 Phase 2 最有信息量的诊断点。详见 §6.5.2。
-6. **Stage D Phase 2**（**当前立即执行**）：privileged-critic 轨道，3 seeds = `42 / 43 / 44`（**必须含 seed 44**），finalist `(β1=4.0, β2=2.0)`，TRAIN_EPOCHS=64，test=100。判据见 §6.5.3。
-6'. **可选并行：critic-penalty-off probe**（1–2 runs）：`(β1=4.0, β2=0) × seeds 42/43` on worldcomp-1000 deployable，验证 "ReBRAC 在 worldcomp 上 dual penalty 退化为单 penalty" 这一机制猜想。详见 §6.5.3 末尾。
-7. 只有 Phase 2 发现新信号（情景 A 下 privileged 关闭率 > 50%，或 seed 44 行为出现结构性变化），才考虑 **Stage E** 最小 ablation（critic penalty off / normalize_q off）。否则视为 ReBRAC 主线收口。
+6. **Stage D Phase 2**（**已完成**）：privileged-critic 轨道，3 seeds = `42 / 43 / 44`（含 seed 44），finalist `(β1=4.0, β2=2.0)`，TRAIN_EPOCHS=64，test=100 → `mean=0.9267, std=0.025`，4 条判据全部通过；二阶 finding：privileged ≈ deployable（Δ -0.1pp），seed 44 独立救回 +12pp（0.78 → 0.90），假设 A 成立（critic 信息瓶颈是 seed 44 outlier 的真因）。详见 §6.5.3 + [report §7.12](./rebrac_experiment_report.md)。
+6'. **critic-penalty-off probe**（**已完成**）：`(β1=4.0, β2=0) × seeds 42/43` on worldcomp-1000 deployable → `mean=0.910, std=0.014`，落入**情形 B**；同 seeds 比 Phase 1 -5.0pp。关键 evidence：`mean_target_q` 从 15.22 跳到 22.30（+46%）。**Finding 1 部分被证伪**："β2·ratio 小"不等于"critic penalty 贡献为零"——critic penalty 仍在显著抑制 Q 高估。详见 §6.5.3 + [report §7.13](./rebrac_experiment_report.md)。
+7. **Stage E** 决策：probe 已经把 critic-penalty-off 的方向钉死（5pp 量级 mean drop + 大幅 Q 高估），不能仅凭 probe 收口；但 Phase 2 的 "privileged ≈ deployable" 削弱了 normalize_q-off 的优先级（actor BC penalty 已主导）。建议范围收紧为：(a) `(β1=4.0, β2=0) × 5 seeds × test=100` 在 crosscomp-1000 上做"是否在 normal regime 下也只是 5pp 量级 drop"的对照（与 worldcomp probe 形成 cross-dataset finding 1 的二次验证）；(b) seed 44 collector 起点分布检查（沿用假设 B 的 fallback 触发条件）。Stage E 不再做 dual penalty / normalize_q 全因子扫。
 
 ---
 

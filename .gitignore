@@ -72,6 +72,10 @@ figures/
 events.out.tfevents.*
 figs/
 
+# Paper figures (override above) — paper/figures/ is part of paper deliverable
+!paper/figures/
+!paper/figures/**
+
 # Temp files
 tmp/
 temp/

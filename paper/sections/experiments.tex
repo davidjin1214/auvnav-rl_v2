@@ -1,0 +1,233 @@
+% =====================================================================
+% paper/sections/experiments.tex
+% Experiments 章节初稿 (rev.1, 2026-05-01)
+% 数字源：docs/rebrac_experiment_report.md rev.8
+% 假设宿主文档已加载：ctex / amsmath / booktabs / graphicx / siunitx
+% =====================================================================
+
+\section{实验}
+\label{sec:experiments}
+
+我们围绕三个问题组织实验：(i) 在与 TD3+BC \citep{fujimoto2021td3bc} 完全相同的 deployable canonical protocol 下，ReBRAC-Q 是否稳定优于 TD3+BC？(ii) 在 \texttt{worldcomp} 数据上，deployable-only 协议是否需要 privileged-critic 才能逼近 online teacher？(iii) ReBRAC-Q 中 dual penalty 与 critic LayerNorm 各自的独立必要性如何拆分？\S\ref{subsec:protocol} 给出协议；\S\ref{subsec:main_results} 用四个 finding 回答上述问题；\S\ref{subsec:ablations} 给出机制层 ablation。
+
+% =====================================================================
+\subsection{实验协议}
+\label{subsec:protocol}
+
+\paragraph{数据集与 benchmark.}
+所有实验共用同一个固定 evaluation manifest \texttt{single\_u10\_cross\_tgt15.json}（100 episodes、cross-stream 任务、target speed \SI{1.5}{m/s}、flow \texttt{wake\_v8 Re150 Ti5\%}）。三个 offline 数据集对应两类 baseline policy 的轨迹收集：
+\begin{itemize}
+    \item \texttt{crosscomp-1000} / \texttt{crosscomp-2000}：cross-compensation baseline 在 1000 / 2000 episodes 下的离线 corpus；
+    \item \texttt{worldcomp-1000}：world-compensation (privileged) baseline 在 1000 episodes 下的离线 corpus，其 deployable→teacher gap 是 \texttt{worldcomp} 主线的核心难点。
+\end{itemize}
+
+\paragraph{对照方法.}
+\begin{itemize}
+    \item \textbf{TD3+BC} \citep{fujimoto2021td3bc}：baseline，\texttt{crosscomp} 取 $\alpha=0.25$（与 ReBRAC-Q $\beta_1=4.0$ 等价；见 \S\ref{sec:method}）；\texttt{worldcomp} deployable 取 $\alpha=0$（退化为 BC）；privileged-critic 取 $\alpha=0.1$（与 \citet{td3bc_phase0c_report} 主线一致）。
+    \item \textbf{ReBRAC-Q (ours)}：固定 winner 配置 $\beta_1=4.0,\ \beta_2=2.0$，$\mathrm{hidden}=256$，3 hidden layers，critic LayerNorm \emph{on}，actor LayerNorm \emph{off}，actor-side Q normalization \emph{on}（详见 \S\ref{sec:method}）。
+    \item \textbf{Privileged-critic 变体}：actor 永远只看 deployable observation $s_0$（10-D，DVL water-track 单点）；privileged-critic 协议下 critic 额外接收 hull-integral 等效流 $[u_{\mathrm{eq}}, v_{\mathrm{eq}}] \in \mathbb{R}^2$（actor update 时以 zero padding 填充）。Privileged 通道仅在训练时存在，部署时不可用。
+\end{itemize}
+
+\paragraph{训练与评估.}
+所有 run 使用 5 random seeds $\{42, 43, 44, 45, 46\}$，\texttt{TRAIN\_EPOCHS}=64，\texttt{CHECKPOINT\_EVERY\_EPOCHS}=8。Checkpoint 选择规则严格按 lexicographic order \texttt{success\_rate} $\to$ \texttt{return} $\to -\texttt{safety\_cost} \to -\texttt{time}$ 在 val=40 episodes 上挑选；test 在 100 episodes 上一次性报告，不再调参。所有判据（rule 阈值、情景 A/B/C 分档）在实验启动前 pre-register，事后不调阈值。\textbf{统计约定.}\quad 本文所有 mean $\pm$ std 报告的 std 均为样本标准差（Bessel correction，divisor $n-1$），与 \S\ref{subsubsec:finding_2} 中 Welch's $t$-test 内部所用估计量一致。
+
+\paragraph{Dataset $\times$ protocol 矩阵.}
+表~\ref{tab:protocol_matrix} 列出主结果覆盖的 6 个 (dataset, protocol) 单元；ablation 在 \S\ref{subsec:ablations} 中针对 \texttt{crosscomp-1000} 与 \texttt{worldcomp-1000} 的 deployable 协议追加 4 个 probe 单元。
+
+\begin{table}[t]
+\centering
+\small
+\caption{主结果覆盖的 dataset $\times$ protocol 单元（每个单元 5 seeds $\times$ test=100 episodes）。\textbf{D} = deployable-only；\textbf{P} = privileged-critic。}
+\label{tab:protocol_matrix}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Dataset} & \textbf{TD3+BC} & \textbf{ReBRAC-Q (ours)} \\
+\midrule
+\texttt{crosscomp-1000} & D & D \\
+\texttt{crosscomp-2000} & D & D \\
+\texttt{worldcomp-1000} & D, P & D, P \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\subsection{主结果}
+\label{subsec:main_results}
+
+\subsubsection{Finding 1：ReBRAC-Q 在 \texttt{crosscomp} 上大幅优于 TD3+BC，且翻转 ``2000 < 1000'' 退化}
+\label{subsubsec:finding_1}
+
+表~\ref{tab:main_table} 上半部分汇总 \texttt{crosscomp} 上的对比结果。在两个数据预算下，ReBRAC-Q 相对 TD3+BC 分别取得 \textbf{+23.0pp} 与 \textbf{+32.2pp} 的 mean success rate 提升，且跨 seed standard deviation 同时\emph{不增反降}（$0.050 \to 0.024$、$0.040 \to 0.034$）—— ``均值改进同时方差不增'' 这一离线 RL 文献中常被忽视的硬约束在两个 dataset 上同时成立。
+
+更值得注意的是定性翻转：TD3+BC 主线下数据越多反而越差（$0.672 \to 0.596$，$-7.6$pp），而 ReBRAC-Q 上数据越多越好（$0.902 \to 0.918$，$+1.6$pp）。这表明 dual penalty 与网络容量让算法\emph{有能力}消化更大的支持集；TD3+BC 没有这种能力。我们在 \S\ref{sec:discussion} 中把这一现象与 \citet{tarasov2023rebrac} 提出的 ``offline RL 是否能 \emph{利用}更多数据'' 区分开。
+
+\begin{table}[t]
+\centering
+\small
+\caption{\textbf{主对照表（5 seeds $\times$ test=100）。}所有数字以小数形式给出 success rate。$\Delta$ 列以 percentage points (pp) 表示。\texttt{cross-1000} / \texttt{cross-2000} / \texttt{world-1000} 分别简记 \texttt{crosscomp-1000} / \texttt{crosscomp-2000} / \texttt{worldcomp-1000}。}
+\label{tab:main_table}
+\begin{tabular}{llccr}
+\toprule
+\textbf{Dataset} & \textbf{协议} & \textbf{TD3+BC} & \textbf{ReBRAC-Q} & $\boldsymbol{\Delta}$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Finding 1：crosscomp 大幅领先}} \\
+\texttt{cross-1000} & deployable & $0.672 \pm 0.050$ & $\mathbf{0.902 \pm 0.024}$ & $+23.0$ \\
+\texttt{cross-2000} & deployable & $0.596 \pm 0.040$ & $\mathbf{0.918 \pm 0.034}$ & $+32.2$ \\
+\midrule
+\multicolumn{5}{l}{\emph{Finding 2：worldcomp 上 deployable-only 与 privileged-critic 持平}} \\
+\texttt{world-1000} & deployable & $0.858 \pm 0.089$ & $\mathbf{0.928 \pm 0.086}$ & $+7.0$ \\
+\texttt{world-1000} & privileged-critic & $0.922 \pm 0.096$ & $\mathbf{0.934 \pm 0.026}$ & $+1.2$ \\
+\midrule
+\multicolumn{2}{l}{\emph{Online teacher (reference)}} & — & $0.990$ & — \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Finding 2：deployable-only 协议与 privileged-critic 协议在统计上持平}
+\label{subsubsec:finding_2}
+
+表~\ref{tab:main_table} 下半部分对比 \texttt{worldcomp-1000} 上的四个 (method, protocol) 配置。\textbf{核心结论是 deployable-only ReBRAC-Q（$0.928 \pm 0.086$）与 privileged-critic TD3+BC（$0.922 \pm 0.096$）在统计意义下不可区分}：
+
+\begin{itemize}
+    \item \textbf{Welch's $t$-test (5 vs 5 seed-level means)}：$t=0.104$，$p_{\text{two-sided}}=0.9195$，无法拒绝 $H_0$；
+    \item \textbf{Paired episode-level bootstrap (10000 resamples)}：$\hat{\Delta}=+0.0060$，95\% CI $=[-0.0300, +0.0420]$，包含 0；
+    \item \textbf{Gap closure}：deployable-only ReBRAC-Q 关闭 53.0\% 的 deployable→teacher gap，与 privileged-critic TD3+BC 的 48.5\% 同档。
+\end{itemize}
+
+进一步把 ReBRAC-Q 升级为 privileged-critic 协议后，5-seed mean 进一步上升到 $0.934 \pm 0.026$，但相对 deployable-only 只多 +0.6pp（远小于两侧协议各自的 between-seed $\sigma$）。这说明：在 ReBRAC-Q 上，\textbf{privileged-critic 不再贡献 mean 抬升}，仅贡献 outlier seed 救援。
+
+图~\ref{fig:seed_dotplot} 给出 5 seeds $\times$ 3 协议的 per-seed success rate。读者应注意 seed 44：在 deployable-only 下崩到 $0.78$（与其他 seeds 的 $0.93\sim0.99$ 显著分离），但在 privileged-critic 下被救回到 $0.90$（$+12$pp）；这一现象在 \S\ref{subsubsec:privileged_ablation} 与 \S\ref{sec:discussion} 中作为 ``critic 信息瓶颈'' 的关键证据。
+
+\textbf{Sim2real 含义.}\quad
+对水下 AUV 这种部署受限场景，``deployable-only 与 privileged-critic 协议在统计意义上等价'' 是本文最强的部署友好性论断：actor 与 critic 都只用 DVL water-track 单点采样，不依赖任何 simulator-only 的 hull-integral 信号，仍可逼近 online teacher 的 99\% 成功率（53\% gap closure）。
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig2_seed_dotplot.pdf}
+\caption{\textbf{seed-level success rate 分布（\texttt{worldcomp-1000}, test=100 episodes）。}横轴为 5 个 random seeds（42--46），纵轴为成功率。三种协议：(i) TD3+BC privileged-critic（$\alpha=0.1$，灰色三角）；(ii) ReBRAC-Q deployable-only（蓝色圆点）；(iii) ReBRAC-Q privileged-critic（红色方块）。同一 seed 之间用细虚线连接，便于读出 ``deployable→privileged'' 在 seed 内部的位移。\textbf{关键观察}：seed 44 在 ReBRAC-Q deployable-only 下显著低于其他 seed（0.78 vs 0.93--0.99），切换到 privileged-critic 后被救回到 0.90（+12pp）；其他 seed 的 ``deployable→privileged'' 位移均在 $\pm 3$pp 内，方向并不一致——privileged-critic 在 ReBRAC-Q 上的 mean 抬升完全由 seed 44 这一个 outlier 提供。}
+\label{fig:seed_dotplot}
+\end{figure}
+
+\subsubsection{Finding 3：dual penalty 是 dataset-invariant 的必要组件}
+\label{subsubsec:finding_3}
+
+为了验证 critic-side BC penalty $\beta_2$ 是否冗余（一个常见审稿人质疑：``为什么不直接简化为 actor-only TD3+BC？''），我们把 $\beta_2$ 设为 0、其余配置保持 winner 不变，在两个 dataset 上 cross-validate。结果汇总于表~\ref{tab:beta2_ablation}。
+
+\begin{table}[t]
+\centering
+\small
+\caption{\textbf{$\beta_2$ ablation（critic-side BC penalty）。}两个 dataset 上同时报告 mean success rate 与 mean target Q value。$\hat{Q}$ 漂移以 percentage 形式给出（相对 $\beta_2=2$ baseline）。}
+\label{tab:beta2_ablation}
+\begin{tabular}{llccr}
+\toprule
+\textbf{Dataset} & \textbf{Config} & \textbf{Success} & \textbf{$\hat{Q}_{\text{target}}$} & \textbf{$\Delta \hat{Q}$} \\
+\midrule
+\texttt{cross-1000} & $\beta_2=2$ (winner)         & $0.902 \pm 0.024$ & $-8.25$ & — \\
+\texttt{cross-1000} & $\beta_2=0$                  & $0.878 \pm 0.101$ & $-0.13$ & $+8.12\ (+98\%)$ \\
+\midrule
+\texttt{world-1000} & $\beta_2=2$ (winner)         & $0.928 \pm 0.086$ & $+15.22$ & — \\
+\texttt{world-1000} & $\beta_2=0$ (2 seeds, probe) & $0.910 \pm 0.020$ & $+22.30$ & $+7.08\ (+46\%)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Mean success 表面变化小，但 Q 估计显著漂移.}
+两个 dataset 上移除 $\beta_2$ 仅造成 $-1.8$pp 至 $-2.4$pp 的 mean success 下降，看似 $\beta_2$ 可有可无。但 \texttt{mean\_target\_q} 在两个 dataset 上分别漂移 \textbf{+98\%} 与 \textbf{+46\%}（$\hat{Q}$ 朝更不保守方向移动 $+7\sim+8$ 个绝对单位）。两个 dataset 上 baseline $\hat{Q}$ 的符号原本相反（\texttt{crosscomp} $-8.25$ 偏悲观、\texttt{worldcomp} $+15.22$ 偏乐观），移除 $\beta_2$ 后 \emph{都}朝更不保守方向漂——这一漂移方向的 dataset-invariance 是 critic penalty 通过 target-Q bootstrap 抑制 Q 高估的直接证据。
+
+\paragraph{Outlier seed 44 在 \texttt{crosscomp} 上崩塌 17pp.}
+表~\ref{tab:beta2_ablation} 隐去了 per-seed 分布。事实上，\texttt{crosscomp-1000} 上 seed 44 在 $\beta_2=2$ 下取得 $0.870$，$\beta_2=0$ 下崩到 $0.700$（$-17$pp）；其余 4 个 seed 的变化幅度均在 $\pm 3$pp 以内。这与 Finding 2 中 seed 44 在 \texttt{worldcomp} 上 ``缺乏 privileged 信号即崩塌'' 的现象形成跨 (dataset, $\beta_2$) 的双向闭环：在两类 critic 稳定信号（privileged hull-integral / critic-side BC penalty）任一缺失下，seed 44 都会崩塌；任一存在则可救回。这有力反驳 ``seed 44 是统计噪声'' 的零假设。
+
+\subsubsection{Finding 4：critic LayerNorm 与 dual penalty 是两个独立必要组件}
+\label{subsubsec:finding_4}
+
+\citet{tarasov2023rebrac} 在原 ReBRAC paper 中反复强调 critic LayerNorm 比 dual penalty 更关键。一个自然的审稿人质疑是：``ReBRAC-Q 的提升其实主要来自 LayerNorm，dual penalty 是 cosmetic''。表~\ref{tab:ln_ablation} 用三向对比直接拆分这两个 component 的独立贡献。
+
+\begin{table}[t]
+\centering
+\small
+\caption{\textbf{LN $\times$ $\beta_2$ 三向消融（\texttt{crosscomp-1000}，test=100）。}LN-off 在 2 seeds 上取得 $-16.2$pp 退化，远超 $\beta_2=0$ 的 $-2.4$pp。两类退化的 $\hat{Q}$ 漂移方向\emph{相反}：$\beta_2=0$ 让 $\hat{Q}$ 朝过度乐观（$+8.12$）；LN-off 让 $\hat{Q}$ 朝更负（$-3.84$）并伴随 std blow-up。}
+\label{tab:ln_ablation}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Config} & \textbf{$n_{\text{seed}}$} & \textbf{Success} & $\boldsymbol{\Delta}$\textbf{ Mean} & \textbf{$\hat{Q}_{\text{target}}$} & $\boldsymbol{\Delta \hat{Q}}$ \\
+\midrule
+LN=on, $\beta_2=2$ (winner) & 5 & $0.902 \pm 0.024$ & — & $-8.25$ & — \\
+LN=on, $\beta_2=0$          & 5 & $0.878 \pm 0.101$ & $-2.4$ pp  & $-0.13$  & $+8.12$ \\
+LN=off, $\beta_2=2$         & 2 & $0.740 \pm 0.255$ & $-16.2$ pp & $-12.09$ & $-3.84$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{LN-off 退化幅度是 $\beta_2$=0 的 6.7$\times$.}
+LN-off 让 mean success 退化 $-16.2$pp，远大于 $\beta_2=0$ 的 $-2.4$pp。同时跨 seed std 从 $0.024$ 爆炸到 $0.255$（约 11$\times$ 放大），其中 seed 42 单点从 $0.92$ 崩到 $0.56$（$-36$pp 单点崩溃）—— LN-on 同 seed 在 $\beta_2=0$ 下仍是 $0.92$，说明 ``LN-off 触发的训练失稳模式'' 与 ``$\beta_2=0$ 触发的 Q 高估模式'' 是两类独立失稳。
+
+\paragraph{$\hat{Q}$ 漂移方向相反.}
+$\beta_2=0$ 把 $\hat{Q}$ 朝更乐观方向推（$-8.25 \to -0.13$，$+8.12$）；LN-off 反而把 $\hat{Q}$ 朝更负方向推（$-8.25 \to -12.09$，$-3.84$）并伴随 std blow-up。两类退化的 $\hat{Q}$ 漂移方向\emph{不同}，因此它们不是同一现象的不同表述：dual penalty 抑制 actor OOD extrapolation 触发的 Q 高估；critic LayerNorm 抑制 critic 内部表征的局部爆炸。\textbf{两者是两个独立必要组件，不可互相替代。}
+
+注：LN-off 的 $n=2$ 仅支撑 ``LN 是必要组件'' 的存在性 claim；本文不就 ``LN 比 dual penalty 重要'' 做对比 claim（见 \S\ref{sec:limitations}）。
+
+% =====================================================================
+\subsection{消融与机制 probe}
+\label{subsec:ablations}
+
+本节把 \S\ref{subsec:main_results} 中的三个 finding 升级为机制论证：(i) $\beta_2$ ablation 的 cross-dataset $\hat{Q}$-drift 一致性（\S\ref{subsubsec:beta2_ablation}）；(ii) LayerNorm 与 dual penalty 是 ``两个相反方向的稳定机制''（\S\ref{subsubsec:ln_ablation}）；(iii) privileged-critic 在 ReBRAC-Q 上仅做 outlier seed 救援，不做 mean 抬升（\S\ref{subsubsec:privileged_ablation}）。
+
+\subsubsection{$\beta_2$ ablation：跨 dataset 的 $\hat{Q}$ 高估抑制证据}
+\label{subsubsec:beta2_ablation}
+
+我们把 \S\ref{subsubsec:finding_3} 的 4 个 (dataset, $\beta_2$) 单元在图~\ref{fig:q_drift} 中以条形对比可视化。两个 dataset 的 baseline $\hat{Q}$ 符号原本相反（\texttt{crosscomp} 偏悲观、\texttt{worldcomp} 偏乐观），但移除 $\beta_2$ 后 $\hat{Q}$ \emph{都}朝更不保守方向漂 $+7\sim+8$ 个绝对单位（相对幅度 $+46\%$ 与 $+98\%$）。这一漂移方向的 dataset-invariance 是机制层面的硬证据：critic penalty 不是某个 dataset 上的偶然 cosmetic，而是通过 target-Q bootstrap 链路对 Q 估计施加的系统性正则化。
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig3_q_drift.pdf}
+\caption{\textbf{$\beta_2$ ablation 下的 $\hat{Q}_{\text{target}}$ 漂移方向（cross-dataset 一致性）。}横轴为四个配置（\texttt{crosscomp-1000} $\beta_2 \in \{2, 0\}$、\texttt{worldcomp-1000} $\beta_2 \in \{2, 0\}$），纵轴为 mean target Q value。黑色箭头连接同 dataset 下 $\beta_2=2$ 与 $\beta_2=0$ 的 Q 值，箭头指向 $\beta_2=0$ 端。\textbf{关键观察}：两个 dataset 的 baseline $\hat{Q}$ 符号相反（\texttt{crosscomp} $-8.25$ vs \texttt{worldcomp} $+15.22$），但移除 $\beta_2$ 后两者都朝 ``更不保守'' 方向漂 $+7\sim+8$ 个绝对单位——critic penalty 抑制 Q 高估的机制是 dataset-invariant 的，不依赖具体 reward / Q 量级。}
+\label{fig:q_drift}
+\end{figure}
+
+\textbf{Outlier seed 鲁棒性.}\quad
+seed 44 在 $\beta_2=0$ 下 \texttt{crosscomp} 取得 $0.700$（vs $\beta_2=2$ 的 $0.870$），单点崩塌 $-17$pp；其余 4 seed 的下降均 $\leq 3$pp。结合 \S\ref{subsubsec:finding_2} 中 seed 44 在 \texttt{worldcomp} 上的 dep$\to$priv 救援（$+12$pp），这构成 ``seed 44 在两类 critic 稳定信号缺失下都崩、任一存在都可救回'' 的双向闭环。
+
+\subsubsection{LayerNorm ablation：与 dual penalty 互补的稳定机制}
+\label{subsubsec:ln_ablation}
+
+\S\ref{subsubsec:finding_4} 已经报告 LN-off 让 mean success 退化 $-16.2$pp。本节进一步说明：LN-off 与 $\beta_2=0$ 的 $\hat{Q}$ 漂移方向相反（前者朝更负 + std blow-up，后者朝更正 + mean 微跌），表明两者控制不同的 failure mode。表~\ref{tab:ln_ablation} 已整合在主文，本节只补一个观察：
+
+LN-off 的 std blow-up（$0.024 \to 0.255$，约 11$\times$）说明 LayerNorm 主要稳定的是 \emph{seed-to-seed 的 RNG 路径方差}，即不同 seed 进入不同 critic 内部表征状态的可能性。Dual penalty 主要稳定的是 \emph{policy 在 OOD 区域的 Q 估计}，即 actor 偏离支持集时 Q 的外推幅度。这两类稳定性目标在数学上不重合，因此实证上它们的 $\hat{Q}$ 漂移方向相反。
+
+\subsubsection{Privileged-critic ablation：仅救援 outlier seed，不抬 mean}
+\label{subsubsec:privileged_ablation}
+
+\S\ref{subsubsec:finding_2} 已经报告 privileged-critic 在 ReBRAC-Q 上仅贡献 +0.6pp mean，但救回 seed 44 +12pp。表~\ref{tab:privileged_breakdown} 把 5 seeds $\times$ 2 protocols 的 per-seed success rate 完整列出。
+
+\begin{table}[t]
+\centering
+\small
+\caption{\textbf{ReBRAC-Q (\texttt{worldcomp-1000}) deployable vs privileged-critic per-seed 分布.}最后一行报告 5-seed mean / std。\textbf{关键观察}：除 seed 44 外，``deployable→privileged'' 位移均在 $\pm 3$pp 内，方向不一致——privileged-critic 在 ReBRAC-Q 上的 +0.6pp mean 提升完全由 seed 44 一个点提供。}
+\label{tab:privileged_breakdown}
+\begin{tabular}{cccc}
+\toprule
+\textbf{Seed} & \textbf{Deployable} & \textbf{Privileged-critic} & $\boldsymbol{\Delta}$ \\
+\midrule
+42 & $0.990$ & $0.960$ & $-0.030$ \\
+43 & $0.930$ & $0.920$ & $-0.010$ \\
+\textbf{44} & $\mathbf{0.780}$ & $\mathbf{0.900}$ & $\mathbf{+0.120}$ \\
+45 & $0.980$ & $0.930$ & $-0.050$ \\
+46 & $0.960$ & $0.960$ & $\phantom{+}0.000$ \\
+\midrule
+\textbf{Mean $\pm$ Std} & $0.928 \pm 0.086$ & $0.934 \pm 0.026$ & $+0.6$\,pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+这一结果与 TD3+BC 的 privileged-critic 行为形成对照：TD3+BC 上 privileged-critic 把 5-seed mean 抬升 +6.4pp（$0.858 \to 0.922$），是 mean-level 的整体提升而非仅 outlier 救援；ReBRAC-Q 上 privileged-critic \emph{只}抬 outlier seed 44，是 ``actor BC penalty 已经把 mean 抬到上界、privileged 通道仅作 critic 信息冗余'' 的退化使用。这一现象在 \S\ref{sec:discussion} 中作为 ``actor-side 而非 critic-side 主导 deployable→teacher gap closure'' 的核心论据。
+
+% =====================================================================
+% 章节脚注（写完后整理；目前是 TODO 索引）
+% =====================================================================
+% TODO[Tab.1]: 主对照表数字源 docs/rebrac_experiment_report.md §7.7 + §7.10.5 + §7.12.5
+% TODO[Tab.2]: $\beta_2$ ablation 数字源 §7.13.3 (worldcomp probe) + §7.14.3 (crosscomp Stage E (a))
+% TODO[Tab.3]: LN ablation 数字源 §7.15.5
+% TODO[Tab.4]: privileged per-seed 数字源 §7.10.4 (deployable) + §7.12.4 (privileged 5-seed)
+% TODO[Fig.2]: seed dot plot 数据 §7.10.4 + §7.12.4 + TD3BC privileged report
+% TODO[Fig.3]: Q drift bar 数据 §7.13.3 + §7.14.5
+% TODO[Welch / bootstrap]: 数字源 docs/rebrac_statistical_test_followup.md

@@ -1,0 +1,134 @@
+% =====================================================================
+% paper/sections/method.tex
+% Method 章节初稿 (rev.1, 2026-05-01)
+% 数字源：docs/rebrac_method_section_draft.md（直接拷写 + LaTeX 化）
+% 配套 review §2.2.1 / §3.1.D；β1 ↔ TD3+BC α 等价关系拷自 method draft §4
+% 假设宿主已加载：ctex / amsmath / amssymb / booktabs / graphicx
+% =====================================================================
+
+\section{方法：Q-normalized dual-penalty TD3+BC variant}
+\label{sec:method}
+
+\subsection{算法名称与定位}
+\label{subsec:method_naming}
+
+我们把本文的离线 RL 算法记为 \textbf{Q-normalized dual-penalty TD3+BC variant}（别名 \textbf{ReBRAC-Q}）。其实现路径如下：在 \citet{fujimoto2021td3bc} 提出的 TD3+BC actor loss 形式（确定性策略梯度项被 batch-mean $|Q|$ 归一化；详见 \S\ref{subsec:method_actor_loss}）之上，叠加 \citet{tarasov2023rebrac} 在 ReBRAC 中提出的 minimal recipe —— actor / critic 双侧 BC penalty 与 critic LayerNorm。
+
+\textbf{关键诚信声明.}\quad ReBRAC-Q \emph{不是}原版 ReBRAC 的复刻：\citet{tarasov2023rebrac} 原版 actor 不做 Q normalization。因此本文给出的 $\beta_1, \beta_2$ 数值与 \citet{tarasov2023rebrac} 的同名超参\textbf{不可直接对比}。我们在 \S\ref{subsec:method_diff} 给出与原版 ReBRAC 的逐项对比表，并在 \S\ref{subsec:method_td3bc_relation} 给出与 TD3+BC 的等价关系（$\beta_1 = 4.0 \leftrightarrow \alpha_{\text{TD3+BC}} \approx 0.25$）。文中所有数值超参对比仅在我们自行训练、协议一致的 TD3+BC baseline 之间进行。
+
+\subsection{Actor loss}
+\label{subsec:method_actor_loss}
+
+设 $\pi_\theta(s)$ 为确定性 actor，$Q_\phi(s, a)$ 为 twin-critic 取最小后的输出。对每个 mini-batch $\mathcal{B} = \{(s, a)\}$ 抽自 offline buffer，定义 batch-level 的 detached $|Q|$ 标量
+\begin{equation}
+\bar{Q} \;:=\; \mathrm{mean}_{(s, \cdot) \in \mathcal{B}}\,\bigl|Q_\phi\bigl(s,\, \pi_\theta(s)\bigr)\bigr|.\mathrm{detach}(),
+\label{eq:qbar_def}
+\end{equation}
+以及 Q-normalization 系数
+\begin{equation}
+\lambda \;=\; \frac{1}{\max(\bar{Q},\,\varepsilon)},\qquad \varepsilon = 10^{-6}.
+\label{eq:lambda_def}
+\end{equation}
+$\bar{Q}$ 参与 forward 但不回传梯度（``$.\mathrm{detach}()$''）；$\varepsilon$ 给 $\bar{Q}$ 设下界，防止训练早期 $\bar{Q} \to 0$ 时 $\lambda$ 数值爆炸（实现等价：``$|Q|.\mathrm{abs}().\mathrm{mean}().\mathrm{detach}().\mathrm{clamp\_min}(\varepsilon).\mathrm{reciprocal}()$''）。
+
+Actor loss 为：
+\begin{equation}
+\mathcal{L}_{\mathrm{actor}}(\theta)
+\;=\; -\,\lambda \cdot \mathbb{E}_{(s, \cdot) \sim \mathcal{B}}\Bigl[\,Q_\phi\bigl(s,\, \pi_\theta(s)\bigr)\,\Bigr]
+\;+\; \beta_1 \cdot \mathbb{E}_{(s, a) \sim \mathcal{B}}\Bigl[\,\bigl\|\pi_\theta(s) - a\bigr\|^2\,\Bigr].
+\label{eq:actor_loss}
+\end{equation}
+第一项是 Q-normalized 的确定性策略梯度项；第二项是 BC penalty，在状态 $s$ 上把 actor 输出 anchor 到行为策略采样过的动作 $a$。
+
+\subsection{Critic loss}
+\label{subsec:method_critic_loss}
+
+Critic 端继承 ReBRAC 的双侧惩罚结构。对 transition $(s, a, r, s')$ 与 twin critic $Q_{\phi_1}, Q_{\phi_2}$、target actor $\pi_{\bar\theta}$、target critic $Q_{\bar\phi_1}, Q_{\bar\phi_2}$，按 TD3 风格构造 next-action target：
+\begin{equation}
+a' \;=\; \pi_{\bar\theta}(s') + \mathrm{clip}\bigl(\eta,\, -c,\, c\bigr),\qquad \eta \sim \mathcal{N}(0,\sigma^2 \mathbf{I}),
+\label{eq:target_smoothing}
+\end{equation}
+\begin{equation}
+y(s, a, r, s') \;=\; r + \gamma\,(1 - d)\,\min_{j \in \{1,2\}} Q_{\bar\phi_j}(s', a'),
+\label{eq:bellman_target}
+\end{equation}
+其中 $d$ 为 episode 终止指示，$c$ 与 $\sigma$ 分别是 target smoothing 的截断与噪声标准差。Critic loss 为：
+\begin{equation}
+\mathcal{L}_{\mathrm{critic}}(\phi)
+\;=\; \mathbb{E}\Bigl[\,\bigl(Q_\phi(s, a) - y(s, a, r, s')\bigr)^2\,\Bigr]
+\;+\; \beta_2 \cdot \mathbb{E}\Bigl[\,\bigl\|a' - \pi_{\bar\theta}(s')\bigr\|^2\,\Bigr].
+\label{eq:critic_loss}
+\end{equation}
+其中 critic-side BC penalty $\beta_2 \cdot \|a' - \pi_{\bar\theta}(s')\|^2$ 是 ReBRAC 相较 TD3+BC 的核心改动；它通过 target-Q bootstrap 链路抑制 actor 在 OOD 区域的 Q 高估（\S\ref{subsubsec:finding_3} 给出 cross-dataset Q-drift 的实证）。
+
+\subsection{与原版 ReBRAC 的差异}
+\label{subsec:method_diff}
+
+表~\ref{tab:method_vs_rebrac} 逐行对比 ReBRAC-Q 与原版 ReBRAC \citep{tarasov2023rebrac}：唯一差异在 actor loss 第一项是否引入 $\lambda = 1/\max(\bar{Q},\varepsilon)$ 的归一化（参见 \eqref{eq:lambda_def}）；其他全部 component（actor/critic BC penalty 公式、critic LayerNorm、policy update frequency、TD3 target smoothing）逐项一致。
+
+\begin{table}[t]
+\centering
+\small
+\caption{ReBRAC-Q (本文) 与 \textbf{original ReBRAC} \citep{tarasov2023rebrac} 的逐组件对比。唯一差异在 actor 端 Q normalization。}
+\label{tab:method_vs_rebrac}
+\begin{tabular}{lll}
+\toprule
+\textbf{Component} & \textbf{Original ReBRAC} & \textbf{ReBRAC-Q (ours)} \\
+\midrule
+Actor $Q$ term scaling   & $-\,\mathbb{E}[Q]$（不归一化） & $-\,(1/\max(\bar{Q},\varepsilon))\cdot \mathbb{E}[Q]$ \\
+Actor BC penalty         & $\beta_1 \cdot \mathbb{E}\|\pi - a\|^2$ & 同左 \\
+Critic loss              & TD3 + $\beta_2 \cdot \mathbb{E}\|a' - \pi_{\bar\theta}(s')\|^2$ & 同左 \\
+Critic LayerNorm         & 默认 on & on (winner) \\
+Policy update frequency  & 每 2 次 critic update 更新一次 actor & 同左 \\
+Target smoothing         & next action 上加 clipped Gaussian 噪声 & 同左 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{与 TD3+BC 的等价关系}
+\label{subsec:method_td3bc_relation}
+
+\citet{fujimoto2021td3bc} 原版 TD3+BC actor loss 为：
+\begin{equation}
+\mathcal{L}_{\mathrm{actor}}^{\mathrm{TD3+BC}}(\theta)
+\;=\; -\,\lambda_{\mathrm{TD3+BC}} \cdot \mathbb{E}\bigl[Q_\phi(s, \pi_\theta(s))\bigr]
+\;+\; \mathbb{E}\bigl[\|\pi_\theta(s) - a\|^2\bigr],
+\quad \lambda_{\mathrm{TD3+BC}} = \frac{\alpha}{\bar{Q}}.
+\label{eq:td3bc_actor_loss}
+\end{equation}
+将本文 actor loss \eqref{eq:actor_loss} 整体除以 $\beta_1$ 得到等价的 BC-penalty-单位化形式：
+\begin{equation}
+\frac{\mathcal{L}_{\mathrm{actor}}}{\beta_1}
+\;=\; -\,\frac{1}{\beta_1 \cdot \max(\bar{Q},\,\varepsilon)} \cdot \mathbb{E}[Q]
+\;+\; \mathbb{E}\bigl[\|\pi - a\|^2\bigr].
+\label{eq:actor_loss_normalized}
+\end{equation}
+对照 \eqref{eq:td3bc_actor_loss} 与 \eqref{eq:actor_loss_normalized}，BC anchoring 强度的等价关系为：
+\begin{equation}
+\alpha_{\mathrm{TD3+BC}} \;\approx\; \frac{1}{\beta_1}.
+\label{eq:beta1_alpha_equiv}
+\end{equation}
+本文 winner 取 $\beta_1 = 4.0$，对应 $\alpha_{\mathrm{TD3+BC}} \approx 0.25$，恰好与我们在 \texttt{crosscomp} 数据上自行扫出的 TD3+BC baseline winner $\alpha = 0.25$ 重合（见 \S\ref{subsec:protocol}）。这一重合为 \S\ref{subsubsec:finding_1} 中报告的 \textbf{+23.0/+32.2pp} 跃升提供了 ``actor 端 BC anchor 强度等同、唯一改动是引入 critic-side 双侧惩罚'' 的纯净对照。
+
+ReBRAC-Q 相对 TD3+BC 的关键算法增量是：
+\begin{enumerate}
+    \item \textbf{Critic-side BC penalty} $\beta_2 \cdot \|a' - \pi_{\bar\theta}(s')\|^2$（\eqref{eq:critic_loss} 第二项）；
+    \item \textbf{Critic LayerNorm}（默认 on，与 \citet{tarasov2023rebrac} 一致）。
+\end{enumerate}
+两者的独立必要性分别由 \S\ref{subsubsec:finding_3} 与 \S\ref{subsubsec:finding_4} 实证。
+
+\subsection{实现注记（Implementation note）}
+\label{subsec:method_impl_note}
+
+\begin{quote}
+本文 actor loss 的实现保留了 TD3+BC 风格的 Q normalization $\lambda = 1/\max(\bar{Q},\varepsilon)$（参见 \eqref{eq:qbar_def}--\eqref{eq:lambda_def}）作用在确定性策略梯度项上。报告中 $\beta_1 = 4.0$ 是 BC penalty 的\emph{绝对}系数，对应我们超参网格 $\beta_1 \in \{1.0, 2.0, 4.0\}$ 中的最强 anchor 档；与 \citet{tarasov2023rebrac} 中同名超参的数值\textbf{不可直接对比}（\eqref{eq:beta1_alpha_equiv} 给出与 TD3+BC $\alpha$ 的等价换算）。本文所有数值超参对比仅在我们自行训练的 TD3+BC baseline 与本文 ReBRAC-Q 之间进行。
+\end{quote}
+
+\subsection{设计动机（why this variant）}
+\label{subsec:method_why}
+
+\begin{itemize}
+    \item \textbf{保留 Q normalization 的动机.}\quad 不同 dataset 的 $Q$ 量级差异显著（\texttt{worldcomp-1000} 上 $\mathrm{mean}\,Q \approx +15$、\texttt{crosscomp-1000} 上 $\mathrm{mean}\,Q \approx -8$，符号都相反）。引入 $\lambda = 1/\max(\bar{Q},\varepsilon)$ 让 actor 的 BC penalty 系数 $\beta_1$ 在 dataset 间可移植，避免每个 dataset 单独扫 $\beta_1$。
+    \item \textbf{引入 dual penalty 的动机.}\quad 在 \texttt{worldcomp} 与 \texttt{crosscomp} 上同时设置 $\beta_2 = 0$，会让 \texttt{mean\_target\_q} 分别漂 $+46\%$ 与 $+98\%$（\S\ref{subsubsec:finding_3}），且 seed 44 在 \texttt{crosscomp} 上单点崩塌 $-17$pp。Critic-side BC penalty 因此并非 cosmetic：它通过 target-Q bootstrap 抑制 actor 在 OOD 区域诱发的 Q 高估。
+    \item \textbf{综合效果.}\quad 我们能在 \texttt{worldcomp-1000} / \texttt{crosscomp-1000} / \texttt{crosscomp-2000} 三个 dataset 上报告\emph{同一份} winner 配置 $(\beta_1, \beta_2) = (4.0, 2.0)$；这一 dataset-invariance 性质在不带 Q normalization 的原版 ReBRAC 上不可达成（需要每个 dataset 单独 retune）。
+\end{itemize}

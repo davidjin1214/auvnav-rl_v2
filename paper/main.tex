@@ -1,0 +1,105 @@
+% =====================================================================
+% paper/main.tex
+% Paper main document framework (rev.1, 2026-05-01)
+% Title: Deployable-only Offline RL Closes the Privileged-Critic Gap
+%        on Underwater Wake Navigation
+% Algorithm: Q-normalized dual-penalty TD3+BC variant (alias: ReBRAC-Q)
+%
+% 默认假设：8-page CoRL/RA-L 风格双栏
+% 编译方式：
+%     latexmk -pdf -xelatex -interaction=nonstopmode -halt-on-error main.tex
+%   或：
+%     xelatex main.tex && bibtex main && xelatex main.tex && xelatex main.tex
+%
+% 当前状态：
+%   - sections/method.tex      ✅ 已写
+%   - sections/experiments.tex ✅ 已写
+%   - sections/intro.tex etc.  ⏳ 占位 \input 已注释；写完后取消注释即可
+%   - figures/output/*.pdf     ⏳ 由 figures/scripts/*.py 生成
+%   - bibliography             ⏳ refs.bib 占位（仅含 method/experiments 引用的 3 篇）
+% =====================================================================
+
+\documentclass[10pt, twocolumn]{article}
+
+% ---------- geometry / typography ----------
+\usepackage[margin=0.85in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+% 若使用 XeLaTeX/LuaLaTeX + 中文，启用以下两行；用 pdflatex 则注释掉：
+\usepackage{ctex}
+\usepackage{xeCJK}
+
+% ---------- math ----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+
+% ---------- floats / tables / figures ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{siunitx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\graphicspath{{figures/output/}}
+
+% ---------- references / hyperlinks ----------
+\usepackage[hidelinks, breaklinks=true]{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+
+% ---------- code / verbatim ----------
+\usepackage{verbatim}
+\usepackage{xcolor}
+
+% ---------- meta ----------
+\title{Deployable-only Offline RL Closes the Privileged-Critic Gap\\
+on Underwater Wake Navigation}
+\author{Anonymous Authors\\
+\textit{(submitted to CoRL / RA-L; double-blind)}}
+\date{}
+
+\begin{document}
+\maketitle
+
+% =====================================================================
+% Abstract（占位草稿；按 outline §0.3 narrative spine 收口）
+% =====================================================================
+\begin{abstract}
+我们在水下 AUV wake field 导航这一 sim2real 任务上，提出 \textbf{ReBRAC-Q}（一个 Q-normalized dual-penalty TD3+BC 变体），用部署友好的单点 DVL 水流测速（deployable-only）协议把离线策略性能拉到与 privileged-critic 协议\emph{统计意义上不可区分}的水平：在 \texttt{worldcomp-1000} 上 deployable-only ReBRAC-Q 取得 $0.928 \pm 0.077$ success rate，与 privileged-critic TD3+BC（$0.922 \pm 0.086$）的 Welch's $t$-test $p = 0.92$；在 \texttt{crosscomp} 上 ReBRAC-Q 比 TD3+BC 提升 \textbf{+23.0/+32.2pp}，且翻转 TD3+BC ``2000 < 1000'' 的 anti-scaling 退化。机制上，actor-side BC penalty 主导 mean uplift，critic-side BC penalty 不抬 mean 但通过 target-Q bootstrap 抑制 Q 高估、并对 outlier seed 提供 dataset-invariant 的稳定性；critic LayerNorm 与 dual penalty 是两个独立必要 component（LN-off 退化 $-16.2$pp、$\hat{Q}$ 漂移方向相反）。这一结果意味着，在水下 AUV 这种 deployable sensor 严格受限的部署设置下，离线 RL 可以不依赖任何 privileged simulator 信号就把性能逼近 online teacher。
+\end{abstract}
+
+% =====================================================================
+% Section bodies（写完后逐节取消注释）
+% =====================================================================
+
+% \input{sections/intro}        % §1 Introduction       — 待写 (D5)
+% \input{sections/related_work} % §2 Related Work       — 待写 (D6)
+% \input{sections/setup}        % §3 Problem Setup      — 待写 (D2)
+\input{sections/method}         % §4 Method             — ✅ rev.1
+\input{sections/experiments}    % §5 Experiments        — ✅ rev.1
+% \input{sections/discussion}   % §6 Mechanistic Disc.  — 待写 (D5)
+% \input{sections/limitations}  % §7 Limitations        — 待写 (D5)
+% \input{sections/conclusion}   % §8 Conclusion         — 待写 (D5)
+
+% =====================================================================
+% Bibliography
+% =====================================================================
+\bibliography{refs}
+
+% =====================================================================
+% Appendix（移到 supplementary 时把整段拷出去；当前留占位）
+% =====================================================================
+% \appendix
+% \input{sections/appendix_reproducibility}
+% \input{sections/appendix_hyperparams}
+% \input{sections/appendix_full_tables}
+% \input{sections/appendix_stats_tests}
+% \input{sections/appendix_method_derivations}
+
+\end{document}

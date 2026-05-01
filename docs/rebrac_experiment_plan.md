@@ -1,6 +1,6 @@
 # ReBRAC 实验计划
 
-> 文档版本：2026-05-01 rev.7
+> 文档版本：2026-05-01 rev.8
 > 适用范围：当前仓库中已完成实现的 ReBRAC 离线主线，以及它与 `phase0c / worldcomp teacher-gap` 结论之间的衔接
 > 当前前提：请先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)、[td3bc_mainline_closure_plan.md](./td3bc_mainline_closure_plan.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)、[td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
 
@@ -517,7 +517,9 @@ Phase 1 完成后，对 deployable formal 的 5-seed mean test success 落在哪
 - `results/offline/rebrac/worldcomp_epoch_probe/`
 - `results/offline/rebrac/worldcomp_teacher_gap/deployable/`
 
-### 6.5.3 Phase 2：privileged-critic 轨道 `【已完成 — 4 条判据全部通过；privileged ≈ deployable，仅在 seed 44 上独立救回 +12pp】`
+### 6.5.3 Phase 2：privileged-critic 轨道 `【已完成 — 5-seed 升级版 (rev.8)；4 条判据全部通过；privileged ≈ deployable，仅在 seed 44 上独立救回 +12pp】`
+
+> rev.8 修订（2026-05-01）：Phase 2 已从 3-seed 升级到 5-seed（补 seeds 45/46）。新结果 `mean = 0.9340, std = 0.0261`（与 3-seed 0.9267 ± 0.025 几乎不变），4/4 判据保持通过。**std 0.0261 严格低于 TD3BC priv 5-seed std 0.086**——可正式做 std 对比 claim。详见 [report §7.12](./rebrac_experiment_report.md) 与 [notebooks/rebrac_paper_followup_completed.ipynb §2](../notebooks/rebrac_paper_followup_completed.ipynb)。下方 3-seed 表保留作为 rev.7 历史记录；§ "Phase 2 实测结果" 段后补 5-seed 表。
 
 #### 配置（共同部分）
 
@@ -528,12 +530,16 @@ Phase 1 完成后，对 deployable formal 的 5-seed mean test success 落在哪
 
 #### 规模（由 Phase 1 情景决定）
 
+> rev.8（2026-05-01）：3-seed 已升级到 5-seed。下面 rev.7 的 3-seed 决策逻辑保留作为决策回溯；最终 Phase 2 是 5 seeds = `42 / 43 / 44 / 45 / 46`。
+
 Phase 1 实测落入情景 A（mean=0.928 > 0.90），按 plan 原本设定为 "3-seed 边际确认（或可省略）"。但 Phase 1 暴露的 seed 44 离群点（`0.78`）改变了 Phase 2 的诊断价值——3-seed **必须包含 seed 44**，理由如下：
 
 - 情景 A：**3 seeds = `42 / 43 / 44`，必须含 seed 44**（不是任意 3 个）。
   - seeds 42/43 与 epoch-probe / Phase 1 对齐，作为 baseline 延续；
   - **seed 44 是 Phase 2 最有信息量的诊断点**——它在 deployable 轨道掉到 0.78，selected ckpt 卡在 ep40。如果 privileged critic 把它救回 → "privileged critic 在 ReBRAC 上贡献了超越 actor penalty 的额外信号"；如果救不回 → seed 44 是数据/优化层面的问题，与 critic 无关。这一信息无法通过任意 3-seed 取得。
 - 情景 B / C（未触发）：5 seeds（`42 / 43 / 44 / 45 / 46`），完整诊断。
+
+**rev.8 升级说明**：rev.1 review.md §2.2.2 指出 "3-seed = 42/43/44 是经过事先选择的 (含 seed 44)，5-seed std 不可与之直接比较"。为允许 paper 做严格 std 对比，rev.8 补 seeds 45/46，将 Phase 2 升到 5 seeds。Driver 自动 skip 已存在的 42/43/44，仅训 45/46，预算 ≈ 2h L4。
 
 #### 可选追加：critic-penalty-off probe（机制 sanity check）`【已完成 — 落入情形 B；Finding 1 部分被证伪】`
 
@@ -574,26 +580,32 @@ Phase 1 Step 2 暴露的关键机制 finding 是 **β2·ratio = 0.0111**（cross
 
 #### Phase 2 实测结果（详见 [report §7.12](./rebrac_experiment_report.md)）
 
-3 seeds × 1 finalist `(β1=4.0, β2=2.0)` × 64 epoch × test=100，actor update mode `zeros`：
+**5 seeds × 1 finalist `(β1=4.0, β2=2.0)` × 64 epoch × test=100，actor update mode `zeros`（rev.8）：**
 
-| seed | success_rate | return | safety_cost |
+| seed | success_rate | return | safety_cost | path_efficiency |
+| --- | --- | --- | --- | --- |
+| 42 | 0.960 | 22.30 | 7.28 | 0.7665 |
+| 43 | 0.920 | -2.21 | 9.91 | 0.7245 |
+| 44 | **0.900** | 15.88 | 7.20 | 0.7601 |
+| 45 | 0.930 | 20.34 | 6.81 | 0.7713 |
+| 46 | 0.960 | 28.78 | 4.26 | 0.7993 |
+| **mean** | **0.9340** | 17.02 | 7.10 | 0.7643 |
+| **std**  | **0.0261**（per-seed） | 11.71 | — | — |
+
+**3-seed 历史记录（rev.7，保留作 cross-check）**：seeds = `42 / 43 / 44`，mean=0.9267, std=0.025（overview）/ 0.031（per-seed）。新增 seed 45/46 后 mean +0.7pp、std 几乎不变（0.0261 vs 0.025），结论稳。
+
+**通过判据核对（5-seed × 4 / 4 全部通过；rev.8）**：
+
+| Rule | 阈值 | 实测（5-seed，rev.8） | 通过 |
 | --- | --- | --- | --- |
-| 42 | 0.960 | 22.30 | 7.28 |
-| 43 | 0.920 | -2.21 | 9.91 |
-| 44 | **0.900** | 15.88 | 7.20 |
-| **mean** | **0.9267** | 11.99 | 8.13 |
-| **std**  | **0.025**（overview）/ 0.031（per-seed） | 12.71 | — |
-
-**通过判据核对（4 / 4 全部通过）**：
-
-| Rule | 阈值 | 实测 | 通过 |
-| --- | --- | --- | --- |
-| 1. mean test success | `> 0.922`（TD3BC priv-critic formal） | **0.9267**（+0.5pp） | ✅ |
-| 2. std test success | `≤ 0.10` | 0.025 / 0.031 | ✅ |
-| 3. gap closure（情景 A） | `> 50%`（TD3BC priv-critic 48.5%） | **52.0%** | ✅ |
+| 1. mean test success | `> 0.922`（TD3BC priv-critic formal） | **0.9340**（+1.2pp） | ✅ |
+| 2. std test success | `≤ 0.10` | 0.0261 | ✅（严格 < TD3BC priv 0.086） |
+| 3. gap closure（情景 A） | `> 50%`（TD3BC priv-critic 48.5%） | **57.6%** | ✅ |
 | 4. seed 44 诊断 | `≥ 0.85` ⇒ 假设 A | **0.900**（+12.0pp vs deployable 0.78） | ✅ → 假设 A |
 
-**关键二阶 finding（写入 report §7.12.5）**：ReBRAC privileged-critic 与 ReBRAC deployable 在 mean 上几乎相等（0.9267 vs 0.928，Δ = -0.1pp），但 seed 44 在 privileged 轨道下被独立救回 +12pp。这说明：
+3-seed 旧表（rev.7）：mean=0.9267, std=0.025, gap closure=52.0%，4/4 通过。升 5-seed 后判据保持通过、Δ mean 与 Δ std 均在预期内（5-seed 涉极端 seed 概率高，std 估计放宽是预期的；这里反而几乎不变，进一步印证 finalist 的 seed-rubustness）。
+
+**关键二阶 finding（写入 report §7.12.5）**：ReBRAC privileged-critic 5-seed 与 ReBRAC deployable 5-seed 在 mean 上几乎相等（0.9340 vs 0.928，Δ = +0.6pp），但 seed 44 在 privileged 轨道下被独立救回 +12pp。这说明：
 
 - ReBRAC 在 worldcomp 上 deployable→teacher 的 gap 关闭主要由 **actor 的 BC penalty** 完成；
 - privileged critic 在 ReBRAC 上**不带来 mean 上的增益**，只在 outlier seed 上起作用；
@@ -688,11 +700,29 @@ Phase 1 Step 2 暴露的关键机制 finding 是 **β2·ratio = 0.0111**（cross
 
 **预算**：纯分析脚本，无需训练，~30 分钟（一次性）。
 
-### 6.6.3 不再做的事
+### 6.6.3 Stage F — paper-readiness probes（rev.8 新增） `【已完成 — 全部 4 项 closed】`
 
-- ~~`normalize_q off` 5-seed 完整 ablation~~：被 Phase 2 二阶 finding（actor BC penalty 主导）削弱优先级；除非 Stage E (a) 出现意外，不再列入主线；
+> rev.8（2026-05-01）：rev.1 review.md §2.2 + §3.1 列出 4 项必做项目（堵审稿人弱点）。本 Stage 把 4 项作为独立轨道在 ReBRAC 主线收口后并行完成。归档：[notebooks/rebrac_paper_followup_completed.ipynb](../notebooks/rebrac_paper_followup_completed.ipynb)。
+
+| 任务 | 实施 | 关键结果 | 文档落点 |
+| --- | --- | --- | --- |
+| **A**：Phase 2 升 5-seed | 补 seeds 45/46（driver auto-skip 42/43/44） | mean=0.9340 ± 0.0261；Δ vs 3-seed +0.7pp、std 几乎不变 | §6.5.3（plan）/ §7.12（report） |
+| **B**：critic LayerNorm-off probe | 5-seed Stage C finalist 减去 LN，2 seeds × crosscomp-1000 | mean=0.74 ± 0.25（**-16.2pp vs LN-on Stage C**）；mean_target_q 漂 -3.84 单位（更负 +46%）；比 β2=0 Stage E (a) 更差（-13.8pp） | §7.15（report，新增）；[review.md §2.2.4](./rebrac_mainline_review.md) |
+| **C**：Phase 1 dep vs TD3BC priv 统计检验 | paired episode-level bootstrap（10000 resample）+ Welch's t-test | Welch's p=0.9195（**持平**）；paired bootstrap 95% CI on Δ = [-3.0pp, +4.2pp]；gap closure 95% CI on Δ = [-62pp, +86pp] | [docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md) |
+| **D**：Q-normalized variant method draft | 抽 `auv_nav/rebrac.py::_actor_loss_terms` + 推导 β1 ↔ TD3+BC α 折算 | algorithm 命名为 "Q-normalized dual-penalty TD3+BC variant"（alias ReBRAC-Q）；β1=4.0 ↔ TD3+BC α≈0.25 | [docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md) |
+
+**Stage F 收口结论**：
+
+1. **任务 A** 把 review §2.2.2 "3-seed 不可与 5-seed std 对比" 弱点堵死；
+2. **任务 B**（LN-off probe）显示 LN 关掉比 β2 关掉 *更* 严重（-16.2 vs -2.4pp），且 LN 的退化是 std 与 mean 双向放大（std 0.02 → 0.25，blow-up 12×）→ **LN 与 dual penalty 是两个独立 component**；堵 review §2.2.4 "提升其实主要来自 LayerNorm" 论点；
+3. **任务 C** 把 review §2.2.3 "持平" 这一表述 quantitatively 确认：Welch's p=0.92、paired bootstrap CI 包含 0 → 用 "statistically not different" 替代 "首次超过"；
+4. **任务 D** 把 review §2.2.1 "Q-normalized 变体不是原版 ReBRAC" 弱点彻底处理：method section 显式声明为 "Q-normalized dual-penalty TD3+BC variant (alias ReBRAC-Q)"，β1 数字与原 ReBRAC 数字不直接可比，paper 中数字比较仅与自训 TD3+BC 在 matched protocols 下做。
+
+### 6.6.4 不再做的事
+
+- ~~`normalize_q off` 5-seed 完整 ablation~~：被 Phase 2 二阶 finding（actor BC penalty 主导）削弱优先级；Stage E (a) 已落入情形 B、Stage F (D) 已在 method section 显式声明 Q-normalized 变体，不再列入主线；
 - ~~3 项消融全因子（full / critic-off / normalize_off）~~：rev.4 原计划，已被 rev.6 收紧；
-- ~~LayerNorm / dropout / 网络容量扫~~：rev.4 已经明确不做，维持。
+- ~~LayerNorm / dropout / 网络容量扫~~：rev.4 / rev.6 / rev.7 维持不做；rev.8 Stage F (B) 仅做 LN-off 2-seed probe，不扩 sweep（已堵 review §2.2.4 弱点）。
 
 ---
 
@@ -793,6 +823,7 @@ checkpoint 与超参选择规则不改，继续使用：
    - **(a) crosscomp-1000 critic-penalty-off cross-dataset 二次验证**（**已完成**）：5 seeds × `(β1=4.0, β2=0)` × test=100 → `mean=0.878, std=0.090`，落入**情形 B**；同 dataset Δ -2.4pp、`mean_target_q` 漂 +8.12 单位（+98%）、seed 44 掉 -17pp。**Finding 1 修正版跨 dataset 成立**：critic penalty 对 mean 贡献 "小但非零"，对 Q 稳定性 "大且必要"，对 outlier seed 鲁棒性 "必需"。详见 §6.6.1 + [report §7.14](./rebrac_experiment_report.md)。
    - **(b) seed 44 collector 起点分布 inspection**（**维持推迟**）：触发恢复条件均未触发（情形 B 而非 C；seed 44 cross-(dataset, β2) 诊断已替代 collector 检查）。详见 §6.6.2。
 8. **ReBRAC 主线整体收口**（rev.7）：Stage A→B0→B→C→D (Phase 1+2+probe)→E (a) 全部完成。论文级核心 finding 三条：(i) ReBRAC 在 crosscomp 上对 TD3BC +23~+32pp（Stage C）；(ii) ReBRAC 在 worldcomp 上 deployable ≈ privileged-critic 关闭 ~52% gap，privileged 价值降到 outlier seed 救援级（Stage D）；(iii) dual penalty `(β1=4.0, β2=2.0)` 是必需配置，对 mean 贡献小但对 Q 稳定性 + outlier seed 鲁棒性必需（cross-dataset，Stage D probe + Stage E (a)）。**rev.6 明确删除的项**保留删除：normalize_q-off 5-seed ablation、3 项全因子消融、LayerNorm/dropout/网络容量扫。后续动作：转向 paper drafting / online thesis 线 / 其它研究方向（用户决定）。
+9. **Stage F — paper-readiness probes 全部完成**（rev.8）：4 项必做（A: Phase 2 升 5-seed；B: critic LN-off probe；C: paired bootstrap + Welch's t-test；D: Q-normalized variant method draft）已 closed。新增结果：(i) Phase 2 5-seed = `0.9340 ± 0.0261`，std 严格低于 TD3BC priv 0.086；(ii) LN-off mean=0.74 ± 0.25 比 LN-on Stage C 掉 -16.2pp，**LN 与 dual penalty 是两个独立 component**；(iii) Welch's p=0.9195，"持平" claim quantitatively confirmed；(iv) algorithm 命名为 "Q-normalized dual-penalty TD3+BC variant (alias ReBRAC-Q)"。审稿人弱点全部堵死，paper drafting 可正式启动。详见 §6.6.3 + [notebooks/rebrac_paper_followup_completed.ipynb](../notebooks/rebrac_paper_followup_completed.ipynb) + [docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md) + [docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md)。
 
 ---
 

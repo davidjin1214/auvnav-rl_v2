@@ -1,0 +1,40 @@
+% =====================================================================
+% paper/sections/intro.tex
+% §1 Introduction（rev.1, 2026-05-01）
+%
+% 写作纪律（outline §1）：
+%   - 5 段结构：Hook → Gap → Approach → Contributions (4-bullet) → Roadmap
+%   - 5 句话内让读者 get 主线
+%   - 关键数字必现：+23.0/+32.2pp（C1）、0.928 ± 0.086 vs 0.922 ± 0.096 / Welch's p=0.92（C2）、
+%                   +46~+98% Q drift（C3）、-16.2pp LN-off（C4）
+%   - 所有数字与 experiments.tex 表 / abstract 严格一致
+%   - 不引入新 cite key（仅复用 fujimoto2021td3bc / tarasov2023rebrac / fossen2011handbook
+%                       / pinto2017asymmetric / td3bc_phase0c_report 五条已有条目）
+%
+% 锚点：sec:intro（论文目前不被任何 forward-ref 引用）
+% =====================================================================
+
+\section{Introduction}\label{sec:intro}
+
+水下自主航行器（AUV）在卡门涡街（Kármán vortex street）尾迹场中执行点对点导航，是水下机器人 sim2real 工作中一个具有真实部署需求的代表任务：尾迹场速度比航行器极限速度同量级、流场非定常且高度非均匀，使任何基于均匀流补偿的传统视线法（LOS）控制器在临界欠驱动 regime 下崩溃。一台真实 REMUS-100 类平台在部署侧能够获得的流场信息却严格受限：标配 1200 kHz 多普勒测速仪（DVL）在水追踪模式下只给出机体质心一点处的局部流速 \citep{fossen2011handbook}，没有上游 / 侧向 / 整流壳积分等级别的预测信号。这一结构性约束使得离线强化学习（offline RL）成为天然的工程路径 —— 训练阶段可在 simulator 中获得任意 privileged 通道，部署阶段策略只读 deployable sensor。
+
+然而离线 RL 在这一设置下并不便宜。我们以 vanilla TD3+BC \citep{fujimoto2021td3bc} 在 \texttt{crosscomp-1000} 数据集（\S\ref{subsec:setup_datasets}）上 deployable-only 协议的成绩为基线参照：5 种子 mean success rate 仅 $0.672$，且在更大数据预算 \texttt{crosscomp-2000} 下进一步退化到 $0.596$（``越多数据越差''，$-7.6$pp）。更精细的方法学问题随之浮现：(i) 在哪一类机制信号上能把 deployable-only 协议拉到\emph{与 privileged-critic 协议在统计意义下不可区分}的水平？(ii) 这一拉升是 actor-side（policy 端 BC anchor）还是 critic-side（value 端 BC anchor / privileged 通道）主导的？(iii) 这一拉升对 dataset 是否 invariant？
+
+\paragraph{Approach.}
+我们提出 \textbf{ReBRAC-Q}：一个 Q-normalized dual-penalty TD3+BC 变体，把 \citet{fujimoto2021td3bc} 的 actor-side $Q$ 归一化与 \citet{tarasov2023rebrac} 在 ReBRAC 中提出的 minimal recipe（actor / critic 双侧 BC penalty + critic LayerNorm）合并为一个最小可训练算法（详见 \S\ref{sec:method}）。我们承认 ReBRAC-Q 不是原版 ReBRAC 的复刻，本文的方法贡献因此是\emph{薄}的；论文的核心贡献集中在 application 与机制 finding 上。
+
+\paragraph{Contributions.}
+我们在 \texttt{auv\_nav} 环境下（REMUS-100 6-DOF + TRT-LBM Kármán wake field + s0 单点 DVL；\S\ref{sec:setup}）的 6 个 (dataset, protocol) 单元上系统评估 ReBRAC-Q，给出四条机制 finding：
+
+\begin{itemize}
+    \item \textbf{C1 (Anti-scaling reversal)}\quad 在 \texttt{crosscomp} 上 ReBRAC-Q 相对 TD3+BC 取得 $+23.0$pp / $+32.2$pp 的 mean uplift（$0.672 \to 0.902$、$0.596 \to 0.918$），同时 between-seed std 不增反降，并\emph{翻转} TD3+BC ``2000 < 1000'' 的 anti-scaling 退化（\S\ref{subsubsec:finding_1}）。
+
+    \item \textbf{C2 (Deployable matches privileged-critic)}\quad 在 \texttt{worldcomp-1000} 上，deployable-only ReBRAC-Q（$0.928 \pm 0.086$）与 privileged-critic TD3+BC（$0.922 \pm 0.096$）在统计意义下不可区分（Welch's $t$-test $p = 0.9195$；paired episode-level bootstrap 95\% CI $[-3.0\,\mathrm{pp}, +4.2\,\mathrm{pp}]$，\S\ref{subsubsec:finding_2}）。换言之，在我们这一 sensor 协议与 benchmark 下，部署侧的离线 RL 策略\emph{无需依赖任何 simulator-only privileged 通道}就能逼近 privileged-critic 上界。
+
+    \item \textbf{C3 (Dual penalty is dataset-invariant necessary)}\quad 移除 critic-side BC penalty（$\beta_2 = 0$）在两个 baseline $\hat{Q}$ 符号\emph{相反}的 dataset 上（\texttt{crosscomp} $\hat{Q} \approx -8$、\texttt{worldcomp} $\hat{Q} \approx +15$；\S\ref{subsec:setup_datasets}）同向把 $\hat{Q}$ 推向更不保守方向 $+98\%$ 与 $+46\%$ —— 这一漂移方向的 dataset-invariance 是 ``critic-side BC penalty 通过 target-Q bootstrap 链路施加系统性正则'' 的硬证据（\S\ref{subsubsec:finding_3}）。
+
+    \item \textbf{C4 (LayerNorm $\perp$ dual penalty)}\quad 在 \texttt{crosscomp-1000} 上 critic LayerNorm 与 dual penalty 是\emph{两个独立必要}稳定器：LN-off 让 mean 退化 $-16.2$pp + std blow-up $\sim 11\times$ + $\hat{Q}$ 朝更负方向漂；$\beta_2 = 0$ 仅退化 $-2.4$pp 且 $\hat{Q}$ 朝相反方向（更正）漂。两者在 mean 量级和 $\hat{Q}$ 漂移方向上均不重合，证明它们抑制不同 failure mode（\S\ref{subsubsec:finding_4}）。
+\end{itemize}
+
+\paragraph{Roadmap.}
+\S\ref{sec:related_work} 把本文定位在三条线（offline RL with behavior anchoring、underwater sim2real、asymmetric actor-critic）的交叉点；\S\ref{sec:setup} 给出环境与数据集；\S\ref{sec:method} 给出 ReBRAC-Q 算法及其与 TD3+BC / 原 ReBRAC 的逐项对比；\S\ref{sec:experiments} 报告主结果与 ablation；\S\ref{sec:discussion} 把现象升级为机制论证；\S\ref{sec:limitations} 给出已做实验的边界与延伸方向；\S\ref{sec:conclusion} 收束全文。

@@ -1,0 +1,41 @@
+% =====================================================================
+% paper/sections/discussion.tex
+% §6 Mechanistic Discussion（rev.1, 2026-05-01）
+%
+% 目标：把 §5 Main Results 的 4 个 finding 升级为机制论证。
+%       不重复 §5 / §5.4 已经报过的数字；只写 "implication" 与 mechanism。
+%
+% 写作纪律（outline §8 R9 风险）：每段 3-4 句封顶；总长 0.75 column。
+%
+% 锚点：sec:discussion 已被 experiments.tex 3 处 forward-ref：
+%   - experiments §6.1 末段：anti-scaling reversal vs Tarasov 论述区分
+%   - experiments §6.2 seed 44 critic 信息瓶颈论据
+%   - experiments §6.2.4 actor-side 主导 deployable→teacher gap closure 核心论据
+% 本节按以上 3 个锚点 + outline §8.1-§8.4 设 5 子节展开。
+% =====================================================================
+
+\section{Mechanistic Discussion}\label{sec:discussion}
+
+本节把 \S\ref{subsec:main_results}--\S\ref{subsec:ablations} 中的 4 个 finding 升级为对 ReBRAC-Q 内部机制的论证。我们的论点贯穿一句话：\emph{actor-side BC penalty 是 mean uplift 的主因，critic-side BC penalty 与 privileged-critic 通道则各自负责一种独立的稳定性维度}。
+
+\subsection{Actor-Side BC Penalty Drives the Mean; Critic-Side Does Not}\label{subsec:discussion_actor_drives_mean}
+
+表~\ref{tab:beta2_ablation} 中 $\beta_2 = 0$ 在 \texttt{worldcomp-1000} 上 mean 仅退化 $-1.8$pp、在 \texttt{crosscomp-1000} 上仅 $-2.4$pp，而 actor-side 已固定 $\beta_1 = 4.0$（等价 TD3+BC $\alpha \approx 0.25$）。结合 \S\ref{subsubsec:finding_1} 中 ReBRAC-Q 相对 TD3+BC 在 \texttt{crosscomp} 上 $+23.0/+32.2$pp 的跃升，我们得到 actor anchor 与 critic anchor 在 mean uplift 上的\emph{量级分离}：actor-side BC penalty 提供了 $\sim 95\%$ 的 mean improvement，critic-side BC penalty 的边际 mean 贡献小于 actor-side 的 $1/10$。这与 \citet{tarasov2023rebrac} 在原 ReBRAC paper 中暗含的 ``两侧 BC penalty 协同提升性能'' 的叙述存在结构性差异 —— 在我们的 Q-normalized actor loss 下，critic-side 不再贡献 mean。
+
+\subsection{Critic-Side BC Penalty Provides Cross-Dataset $\hat{Q}$-Magnitude Invariance}\label{subsec:discussion_critic_q_invariance}
+
+虽然 critic-side BC penalty 不抬 mean，它在两个 dataset 上同时控制了 critic 估计的漂移方向。\texttt{worldcomp} 与 \texttt{crosscomp} 的 baseline $\hat{Q}$ 符号相反（$+15$ vs.\ $-8$；见 \S\ref{subsec:setup_datasets}），但 $\beta_2 = 0$ 后 $\hat{Q}$ 在两个 dataset 上\emph{同向}朝更不保守方向漂移 $+46\%$ 与 $+98\%$（图~\ref{fig:q_drift}）。这一漂移方向的 dataset-invariance 证明 critic-side BC penalty 是通过 target-Q bootstrap 链路施加的\emph{系统性正则}，而非某个 Q 量级下的 cosmetic 项。机制层面的论证因此是：actor-side BC penalty 把 actor 的 OOD extrapolation 锁在 dataset support 内，critic-side BC penalty 把 critic 的 target-Q 估计锁在 ``下一步 action 来自 dataset support'' 的等价类内 —— 二者在不同的回路上分担同一个 OOD-suppression 任务，因此在 mean 与 $\hat{Q}$ 这两个不同的可观测量上分别表现为主导。
+
+\subsection{Critic LayerNorm and Dual Penalty Are Two Independent Stabilizers}\label{subsec:discussion_ln_orthogonal}
+
+更进一步，$\beta_2$ 与 critic LayerNorm 抑制的是不同的 failure mode。\S\ref{subsubsec:ln_ablation} 中 LN-off 让 mean 退化 $-16.2$pp（$\beta_2 = 0$ 仅 $-2.4$pp），$\hat{Q}$ 朝\emph{更负}方向漂 + std blow-up $\sim 11\times$；与 $\beta_2 = 0$ 朝\emph{更正}方向漂 + std 微动的方向\emph{相反}。这一 ``漂移方向相反'' 是机制独立性的硬证据：LayerNorm 抑制的是 critic 内部 hidden representation 的局部 Q 爆炸（一种 representation-level 病态），dual penalty 抑制的是 actor / critic 输出端的 OOD extrapolation（一种 policy-distribution-level 病态）。把 LN ablation 视作 ``ReBRAC 主要靠 LN 工作'' 的简化叙述（\citet{tarasov2023rebrac} 中曾突出 LN 的重要性）在我们的 finding 下需要补一层结构：LN 是必要 representation 稳定器，但 dual penalty 在 LN 已开的前提下提供\emph{额外}且\emph{方向相反}的 distribution-level 稳定。
+
+\subsection{Seed 44 as a Cross-(Protocol, $\beta_2$, Dataset) Failure Closure}\label{subsec:discussion_seed44_closure}
+
+我们用 seed 44 一个 outlier 把上述三条论点串成闭环。在 \texttt{worldcomp-1000} 上：deployable-only ReBRAC-Q 给出 $0.78$（与其他 4 个 seed 的 $0.93\sim0.99$ 分离 $-15$pp），同 seed 在 privileged-critic 协议下回到 $0.90$（$+12$pp）；此时 $\beta_2$ 仍为 $2.0$。在 \texttt{crosscomp-1000} $\beta_2 = 0$ 的 Stage E (a) probe 上，seed 44 的 success rate 进一步退化到 $0.700$（$-21$pp from $\beta_2 = 2$ 同 seed 同 dataset）。这意味着 seed 44 同时被两条机制击中：(i) deployable-only 协议下 critic 缺少 hull-integral 信号导致的\emph{信息瓶颈}（被 privileged 通道救回），(ii) $\beta_2 = 0$ 下 critic target-Q 缺少 BC anchor 导致的\emph{distribution-level 漂移}（被 $\beta_2 = 2$ 救回）。两条不同 protocol / 不同 hyperparameter 的修复\emph{同时}对同一个 outlier 起效，反驳了 ``seed 44 是随机噪声'' 的简化解释 —— 它是机制层面 actor anchor 已饱和、critic 端两条独立稳定回路任一缺失即退化的经验签名。
+
+\subsection{Anti-Scaling Reversal and Implications for Sim2real}\label{subsec:discussion_implications}
+
+\citet{tarasov2023rebrac} 把 ``offline RL 是否能利用更多数据'' 视作算法整体设计的诊断指标。表~\ref{tab:main_table} 上半部分给出本文的 ReBRAC-Q vs.\ TD3+BC 对照：TD3+BC 在 \texttt{crosscomp} 上从 $0.672 \to 0.596$（$-7.6$pp，``2000 < 1000''），ReBRAC-Q 上从 $0.902 \to 0.918$（$+1.6$pp，正向）—— 但本文不把这视为 ``ReBRAC-Q 算法本身能用更多数据'' 的 claim，因为 dual penalty 与 critic LayerNorm 共同作用下的容量利用与 BC anchor 强度互相耦合，单凭主表无法解耦。我们因此只在 \emph{本环境 / 本 sensor 协议下}声明 anti-scaling reversal 是机制层面 OOD 抑制成功的副产物。
+
+更核心的 sim2real implication 来自 finding 2：在我们的 deployable-only 协议（\texttt{s0} 单点 DVL）下，ReBRAC-Q 的策略性能与 privileged-critic 协议在统计意义下不可区分（Welch's $p = 0.92$；\S\ref{subsubsec:finding_2}），且 \S\ref{subsec:discussion_actor_drives_mean} 中的论证表明此 ``匹配'' 由 actor anchor 而非 critic 信息提供。这意味着真实 REMUS-100 部署可以\emph{完全省去}训练阶段对 hull-integral effective flow 的依赖 —— 离线 RL pipeline 不再需要任何 simulator-only privileged 通道也能把 deployable 协议拉到 privileged-critic 上界。在我们这一实验 scope（\S\ref{sec:limitations}）下，这是 deployable-only offline RL 在 underwater wake navigation 上一个具体的、可验证的可部署性结论。

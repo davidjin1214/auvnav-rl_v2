@@ -1,0 +1,90 @@
+% =====================================================================
+% paper/sections/setup.tex
+% §3 Problem Setup（rev.1, 2026-05-01）
+%
+% 目标：让读者在不读 environment_design.md 的情况下能复现：
+%       (i) 任务与动力学是什么；
+%       (ii) deployable observation 是什么；
+%       (iii) privileged observation 是什么、与 deployable 的边界；
+%       (iv) reward 与终止；
+%       (v) 数据集与 baseline policies。
+%
+% 数字源：docs/environment_design.md（§3, §4, §5, §6, §7, §8, §9）
+%        + auv_nav/baselines.py（baseline policies 定义）
+%        + CLAUDE.md（probe layout / objective / benchmark 名称约束）
+%
+% 锚点：被 method.tex / experiments.tex 已 forward-ref：
+%   - sec:setup
+%   - subsec:setup_task
+%   - subsec:setup_obs_deployable
+%   - subsec:setup_obs_privileged
+%   - subsec:setup_reward
+%   - subsec:setup_datasets
+%   - tab:dataset_matrix
+% =====================================================================
+
+\section{Problem Setup}\label{sec:setup}
+
+\subsection{Task and Dynamics}\label{subsec:setup_task}
+
+我们考虑一个水下自主航行器（AUV）在卡门涡街（Kármán vortex street）尾迹场中执行点对点导航的任务。AUV 平台为 REMUS-100 类圆柱形载体（长 $L = 1.6$ m，直径 $d = 0.19$ m，排水质量 $m \approx 32$ kg），动力学采用 \citet{fossen2011handbook} 框架下的完整 6-DOF 非线性方程组（含附加质量矩阵、Coriolis 项、横流阻力、桨叶推力与舵面升力），以四阶 Runge-Kutta 积分器在 $\Delta t_{\mathrm{sim}} = 0.1$ s 物理步长上推进；每个 RL 决策步包含 5 次物理子步，对应 $\Delta t_{\mathrm{ctrl}} = 0.5$ s。深度由级联 PID 内环维持，使 6-DOF 动力学在水平面退化为有效 3-DOF 平面运动 $[u, v, r, x_N, y_E, \psi]$。
+
+尾迹场由 D2Q9 双弛豫时间格子玻尔兹曼方法（TRT-LBM）离线生成，配置 $D = 12$ m 圆柱、$U_\infty = 1.0$ m/s、$\mathrm{Re} = 150$（严格二维层流卡门涡街区间），输出分辨率 $\Delta x = 0.6$ m，记录时长 $T_{\mathrm{rec}} = 360$ s（约 9--10 个涡旋脱落周期），每回合起始时刻在 $[0, T_{\mathrm{rec}}]$ 内均匀随机以避免相位过拟合。任务几何固定为 \texttt{cross\_stream}（垂直来流 $\pm 20^\circ$ 内随机），目标速度 $V_{\max} = 1.5$ m/s，使速度比 $\lambda = U_\infty / V_{\max} = 0.67$ 落在临界欠驱动区附近 —— 这一设计强制策略主动利用流场非均匀性而非依赖直线推进。每回合起终点距离均匀采样 $d \in \mathcal{U}(40, 90)$ m，最大时长 $240$ s。
+
+\subsection{Deployable Observation $(s_0)$}\label{subsec:setup_obs_deployable}
+
+部署可获得的观测向量 $\mathbf{o}_t \in \mathbb{R}^{10}$ 由本体状态、目标信息和单点流速三部分构成：
+\begin{equation}
+\mathbf{o}_t = \bigl[\,\underbrace{u/V_n,\ v/V_n,\ r/r_n,\ \cos\psi,\ \sin\psi}_{\text{本体 5 维}},\ \underbrace{\Delta x_b/d_n,\ \Delta y_b/d_n,\ d/d_n}_{\text{目标 3 维}},\ \underbrace{u_c^{(0)}/V_{f,n},\ v_c^{(0)}/V_{f,n}}_{\text{流速 2 维}}\,\bigr],
+\end{equation}
+其中 $(u, v, r)$ 为体轴线速度与偏航率，$(\cos\psi, \sin\psi)$ 用三角函数对编码以避免 $\pm\pi$ 跳变，$(\Delta x_b, \Delta y_b, d)$ 是目标在体坐标系下的相对位置（$d$ 为距离），归一化常数 $V_n = V_{f,n} = 2.0$ m/s、$r_n = 1.0$ rad/s、$d_n = 200$ m。流速通道 $(u_c^{(0)}, v_c^{(0)})$ 是机体质心位置 $\mathbf{p}^{(0)} = (0, 0)$ 处的体坐标系流速，对应 REMUS-100 标配的多普勒测速仪（DVL，1200 kHz）水追踪模式 —— 这是真实部署中可获得的最弱流场感知。我们用 \texttt{probe-layout = s0} 标记此布局。整个观测在送入策略前再外接 $k = 4$ 步历史堆叠（\texttt{history-length} = 4），实际策略输入维度为 $40$。
+
+\subsection{Privileged Observation (Critic-only)}\label{subsec:setup_obs_privileged}
+
+为支持 \emph{asymmetric actor-critic} \citep{pinto2017asymmetric} 协议下的对照，环境额外给出特权观测 $\mathbf{o}_t^{\mathrm{priv}} \in \mathbb{R}^2$，内容为体坐标系下的\emph{壳积分等效水流}：
+\begin{equation}
+\mathbf{o}_t^{\mathrm{priv}} = (u_{\mathrm{eq}},\ v_{\mathrm{eq}}) = \frac{1}{N}\sum_{i=1}^{N} R_{wb}(\psi)\,\mathbf{u}_{\mathrm{world}}\!\left(\mathbf{p}^{(0)} + \xi_i \cdot L\,\hat{\mathbf{e}}_{\mathrm{body}}\right),\qquad \xi_i \in \{-0.4, -0.2, 0, 0.2, 0.4\},
+\label{eq:setup_priv_obs}
+\end{equation}
+即沿机体纵轴 $N = 5$ 个等距采样点世界系流速的等权平均，再投影至体坐标系（$R_{wb}(\psi)$ 为旋转矩阵）。$\mathbf{o}_t^{\mathrm{priv}}$ 等价于 \texttt{vehicle.py} 在求解 6-DOF 方程时实际使用的有效来流，因此是\emph{驱动动力学的真实流场}（而非任意的 simulator 隐藏状态）。
+
+\textbf{协议边界.}\quad $\mathbf{o}_t^{\mathrm{priv}}$ 仅在我们标记为 \emph{privileged-critic protocol} 的训练设置中被 critic 网络读取，actor 始终只看 $\mathbf{o}_t$；评估与部署阶段 critic 已被丢弃，$\mathbf{o}_t^{\mathrm{priv}}$ 不出现在执行回路中。我们标记为 \emph{deployable protocol} 的训练设置则两个网络均仅依赖 $\mathbf{o}_t$，与真实 REMUS-100 的可获得信号严格一致。
+
+\subsection{Action, Reward and Termination}\label{subsec:setup_reward}
+
+动作向量 $\mathbf{a}_t = (a_\psi, a_n) \in [-1, 1]^2$ 在 \texttt{absolute\_heading} 模式下分别映射为期望偏航角参考 $\psi_{\mathrm{ref}} = a_\psi \cdot \pi$ 与归一化转速指令；内层 PD（$K_p = 1.4, K_d = 0.4$）以 $0.1$ s 推进舵角与 RPM。奖励函数为 \texttt{efficiency\_v2}：
+\begin{equation}
+r_t \;=\; \underbrace{-c_t \cdot \Delta t_{\mathrm{ctrl}}}_{\text{时间惩罚}}
+       \;+\; \underbrace{k_p \cdot (d_{t-1} - d_t)}_{\text{进度整形}}
+       \;+\; r_{\mathrm{term}},
+\qquad c_t = 2.0\,\mathrm{s}^{-1},\ k_p = 1.0,
+\label{eq:setup_reward}
+\end{equation}
+终止奖励 $r_{\mathrm{term}}$ 为 $+100$（成功：进入目标 $4$ m 半径圆）或 $-20$（失败：超界、动力学违规、深度偏差超 $1.5$ m、纵倾超 $35^\circ$），超时（$240$ s）判失败。所有评估使用固定 manifest \texttt{single\_u10\_cross\_tgt15.json}（100 episodes / seed），其任务采样分布与训练数据采集时一致。
+
+\subsection{Datasets}\label{subsec:setup_datasets}
+
+离线数据通过运行两类\emph{deployable baseline policies} 在上述环境中采集，两类策略均仅依赖 $\mathbf{o}_t$（即与 ReBRAC-Q 待训练的 actor 共享 sensor 协议）：
+\begin{itemize}
+    \item \textbf{\texttt{crosscomp}}（cross-current compensation）—— 基于 $s_0$ 单点流速估计的体坐标系横向分量 $v_c^{(0)}$ 计算反向偏航量，仅做横向流补偿，不感知前向涡核位置；行为分布偏\emph{保守 / 探索性弱}，导致 critic Q 值整体偏负。
+    \item \textbf{\texttt{worldcomp}}（world-frame current compensation）—— 在世界坐标系下基于 $\mathbf{o}_t$ 的当前流速估计计算所需 ground-track 偏移并迭代 LOS 角度；行为分布相对\emph{激进}，命中率更高，critic Q 值整体偏正。
+\end{itemize}
+两类策略均部署于真实 REMUS-100 sensor 协议（无 simulator-only 信号），数据集仅在采集策略上不同；两类数据均在采集时记录 $\mathbf{o}_t^{\mathrm{priv}}$ 通道（\eqref{eq:setup_priv_obs}），以支持后续 privileged-critic 协议训练。我们采集 3 个数据集（见表~\ref{tab:dataset_matrix}），覆盖两类 baseline 与两个 episode 预算（1000 / 2000）：
+
+\begin{table}[t]
+\centering
+\caption{三个离线数据集。所有数据集共享 \texttt{probe-layout=s0}、\texttt{history-length=4}、\texttt{efficiency\_v2} reward 与同一评估 manifest \texttt{single\_u10\_cross\_tgt15}，仅在采集策略与 episode 预算上不同。}
+\label{tab:dataset_matrix}
+\small
+\begin{tabular}{lllrrl}
+\toprule
+\textbf{Alias} & \textbf{Collection policy} & \textbf{Sensor} & \textbf{Episodes} & \textbf{Transitions} & \textbf{Q-value sign (TD3+BC)} \\
+\midrule
+\texttt{crosscomp-1000} & \texttt{CrossCurrentCompensation} & \texttt{s0} & 1000 & $\sim$2.4$\times 10^5$ & $\hat{Q} \approx -8$ (悲观) \\
+\texttt{crosscomp-2000} & \texttt{CrossCurrentCompensation} & \texttt{s0} & 2000 & $\sim$4.8$\times 10^5$ & $\hat{Q} \approx -8$ (悲观) \\
+\texttt{worldcomp-1000} & \texttt{WorldFrameCurrentCompensation} & \texttt{s0} & 1000 & $\sim$2.0$\times 10^5$ & $\hat{Q} \approx +15$ (乐观) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Q-value 符号差异.}\quad 表~\ref{tab:dataset_matrix} 末列报告的 $\hat{Q}$ 是各 dataset 上 TD3+BC baseline 训练收敛后 \texttt{mean\_target\_q} 的近似量级 —— \texttt{worldcomp} 数据使 critic 整体偏乐观（$\hat{Q} \approx +15$），\texttt{crosscomp} 数据使 critic 整体偏悲观（$\hat{Q} \approx -8$）。这一\emph{符号相反}的 Q 值基线为 \S\ref{subsubsec:finding_3} 中 ``$\beta_2$ ablation 在两个数据集上 $\hat{Q}$ 朝同方向漂移'' 的 dataset-invariance 论证提供了 stress-test 设置：如果 critic-side BC penalty 仅是某个 Q 量级下的 cosmetic 正则，它不应在符号相反的两个 baseline 上同时表现出 ``移除即漂'' 的行为。\S\ref{subsec:main_results} 将正面回答这一问题。

@@ -76,6 +76,18 @@ figs/
 !paper/figures/
 !paper/figures/**
 
+# LaTeX build artifacts (re-ignore inside paper/)
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
+texput.log
+paper/figures/**/.DS_Store
+
 # Temp files
 tmp/
 temp/

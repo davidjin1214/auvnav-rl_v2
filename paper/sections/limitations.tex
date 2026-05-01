@@ -1,0 +1,38 @@
+% =====================================================================
+% paper/sections/limitations.tex
+% §7 Limitations（rev.1, 2026-05-01）
+%
+% 目标：bullet 形式 8 条 + 半段引言。
+% 写作纪律：每条都对应 method.tex / experiments.tex 中可能被审稿人质疑的具体 claim，
+%           不写抽象的 "future work" 套话；每条给出"已做的边界"+"未做的延伸"。
+%
+% 数字源：docs/rebrac_mainline_review.md §4 + docs/rebrac_experiment_report.md §9
+%        + docs/rebrac_paper_writing_index.md（被 method/experiments 已 cite 的 claim 列表）
+%
+% 锚点：被 method.tex / experiments.tex 已 forward-ref 3 处：
+%   - sec:limitations  (从 experiments §6.4 footnote / §6.2 stats 注脚)
+% =====================================================================
+
+\section{Limitations}\label{sec:limitations}
+
+我们把已做实验的边界与延伸方向整理为以下 8 条。每条都对应 \S\ref{sec:method}--\S\ref{subsec:ablations} 中某个 claim 的边界条件，目的是\emph{不让审稿人替我们 imagined} 一个我们没做但暗示能做的实验。
+
+\begin{itemize}
+    \item \textbf{L1 (Method).}\quad ReBRAC-Q 是 Q-normalized dual-penalty TD3+BC variant，\emph{不是}原版 ReBRAC \citep{tarasov2023rebrac} 的复刻 —— 我们保留了 TD3+BC 的 actor-side $Q$ 归一化（见 \S\ref{subsec:method_actor_loss}），因此本文报告的 $\beta_1, \beta_2$ 数值与 Tarasov et al.~中的同名超参\emph{不可直接对比}。我们没有跑 un-normalized variant（即原版 ReBRAC actor loss）作为 sanity 对照；本文的 finding 限定为 ``在 Q-normalized actor loss 下 dual penalty 的独立必要性'' 这一 scope。
+
+    \item \textbf{L2 (Statistical power).}\quad 主结果使用 5 random seeds (42--46) $\times$ 100 test episodes / seed 的标准 RL 评估协议。$n = 5$ 在 finding 2 的 Welch's $t$-test 上 underpowered for ``两组等价'' 的 tight-CI 论断 —— 我们因此使用 ``\emph{statistically not different}'' / ``\emph{matches}'' 措辞而非 ``outperforms''，并在表~\ref{tab:main_table} 与 \S\ref{subsubsec:finding_2} 同时报告 paired episode-level bootstrap 95\% CI 与 per-seed dot plot（图~\ref{fig:seed_dotplot}）作为 distribution-free 补充证据。把 $n$ 提升到 10--20 seeds 的 follow-up 留作 future work。
+
+    \item \textbf{L3 ($n = 2$ sub-grids).}\quad 表~\ref{tab:beta2_ablation} 中 \texttt{worldcomp-1000 / $\beta_2 = 0$} 单元、表~\ref{tab:ln_ablation} 中 \texttt{LN-off / $\beta_2 = 2$} 单元仅有 $n = 2$ seeds (42--43)。这两个 cell 仅支撑\emph{存在性} claim（``移除该 component 会让退化方向出现''），不支撑量级 claim；本文在 \S\ref{subsubsec:finding_4} 中相应地不就 ``LN 比 dual penalty 更重要'' 做正面对比。两 cell 的 5-seed 完整复现是 highest-priority 的 follow-up。
+
+    \item \textbf{L4 (Benchmark coverage).}\quad 评估固定使用 manifest \texttt{single\_u10\_cross\_tgt15.json}（cross-stream geometry，$U_\infty = 1.0$ m/s，target speed $1.5$ m/s）。其任务采样分布与离线数据采集时\emph{同分布} —— 这是 RL 评估惯例但同时也意味着我们没有测试 distribution-shift 鲁棒性。其他三种 benchmark（\texttt{single\_u10\_upstream}、\texttt{single\_u15\_upstream}、\texttt{tandem\_u15\_upstream}）以及 cross-flow / cross-task generalization 均未跑。
+
+    \item \textbf{L5 (Dataset budget).}\quad 三个 dataset 的 episode 预算位于 1000--2000 区间（约 $2 \times 10^5$--$5 \times 10^5$ transitions），处于水下离线 RL 文献中的 small-to-medium 规模。我们没有验证 large-scale offline corpora（$> 10^4$ episodes）下 dual penalty 的必要性 —— 在数据极充足时 Behavior cloning 自身可能就已经足以 close gap，使 critic-side BC penalty 失去边际价值。
+
+    \item \textbf{L6 (Privileged signal dimensionality).}\quad 我们的 privileged observation $\mathbf{o}_t^{\mathrm{priv}}$ 仅 dim $= 2$（hull-integral $[u_{\mathrm{eq}}, v_{\mathrm{eq}}]$；见 \eqref{eq:setup_priv_obs}）。更高维 privileged 信号（如全场流速 patch、上游圆柱 wake phase、空间梯度张量）下 ``deployable matches privileged-critic''（finding 2）是否仍然成立，本文未回答。该 finding 的 sim2real 结论严格只在 ``单点 hull-integral 对照单点 DVL'' 这一 narrowest privileged setup 下成立。
+
+    \item \textbf{L7 (Sensor protocol coverage).}\quad 全部实验固定 \texttt{probe-layout = s0}（单点 DVL 水追踪）。我们没有在 \texttt{s1} (DVL + 短程 ADCP) 或 \texttt{s2} (DVL + 长程 ADCP + 侧向波束) 协议下重复 ReBRAC-Q vs.~TD3+BC 对比 —— 在 sensor 信息更丰富时 deployable→teacher gap 是否仍存在、dual penalty 是否仍必要，本文未回答。这与 in-progress 的 online thesis line（CLAUDE.md 中的 ``online RL line'' 平行轨道）覆盖范围互补。
+
+    \item \textbf{L8 (Embodiment, flow regime, capacity).}\quad 结果限定在单一平台 REMUS-100、单一流场配置 $\mathrm{Re} = 150$ + $\mathrm{Ti} = 5\%$（synthetic TRT-LBM wake field，no real sea-trial validation），以及单一网络容量 $\mathrm{hidden} = 256 \times 3$ 层。容量 / dropout / activation sweep 未做（仅 critic LayerNorm ablation 被测）；跨平台（如 SAUV 或长航程 glider）、跨 Re（$\mathrm{Re} \in \{250, 500\}$）、跨容量的稳健性留作后续工作。
+\end{itemize}
+
+我们没有把上述 limitations 包装为 ``negative result''：表~\ref{tab:main_table} / \S\ref{subsubsec:finding_2} 的核心 claim 是 ``\emph{在 single-DVL 部署 sensor 下、单一 cross-stream benchmark 下、ReBRAC-Q 把 deployable 协议拉到 privileged-critic 协议的统计等价水平}'' —— 这是一个有边界但定义明确的实证结果，每一条 limitation 都不动摇该 claim 的成立。

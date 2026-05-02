@@ -15,7 +15,7 @@
 
 \section{Limitations}\label{sec:limitations}
 
-我们把已做实验的边界与延伸方向整理为以下 8 条。每条都对应 \S\ref{sec:method}--\S\ref{subsec:ablations} 中某个 claim 的边界条件，目的是\emph{不让审稿人替我们 imagined} 一个我们没做但暗示能做的实验。
+我们把已做实验的边界与延伸方向整理为以下 11 条。每条都对应 \S\ref{sec:method}--\S\ref{subsec:ablations} 中某个 claim 的边界条件，目的是\emph{不让审稿人替我们 imagined} 一个我们没做但暗示能做的实验。
 
 \begin{itemize}
     \item \textbf{L1 (Method).}\quad ReBRAC-Q 是 Q-normalized dual-penalty TD3+BC variant，\emph{不是}原版 ReBRAC \citep{tarasov2023rebrac} 的复刻 —— 我们保留了 TD3+BC 的 actor-side $Q$ 归一化（见 \S\ref{subsec:method_actor_loss}），因此本文报告的 $\beta_1, \beta_2$ 数值与 Tarasov et al.~中的同名超参\emph{不可直接对比}。我们没有跑 un-normalized variant（即原版 ReBRAC actor loss）作为 sanity 对照；本文的 finding 限定为 ``在 Q-normalized actor loss 下 dual penalty 的独立必要性'' 这一 scope。
@@ -33,6 +33,17 @@
     \item \textbf{L7 (Sensor protocol coverage).}\quad 全部实验固定 \texttt{probe-layout = s0}（单点 DVL 水追踪）。我们没有在 \texttt{s1} (DVL + 短程 ADCP) 或 \texttt{s2} (DVL + 长程 ADCP + 侧向波束) 协议下重复 ReBRAC-Q vs.~TD3+BC 对比 —— 在 sensor 信息更丰富时 deployable→teacher gap 是否仍存在、dual penalty 是否仍必要，本文未回答。这与 in-progress 的 online thesis line（CLAUDE.md 中的 ``online RL line'' 平行轨道）覆盖范围互补。
 
     \item \textbf{L8 (Embodiment, flow regime, capacity).}\quad 结果限定在单一平台 REMUS-100、单一流场配置 $\mathrm{Re} = 150$ + $\mathrm{Ti} = 5\%$（synthetic TRT-LBM wake field，no real sea-trial validation），以及单一网络容量 $\mathrm{hidden} = 256 \times 3$ 层。容量 / dropout / activation sweep 未做（仅 critic LayerNorm ablation 被测）；跨平台（如 SAUV 或长航程 glider）、跨 Re（$\mathrm{Re} \in \{250, 500\}$）、跨容量的稳健性留作后续工作。
+
+    \item \textbf{L9 (TD3+BC baseline budget parity).}\quad 表~\ref{tab:main_table} 中 TD3+BC baseline 的数字源自前序 phase0c report (\texttt{crosscomp}) 与 worldcomp teacher-gap report (\texttt{worldcomp})。其中 \texttt{worldcomp} 上 TD3+BC 训练预算为 \texttt{TRAIN\_EPOCHS}=96，与本文 ReBRAC-Q 的 \texttt{TRAIN\_EPOCHS}=64 不一致；\texttt{crosscomp} 上两者口径完全一致（\texttt{TRAIN\_EPOCHS}=64 + 同样的 lex ckpt 选择规则），因此 finding 1 的 $+23.0/+32.2$pp 对比不受此口径影响。\texttt{worldcomp} 上的 deployable $+7.0$pp 与 privileged-critic 持平对比受该口径影响 —— 严格说我们不能排除 ``TD3+BC 在 64 epochs 也会到 $0.92$'' 的反事实；但 ReBRAC-Q 与 TD3+BC 在 \texttt{worldcomp-1000} 上从 $\mathrm{epoch} \in \{16, 32, 64\}$ 的 val plateau 行为均显示 deployable→teacher gap 在 32~64 epoch 已饱和（详见 supplementary materials），TRAIN\_EPOCHS 增加在饱和后的边际为 $0$~$+1$pp 量级。
+
+    \item \textbf{L10 ($\beta_2$ ablation dataset coverage).}\quad Critic-side BC penalty 移除（$\beta_2 = 0$）仅在 \texttt{crosscomp-1000}（5 seeds）与 \texttt{worldcomp-1000}（2 seeds, probe）上测过；\texttt{crosscomp-2000} 上 $\beta_2 = 0$ 未跑。Finding 3 的 ``$\hat{Q}$ 漂移方向 dataset-invariant'' 严格说基于两个 dataset、两个 baseline $\hat{Q}$ 符号的对照（$+15.22$ vs.~$-8.25$）；扩展到第三个 dataset（\texttt{crosscomp-2000} baseline $\hat{Q}$ 与 \texttt{crosscomp-1000} 同号）的 cross-extrapolation 风险低（Stage C 已经显示 ep1000 / ep2000 在 winner $(\beta_1, \beta_2)$ 网格上一致），但严格意义下没有数据。
+
+    \item \textbf{L11 (Unanalyzed observations and unverified assumptions).}\quad 三处机制层观察我们没有深入分析：
+    \begin{enumerate}
+        \item Stage B0 的 ``单一长训 + 中间 checkpoint $\approx$ 独立训到该 epoch'' 假设仅从 val-success / $\hat{Q}$-target 的结果层一致性验证，未从 \texttt{state\_dict} 的 $L_2$ 距离做 weight-level cross-check；如果两个序列在某个 epoch 处 weight-level 出现 bifurcation，我们的 \texttt{TRAIN\_EPOCHS}=64 上界 claim 仍成立但 ckpt 复用的物理基础会需要重新论证。
+        \item \texttt{worldcomp-1000} probe 阶段个别 (seed, ckpt) 取得 $\mathrm{mean\_test\_return} = 35.62$，超过 worldcomp teacher 的 $32.19$（5-seed formal 后整体 return 落到 $20.17$，但 seed 42/45/46 个体仍在 $26\sim30$ 量级）。是否对应 ReBRAC-Q policy 走出比 teacher 更短的 efficiency-v2 轨迹（即 ``offline RL 学到 super-teacher''）本文未做轨迹层比对，留作 future work。
+        \item Finding 3 中 ``$\beta_1 \uparrow \to \hat{Q}_{\mathrm{target}} \downarrow \to$ outlier seed 鲁棒性 $\uparrow$'' 这一三角关系的 single-axis attribution（即固定 $\beta_2$、单独 sweep $\beta_1$）只在 winner 网格点 $\beta_1=4.0$ 处确认，其他 $\beta_1$ 网格点（$\in \{1.0, 2.0\}$）的 5-seed mean target $\hat{Q}$ 数据来自 Stage B 而非 confirmatory replication。
+    \end{enumerate}
 \end{itemize}
 
 我们没有把上述 limitations 包装为 ``negative result''：表~\ref{tab:main_table} / \S\ref{subsubsec:finding_2} 的核心 claim 是 ``\emph{在 single-DVL 部署 sensor 下、单一 cross-stream benchmark 下、ReBRAC-Q 把 deployable 协议拉到 privileged-critic 协议的统计等价水平}'' —— 这是一个有边界但定义明确的实证结果，每一条 limitation 都不动摇该 claim 的成立。

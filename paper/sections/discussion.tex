@@ -24,7 +24,7 @@
 
 \subsection{Critic-Side BC Penalty Provides Cross-Dataset $\hat{Q}$-Magnitude Invariance}\label{subsec:discussion_critic_q_invariance}
 
-虽然 critic-side BC penalty 不抬 mean，它在两个 dataset 上同时控制了 critic 估计的漂移方向。\texttt{worldcomp} 与 \texttt{crosscomp} 的 baseline $\hat{Q}$ 符号相反（$+15$ vs.\ $-8$；见 \S\ref{subsec:setup_datasets}），但 $\beta_2 = 0$ 后 $\hat{Q}$ 在两个 dataset 上\emph{同向}朝更不保守方向漂移 $+46\%$ 与 $+98\%$（图~\ref{fig:q_drift}）。这一漂移方向的 dataset-invariance 证明 critic-side BC penalty 是通过 target-Q bootstrap 链路施加的\emph{系统性正则}，而非某个 Q 量级下的 cosmetic 项。机制层面的论证因此是：actor-side BC penalty 把 actor 的 OOD extrapolation 锁在 dataset support 内，critic-side BC penalty 把 critic 的 target-Q 估计锁在 ``下一步 action 来自 dataset support'' 的等价类内 —— 二者在不同的回路上分担同一个 OOD-suppression 任务，因此在 mean 与 $\hat{Q}$ 这两个不同的可观测量上分别表现为主导。
+虽然 critic-side BC penalty 不抬 mean，它在两个 dataset 上同时控制了 critic 估计的漂移方向。\texttt{worldcomp} 与 \texttt{crosscomp} 的 baseline $\hat{Q}$ 符号相反（$+15$ vs.\ $-8$；见 \S\ref{subsec:setup_datasets}），但 $\beta_2 = 0$ 后 $\hat{Q}$ 在两个 dataset 上\emph{同向}朝更不保守方向漂移 $+46\%$ 与 $+98\%$（图~\ref{fig:q_drift}）。这一漂移方向的 dataset-invariance 证明 critic-side BC penalty 是通过 target-Q bootstrap 链路施加的\emph{系统性正则}，而非某个 Q 量级下的 cosmetic 项。机制层面的论证因此是：actor-side BC penalty 把 actor 的 OOD extrapolation 锁在 dataset support 内，critic-side BC penalty 把 critic 的 target-Q 估计锁在 ``下一步 action 来自 dataset support'' 的等价类内 —— 二者在不同的回路上分担同一个 OOD-suppression 任务，因此在 mean 与 $\hat{Q}$ 这两个不同的可观测量上分别表现为主导。我们因此把 dataset-invariance 的论点定位在\emph{漂移方向 + 相对幅度}（$+46\%$ / $+98\%$）层面，而非 baseline $\hat{Q}$ 的绝对符号 —— 后者随 reward 设计与 dataset 规模会自然反号，并不构成 critic 不稳定的证据。
 
 \subsection{Critic LayerNorm and Dual Penalty Are Two Independent Stabilizers}\label{subsec:discussion_ln_orthogonal}
 

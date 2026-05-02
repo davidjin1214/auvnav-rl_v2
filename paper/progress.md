@@ -5,11 +5,11 @@
 > Layout: 单栏 11pt（thesis / arXiv preprint 风格）
 > 主算法别名：ReBRAC-Q（actor 端保留 TD3+BC Q-normalization；critic 端追加 dual-penalty + LayerNorm）
 >
-> **Last updated:** 2026-05-02（Phase 4 Appendix 收口）
-> **Last commit:** `2830589` — Phase 4.0+4.1 完成（Fig 1 + 占位 cite 全替换 + 进度追踪文档）；**Phase 4 (Appendix A–G) 待 commit**
-> **Branch:** main, +26 ahead of `origin/main`（Appendix 改动尚未 commit）
+> **Last updated:** 2026-05-02（Phase 5 reviewer stress-test 收口）
+> **Last commit:** `166766e` — Phase 4 (Appendix A–G) 全展开（7 sections / ~290 行）；Phase 5 patches **待 commit**
+> **Branch:** main, +27 ahead of `origin/main`（Phase 5 limitations L9/L10/L11 + discussion §6.2 末段 patch 尚未 commit）
 > **Build status:** `latexmk -pdf -xelatex`，exit=0，0 undefined refs，0 cite warnings，0 missing chars，**12 cites parsed**（无 placeholder），bibtex `warning$ -- 0`
-> **Compiled output:** `main.pdf`，**29 页**，588 KB（含 Fig 1 + Appendix A–G）
+> **Compiled output:** `main.pdf`，**30 页**，594 KB（Phase 5 新增 1 页：limitations 11 条 + discussion §6.2 dataset-invariance 论点定位）
 
 ---
 
@@ -23,9 +23,9 @@
 | Phase 3 | 全 8 节 + Abstract rev.1，单栏改造，编译干净 | ✅ done | `eca5af9` |
 | Phase 4.0 | Figure 1 sensor schematic（matplotlib 脚本 + setup.tex callout） | ✅ done | `2830589` |
 | Phase 4.1 | 占位 cite 替换：`td3bc_phase0c_report` → inline supplementary；`underwater_rl_placeholder` → 4 篇 concrete refs（Carlucho2018, Yu2017, Verma2018pnas, Gunnarson2021ncomm） | ✅ done | `2830589` |
-| Phase 4 (Appendix) | Appendix A–G（reproducibility / hyperparams / full tables / stats / derivations / curves / obs spec） | ✅ done | uncommitted |
-| **Phase 5** | **reviewer stress-test（outline §6 D7）+ 全文 polish** | ⏳ **TODO（next）** | — |
-| Phase 6 | 投稿格式打包（CoRL / RA-L 双栏切换 + supplementary 拆分） | ⏳ TODO | — |
+| Phase 4 (Appendix) | Appendix A–G（reproducibility / hyperparams / full tables / stats / derivations / curves / obs spec） | ✅ done | `166766e` |
+| Phase 5 | reviewer stress-test（review.md §2.2 / §4 反向压测）+ §7 limitations L9/L10/L11 patch + §6.2 dataset-invariance 论点定位 + R1–R10 polish pass | ✅ done | uncommitted |
+| **Phase 6** | **投稿格式打包（CoRL / RA-L 双栏切换 + supplementary 拆分）** | ⏳ **TODO（next）** | — |
 
 ---
 
@@ -39,8 +39,8 @@
 | §3 Problem Setup | `sections/setup.tex` | 99 | rev.2 | ✅ | `sec:setup`, `subsec:setup_task`, `subsec:setup_obs_deployable`, `subsec:setup_obs_privileged`, `subsec:setup_reward`, `subsec:setup_datasets`, `tab:dataset_matrix`, `fig:sensor_schematic`, `eq:setup_priv_obs`, `eq:setup_reward` |
 | §4 Method | `sections/method.tex` | 134 | rev.2 | ✅ | `sec:method`, `subsec:method_actor_loss`, `subsec:method_critic_loss`, `subsec:method_diff` |
 | §5 Experiments | `sections/experiments.tex` | 233 | rev.2 | ✅ | `sec:experiments`, `subsec:main_results`, `subsec:ablations`, `subsubsec:finding_1..4`, `tab:main_table`, `tab:beta2_ablation`, `tab:ln_ablation`, `fig:seed_dotplot`, `fig:q_drift` |
-| §6 Mechanistic Discussion | `sections/discussion.tex` | 41 | rev.1 | ✅ | `sec:discussion` + 5 subsec |
-| §7 Limitations | `sections/limitations.tex` | 38 | rev.1 | ✅ | `sec:limitations`（L1–L8） |
+| §6 Mechanistic Discussion | `sections/discussion.tex` | 41 | rev.2 | ✅ | `sec:discussion` + 5 subsec（rev.2: §6.2 末段加 1 句把 dataset-invariance 论点定位在「漂移方向 + 相对幅度」而非 baseline $\hat{Q}$ 绝对符号） |
+| §7 Limitations | `sections/limitations.tex` | 50 | rev.2 | ✅ | `sec:limitations`（L1–L11；rev.2 加 L9 budget parity / L10 β₂ dataset coverage / L11 unanalyzed observations） |
 | §8 Conclusion | `sections/conclusion.tex` | 15 | rev.1 | ✅ | `sec:conclusion` |
 
 **Body 总行数：616**（不含 main.tex 框架、refs.bib、appendix.tex）
@@ -145,12 +145,17 @@
 - ✅ main.tex 接入 `\input{sections/appendix}`，编译干净 29 页 588 KB
 - ✅ 中间文件已 latexmk -c 清理
 
-### P3 — Reviewer stress-test（outline §6 D7）
-- 用 `docs/rebrac_mainline_review.md` §2.2 / §4 反向压力测试全文
-- 检查每个 finding 是否有 ≥1 处可被审稿人 imagined 但未做的对照实验
-- 任何缺口要么补（升级到 Phase 4.5），要么写进 §7 Limitations 明示边界
+### ~~P3 — Reviewer stress-test（outline §6 D7）~~（✅ done，2026-05-02）
+- ✅ 用 `docs/rebrac_mainline_review.md` §2.2 / §4 反向压测全文，对每个 finding C1–C4 列出 reviewer 攻击点
+- ✅ Cross-check §5 Experiments / §6 Discussion / §7 Limitations 是否已显式回应
+- ✅ HIGH 三条已 patch 进 §7：
+  - **L9** TD3+BC baseline budget parity（worldcomp 上 TD3+BC TRAIN_EPOCHS=96 vs ReBRAC-Q=64 不一致；crosscomp 同口径无影响）
+  - **L10** β₂ ablation dataset coverage（仅 cross-1000 + world-1000；cross-2000 上 critic-penalty-off 未跑）
+  - **L11** Unanalyzed observations（state_dict_l2 weight-level 验证 + super-teacher mean_test_return=35.62 现象 + β₁ single-axis attribution 三处未深挖现象合并）
+- ✅ MEDIUM 一条已 patch 进 §6.2：dataset-invariance 论点定位在「漂移方向 + 相对幅度」而非 baseline $\hat{Q}$ 绝对符号
+- ✅ R1–R10 polish pass：54 处 ReBRAC-Q 命名、5 个核心数字（0.928 / 0.922 / 0.934 / 0.902 / 0.918）跨 abstract / intro / experiments / appendix / discussion 全部一致；Welch's $p = 0.92$ (abstract 圆整) / $0.9195$ (main text full) 惯例 OK
 
-### P4 — 投稿格式打包
+### P4 — 投稿格式打包（next）
 - `\documentclass[10pt, twocolumn]{article}` + `[margin=0.85in]`
 - `figure*` / `table*` 切换（如有跨栏需要）
 - Supplementary 拆分（Appendix → 独立 `supplementary.tex`）
@@ -222,17 +227,17 @@ paper/
 ├── refs.bib                       # 12 cites（0 placeholder）
 ├── outline.md                     # Phase 0 outline 主文档
 ├── progress.md                    # ← 本文档
-├── main.pdf                       # 29pp 588KB（最新 build artifact，含 Appendix A–G）
+├── main.pdf                       # 30pp 594KB（含 Phase 5 patches）
 ├── sections/
 │   ├── intro.tex                  # §1, rev.1
 │   ├── related_work.tex           # §2, rev.1
 │   ├── setup.tex                  # §3, rev.2（含 Fig 1 callout）
 │   ├── method.tex                 # §4, rev.2
 │   ├── experiments.tex            # §5, rev.2
-│   ├── discussion.tex             # §6, rev.1
-│   ├── limitations.tex            # §7, rev.1
+│   ├── discussion.tex             # §6, rev.2（Phase 5 §6.2 末段补 dataset-invariance 论点定位）
+│   ├── limitations.tex            # §7, rev.2（Phase 5 加 L9/L10/L11 三条边界）
 │   ├── conclusion.tex             # §8, rev.1
-│   └── appendix.tex               # Appendix A–G, rev.1（NEW 2026-05-02）
+│   └── appendix.tex               # Appendix A–G, rev.1
 └── figures/
     ├── output/
     │   ├── fig1_sensor_schematic.{pdf,png}  ✅

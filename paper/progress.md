@@ -5,11 +5,11 @@
 > Layout: 单栏 11pt（thesis / arXiv preprint 风格）
 > 主算法别名：ReBRAC-Q（actor 端保留 TD3+BC Q-normalization；critic 端追加 dual-penalty + LayerNorm）
 >
-> **Last updated:** 2026-05-02
-> **Last commit:** `eca5af9` — paper drafting Phase 3 完成（Fig 1 + 占位 cite 替换均已落地，未 commit）
-> **Branch:** main, +25 ahead of `origin/main`
-> **Build status:** `xelatex + bibtex + xelatex × 2`，exit=0，0 undefined refs，0 cite warnings，0 missing chars，**12 cites parsed**（无 placeholder）
-> **Compiled output:** `main.pdf`，**21 页**，526 KB（含 Fig 1 + 4 篇 underwater RL refs）
+> **Last updated:** 2026-05-02（Phase 4 Appendix 收口）
+> **Last commit:** `2830589` — Phase 4.0+4.1 完成（Fig 1 + 占位 cite 全替换 + 进度追踪文档）；**Phase 4 (Appendix A–G) 待 commit**
+> **Branch:** main, +26 ahead of `origin/main`（Appendix 改动尚未 commit）
+> **Build status:** `latexmk -pdf -xelatex`，exit=0，0 undefined refs，0 cite warnings，0 missing chars，**12 cites parsed**（无 placeholder），bibtex `warning$ -- 0`
+> **Compiled output:** `main.pdf`，**29 页**，588 KB（含 Fig 1 + Appendix A–G）
 
 ---
 
@@ -21,10 +21,10 @@
 | Phase 1 | §4 Method + §5 Experiments rev.2 严审收口 | ✅ done | `4572f03` |
 | Phase 2 | Figure 2 (seed dotplot) + Figure 3 (Q drift) + refs.bib 雏形 | ✅ done | `4572f03` |
 | Phase 3 | 全 8 节 + Abstract rev.1，单栏改造，编译干净 | ✅ done | `eca5af9` |
-| Phase 4.0 | Figure 1 sensor schematic（matplotlib 脚本 + setup.tex callout） | ✅ done（待 commit） | — |
-| Phase 4.1 | 占位 cite 替换：`td3bc_phase0c_report` → inline supplementary；`underwater_rl_placeholder` → 4 篇 concrete refs（Carlucho2018, Yu2017, Verma2018pnas, Gunnarson2021ncomm） | ✅ done（待 commit） | — |
-| **Phase 4** | **Appendix A1–A7（reproducibility / hyperparams / full tables / stats / derivations / curves / obs spec）** | ⏳ **TODO（next）** | — |
-| Phase 5 | reviewer stress-test（outline §6 D7）+ 全文 polish | ⏳ TODO | — |
+| Phase 4.0 | Figure 1 sensor schematic（matplotlib 脚本 + setup.tex callout） | ✅ done | `2830589` |
+| Phase 4.1 | 占位 cite 替换：`td3bc_phase0c_report` → inline supplementary；`underwater_rl_placeholder` → 4 篇 concrete refs（Carlucho2018, Yu2017, Verma2018pnas, Gunnarson2021ncomm） | ✅ done | `2830589` |
+| Phase 4 (Appendix) | Appendix A–G（reproducibility / hyperparams / full tables / stats / derivations / curves / obs spec） | ✅ done | uncommitted |
+| **Phase 5** | **reviewer stress-test（outline §6 D7）+ 全文 polish** | ⏳ **TODO（next）** | — |
 | Phase 6 | 投稿格式打包（CoRL / RA-L 双栏切换 + supplementary 拆分） | ⏳ TODO | — |
 
 ---
@@ -43,7 +43,19 @@
 | §7 Limitations | `sections/limitations.tex` | 38 | rev.1 | ✅ | `sec:limitations`（L1–L8） |
 | §8 Conclusion | `sections/conclusion.tex` | 15 | rev.1 | ✅ | `sec:conclusion` |
 
-**Body 总行数：616**（不含 main.tex 框架与 refs.bib）
+**Body 总行数：616**（不含 main.tex 框架、refs.bib、appendix.tex）
+
+**Appendix（rev.1，2026-05-02）：**
+
+| App | 文件 | 范围 | 关键 anchor |
+|---|---|---|---|
+| A | `sections/appendix.tex` §A | Reproducibility（notebooks / data manifests / seeds / commit hashes / compute env） | `app:repro`, `tab:repro_notebooks`, `tab:repro_data` |
+| B | `sections/appendix.tex` §B | Hyperparameters（ReBRAC-Q winner config + TD3+BC α-sweep + ReBRAC-Q sweep grid） | `app:hyperparams`, `tab:hyperparams_rebrac` |
+| C | `sections/appendix.tex` §C | Full per-seed results（main matrix + β₂=0 + LN-off） | `app:full_tables`, `tab:full_main`, `tab:full_beta2`, `tab:full_ln` |
+| D | `sections/appendix.tex` §D | Statistical tests（Welch's $t$ + paired bootstrap pseudocode + Cohen's $d$ + multiple-comparisons） | `app:stats`, `eq:welch_t`, `eq:welch_df`, `eq:cohens_d` |
+| E | `sections/appendix.tex` §E | Method derivations（β₁↔α 等价 + Q-norm 数值稳定性 + LN placement） | `app:derivations` |
+| F | `sections/appendix.tex` §F | Training curves（critic/actor loss + $\hat{Q}_{\text{target}}$ trajectory + LN-off failure mode 描述） | `app:curves` |
+| G | `sections/appendix.tex` §G | Sensor / observation full spec（s0/s1/s2 + 10-D obs + history stacking + privileged $\mathbf{o}^{\text{priv}}$） | `app:obs_spec`, `tab:obs_probe_layout`, `tab:obs_channels_full` |
 
 ---
 
@@ -122,14 +134,16 @@
 - ✅ refs.bib 删除 2 placeholder + 添加 4 entries（rev.3 → rev.4）
 - ✅ main.pdf 21 页编译干净（12 cites parsed，0 placeholder mention）
 
-### P2 — Appendix A1–A7（移到 supplementary）
-- A1 Reproducibility（notebook 列表 / 数据 manifest / seed 协议 / commit hash 表）
-- A2 Hyperparameters（SACConfig / ReBRACConfig / TrainConfig 完整表）
-- A3 Full results tables（per-seed × dataset × ablation 全展开）
-- A4 Statistical test details（Welch's t-test 推导、paired bootstrap 实现、效应量）
-- A5 Method derivations（β₁ ↔ TD3+BC α 等价性、Q-normalization 的稳定性论证）
-- A6 Training curves（critic loss / actor loss / α / Q-mean 全流程曲线）
-- A7 Sensor / observation full spec（probe layouts s0/s1/s2 完整表 + 对应真实传感器型号）
+### ~~P2 — Appendix A1–A7~~（✅ done，rev.1，2026-05-02）
+- ✅ A1 Reproducibility（notebook 列表 + offline data manifest + seed 协议 + commit hash 表 + compute env）
+- ✅ A2 Hyperparameters（ReBRAC-Q winner config + TD3+BC α-sweep + ReBRAC-Q sweep grid）
+- ✅ A3 Full results tables（main matrix per-seed + β₂=0 ablation per-seed + LN-off probe per-seed）
+- ✅ A4 Statistical test details（Welch's $t$-test \eqref{eq:welch_t}–\eqref{eq:welch_df} + paired bootstrap pseudocode + Cohen's $d$ \eqref{eq:cohens_d} + multiple comparisons）
+- ✅ A5 Method derivations（$\beta_1 \leftrightarrow \alpha_{\text{TD3+BC}}$ 等价推导 + Q-norm $\varepsilon$ 数值稳定性 + critic LN forward graph 位置）
+- ✅ A6 Training curves（critic loss / actor loss two-term split / $\hat{Q}_{\text{target}}$ trajectory cross-dataset / LN-off seed-42 spike 描述；原始 CSV forward 至 supplementary）
+- ✅ A7 Sensor / observation full spec（s0/s1/s2 probe layout 真实 sensor 映射 + 10-D obs channel 完整定义 + history stacking + privileged $\mathbf{o}^{\text{priv}}$ 实现注）
+- ✅ main.tex 接入 `\input{sections/appendix}`，编译干净 29 页 588 KB
+- ✅ 中间文件已 latexmk -c 清理
 
 ### P3 — Reviewer stress-test（outline §6 D7）
 - 用 `docs/rebrac_mainline_review.md` §2.2 / §4 反向压力测试全文
@@ -204,20 +218,21 @@ cd paper && latexmk -C
 
 ```
 paper/
-├── main.tex                       # rev.3 — 单栏 11pt 框架 + Abstract
-├── refs.bib                       # 10 cites（2 placeholder）
+├── main.tex                       # rev.4 — 单栏 11pt 框架 + Abstract + \input{appendix}
+├── refs.bib                       # 12 cites（0 placeholder）
 ├── outline.md                     # Phase 0 outline 主文档
 ├── progress.md                    # ← 本文档
-├── main.pdf                       # 19pp 446KB（最新 build artifact）
+├── main.pdf                       # 29pp 588KB（最新 build artifact，含 Appendix A–G）
 ├── sections/
 │   ├── intro.tex                  # §1, rev.1
 │   ├── related_work.tex           # §2, rev.1
-│   ├── setup.tex                  # §3, rev.1（Fig 1 callout pending）
+│   ├── setup.tex                  # §3, rev.2（含 Fig 1 callout）
 │   ├── method.tex                 # §4, rev.2
 │   ├── experiments.tex            # §5, rev.2
 │   ├── discussion.tex             # §6, rev.1
 │   ├── limitations.tex            # §7, rev.1
-│   └── conclusion.tex             # §8, rev.1
+│   ├── conclusion.tex             # §8, rev.1
+│   └── appendix.tex               # Appendix A–G, rev.1（NEW 2026-05-02）
 └── figures/
     ├── output/
     │   ├── fig1_sensor_schematic.{pdf,png}  ✅

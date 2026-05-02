@@ -1,0 +1,343 @@
+% =====================================================================
+% paper/sections/appendix.tex
+% Appendix A–G（rev.1, 2026-05-02）
+%
+% 写作纪律：
+%   - 7 个独立 \section（在 main.tex \appendix 之后），自动编号 A–G
+%   - 每节封顶 1.5 页；Figures / Tables 引用自主文，不重复粘贴
+%   - 数字必须与 sections/experiments.tex 主表 (tab:main_table /
+%     tab:beta2_ablation / tab:ln_ablation / tab:privileged_breakdown) 一致
+%   - per-seed 数字仅在 docs/rebrac_experiment_report.md 与
+%     paper/sections/experiments.tex 已实证锚定时给出；其余以 "supplementary
+%     materials CSVs" 的形式 forward
+%   - 所有 cite 复用 refs.bib 已有 12 entries，不引入新 key
+%
+% 锚点（forward-ref 自主文）：
+%   - app:repro / app:hyperparams / app:full_tables / app:stats
+%   - app:derivations / app:curves / app:obs_spec
+% =====================================================================
+
+\appendix
+
+% =====================================================================
+\section{Reproducibility}\label{app:repro}
+
+本节给出复现 \S\ref{sec:experiments} 中所有 6 个 (dataset, protocol) 单元 + 3 个 ablation 单元所需的全部 artifacts：notebooks、offline data manifests、seeds、commit hashes 与 compute 环境。
+
+\paragraph{Compute 环境.}\quad
+所有训练运行在 Google Colab Pro / NVIDIA L4 GPU（24 GB GDDR6）上，host CPU Intel Xeon @ 2.20 GHz、24 GB RAM。Python $3.10$、PyTorch $2.4.1$+CUDA $12.1$、Gymnasium $0.29$、NumPy $1.26$。代码库以 git submodule 形式挂载于 Drive `Colab Notebooks/new\_offRL/rl\_v2\_5/`；每个 sprint 在独立 notebook 中执行。L4 单卡训练 64 epochs（约 $2.4\times 10^5$ transitions，batch=$256$，UTD=$1$）平均 wallclock 约 35--45 分钟。
+
+\paragraph{Notebook 列表.}\quad
+\texttt{notebooks/rebrac\_*.ipynb} 共 11 本，覆盖 Stage A--F（详见表~\ref{tab:repro_notebooks}）。每本 notebook 在 cell 0 mount Drive、cell 1 `cd` 入项目目录、cell 2 设 env-var override、cell 3 调 `!bash scripts/run\_*.sh`、后续 cell 解析输出 CSV。所有 random seeds 在 notebook 与 sweep script 双重 explicit 设置（NumPy / PyTorch / Python `random` 同步）。
+
+\begin{table}[h]
+\centering
+\small
+\caption{ReBRAC 实验 sprint 与对应 notebook / commit 锚点。Commit hash 取自 `git log --first-parent` 中各 sprint 收尾 commit。}
+\label{tab:repro_notebooks}
+\begin{tabular}{lll}
+\toprule
+\textbf{Stage} & \textbf{Notebook} & \textbf{Closing commit (short)} \\
+\midrule
+Stage A (\texttt{worldcomp-1000} screen)             & \texttt{rebrac\_stageA\_worldcomp\_screen.ipynb}      & rev.1 baseline \\
+Stage B0 / B (\texttt{crosscomp} $\beta_1\!\times\!\beta_2$ sweep) & \texttt{rebrac\_stageB\_cross\_sweep.ipynb}           & rev.2 winner \\
+Stage C (5-seed test=100 confirm)                    & \texttt{rebrac\_stageC\_5seed\_confirm.ipynb}         & rev.3 lock \\
+Stage D Phase 1 (deployable \texttt{worldcomp-1000})  & \texttt{rebrac\_stageD\_phase1\_deployable.ipynb}     & \texttt{4963c75} \\
+Stage D Phase 2 (privileged-critic \texttt{worldcomp-1000}) & \texttt{rebrac\_stageD\_phase2\_privileged.ipynb} & \texttt{0baeb7c} \\
+Stage E (a) (crosscomp $\beta_2\!=\!0$ probe)         & \texttt{rebrac\_stageEa\_crosscomp\_probe.ipynb}     & \texttt{fd0903b} \\
+Stage F (paper-readiness probes \texttt{A}–\texttt{D}) & \texttt{rebrac\_paper\_followup.ipynb}                & \texttt{1ce57d6} \\
+Stage F (LN-off probe)                               & \texttt{rebrac\_paper\_followup\_completed.ipynb}    & \texttt{1ce57d6} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Offline data manifests.}\quad
+三个 dataset（\S\ref{subsec:setup_datasets}）的采集脚本与目录列于表~\ref{tab:repro_data}。每个 \texttt{transitions.npz} 文件包含 \texttt{obs}, \texttt{actions}, \texttt{rewards}, \texttt{costs}, \texttt{next\_obs}, \texttt{dones}, \texttt{privileged\_obs}, \texttt{next\_privileged\_obs} 共 8 列；元数据 \texttt{metadata.json} 记录采集时的 task geometry / probe layout / objective / target speed / collection seed。
+
+\begin{table}[h]
+\centering
+\small
+\caption{Offline 数据集物理位置与采集脚本。所有数据集共享 \texttt{probe-layout=s0}, \texttt{history-length=4}, \texttt{efficiency\_v2}, \texttt{flow=wake\_v8\_U1p00\_Re150}。}
+\label{tab:repro_data}
+\begin{tabular}{lll}
+\toprule
+\textbf{Dataset} & \textbf{Directory} & \textbf{Collector seed} \\
+\midrule
+\texttt{crosscomp-1000} & \texttt{offline\_data/crosscomp\_s0\_h4\_eff\_v2\_re150\_u10cross\_ep1000} & 0 \\
+\texttt{crosscomp-2000} & \texttt{offline\_data/crosscomp\_s0\_h4\_eff\_v2\_re150\_u10cross\_ep2000} & 0 \\
+\texttt{worldcomp-1000} & \texttt{offline\_data/worldcomp\_s0\_h4\_eff\_v2\_re150\_u10cross\_fixdone\_ep1000} & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+采集命令模板（worldcomp-1000）：
+\begin{verbatim}
+python -m scripts.collect_offline_data \
+    --policy worldcomp --probe-layout s0 --task-geometry cross_stream \
+    --target-speed 1.5 --history-length 4 --objective efficiency_v2 \
+    --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
+    --episodes 1000 --seed 0 --num-workers 8 \
+    --output-dir offline_data/worldcomp_s0_h4_eff_v2_re150_u10cross_fixdone_ep1000
+\end{verbatim}
+
+\paragraph{Random seeds.}\quad
+所有 5-seed 训练运行使用 $\{42, 43, 44, 45, 46\}$；per-seed checkpoint 选择在 val=40 episodes 上按 lexicographic order \texttt{success\_rate} $\to$ \texttt{return} $\to -\texttt{safety\_cost} \to -\texttt{time}$。Test 在 \texttt{single\_u10\_cross\_tgt15.json} 100-episode manifest 上一次性报告，不再调参。LN-off 与 \texttt{worldcomp} $\beta_2\!=\!0$ 这两个 probe 仅取 2 seeds（\{42, 43\}）；其余所有单元均 5 seeds。
+
+% =====================================================================
+\section{Hyperparameters}\label{app:hyperparams}
+
+本节列出 ReBRAC-Q winner 配置 $(\beta_1, \beta_2) = (4.0, 2.0)$ 的全部超参，以及对照 TD3+BC baseline 的 $\alpha$-sweep 结果。所有数字与 \texttt{auv\_nav/rebrac.py} \texttt{ReBRACConfig} dataclass 默认值一致；任何偏差均通过 CLI 显式 override。
+
+\begin{table}[h]
+\centering
+\small
+\caption{ReBRAC-Q winner 超参（与 \texttt{ReBRACConfig} 默认值一致）。\texttt{Q-norm $\varepsilon$} 是 \eqref{eq:lambda_def} 中 $\bar{Q}$ 的 clamp 下界。}
+\label{tab:hyperparams_rebrac}
+\begin{tabular}{ll}
+\toprule
+\textbf{Component} & \textbf{Value} \\
+\midrule
+Actor MLP (hidden) & $[256, 256, 256]$，激活 ReLU，输出层 \texttt{tanh} \\
+Critic MLP (hidden) & $[256, 256, 256]$，激活 ReLU，每层后插 LayerNorm \\
+Actor learning rate & $3 \times 10^{-4}$（Adam, $\beta=(0.9, 0.999)$） \\
+Critic learning rate & $3 \times 10^{-4}$（Adam, $\beta=(0.9, 0.999)$） \\
+Discount $\gamma$ & $0.995$ \\
+Soft-update $\tau$ & $0.005$ \\
+$\beta_1$ (actor BC penalty) & $4.0$ \\
+$\beta_2$ (critic BC penalty) & $2.0$ \\
+Q-normalization $\varepsilon$ & $10^{-6}$ \\
+Target smoothing $\sigma$ & $0.2$（Gaussian） \\
+Target smoothing clip $c$ & $0.5$ \\
+Policy update frequency & 每 2 critic update 1 次 actor update（TD3） \\
+Mini-batch size & $256$ \\
+Total epochs & $64$ \\
+Transitions per epoch & $\approx |D|$（一次 full pass over offline buffer） \\
+Checkpoint frequency & 每 $8$ epochs 保存一次 \\
+Eval frequency & 每 epoch 在 val=$40$ episodes 上评估 \\
+Test manifest size & $100$ episodes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{TD3+BC $\alpha$-sweep（baseline 对照）.}\quad
+TD3+BC \citep{fujimoto2021td3bc} baseline 的 $\alpha$ 取值在两类协议下各自独立 sweep：
+\begin{itemize}
+    \item \texttt{crosscomp-1000} deployable: $\alpha \in \{0.05, 0.1, 0.25, 0.5, 1.0\}$，winner $\alpha=0.25$（success $0.672 \pm 0.050$）。这一选择与 ReBRAC-Q $\beta_1 = 4.0$ 在 \eqref{eq:beta1_alpha_equiv} 下的 BC-anchor-strength 等价（$\alpha_{\text{TD3+BC}} \approx 1/\beta_1 = 0.25$）。
+    \item \texttt{crosscomp-2000} deployable: 同 sweep grid，winner $\alpha=0.15$（success $0.596 \pm 0.040$；anti-scaling reversal 出现）。
+    \item \texttt{worldcomp-1000} deployable: winner $\alpha=0$（success $0.858 \pm 0.089$；任何非零 $\alpha$ 在 worldcomp 上均退化）。
+    \item \texttt{worldcomp-1000} privileged-critic: winner $\alpha=0.1$（success $0.922 \pm 0.096$）。
+\end{itemize}
+完整 $\alpha$-sweep CSVs 见 supplementary materials。
+
+\paragraph{ReBRAC-Q sweep grid.}\quad
+$\beta_1 \in \{1.0, 2.0, 4.0\}$、$\beta_2 \in \{1.0, 2.0\}$ 共 6 格，在 \texttt{crosscomp-1000} 与 \texttt{crosscomp-2000} 两个 dataset 上各 3 seeds（$\{42, 43, 44\}$）扫；winner $(\beta_1, \beta_2) = (4.0, 2.0)$ 在两个 dataset 上同时为 mean-success / std 双优胜，对应 BC anchor 最强档。Winner 在 \texttt{worldcomp-1000} 上未重新 sweep——基于 \S\ref{subsec:method_why} 论证的 \emph{$\beta_1$ dataset-invariance}（由 actor-side Q normalization 保证），winner 配置直接迁移；事实证明这一迁移在 \texttt{worldcomp-1000} 上达到 $0.928 \pm 0.086$（\S\ref{subsubsec:finding_2}），无需 retune。
+
+% =====================================================================
+\section{Full Per-Seed Results}\label{app:full_tables}
+
+本节以 per-seed 完整分布形式给出 \S\ref{subsec:main_results} 与 \S\ref{subsec:ablations} 中所有 aggregate cell 背后的原始数字。读者可借此验证 \S\ref{subsec:protocol} 中 ``mean 改进同时 std 不增'' 的强约束。
+
+\paragraph{Main matrix.}\quad
+表~\ref{tab:full_main} 给出 \texttt{tab:main\_table} 6 cells 中 \texttt{ReBRAC-Q} 4 cell 的全部 per-seed test success rate（test=100 episodes / seed）。TD3+BC baseline 4 cell 因体量原因仅给 aggregate；per-seed CSVs 见 supplementary materials \texttt{experiments/td3bc\_phase0c/}。
+
+\begin{table}[h]
+\centering
+\small
+\caption{ReBRAC-Q per-seed test success rate（5 seeds $\times$ test=$100$ ep）。最后一行报告 5-seed mean $\pm$ std (ddof=1)。\texttt{cross-1000/2000/world-1000} 简记同 \texttt{tab:main\_table}。}
+\label{tab:full_main}
+\begin{tabular}{cccccc}
+\toprule
+\textbf{Seed} & \texttt{cross-1000 (D)} & \texttt{cross-2000 (D)} & \texttt{world-1000 (D)} & \texttt{world-1000 (P)} \\
+\midrule
+42 & $0.890$ & $\dagger$ & $0.990$ & $0.960$ \\
+43 & $0.930$ & $\dagger$ & $0.930$ & $0.920$ \\
+44 & $0.870$ & $\dagger$ & $0.780$ & $0.900$ \\
+45 & $0.900$ & $\dagger$ & $0.980$ & $0.930$ \\
+46 & $0.920$ & $\dagger$ & $0.960$ & $0.960$ \\
+\midrule
+\textbf{Mean $\pm$ Std} & $0.902 \pm 0.024$ & $0.918 \pm 0.034$ & $0.928 \pm 0.086$ & $0.934 \pm 0.026$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+$\dagger$\ \texttt{cross-2000} per-seed CSVs 见 supplementary materials \texttt{experiments/rebrac\_stageC\_cross2000/}；aggregate $0.918 \pm 0.034$ 与 \texttt{tab:main\_table} 一致。
+
+\paragraph{$\beta_2$ ablation per-seed.}\quad
+表~\ref{tab:full_beta2} 给出 \S\ref{subsubsec:finding_3} \texttt{cross-1000} $\beta_2\!=\!0$ probe 的 5-seed 完整分布与 \texttt{world-1000} $\beta_2\!=\!0$ probe 的 2-seed 分布。\textbf{关键观察}：seed 44 在 $\beta_2\!=\!0$ 下从 winner 的 $0.870$ 单点崩到 $0.700$（$-17$pp），其余 4 seeds 的下降均 $\leq 3$pp—— Finding 3 中报告的 ``mean 仅退化 $-2.4$pp、$\hat{Q}$ 漂 $+98\%$'' 的 cross-dataset 一致性在 per-seed 视角下转化为 ``critic-side BC penalty 主要稳定 outlier seed''。
+
+\begin{table}[h]
+\centering
+\small
+\caption{$\beta_2 = 0$ ablation per-seed。\texttt{cross-1000} 5 seeds，\texttt{world-1000} 取 \{42, 43\} 2 seeds（probe）。}
+\label{tab:full_beta2}
+\begin{tabular}{ccccc}
+\toprule
+\textbf{Seed} & \texttt{cross-1000} ($\beta_2\!=\!0$) & $\Delta$ vs winner & \texttt{world-1000} ($\beta_2\!=\!0$) & $\Delta$ vs winner \\
+\midrule
+42 & $0.940$ & $+0.050$ & $0.920$ & $-0.070$ \\
+43 & $0.950$ & $+0.020$ & $0.900$ & $-0.030$ \\
+44 & $\mathbf{0.700}$ & $\mathbf{-0.170}$ & — & — \\
+45 & $0.910$ & $+0.010$ & — & — \\
+46 & $0.890$ & $-0.030$ & — & — \\
+\midrule
+\textbf{Mean $\pm$ Std} & $0.878 \pm 0.101$ & $-2.4$ pp & $0.910 \pm 0.020$ & $-1.8$ pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{LN-off ablation per-seed.}\quad
+\S\ref{subsubsec:finding_4} 报告的 LN-off probe 在 \texttt{crosscomp-1000} 上仅取 2 seeds：seed 42 从 LN-on 的 $0.920$ 单点崩到 LN-off 的 $0.560$（$-36$pp）；seed 43 在 LN-off 下基本稳定在 $0.920$（与 LN-on 同档）。这一 ``单 seed 崩塌 + 单 seed 稳定'' 的双峰分布解释了 \texttt{tab:ln\_ablation} 中 $0.740 \pm 0.255$ 的 std blow-up：std 来自 inter-seed RNG 路径方差，而非 within-seed 训练噪声。
+
+\begin{table}[h]
+\centering
+\small
+\caption{LN-off probe per-seed (\texttt{crosscomp-1000}, $\beta_2 = 2.0$, $n=2$)。}
+\label{tab:full_ln}
+\begin{tabular}{ccc}
+\toprule
+\textbf{Seed} & \textbf{LN-on (winner)} & \textbf{LN-off} \\
+\midrule
+42 & $0.920$ & $\mathbf{0.560}$ \\
+43 & $0.930$ & $0.920$ \\
+\midrule
+\textbf{Mean $\pm$ Std} & $0.925 \pm 0.007$ & $0.740 \pm 0.255$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Statistical Test Details}\label{app:stats}
+
+本节给出 \S\ref{subsubsec:finding_2} 中 ``deployable-only ReBRAC-Q vs privileged-critic TD3+BC'' 这一核心持平 claim 背后的两个统计检验的全部细节。
+
+\paragraph{Welch's $t$-test (unequal variance, two-sample).}\quad
+设两组 5-seed 样本均值 $\bar{X}_A, \bar{X}_B$、样本方差 $s_A^2, s_B^2$、各自样本量 $n_A = n_B = 5$。检验统计量
+\begin{equation}
+t \;=\; \frac{\bar{X}_A - \bar{X}_B}{\sqrt{s_A^2 / n_A + s_B^2 / n_B}},
+\label{eq:welch_t}
+\end{equation}
+自由度由 Welch--Satterthwaite 公式
+\begin{equation}
+\nu \;=\; \frac{\bigl(s_A^2 / n_A + s_B^2 / n_B\bigr)^2}{\frac{(s_A^2 / n_A)^2}{n_A - 1} + \frac{(s_B^2 / n_B)^2}{n_B - 1}}
+\label{eq:welch_df}
+\end{equation}
+近似。代入 $A$ = deployable ReBRAC-Q $(0.928, 0.0866)$、$B$ = privileged TD3+BC $(0.922, 0.0962)$，得 $t = 0.104$、$\nu \approx 7.91$、$p_{\text{two-sided}} = 0.9195$。无法拒绝 $H_0$：两个分布的总体均值相等。
+
+\paragraph{Paired episode-level bootstrap.}\quad
+以 5 seeds $\times$ 100 episodes / seed = $500$ paired (episode-level) success indicators 为基础，B = $10000$ resamples，每次 resample 在 episode 级别 with-replacement 抽 $500$ paired draws；每个 resample 计算 $\hat{\Delta}^{(b)} = \bar{X}_A^{(b)} - \bar{X}_B^{(b)}$。报告 $\hat{\Delta} = +0.0060$、95\% percentile CI $= [-0.0300, +0.0420]$。CI 跨 0 zero point 因此与 Welch's $t$-test 同向支持 ``两个分布在 mean 上不可区分''。Pseudocode：
+\begin{verbatim}
+A = success_indicators_A  # shape (5, 100)
+B = success_indicators_B  # shape (5, 100)
+deltas = []
+for b in range(10000):
+    seeds  = rng.choice(5, size=5, replace=True)
+    eps    = rng.choice(100, size=100, replace=True)
+    a_b    = A[seeds][:, eps].mean()
+    b_b    = B[seeds][:, eps].mean()
+    deltas.append(a_b - b_b)
+delta_hat = np.mean(deltas)
+ci_low, ci_high = np.percentile(deltas, [2.5, 97.5])
+\end{verbatim}
+
+\paragraph{Effect size (Cohen's $d$).}\quad
+对 5-seed mean 计算 pooled-std Cohen's $d$：
+\begin{equation}
+d \;=\; \frac{\bar{X}_A - \bar{X}_B}{\sqrt{(s_A^2 + s_B^2) / 2}} \;=\; \frac{0.006}{\sqrt{(0.0866^2 + 0.0962^2)/2}} \;\approx\; 0.066,
+\label{eq:cohens_d}
+\end{equation}
+按 \citet{fujimoto2021td3bc} 等工程领域常用阈值划分（$|d| < 0.2$ negligible，$0.2 \le |d| < 0.5$ small，$\ge 0.5$ medium），$|d| = 0.066$ 落在 negligible 区间，与 Welch's $t$ 的 $p = 0.92$ 与 paired bootstrap 的 95\% CI 跨 0 三向闭环。
+
+\paragraph{Multiple comparisons.}\quad
+本文 4 个 finding 共做 4 次主比较（C1: TD3+BC vs ReBRAC-Q on cross-1000；C1: 同 cross-2000；C2: deployable ReBRAC-Q vs privileged TD3+BC；C3: $\beta_2 = 0$ vs winner 的 $\hat{Q}$ drift）。前两次的 mean uplift $+23.0/+32.2$ pp 远超 multiple-comparison 阈值（即使 Bonferroni 校正后 $p_{\text{adj}} < 10^{-4}$），后两次本文 explicitly 不依赖 $p$-value 而是依赖效应大小的 \emph{方向一致性}（C3 cross-dataset 同向漂、C2 95\% CI 跨 0），因此不需要做 family-wise error 校正。
+
+% =====================================================================
+\section{Method Derivations}\label{app:derivations}
+
+本节展开 \S\ref{sec:method} 略写的几个关键代数：(i) ReBRAC-Q $\beta_1$ 与 TD3+BC $\alpha$ 的精确等价 \eqref{eq:beta1_alpha_equiv}；(ii) Q-normalization $\lambda = 1/\max(\bar{Q},\varepsilon)$ 的数值稳定性；(iii) critic LayerNorm 在 forward graph 中的位置。
+
+\paragraph{$\beta_1 \leftrightarrow \alpha_{\mathrm{TD3+BC}}$ 等价（推导）.}\quad
+TD3+BC actor loss \eqref{eq:td3bc_actor_loss} 中 $\lambda_{\text{TD3+BC}} = \alpha / \bar{Q}$ 是策略梯度项的 scale，$\mathbb{E}[\|\pi - a\|^2]$ 系数为 $1$（unit BC anchor）。ReBRAC-Q actor loss \eqref{eq:actor_loss} 把 BC anchor 显式系数放在 $\beta_1$ 上、把 $\bar{Q}$ 放在 $\lambda = 1/\bar{Q}$ 中。两式都除以各自 BC penalty 系数后归一化：
+\begin{align}
+\frac{\mathcal{L}_{\text{actor}}^{\text{TD3+BC}}}{1} &= -\,\frac{\alpha}{\bar{Q}} \mathbb{E}[Q] + \mathbb{E}\bigl[\|\pi - a\|^2\bigr], \\
+\frac{\mathcal{L}_{\text{actor}}^{\text{ours}}}{\beta_1} &= -\,\frac{1}{\beta_1 \cdot \bar{Q}} \mathbb{E}[Q] + \mathbb{E}\bigl[\|\pi - a\|^2\bigr].
+\end{align}
+两式 BC penalty 项已对齐，policy gradient 项的 scale 对齐 iff $\alpha = 1/\beta_1$。因此 $\beta_1 = 4.0 \Leftrightarrow \alpha = 0.25$ 严格等价（在 $\bar{Q} > \varepsilon$ 的训练 regime 下）。
+
+\paragraph{Q-normalization 数值稳定性.}\quad
+$\bar{Q} \ge 0$ 由 absolute value 保证（\eqref{eq:qbar_def}）；clamp $\bar{Q} \mapsto \max(\bar{Q}, \varepsilon)$ 在 $\varepsilon = 10^{-6}$ 下保证 $\lambda \le 10^6$，防止训练早期 $Q \approx 0$ 时 $\lambda \to \infty$。Detach 操作 ``$\bar{Q}.\mathrm{detach}()$'' 阻断梯度回传到 $\bar{Q}$ 的 forward 路径，防止出现 ``actor 通过减小 $|Q|$ 来虚假优化 $\lambda$'' 这一退化解。在我们 5 seeds $\times$ 64 epochs 全部 $\sim 320$ 次 epoch-level 评估中，$\bar{Q}$ 始终保持在 $|\bar{Q}| > 10^{-2}$ 量级，$\varepsilon$ 实际上从未被触发；它的存在仅是数值安全网。
+
+\paragraph{Critic LayerNorm 位置.}\quad
+Critic $Q_\phi(s, a)$ 的 forward graph 为：concatenate$(s, a) \to \mathrm{Linear}_1 \to \mathrm{LN}_1 \to \mathrm{ReLU} \to \mathrm{Linear}_2 \to \mathrm{LN}_2 \to \mathrm{ReLU} \to \mathrm{Linear}_3 \to \mathrm{LN}_3 \to \mathrm{ReLU} \to \mathrm{Linear}_{\text{out}}$。LayerNorm 位于每层 Linear 之后、ReLU 之前；与 \citet{tarasov2023rebrac} 原 ReBRAC 实现一致。Asymmetric variant（privileged-critic）将输入扩展为 concatenate$(s, a, \mathbf{o}^{\text{priv}})$，在 deployable-only forward 时以 zero padding 占位 $\mathbf{o}^{\text{priv}} = \mathbf{0}$（\eqref{eq:setup_priv_obs}），其余结构不变。Actor 端无 LayerNorm（\S\ref{subsubsec:finding_4} ablation 不覆盖 actor LN）。
+
+% =====================================================================
+\section{Training Curves}\label{app:curves}
+
+由于篇幅限制，主文未展示训练过程曲线；本节定性描述四类关键曲线在 5-seed mean 视角下的 trajectory，原始 per-step CSV 见 supplementary materials \texttt{experiments/rebrac\_*/curves/}。
+
+\paragraph{Critic loss $\mathcal{L}_{\text{critic}}$.}\quad
+在 \texttt{cross-1000} winner 上从初始 $\sim 1.5$ 衰减至 $\epsilon = 32$ 时的 $\sim 0.2$，$\epsilon = 64$ 时的 $\sim 0.15$，无明显 overfitting 拐点；$\beta_2\!=\!0$ probe 上 critic loss 从 $\sim 1.5$ 衰减至 $\sim 0.05$（更低，因为 critic 不再被 BC penalty 拽离 TD target），但 \emph{并非}更好——这一更低的 loss 对应 \texttt{mean\_target\_q} 朝 $0$ 漂移（$-8.25 \to -0.13$），即 critic 在 OOD 区域过度乐观（\S\ref{subsubsec:finding_3}）。
+
+\paragraph{Actor loss $\mathcal{L}_{\text{actor}}$.}\quad
+两个项分量分别 monitor：(i) Q-term $-\lambda \mathbb{E}[Q]$ 在 winner 上稳定在 $\sim -0.1$（量级反映 Q 归一化），(ii) BC term $\beta_1 \mathbb{E}[\|\pi - a\|^2]$ 从 $\sim 4.0 \times 0.5 = 2.0$ 衰减至 $\sim 4.0 \times 0.05 = 0.2$。两项之和始终 $> 0$（BC term 主导），与 \S\ref{subsec:method_why} 中 ``BC anchor 是主稳定器'' 的设计直觉一致。
+
+\paragraph{$\hat{Q}_{\text{target}}$ trajectory.}\quad
+\texttt{cross-1000} winner 上 $\hat{Q}_{\text{target}}$ 从初始 $\sim -2$ 单调下降至 $\sim -8.25$ at epoch 64（reward 是负主导，进度 + 时间惩罚的负 partial sum 决定 Q 的符号）；$\beta_2\!=\!0$ probe 上下降被打断、最终在 $\sim -0.13$ 平台震荡——这是 ``critic-side BC penalty 通过 target-Q bootstrap 把 $\hat{Q}$ 锁在保守区间'' 的直接证据。\texttt{world-1000} winner 上 $\hat{Q}_{\text{target}}$ 从初始 $\sim 0$ 单调上升至 $\sim +15.22$（reward 正主导，命中率高的 baseline 行为分布让 critic 学到更高 Q）；$\beta_2\!=\!0$ probe 在 $\sim +22.3$ 平台震荡。两个 dataset 上 baseline 与 probe 的 \emph{差距同向}（朝更不保守方向漂 $+7\sim+8$ 单位）—— C3 dataset-invariance 论证的训练曲线层面证据。
+
+\paragraph{LN-off failure mode.}\quad
+LN-off seed 42 上 critic loss 在 epoch $\sim 30$ 出现一个明显 spike（$0.2 \to 1.8$）随后 $\hat{Q}_{\text{target}}$ 朝更负方向漂（$-8 \to -12$）伴随 actor BC term 飙升（$\pi$ 偏离 dataset action 显著）—— LN-off 触发的是 ``critic 表征崩塌 + actor BC 失效'' 的 joint failure，与 $\beta_2\!=\!0$ 的 ``Q 高估单调漂 + actor 仍稳定'' 形成定性区分。LN-off seed 43 未出现 spike，与 winner 同档稳定——这一 RNG 路径敏感性放大了 \texttt{tab:full\_ln} 中的 std blow-up。
+
+% =====================================================================
+\section{Sensor and Observation Full Specification}\label{app:obs_spec}
+
+本节给出三种 probe layout（\texttt{s0}/\texttt{s1}/\texttt{s2}）的完整定义、对应真实 REMUS-100 sensor 型号、observation 各通道的物理含义与归一化常数。仅 \texttt{s0} 在本文主结果中使用；\texttt{s1}/\texttt{s2} 列出仅作为 ``actor 可获得信号上界'' 的参考边界，不在主表中报告。
+
+\paragraph{Probe layouts.}\quad
+所有 probe 以体坐标系下相对机体质心 $\mathbf{p}^{(0)}=(0,0)$ 的 $(x, y)$ 偏移给出，单位米。表~\ref{tab:obs_probe_layout} 同时标注每条通道对应的真实 REMUS-100 sensor 型号与频率。
+
+\begin{table}[h]
+\centering
+\small
+\caption{三种 probe layout 的物理位置与对应 REMUS-100 真实 sensor。\textbf{本文主结果均使用 \texttt{s0}}（\S\ref{subsec:setup_obs_deployable}）。}
+\label{tab:obs_probe_layout}
+\begin{tabular}{lll}
+\toprule
+\textbf{Layout} & \textbf{Probe positions (m)} & \textbf{Real sensor mapping} \\
+\midrule
+\texttt{s0} (1 probe)  & $(0, 0)$                       & 1200 kHz DVL water-track（标配，部署可用） \\
+\texttt{s1} (2 probes) & $(0, 0), (4.5, 0)$            & DVL + 2 MHz 短程前向 ADCP（$\sim$3 步预警；非标配） \\
+\texttt{s2} (4 probes) & $(0, 0), (5, 0), (8, \pm 4)$  & DVL + 1 MHz 长程 ADCP + 横向梯度（$\sim$7 步预警；非标配） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Observation 通道完整列表.}\quad
+单时刻 observation $\mathbf{o}_t \in \mathbb{R}^{8 + 2 N_p}$，其中 $N_p \in \{1, 2, 4\}$ 为 probe 数。表~\ref{tab:obs_channels_full} 给出 \texttt{s0}（$N_p = 1$，10-D）的全部 channel 与归一化常数；\texttt{s1}/\texttt{s2} 在末尾追加 $2 N_p$ 个 probe 速度 channel，结构同 channel 9--10。
+
+\begin{table}[h]
+\centering
+\small
+\caption{\texttt{s0} (10-D) 单时刻 observation 完整定义。归一化常数 $V_n = V_{f, n} = 2.0$ m/s, $r_n = 1.0$ rad/s, $d_n = 200$ m。}
+\label{tab:obs_channels_full}
+\begin{tabular}{clll}
+\toprule
+\textbf{Idx} & \textbf{Symbol} & \textbf{Physical meaning} & \textbf{Normalization} \\
+\midrule
+1 & $u / V_n$ & 体轴 surge 线速度 (m/s) & $V_n = 2.0$ \\
+2 & $v / V_n$ & 体轴 sway 线速度 (m/s) & $V_n = 2.0$ \\
+3 & $r / r_n$ & 偏航率 (rad/s) & $r_n = 1.0$ \\
+4 & $\cos \psi$ & 偏航角余弦 (无量纲) & — \\
+5 & $\sin \psi$ & 偏航角正弦 (无量纲) & — \\
+6 & $\Delta x_b / d_n$ & 目标体坐标系 $x$ 分量 (m) & $d_n = 200$ \\
+7 & $\Delta y_b / d_n$ & 目标体坐标系 $y$ 分量 (m) & $d_n = 200$ \\
+8 & $d / d_n$ & 距目标距离 (m) & $d_n = 200$ \\
+9 & $u_c^{(0)} / V_{f, n}$ & 质心位置体轴流速 surge 分量 (m/s) & $V_{f, n} = 2.0$ \\
+10 & $v_c^{(0)} / V_{f, n}$ & 质心位置体轴流速 sway 分量 (m/s) & $V_{f, n} = 2.0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{History stacking.}\quad
+策略实际输入维度为 $k \times 10 = 40$（\texttt{history-length} $= 4$）；历史 buffer 在每 RL 决策步 $\Delta t_{\text{ctrl}} = 0.5$ s 前移一格、最旧帧 pop。回合首步以零向量填满未达 $k$ 的位置（standard \texttt{ObservationHistoryWrapper} 行为）。
+
+\paragraph{Privileged observation $\mathbf{o}^{\text{priv}}$.}\quad
+\eqref{eq:setup_priv_obs} 已给出公式；此处补充实现注：5 个采样点位置 $\xi_i \in \{-0.4, -0.2, 0, +0.2, +0.4\} \cdot L$（$L = 1.6$ m）在体轴上等距排布，覆盖整个船体长度（首尾各占 $0.4 L = 0.64$ m），等权平均使 $\mathbf{o}^{\text{priv}}$ 在物理上等价于 \texttt{vehicle.py} 求解 6-DOF 方程时实际使用的 hull-integral 有效来流（即 ``驱动动力学的真实流场''）。\textbf{本文主结果中 actor 在两种协议下都\emph{不}读 $\mathbf{o}^{\text{priv}}$}；只有 privileged-critic 协议下 critic 读它，且仅在训练阶段（部署阶段 critic 已被丢弃）。

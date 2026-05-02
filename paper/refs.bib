@@ -1,11 +1,21 @@
 % =====================================================================
 % paper/refs.bib
-% Bibliography placeholder (rev.1, 2026-05-01)
-% 当前仅包含 method.tex / experiments.tex 实际 \cite 到的 3 个 key：
-%   - fujimoto2021td3bc
-%   - tarasov2023rebrac
-%   - td3bc_phase0c_report  (本项目内部 phase0c 报告占位，正式投稿前替换为公开引用)
-% Related Work / Discussion 写完后再扩展。
+% Bibliography (rev.4, 2026-05-02)
+%
+% 12 条引用，覆盖 §1–§7 全部 \cite/\citep/\citet：
+%   - Marine handbook:           fossen2011handbook
+%   - Asymmetric AC:             pinto2017asymmetric
+%   - Offline RL recipes:        fujimoto2021td3bc / tarasov2023rebrac
+%                                fujimoto2019bcq / kumar2020cql
+%                                kostrikov2022iql / nair2020awac
+%   - Underwater AUV RL:         carlucho2018ras (fluid-aware control)
+%                                yu2017auv      (fluid-aware control / tracking)
+%   - Wake-aware RL navigation:  verma2018pnas       (vortex collective swimming)
+%                                gunnarson2021ncomm  (vortical flow navigation)
+%
+% 已移除的 placeholder（rev.3 → rev.4）：
+%   - underwater_rl_placeholder：被 Carlucho/Yu/Verma/Gunnarson 替代
+%   - td3bc_phase0c_report：experiments.tex:26 改为 inline "supplementary materials" 引用
 % =====================================================================
 
 @book{fossen2011handbook,
@@ -66,18 +76,42 @@
   primaryClass  = {cs.LG}
 }
 
-@misc{underwater_rl_placeholder,
-  title        = {{Reinforcement Learning for Underwater Vehicle Navigation in Wake / Current Fields (Placeholder)}},
-  author       = {Anonymous Authors},
-  year         = {2026},
-  howpublished = {Placeholder citation; replace with concrete underwater RL / AUV sim2real references upon submission.},
-  note         = {Replace with concrete prior-work references covering underwater AUV RL, wake-aware navigation, and DVL-based control.}
+@article{carlucho2018ras,
+  title   = {Adaptive Low-Level Control of Autonomous Underwater Vehicles using Deep Reinforcement Learning},
+  author  = {Carlucho, Ignacio and {De Paula}, Mariano and Wang, Sen and Petillot, Yvan and Acosta, Gerardo G.},
+  journal = {Robotics and Autonomous Systems},
+  volume  = {107},
+  pages   = {71--86},
+  year    = {2018},
+  doi     = {10.1016/j.robot.2018.05.016}
 }
 
-@misc{td3bc_phase0c_report,
-  title        = {{TD3+BC Phase 0c Cross-dataset Report (Internal)}},
-  author       = {Anonymous Authors},
-  year         = {2026},
-  howpublished = {Internal technical report; reproducibility artifacts shipped with code release.},
-  note         = {Placeholder citation; replace with public-facing reference upon submission.}
+@inproceedings{yu2017auv,
+  title     = {Deep Reinforcement Learning Based Optimal Trajectory Tracking Control of Autonomous Underwater Vehicle},
+  author    = {Yu, Runsheng and Shi, Zhenyu and Huang, Chaoxing and Li, Tenglong and Ma, Qiongxiong},
+  booktitle = {36th Chinese Control Conference (CCC)},
+  pages     = {4958--4965},
+  year      = {2017},
+  doi       = {10.23919/ChiCC.2017.8028138}
+}
+
+@article{verma2018pnas,
+  title   = {Efficient Collective Swimming by Harnessing Vortices through Deep Reinforcement Learning},
+  author  = {Verma, Siddhartha and Novati, Guido and Koumoutsakos, Petros},
+  journal = {Proceedings of the National Academy of Sciences (PNAS)},
+  volume  = {115},
+  number  = {23},
+  pages   = {5849--5854},
+  year    = {2018},
+  doi     = {10.1073/pnas.1800923115}
+}
+
+@article{gunnarson2021ncomm,
+  title   = {Learning Efficient Navigation in Vortical Flow Fields},
+  author  = {Gunnarson, Peter and Mandralis, Ioannis and Novati, Guido and Koumoutsakos, Petros and Dabiri, John O.},
+  journal = {Nature Communications},
+  volume  = {12},
+  pages   = {7143},
+  year    = {2021},
+  doi     = {10.1038/s41467-021-27015-y}
 }

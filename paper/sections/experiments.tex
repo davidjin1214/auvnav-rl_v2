@@ -23,7 +23,7 @@
 
 \paragraph{对照方法.}
 \begin{itemize}
-    \item \textbf{TD3+BC} \citep{fujimoto2021td3bc}：baseline，\texttt{crosscomp} 取 $\alpha=0.25$（与 ReBRAC-Q $\beta_1=4.0$ 等价；见 \S\ref{sec:method}）；\texttt{worldcomp} deployable 取 $\alpha=0$（退化为 BC）；privileged-critic 取 $\alpha=0.1$（与 \citet{td3bc_phase0c_report} 主线一致）。
+    \item \textbf{TD3+BC} \citep{fujimoto2021td3bc}：baseline，\texttt{crosscomp} 取 $\alpha=0.25$（与 ReBRAC-Q $\beta_1=4.0$ 等价；见 \S\ref{sec:method}）；\texttt{worldcomp} deployable 取 $\alpha=0$（退化为 BC）；privileged-critic 取 $\alpha=0.1$（来自 privileged-critic 协议下的 $\alpha$-sweep；reproducibility artifacts 与完整 sweep 表见 supplementary materials）。
     \item \textbf{ReBRAC-Q (ours)}：固定 winner 配置 $\beta_1=4.0,\ \beta_2=2.0$，$\mathrm{hidden}=256$，3 hidden layers，critic LayerNorm \emph{on}，actor LayerNorm \emph{off}，actor-side Q normalization \emph{on}（详见 \S\ref{sec:method}）。
     \item \textbf{Privileged-critic 变体}：actor 永远只看 deployable observation $s_0$（10-D，DVL water-track 单点）；privileged-critic 协议下 critic 额外接收 hull-integral 等效流 $[u_{\mathrm{eq}}, v_{\mathrm{eq}}] \in \mathbb{R}^2$（actor update 时以 zero padding 填充）。Privileged 通道仅在训练时存在，部署时不可用。
 \end{itemize}

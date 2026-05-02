@@ -48,7 +48,14 @@
 \end{equation}
 即沿机体纵轴 $N = 5$ 个等距采样点世界系流速的等权平均，再投影至体坐标系（$R_{wb}(\psi)$ 为旋转矩阵）。$\mathbf{o}_t^{\mathrm{priv}}$ 等价于 \texttt{vehicle.py} 在求解 6-DOF 方程时实际使用的有效来流，因此是\emph{驱动动力学的真实流场}（而非任意的 simulator 隐藏状态）。
 
-\textbf{协议边界.}\quad $\mathbf{o}_t^{\mathrm{priv}}$ 仅在我们标记为 \emph{privileged-critic protocol} 的训练设置中被 critic 网络读取，actor 始终只看 $\mathbf{o}_t$；评估与部署阶段 critic 已被丢弃，$\mathbf{o}_t^{\mathrm{priv}}$ 不出现在执行回路中。我们标记为 \emph{deployable protocol} 的训练设置则两个网络均仅依赖 $\mathbf{o}_t$，与真实 REMUS-100 的可获得信号严格一致。
+\textbf{协议边界.}\quad $\mathbf{o}_t^{\mathrm{priv}}$ 仅在我们标记为 \emph{privileged-critic protocol} 的训练设置中被 critic 网络读取，actor 始终只看 $\mathbf{o}_t$；评估与部署阶段 critic 已被丢弃，$\mathbf{o}_t^{\mathrm{priv}}$ 不出现在执行回路中。我们标记为 \emph{deployable protocol} 的训练设置则两个网络均仅依赖 $\mathbf{o}_t$，与真实 REMUS-100 的可获得信号严格一致。图~\ref{fig:sensor_schematic} 示意了任务几何与两种协议下 actor / critic 的 sensor 边界。
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{fig1_sensor_schematic.pdf}
+    \caption{任务与 sensor 协议示意。(a) D2Q9 TRT-LBM 离线生成的 Kármán 涡街尾迹场（$U_\infty = 1.0$ m/s, $\mathrm{Re} = 150$, $\mathrm{Ti} = 5\%$）的一帧涡量场背景，叠加 REMUS-100 体示意（黄色椭圆，红色箭头为体轴朝向）与 cross-stream 任务目标（绿色五角星）。(b) 体坐标系下两种 sensor 抽样协议：蓝色实心圆 $\mathbf{s}_0$ 是部署可获得的单点 DVL 水追踪（actor 在两种协议下都只读这一通道）；红色菱形为 $\xi_i \in \{-0.4, -0.2, 0, +0.2, +0.4\} \cdot L$ 沿体轴的 5 个等距采样点，等权平均后给出壳积分等效水流 $\mathbf{o}^{\mathrm{priv}} = [u_{\mathrm{eq}}, v_{\mathrm{eq}}]$ —— 仅在 \emph{privileged-critic protocol} 训练阶段被 critic 读取，部署阶段不可用（\eqref{eq:setup_priv_obs}）。}
+    \label{fig:sensor_schematic}
+\end{figure}
 
 \subsection{Action, Reward and Termination}\label{subsec:setup_reward}
 

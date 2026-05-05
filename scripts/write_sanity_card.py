@@ -14,7 +14,7 @@ from typing import Any
 import numpy as np
 
 
-_PROBE_TO_OBS_DIM = {"s0": 10, "s1": 12, "s2": 16}
+_PROBE_TO_BASE_OBS_DIM = {"s0": 10, "s1": 12, "s2": 16}
 
 
 def _episode_lengths(dones: np.ndarray) -> list[int]:
@@ -69,8 +69,12 @@ def derive_sanity_card(
     }
 
     if expected_probe_layout is not None:
-        expected_dim = _PROBE_TO_OBS_DIM.get(expected_probe_layout)
+        history_length = int(metadata.get("history_length", 1) or 1)
+        base_dim = _PROBE_TO_BASE_OBS_DIM.get(expected_probe_layout)
+        expected_dim = base_dim * history_length if base_dim is not None else None
         card["expected_probe_layout"] = expected_probe_layout
+        card["history_length"] = history_length
+        card["expected_obs_dim"] = expected_dim
         card["obs_dim_matches_probe_layout"] = (
             expected_dim is not None and card["obs_dim"] == expected_dim
         )

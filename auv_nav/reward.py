@@ -97,6 +97,29 @@ REWARD_OBJECTIVE_PRESETS: dict[str, RewardObjectivePreset] = {
             "safety_cost_gain": 0.25,
         },
     ),
+    "arrival_v2_simple": RewardObjectivePreset(
+        key="arrival_v2_simple",
+        description=(
+            "Minimal arrival-first preset for offline reward ablation on upstream "
+            "geometry. Implements the spirit of docs/online_sac_reward_redesign.md "
+            "§5.1 arrival_v2 within existing RewardModelConfig fields only (no "
+            "normalized progress / normalized time / early-failure-penalty / "
+            "final-distance-penalty). Terminal-dominance ordering achieved: "
+            "fast_success > slow_success > timeout_near > timeout_far > slow_OOB. "
+            "NOT for online SAC: without early-failure-penalty the fast_OOB > "
+            "slow_OOB inversion remains."
+        ),
+        reward_config={
+            "step_penalty": -0.2,
+            "time_penalty_per_second": None,
+            "reward_progress_gain": 1.0,
+            "success_reward": 200.0,
+            "failure_penalty": -200.0,
+            "timeout_penalty": -50.0,
+            "energy_cost_gain": 0.0,
+            "safety_cost_gain": 0.5,
+        },
+    ),
 }
 
 REWARD_OBJECTIVE_ALIASES = {

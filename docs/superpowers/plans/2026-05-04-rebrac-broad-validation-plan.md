@@ -2588,7 +2588,7 @@ Read per-spoke `test/seed_42.json` for each refit pair; compute the +0.03 winner
 
 Anchor each subsection on the actual numbers. Pre-registered framings from spec §8:
 - §5.2: B-axis gap narrowing supports sim2real (don't frame as ReBRAC weakening).
-- §5.3: paper claim generality if both C spokes ≥ 0.85.
+- §5.3: paper claim generality if both C spokes ≥ 0.85. **Note**: C1 has been retrofitted as a sensor-floor spoke after Task 11A's ablation chain — adapt the §5.3 narrative to the post-ablation framing (see Task 11A and spec §13).
 
 - [ ] **Step 6: Write §0 abstract last**
 
@@ -2600,6 +2600,94 @@ Distil §3 (P1 results), §4 (P2 results if any), and §5 (discussion) into one 
 git add docs/rebrac_broad_validation_report.md
 git commit -m "docs(rebrac-broad): broad validation report — three-axis findings"
 ```
+
+---
+
+## Task 11A: C1 sensor-floor ablation closure (retrofit, 2026-05-06)
+
+> **Status**: ablation chain completed; this task captures the closure work for the broad-validation report and points to spec §13 for full evidence.
+
+**Files:**
+- Reference: spec §13 in `docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`
+- Notebooks (already committed):
+  - `notebooks/rebrac_c1_reward_ablation_completed.ipynb`
+  - `notebooks/rebrac_c1_asym_critic_ablation_completed.ipynb`
+  - `notebooks/rebrac_c1_train_convergence_check_completed.ipynb`
+  - `notebooks/rebrac_c1_epoch_sensitivity_ablation_completed.ipynb`
+- Reward preset: `auv_nav/reward.py::REWARD_OBJECTIVE_PRESETS["arrival_v2_simple"]`
+- Tests: `tests/test_reward_objective.py::test_arrival_v2_simple_*`
+
+### Background
+
+C1 P1 5-seed result: success=0.225 ± 0.005, far below the spec §8.3 expectation of 0.85–0.95. Termination distribution was 77.5% timeout / 22.5% goal / 0% OOB — actor "deterministic-collapse". To rule out non-sensor root causes, three ablations were run. All three failed to break the 0.19–0.23 success ceiling, confirming C1 (s0 / upstream u10 / crosscomp / Re150) as a **sensor-floor spoke**.
+
+### Ablation summary table
+
+| Intervention | dataset / critic / budget | seeds | success | Δ vs P1 anchor (pp) | Verdict |
+|---|---|---:|---:|---:|---|
+| P1 anchor | eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | 0.0 | baseline |
+| Ablation A: reward swap | arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −1.0 | reward landscape ruled out |
+| Ablation B: asym critic | arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −3.0 | privileged critic supervision ruled out |
+| Ablation C: epoch 4× | arr_v2_s / sym / 256 ep (1 seed) | 1 | 0.220 (ep 256) | −0.5 | training budget ruled out |
+
+All four configurations land inside 0.19–0.23 — a 4-pp range, within Ablation A/B's 3-pp noise radius. Three independent root-cause hypotheses (reward / critic supervision / budget) all eliminated → sensor-floor verdict confirmed.
+
+### Steps (already done; recorded for traceability)
+
+- [x] **Step 1: Add `arrival_v2_simple` reward preset + regression tests**
+
+Commit: `feat(auv-nav): arrival_v2_simple reward preset + regression tests`. Field-lockdown test asserts dict equality; terminal-dominance test asserts `fast_success(170) > slow_success(114) > timeout_near(−138) > timeout_far(−144) > slow_OOB(−294)`.
+
+- [x] **Step 2: Build + run `rebrac_c1_reward_ablation.ipynb` in Colab**
+
+Output: `results/offline/rebrac/c1_reward_ablation/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json`. Verdict: β-bound (Δ=−1pp).
+
+- [x] **Step 3: Build + run `rebrac_c1_asym_critic_ablation.ipynb`**
+
+Output: `results/offline/rebrac/c1_asym_critic_ablation/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json`. Flags: `--use-asymmetric-critic --privileged-actor-update-mode zeros`. Verdict: Δ=−2pp; CLAUDE.md §3 doesn't carry over to offline ReBRAC on s0/upstream.
+
+- [x] **Step 4: Run convergence diagnostic (no-GPU, ~30s)**
+
+Notebook reads ablation A's `train_log.jsonl` and compares mid-window (epoch 16–32) vs late-window (56–64) for 6 metrics. 6/6 metrics still moving; signaled "epochs may be insufficient" → triggered Step 5.
+
+- [x] **Step 5: Build + run `rebrac_c1_epoch_sensitivity_ablation.ipynb` (256 epoch × 1 seed)**
+
+Periodic val eval (every 16 ep on `val_40` manifest) + periodic ckpt + post-train batch test eval at epoch {64, 128, 192, 256} on `test_100` manifest. Verdict: success {0.20, 0.20, 0.22, 0.22} → epoch 192/256 numerically identical → actor deterministic-locked → epochs ruled out. Coordination with Step 4: critic still fitting (mean_q +44.8%), but BC anchor pins actor → β floor textbook signature.
+
+- [x] **Step 6: Write spec §13 (C1 sensor-floor ablation retrofit)**
+
+Done in `docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`. Includes evidence tables, three-ablation summary, sensor-floor conclusion, and follow-up plan for C1-s1.
+
+- [ ] **Step 7: Reflect in broad-validation report § (deferred to Task 11)**
+
+When Task 11 is executed, the report's §3 (P1 results), §5.3 (C-axis discussion), and §6 (limitations) must reflect the post-ablation framing:
+- §3.1 row C1: fill `mean_success=0.225, std=0.005, Δ=−68pp vs anchor` (5-seed, not 2-seed — broad-validation ran the full 5 for C1 because of how anomalous P1 was).
+- §3.2 row C1: triggered (mean shift) → P2 deepening → ablation chain (not β refit).
+- §5.3: paper claim is no longer "C1 generality". Replace with "C1 demonstrates the deployment-realistic sensor floor; three ablations (reward / asym critic / 4× epochs) all fail to break it; C1-s1 follow-up validates the sensor axis as the controllable lever."
+- §6 Limitations: explicit statement "upstream u10 is not deploy-grade on s0; sensor upgrade (s1+) is required."
+
+- [ ] **Step 8: Plan + run C1-s1 sensor-upgrade follow-up (per spec §13.6)**
+
+Skeleton:
+```bash
+# 1. Collect dataset (~30 min L4)
+python -m scripts.collect_offline_data \
+  --policy crosscomp \
+  --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
+  --probe-layout s1 --task-geometry upstream --target-speed 1.5 \
+  --history-length 4 --objective efficiency_v2 \
+  --episodes 1000 --seed 0 --num-workers 8 \
+  --output-dir offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000
+
+# 2. Train 2 seeds × 64 ep ReBRAC anchor (β1=4, β2=2) (~1.5h L4)
+# 3. Test on benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json
+```
+Notebook: `notebooks/rebrac_c1_s1_sensor_upgrade.ipynb` (TBD by Task 11A user run).
+
+Post-run verdict (per spec §13.6):
+- ≥ 0.50 → sensor 升级解锁 → paper headline + sim2real narrative;
+- 0.30–0.50 → trigger C1-s2 follow-up;
+- < 0.30 → §6 limitations: upstream u10 hits sensor floor on all deployable layouts.
 
 ---
 
@@ -2653,10 +2741,11 @@ Per spec §12, broad-validation closure requires:
 2. ✅ 16 P1 runs complete, `summaries/p1_overview.csv` generated (Task 9).
 3. ✅ All triggered spokes complete β refit + 5-seed expansion, OR `len(triggered) == 0` documented (Task 10).
 4. ✅ `docs/rebrac_broad_validation_report.md` complete §1–§5 (Task 11).
-5. ✅ `docs/rebrac_mainline_review.md` §3.5 cross-link added (Task 12).
-6. ✅ `paper/sections/experiments.tex` broad-validation subsection drafted (out of scope for this plan; follows from Task 11 + 12).
+5. ✅ C1 sensor-floor ablation chain (3 ablations) closed and reflected in spec §13 + report §5.3 / §6 (Task 11A); C1-s1 follow-up either complete or backlogged.
+6. ✅ `docs/rebrac_mainline_review.md` §3.5 cross-link added (Task 12).
+7. ✅ `paper/sections/experiments.tex` broad-validation subsection drafted (out of scope for this plan; follows from Task 11 + 11A + 12).
 
-After all 6 conditions are met → broad validation phase closed; paper drafting can ingest new findings.
+After all 7 conditions are met → broad validation phase closed; paper drafting can ingest new findings.
 
 ## Operational Risks (cross-reference spec §9)
 

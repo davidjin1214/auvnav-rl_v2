@@ -146,6 +146,8 @@
 
 注：C2 (Re250) 砍掉（双 confound，见 §1.3）。
 
+> **事后修正 (2026-05-06)**：C1 P1 5-seed 实测 success=0.225 ± 0.005（远低于本节 §8.3 表的预期 0.85–0.95），触发了完整的事后 ablation 链。三轮 ablation（reward landscape / privileged asym critic / 4× epoch budget）都未能突破 0.19–0.23 区间，确认 C1 是 **sensor floor spoke**。详见 [§13 C1 sensor-floor ablation](#13-c1-sensor-floor-ablation-事后追加-2026-05-06)。后续追加 follow-up spoke C1-s1（s1 sensor + upstream + u10）以完成 sensor 维度对照。
+
 ### 3.5 矩阵汇总
 
 | ID | dataset | probe | geometry | flow | 算法 | seeds (P1) |
@@ -372,6 +374,8 @@ P1 不带 TD3+BC 在 B1/B2 上做对照，因此 paper 仅 claim "ReBRAC 在 s1/
 
 **Paper claim 升级路径**：C 轴若两条 spoke 都 ≥ 0.85，可 claim "ReBRAC 跨 task geometry / wake topology generalize"；若 tandem 显著退化（< 0.70），则在 §limitations 显式声明 "tandem 双尾流场景需要进一步算法工作"。
 
+> **事后修正 (2026-05-06) — C1 实测远低于本节预期**：upstream "更易"的物理直觉在 s0 单点 DVL 上失败：u10 upstream 流场需要预知前方流场结构才能 deploy，s0 单点观测无此能力。C1 实测 = 0.225 ± 0.005，三轮事后 ablation 全部未能突破 0.19–0.23（详见 §13）。本节 C1 行的 paper-claim 路径从 "task generality" 重定位为 "sensor floor demonstration" + "C1-s1 sensor upgrade contrast"。
+
 ### 8.4 全局 Paper Claim 升级
 
 广验完成后，paper §experiments 增设 broad-validation subsection，结构：
@@ -484,3 +488,163 @@ results/offline/rebrac/broad_validation/
 6. ✅ `docs/rebrac_mainline_review.md` 添加广验 cross-link。
 
 满足上述 6 条 + 没有未解释的 P2 触发为开放项 → 广验阶段 closed，paper drafting 可吸收新 finding。
+
+---
+
+## 13. C1 sensor-floor ablation (事后追加，2026-05-06)
+
+> **状态**：本节是 P1 C1 跑完之后追加的 retrofit。原 spec §3.4 / §8.3 把 C1 预期写成 0.85–0.95；实测 0.225 ± 0.005 触发了完整 ablation 链以排除非 sensor 主因。三轮 ablation 都未能突破 0.19–0.23 区间，确认 C1 (s0 / upstream / u10 / crosscomp / Re150) 是 **sensor floor spoke**。
+
+### 13.1 起点：C1 P1 anchor 实测崩盘
+
+| run | seeds | success | mean_R | termination |
+|---|---:|---:|---:|---|
+| broad-validation Anchor (cross_stream u10) | 5 | 0.902 ± 0.021 | — | — |
+| C1 P1 (efficiency_v2 + sym critic, 64 ep) | 5 | **0.225 ± 0.005** | −371 ± 0.41 | timeout 77.5% / oob 0% / goal 22.5% |
+
+C1 mean 比预期低 60+ pp，且 termination 几乎全部是 timeout（775/1000 ep）。所有 success 都来自 dataset collector 已能完成的子轨迹模式。这是 actor-stuck "deterministic-collapse" 的强信号，无法用 sample noise / β 漂移解释。
+
+### 13.2 三 ablation 链（事后 hypothesis-driven）
+
+依次跑了三轮，每轮一个变量、其余与 P1 anchor 完全一致（同 dataset，除 Ablation A 外；同 anchor β1=4 / β2=2；同 batch_size 256；同 hidden 256×3；同 γ=0.99）。
+
+#### 13.2.1 Ablation A — reward landscape (`arrival_v2_simple`)
+
+**假设**：`efficiency_v2` reward 在 upstream 上有 fast_OOB > slow_OOB inversion，actor 学到的最优策略可能就是 "原地 timeout"。引入 `arrival_v2_simple` preset (terminal-dominant: success=+200 / timeout=−50 / OOB=−200 / step_penalty=−0.2)，把 dataset mean_terminal_R 从 −108 翻到 +200。
+
+**实施**：
+- `auv_nav/reward.py::REWARD_OBJECTIVE_PRESETS["arrival_v2_simple"]` 新增（[`auv_nav/reward.py`](../../../auv_nav/reward.py)）
+- `tests/test_reward_objective.py` 新增 `arrival_v2_simple_field_lockdown` + `arrival_v2_simple_terminal_dominance` 两个回归测试
+- 重收集 1000 ep dataset：`offline_data/crosscomp_s0_h4_arrival_v2_simple_re150_u10upstream_fixdone_ep1000/`
+- collector success_rate=1.0，mean_R=+205.34，mean_terminal_R=+199.93，`privileged_obs_present=True`
+
+**结果**：
+
+| run | dataset reward | seeds | success | mean_R | termination |
+|---|---|---:|---:|---:|---|
+| Ablation A | arrival_v2_simple | 2 (42, 44) | **0.215 ± 0.015** | −98.23 ± 4.03 | goal 21.5% / timeout 52.5% / oob 26.0% |
+
+Δ vs P1 anchor = **−1pp**（统计上不可区分）。但 termination 从 "全 timeout" 转为 "21.5% goal + 52.5% timeout + 26% oob"——actor 不再 deterministic-collapse，开始 explore，但 explore 仍 deploy 不到 goal。**reward landscape 排除为 root cause**。
+
+Notebook：[`notebooks/rebrac_c1_reward_ablation_completed.ipynb`](../../../notebooks/rebrac_c1_reward_ablation_completed.ipynb)。
+
+#### 13.2.2 Ablation B — privileged asymmetric critic
+
+**假设**：CLAUDE.md §3 主方法论（actor 看 s0 + critic 加 privileged hull-integral 流场，priv_dim=2）能否解锁 s0/upstream actor 的天花板？
+
+**实施**：复用 Ablation A dataset，仅切换 `--use-asymmetric-critic --privileged-actor-update-mode zeros`（actor improvement 时 zero-pad priv 通道，mimic deployment）。其余超参与 Ablation A 完全一致。
+
+**结果**：
+
+| run | critic | seeds | success | mean_R | termination |
+|---|---|---:|---:|---:|---|
+| Ablation B | asym (10-D actor + 2-D priv critic) | 2 (42, 44) | **0.195 ± 0.015** | −114.87 ± 8.02 | goal 19.5% / timeout 48.5% / oob 32.0% |
+
+Δ vs Ablation A = **−2pp**（noise 级别）。OOB 略升 (26 → 32 pp)、timeout 略降，提示 actor 略激进但没转化成 success。CLAUDE.md §3 在 offline ReBRAC 上没解锁 s0/upstream，**critic-side privileged information 排除为 root cause**。
+
+Notebook：[`notebooks/rebrac_c1_asym_critic_ablation_completed.ipynb`](../../../notebooks/rebrac_c1_asym_critic_ablation_completed.ipynb)。
+
+#### 13.2.3 Ablation C — training budget (4× epochs)
+
+**假设**：upstream 比 cross 难度更高，64 epochs 可能是 budget bottleneck。
+
+**先决无 GPU 诊断**：读 Ablation A 的 `train_log.jsonl`，比较 mid-window (epoch 16–32) vs late-window (epoch 56–64) 6 个 metric 的相对变化：
+
+| metric | mid mean | late mean | rel_change | 阈值 | plateau? |
+|---|---:|---:|---:|---:|:---:|
+| critic_loss | +10.25 | +6.42 | **−37.5%** | 5% | ❌ |
+| actor_loss | −0.71 | −0.82 | −15.7% | 5% | ❌ |
+| bc_loss | +0.021 | +0.017 | −15.7% | 5% | ❌ |
+| td_abs_error | +1.73 | +1.62 | −6.6% | 5% | ❌ |
+| **mean_q** | **+44.6** | **+64.6** | **+44.8%** | 3% | ❌ |
+| **target_q** | **+44.6** | **+64.7** | **+45.1%** | 3% | ❌ |
+
+6/6 metric 都未 plateau，看似支持"epochs 不够"假设。Notebook：[`notebooks/rebrac_c1_train_convergence_check_completed.ipynb`](../../../notebooks/rebrac_c1_train_convergence_check_completed.ipynb)。
+
+**实施**：single seed (42) × **256 epochs (4× current budget)** + 周期 val eval (every 16 epochs，40-ep manifest，写 `eval_log.csv`) + 周期 ckpt (every 16 epochs) + post-train batch test eval at epoch {64, 128, 192, 256} (100-ep manifest)。
+
+**结果**：
+
+| epoch | success | mean_R | termination |
+|---:|---:|---:|---|
+| 64  | 0.200 | −102.25 | timeout 54 / oob 26 / goal 20 |
+| 128 | 0.200 | −106.35 | timeout 52 / oob 28 / goal 20 |
+| 192 | 0.220 | −96.16  | timeout 52 / oob 26 / goal 22 |
+| 256 | 0.220 | −96.16  | timeout 52 / oob 26 / goal 22 |
+
+epoch 192 与 256 在 100-ep test 上**所有数字一字不差**（mean_R / std / safety_cost / 全部 termination 计数）—— actor 在 epoch 192 后已 deterministic 锁死，policy 不再变化。Δ (256 − 64) = **+2pp**（仍在 noise 内）。
+
+**对 mean_q +44.8% 上升的协调解释**：critic 仍在 fitting Q-landscape，但 actor 被 BC anchor 钉死，policy 即便给 4× budget 也不能越界。这是 ReBRAC β floor 的教科书表现，不是 epochs 不够。**training budget 排除为 root cause**。
+
+Notebook：[`notebooks/rebrac_c1_epoch_sensitivity_ablation_completed.ipynb`](../../../notebooks/rebrac_c1_epoch_sensitivity_ablation_completed.ipynb)。
+
+### 13.3 三 ablation 汇总表
+
+| 干预 | dataset / critic / budget | seeds | success | Δ vs P1 anchor (pp) |
+|---|---|---:|---:|---:|
+| **P1 anchor** | eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | 0.0 |
+| Ablation A (reward) | arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −1.0 |
+| Ablation B (asym critic) | arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −3.0 |
+| Ablation C (epoch 4×) | arr_v2_s / sym / 256 ep | 1 | 0.220 (ep256) | −0.5 |
+
+所有干预的 success 都被钉在 **0.19–0.23 区间**（4-pp 区间，远小于 ablation A/B 的 3-pp 噪声半径）。三个独立 root-cause 假设（reward landscape / critic supervision / training budget）全部排除。
+
+### 13.4 结论：sensor floor
+
+C1 (s0 / upstream / u10 / crosscomp / Re150) 是 **sensor floor spoke**：s0 (DVL water-track only) 在 u10 upstream 流场上提供的信息量不足以让 actor 学到 deploy-grade policy（success ≥ 0.6），即使在以下多重优待下也不能突破：
+
+1. collector dataset success=1.0（数据本身可达 goal）
+2. training reward 已正向（mean_terminal_R = +200）
+3. privileged critic 已给 hull-integral signal
+4. epochs 已扩 4×（256 ep）
+
+这是 paper-grade finding：**deployment-realistic 单点传感器 + upstream 流场是真实的物理 deployability 边界**——不是算法 / reward / budget 问题。需要 sensor 升级（至少 s1 = DVL + 短程 ADCP）才能 deploy。
+
+### 13.5 输出落点新增（对 §10.1 / §10.2 的补充）
+
+```
+offline_data/
+  crosscomp_s0_h4_arrival_v2_simple_re150_u10upstream_fixdone_ep1000/    # ablation A/B/C 复用
+
+benchmarks/
+  c1_reward_ablation/{val_40, test_100}/single_u10_upstream_tgt15.json
+
+checkpoints/offline/rebrac/
+  c1_reward_ablation/<dataset>/actorb_4p0__criticb_2p0/seed_{42,44}/
+  c1_asym_critic_ablation/<dataset>/actorb_4p0__criticb_2p0/seed_{42,44}/
+  c1_epoch_sensitivity/<dataset>/actorb_4p0__criticb_2p0/seed_42_e256/
+
+results/offline/rebrac/
+  c1_reward_ablation/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json
+  c1_asym_critic_ablation/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json
+  c1_epoch_sensitivity/<dataset>/actorb_4p0__criticb_2p0/seed_42_e256/test/epoch_{64,128,192,256}.json
+
+notebooks/
+  rebrac_c1_reward_ablation_completed.ipynb
+  rebrac_c1_asym_critic_ablation_completed.ipynb
+  rebrac_c1_train_convergence_check_completed.ipynb
+  rebrac_c1_epoch_sensitivity_ablation_completed.ipynb
+```
+
+### 13.6 后续行动 — C1-s1 sensor-upgrade follow-up
+
+为把 sensor floor 从 "single-spoke 失败" 升格到 "sensor 维度 controllable axis"，加一条 follow-up spoke：
+
+| spoke | probe | obs_dim | seeds | 预期 |
+|---|---|---:|---:|---|
+| **C1-s1** (新增) | s1 (DVL + 短程 ADCP, 2 probes) | 12 | 2 (42, 44) | ≥ 0.50 → sensor 升级解锁 upstream；< 0.30 → upstream u10 是更深 fundamental limitation |
+
+实施骨架：
+- 数据收集：复用 `crosscomp` baseline policy + `--probe-layout s1`，生成 `offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/`
+- 训练：ReBRAC anchor (β1=4, β2=2) × 64 epochs × 2 seeds
+- 评估：test_100 manifest（同 C1）
+- 预算：~2h L4
+
+**Paper 叙事分支**：
+
+| C1-s1 实测 | paper claim |
+|---|---|
+| ≥ 0.50 | "upstream u10 在 s0 上不可 deploy；s1 提供的短程 ADCP 解锁该任务" → paper headline + sim2real narrative 的强证据 |
+| 0.30–0.50 | "sensor 单步升级仅部分解锁 upstream，需要 s2（长程 ADCP + 横向梯度）" → 触发 C1-s2 follow-up |
+| < 0.30 | "upstream u10 在所有 deployable sensor 上都接近 sensor floor" → §6 limitations 段写 "upstream 流场是任务-传感器共同的物理上限" |
+

@@ -208,10 +208,10 @@ Active / planned notebooks:
 |---|---|---|
 | `notebooks/sac_thesis_s0_preflight.ipynb` | Online thesis Sprint 0 (P1+P2) | scaffolded |
 | `notebooks/sac_thesis_s0b_profiling.ipynb` | Online thesis Sprint 0 addendum (P0 — cProfile + num_envs benchmark) | scaffolded |
-| `notebooks/sac_thesis_s2_sensor_envelope.ipynb` | Online thesis Sprint 1 | scaffolded |
-| `notebooks/sac_thesis_s3_privileged_critic.ipynb` | Online thesis Sprint 2 (§3) | TBD after Sprint 1 |
-| `notebooks/sac_thesis_s4_cross_sensor.ipynb` | Online thesis Sprint 2 (§4) | TBD after Sprint 1 |
-| `notebooks/sac_thesis_s5_topology_eval.ipynb` | Online thesis Sprint 3 | TBD after Sprint 2 |
-| `notebooks/sac_thesis_s6_confirmation.ipynb` | Online thesis Sprint 4 | TBD after Sprint 2 |
-| `notebooks/sac_thesis_s7_history.ipynb` | Online thesis Sprint 5 | TBD after Sprint 4 |
+| `notebooks/_deprecated_sac_thesis_s2_sensor_envelope.ipynb` | Online thesis Sprint 1 | **deprecated 2026-05-06** — thesis 矩阵撤销，见 [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) |
+| `notebooks/sac_thesis_s3_privileged_critic.ipynb` | Online thesis Sprint 2 (§3) | **cancelled 2026-05-06** (never created) |
+| `notebooks/sac_thesis_s4_cross_sensor.ipynb` | Online thesis Sprint 2 (§4) | **cancelled 2026-05-06** (never created) |
+| `notebooks/sac_thesis_s5_topology_eval.ipynb` | Online thesis Sprint 3 | **cancelled 2026-05-06** (never created) |
+| `notebooks/sac_thesis_s6_confirmation.ipynb` | Online thesis Sprint 4 | **cancelled 2026-05-06** (never created) |
+| `notebooks/sac_thesis_s7_history.ipynb` | Online thesis Sprint 5 | **cancelled 2026-05-06** (never created) |
 | `notebooks/rebrac_*.ipynb` | Offline RL line (ReBRAC) | active |

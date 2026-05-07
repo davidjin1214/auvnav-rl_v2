@@ -27,6 +27,12 @@ SAFETY_FAILURE_REASONS = frozenset(
         "attitude_limit",
     }
 )
+TIMEOUT_REASONS = frozenset({"timeout"})
+HARD_FAILURE_REASONS = SAFETY_FAILURE_REASONS - TIMEOUT_REASONS
+SAFETY_TERMINAL_VIOLATION_REASONS = HARD_FAILURE_REASONS
+
+ARRIVAL_V2_OBJECTIVES = frozenset({"arrival_v2", "arrival_v2_fast"})
+OFFLINE_ONLY_OBJECTIVES = frozenset({"arrival_v2_simple"})
 
 
 REWARD_CONFIG_FIELDS = (
@@ -38,6 +44,16 @@ REWARD_CONFIG_FIELDS = (
     "timeout_penalty",
     "energy_cost_gain",
     "safety_cost_gain",
+    "w_progress",
+    "w_time",
+    "w_safety",
+    "r_success",
+    "r_fast_success",
+    "r_failure",
+    "r_early_failure",
+    "r_timeout",
+    "r_final_distance",
+    "d_init_min_m",
 )
 
 
@@ -120,6 +136,61 @@ REWARD_OBJECTIVE_PRESETS: dict[str, RewardObjectivePreset] = {
             "safety_cost_gain": 0.5,
         },
     ),
+    "arrival_v2": RewardObjectivePreset(
+        key="arrival_v2",
+        description=(
+            "Full arrival-first objective for online SAC prototype: normalized "
+            "progress, mild normalized time cost, soft safety shaping, timeout "
+            "as semantic terminal, and hard-failure early/final-distance penalties."
+        ),
+        reward_config={
+            "step_penalty": 0.0,
+            "time_penalty_per_second": 0.0,
+            "reward_progress_gain": 0.0,
+            "success_reward": 0.0,
+            "failure_penalty": 0.0,
+            "timeout_penalty": 0.0,
+            "energy_cost_gain": 0.0,
+            "safety_cost_gain": 0.0,
+            "w_progress": 50.0,
+            "w_time": 5.0,
+            "w_safety": 2.0,
+            "r_success": 100.0,
+            "r_fast_success": 0.0,
+            "r_failure": 100.0,
+            "r_early_failure": 100.0,
+            "r_timeout": 50.0,
+            "r_final_distance": 50.0,
+            "d_init_min_m": 10.0,
+        },
+    ),
+    "arrival_v2_fast": RewardObjectivePreset(
+        key="arrival_v2_fast",
+        description=(
+            "Optional arrival_v2 ablation with explicit fast-success bonus. "
+            "Use only after the discounted shortcut and behavior-regression gates pass."
+        ),
+        reward_config={
+            "step_penalty": 0.0,
+            "time_penalty_per_second": 0.0,
+            "reward_progress_gain": 0.0,
+            "success_reward": 0.0,
+            "failure_penalty": 0.0,
+            "timeout_penalty": 0.0,
+            "energy_cost_gain": 0.0,
+            "safety_cost_gain": 0.0,
+            "w_progress": 50.0,
+            "w_time": 5.0,
+            "w_safety": 2.0,
+            "r_success": 100.0,
+            "r_fast_success": 20.0,
+            "r_failure": 100.0,
+            "r_early_failure": 100.0,
+            "r_timeout": 50.0,
+            "r_final_distance": 50.0,
+            "d_init_min_m": 10.0,
+        },
+    ),
 }
 
 REWARD_OBJECTIVE_ALIASES = {
@@ -162,10 +233,22 @@ class RewardModelConfig:
     reward_progress_gain: float
     success_reward: float
     failure_penalty: float
+    reward_objective: str = "arrival_v1"
+    max_episode_time_s: float = 240.0
     time_penalty_per_second: float | None = None
     timeout_penalty: float | None = None
     energy_cost_gain: float = 0.0
     safety_cost_gain: float = 0.0
+    w_progress: float = 50.0
+    w_time: float = 5.0
+    w_safety: float = 2.0
+    r_success: float = 100.0
+    r_fast_success: float = 0.0
+    r_failure: float = 100.0
+    r_early_failure: float = 100.0
+    r_timeout: float = 50.0
+    r_final_distance: float = 50.0
+    d_init_min_m: float = 10.0
 
 
 class RewardModel:
@@ -183,8 +266,30 @@ class RewardModel:
         terminated: bool,
         truncated: bool,
         actuator_rpm: float,
+        previous_distance_to_goal_m: float | None = None,
+        current_distance_to_goal_m: float | None = None,
+        initial_distance_to_goal_m: float | None = None,
+        elapsed_time_s: float | None = None,
+        max_episode_time_s: float | None = None,
+        dt: float | None = None,
     ) -> RewardBreakdown:
         cfg = self.config
+        energy_cost = abs(float(actuator_rpm)) * cfg.control_dt
+        if cfg.reward_objective in ARRIVAL_V2_OBJECTIVES:
+            return self._compute_arrival_v2(
+                safety_cost=safety_cost,
+                reason=reason,
+                terminated=terminated,
+                truncated=truncated,
+                energy_cost=energy_cost,
+                previous_distance_to_goal_m=previous_distance_to_goal_m,
+                current_distance_to_goal_m=current_distance_to_goal_m,
+                initial_distance_to_goal_m=initial_distance_to_goal_m,
+                elapsed_time_s=elapsed_time_s,
+                max_episode_time_s=max_episode_time_s,
+                dt=dt,
+            )
+
         time_penalty_per_second = cfg.time_penalty_per_second
         if time_penalty_per_second is None:
             time_penalty_per_second = max(0.0, -cfg.step_penalty / max(cfg.control_dt, 1e-8))
@@ -201,10 +306,76 @@ class RewardModel:
         elif terminated:
             terminal_reward += cfg.failure_penalty
 
-        energy_cost = abs(float(actuator_rpm)) * cfg.control_dt
-
         reward = task_reward + progress_reward + terminal_reward
         reward -= cfg.safety_cost_gain * safety_cost
+        reward -= cfg.energy_cost_gain * energy_cost
+        return RewardBreakdown(
+            reward=float(reward),
+            task_reward=float(task_reward),
+            progress_reward=float(progress_reward),
+            terminal_reward=float(terminal_reward),
+            safety_cost=float(safety_cost),
+            energy_cost=float(energy_cost),
+        )
+
+    def _compute_arrival_v2(
+        self,
+        *,
+        safety_cost: float,
+        reason: str,
+        terminated: bool,
+        truncated: bool,
+        energy_cost: float,
+        previous_distance_to_goal_m: float | None,
+        current_distance_to_goal_m: float | None,
+        initial_distance_to_goal_m: float | None,
+        elapsed_time_s: float | None,
+        max_episode_time_s: float | None,
+        dt: float | None,
+    ) -> RewardBreakdown:
+        cfg = self.config
+        required = {
+            "previous_distance_to_goal_m": previous_distance_to_goal_m,
+            "current_distance_to_goal_m": current_distance_to_goal_m,
+            "initial_distance_to_goal_m": initial_distance_to_goal_m,
+            "elapsed_time_s": elapsed_time_s,
+        }
+        missing = [name for name, value in required.items() if value is None]
+        if missing:
+            raise ValueError("arrival_v2 reward missing fields: " + ", ".join(missing))
+
+        step_dt = cfg.control_dt if dt is None else float(dt)
+        horizon_s = (
+            cfg.max_episode_time_s
+            if max_episode_time_s is None
+            else float(max_episode_time_s)
+        )
+        d_init_safe = max(float(initial_distance_to_goal_m), cfg.d_init_min_m, 1e-8)
+        elapsed_frac = float(np.clip(float(elapsed_time_s) / max(horizon_s, 1e-8), 0.0, 1.0))
+        distance_ratio = float(
+            np.clip(float(current_distance_to_goal_m) / d_init_safe, 0.0, 2.0)
+        )
+
+        task_reward = -cfg.w_time * (step_dt / max(horizon_s, 1e-8))
+        progress_delta = (
+            float(previous_distance_to_goal_m) - float(current_distance_to_goal_m)
+        ) / d_init_safe
+        progress_reward = cfg.w_progress * progress_delta
+        terminal_reward = 0.0
+
+        if reason == "goal":
+            terminal_reward += cfg.r_success
+            terminal_reward += cfg.r_fast_success * (1.0 - elapsed_frac)
+        elif truncated and reason == "timeout":
+            terminal_reward -= cfg.r_timeout
+            terminal_reward -= cfg.r_final_distance * distance_ratio
+        elif terminated or reason in HARD_FAILURE_REASONS:
+            terminal_reward -= cfg.r_failure
+            terminal_reward -= cfg.r_early_failure * (1.0 - elapsed_frac)
+            terminal_reward -= cfg.r_final_distance * distance_ratio
+
+        reward = task_reward + progress_reward + terminal_reward
+        reward -= cfg.w_safety * safety_cost
         reward -= cfg.energy_cost_gain * energy_cost
         return RewardBreakdown(
             reward=float(reward),
@@ -327,7 +498,7 @@ class SafetyCostModel:
             cfg.risk_activation_ratio,
         )
 
-        terminal_violation = 1.0 if reason in SAFETY_FAILURE_REASONS else 0.0
+        terminal_violation = 1.0 if reason in SAFETY_TERMINAL_VIOLATION_REASONS else 0.0
         total = max(
             boundary_risk,
             depth_risk,

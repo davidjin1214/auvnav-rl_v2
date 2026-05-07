@@ -71,9 +71,13 @@ def derive_sanity_card(
     if expected_probe_layout is not None:
         history_length = int(metadata.get("history_length", 1) or 1)
         base_dim = _PROBE_TO_BASE_OBS_DIM.get(expected_probe_layout)
-        expected_dim = base_dim * history_length if base_dim is not None else None
+        context_dim = 2 if bool(metadata.get("include_episode_context_obs", False)) else 0
+        expected_dim = (base_dim + context_dim) * history_length if base_dim is not None else None
         card["expected_probe_layout"] = expected_probe_layout
         card["history_length"] = history_length
+        card["include_episode_context_obs"] = bool(
+            metadata.get("include_episode_context_obs", False)
+        )
         card["expected_obs_dim"] = expected_dim
         card["obs_dim_matches_probe_layout"] = (
             expected_dim is not None and card["obs_dim"] == expected_dim

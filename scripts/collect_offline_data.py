@@ -33,7 +33,7 @@ from auv_nav.baselines import (
     WorldFrameCurrentCompensationPolicy,
 )
 from auv_nav.env import ObservationHistoryWrapper
-from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
+from auv_nav.reward import ARRIVAL_V2_OBJECTIVES, REWARD_OBJECTIVE_PRESETS
 
 from .train_utils import (
     discover_flow_path,
@@ -529,6 +529,14 @@ def collect(args: argparse.Namespace) -> None:
         "task_geometry": args.task_geometry,
         "objective": env_config_overrides.get("reward_objective"),
         "reward_config": env_config_overrides,
+        "include_episode_context_obs": bool(
+            env_config_overrides.get("reward_objective") in ARRIVAL_V2_OBJECTIVES
+        ),
+        "timeout_bootstrap_semantics": (
+            "terminal"
+            if env_config_overrides.get("reward_objective") in ARRIVAL_V2_OBJECTIVES
+            else "bootstrap"
+        ),
         "seed": args.seed,
         "num_episodes": args.episodes,
         "num_transitions": n_transitions,

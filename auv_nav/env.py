@@ -27,6 +27,7 @@ from .autopilot import (
     HeadingAutopilotConfig,
 )
 from .reward import (
+    ARRIVAL_V2_OBJECTIVES,
     REWARD_OBJECTIVE_PRESETS,
     RewardBreakdown,
     RewardModel,
@@ -314,6 +315,16 @@ class PlanarRemusEnvConfig:
     timeout_penalty: float | None = None
     energy_cost_gain: float = 0.0
     safety_cost_gain: float = 0.0
+    w_progress: float = 50.0
+    w_time: float = 5.0
+    w_safety: float = 2.0
+    r_success: float = 100.0
+    r_fast_success: float = 0.0
+    r_failure: float = 100.0
+    r_early_failure: float = 100.0
+    r_timeout: float = 50.0
+    r_final_distance: float = 50.0
+    d_init_min_m: float = 10.0
 
     # -- safety cost --
     safety_risk_activation_ratio: float = 0.7
@@ -342,6 +353,7 @@ class PlanarRemusEnvConfig:
     # -- observation normalisation --
     obs_norm: ObsNormScales = field(default_factory=ObsNormScales)
     normalize_obs: bool = True
+    include_episode_context_obs: bool = False
 
     # -- benchmark speed scaling --
     target_speed_ratio: float | None = None
@@ -361,6 +373,8 @@ class PlanarRemusEnvConfig:
             raise ValueError(
                 f"reward_objective must be one of: {sorted(REWARD_OBJECTIVE_PRESETS)}."
             )
+        if self.reward_objective in ARRIVAL_V2_OBJECTIVES:
+            self.include_episode_context_obs = True
         if self.action_mode not in {"auto", "goal_relative_offset", "absolute_heading"}:
             raise ValueError(
                 "action_mode must be 'auto', 'goal_relative_offset', or 'absolute_heading'."
@@ -476,9 +490,21 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
                 reward_progress_gain=config.reward_progress_gain,
                 success_reward=config.success_reward,
                 failure_penalty=config.failure_penalty,
+                reward_objective=config.reward_objective,
+                max_episode_time_s=config.max_episode_time_s,
                 timeout_penalty=config.timeout_penalty,
                 energy_cost_gain=config.energy_cost_gain,
                 safety_cost_gain=config.safety_cost_gain,
+                w_progress=config.w_progress,
+                w_time=config.w_time,
+                w_safety=config.w_safety,
+                r_success=config.r_success,
+                r_fast_success=config.r_fast_success,
+                r_failure=config.r_failure,
+                r_early_failure=config.r_early_failure,
+                r_timeout=config.r_timeout,
+                r_final_distance=config.r_final_distance,
+                d_init_min_m=config.d_init_min_m,
             )
         )
         self.safety_cost_model = SafetyCostModel(
@@ -538,7 +564,9 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
 
         n_probes = self.probe_offsets_body.shape[0]
         self.channels_per_probe = 2 if config.probe_channels == "velocity" else 3
-        obs_dim = 8 + n_probes * self.channels_per_probe
+        probe_dim = n_probes * self.channels_per_probe
+        context_dim = 2 if config.include_episode_context_obs else 0
+        obs_dim = 8 + probe_dim + context_dim
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf,
             shape=(obs_dim,), dtype=np.float32,
@@ -547,7 +575,8 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
         # Named slices for decode_observation
         self._obs_own = slice(0, 5)
         self._obs_goal = slice(5, 8)
-        self._obs_probe = slice(8, obs_dim)
+        self._obs_probe = slice(8, 8 + probe_dim)
+        self._obs_context = slice(8 + probe_dim, obs_dim)
         self.observation_layout = ObservationLayout(
             heading_cos_index=3,
             heading_sin_index=4,
@@ -764,6 +793,12 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
             terminated=terminated,
             truncated=truncated,
             actuator_rpm=float(self.actuator_state.n_rpm),
+            previous_distance_to_goal_m=self.last_distance,
+            current_distance_to_goal_m=distance,
+            initial_distance_to_goal_m=self.initial_distance,
+            elapsed_time_s=self.elapsed_time,
+            max_episode_time_s=self.config.max_episode_time_s,
+            dt=self.config.control_dt,
         )
         reward = reward_breakdown.reward
         self.last_safety_cost_breakdown = safety_breakdown
@@ -788,11 +823,14 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
         """Split a flat observation vector into named sub-arrays."""
         obs = np.asarray(obs, dtype=np.float32)
         n_probes = self.probe_offsets_body.shape[0]
-        return {
+        decoded = {
             "own": obs[self._obs_own],
             "goal": obs[self._obs_goal],
             "probes": obs[self._obs_probe].reshape(n_probes, self.channels_per_probe),
         }
+        if self.config.include_episode_context_obs:
+            decoded["episode_context"] = obs[self._obs_context]
+        return decoded
 
     def _build_observation(self) -> np.ndarray:
         psi = float(self.state[S.PSI])
@@ -835,7 +873,21 @@ class PlanarRemusEnv(gym.Env[np.ndarray, np.ndarray]):
         else:
             probes_obs = probes_raw.astype(np.float32)
 
-        return np.concatenate([own, goal, probes_obs])
+        parts = [own, goal, probes_obs]
+        if self.config.include_episode_context_obs:
+            d_init_safe = max(float(self.initial_distance), self.config.d_init_min_m, 1e-8)
+            elapsed_frac = np.clip(
+                self.elapsed_time / max(self.config.max_episode_time_s, 1e-8),
+                0.0,
+                1.0,
+            )
+            context = np.array([
+                elapsed_frac,
+                d_init_safe / (ns.distance if ns else 1.0),
+            ], dtype=np.float32)
+            parts.append(context)
+
+        return np.concatenate(parts)
 
     # -----------------------------------------------------------------------
     # Info dict

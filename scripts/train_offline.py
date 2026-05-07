@@ -17,7 +17,7 @@ from auv_nav.offline_registry import (
     normalize_offline_algo,
 )
 from auv_nav.replay import TransitionReplay
-from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
+from auv_nav.reward import ARRIVAL_V2_OBJECTIVES, REWARD_OBJECTIVE_PRESETS
 from auv_nav.networks import require_torch
 from auv_nav.td3bc import ObservationNormalizer
 
@@ -193,6 +193,14 @@ def _validate_offline_protocol(
         raise ValueError(
             f"Offline objective={offline_objective} != training objective={train_objective}."
         )
+    metadata_context = offline_metadata.get("include_episode_context_obs")
+    if metadata_context is not None:
+        expected_context = bool(train_objective in ARRIVAL_V2_OBJECTIVES)
+        if bool(metadata_context) != expected_context:
+            raise ValueError(
+                "Offline data include_episode_context_obs="
+                f"{metadata_context} != expected {expected_context}."
+            )
     offline_reward_config = offline_metadata.get("reward_config")
     if isinstance(offline_reward_config, dict):
         mismatched = []

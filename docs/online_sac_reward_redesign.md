@@ -1,14 +1,14 @@
-# Online SAC Reward Redesign Note【SHELVED】
+# Online SAC Reward Redesign Note【SHELVED / v6 Pre-Integration Spec】
 
 > **⚠️ 此设计稿已搁置（2026-05-06）。**
 > **收口报告见 [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) §4.4** —— Online 线 thesis 矩阵已撤销，本设计稿对应的 `arrival_v2` reward（8 参数完整版）**不在 online 线落地**。
-> 本文件保留作为设计档案；如未来 online 线重启或 offline 线需要 arrival-first reward preset 升级，可直接参考此处 v4 规范。
-> 注意：[`auv_nav/reward.py`](../auv_nav/reward.py) 中已有的 `arrival_v2_simple` preset（commit `bd37412`）**与本文件 v4 的 `arrival_v2` 不是同一物**——前者只复用现有 RewardModelConfig 字段做 preset 重组，未实施本文件 §5.1 的 8 参数 / §7 的 terminal dominance unit test。
+> 本文件保留作为设计档案；如未来 online 线重启或 offline 线需要 arrival-first reward preset 升级，可直接参考此处 v6 规范。
+> 注意：[`auv_nav/reward.py`](../auv_nav/reward.py) 中已有的 `arrival_v2_simple` preset（commit `bd37412`）**与本文件 v6 的 `arrival_v2` 不是同一物**——前者只复用现有 RewardModelConfig 字段做 preset 重组，未实施本文件 §5.1 的 8 参数 / §6 的 MDP/replay 语义 / §7 的 discounted terminal dominance unit test。
 >
 > ---
 >
-> 文档版本：2026-04-27（v4）  
-> 适用范围：在线 SAC / improved SAC 在 wake navigation benchmark 上的奖励函数设计。  
+> 文档版本：2026-05-07（v6；v5 语义保留，补齐 discounted unsafe-shortcut 与 pre-integration gate）
+> 适用范围：在线 SAC / improved SAC 在 wake navigation benchmark 上的奖励函数设计。
 > 直接动机：`notebooks/sac_thesis_s0_preflight_v2_completed.ipynb` 中 P1 的 `single_u15_upstream_tgt15` 预检暴露出 `return` 上升但 `success_rate` 退化到 0 的现象。
 >
 > **修订记录**：
@@ -21,14 +21,23 @@
 >   (a) §5.1 expected return 表 4 行 safety penalty 错算 2-3×、`late_OOB` 漏一项 terminal；
 >   (b) `w_safety` dominance flip 阈值从 v2 估的 4.5 修正为 **3.69**，hard upper bound 应取 **3.0**（不是 v2 的 4.0），§7.1 stress test 上限同步下调；
 >   (c) `fast_OOB` **不是绝对最差**（修正后 `mid_OOB` 反而最差），但 safety property「无 suicide attractor」依然成立——正确的不变量是「`fast_OOB` 比任何 timeout 都差至少 100」；
->   (d) 补充 potential-based shaping 性质（§4.6）、R_fast_success 是时间压力主导项的归因（§3.2 末）、γ=0.995 折扣对 effective signal 的影响（§11.3）；
+>   (d) 补充 potential-based shaping 性质（现 §4.8）、R_fast_success 是时间压力主导项的归因（§3.2 末）、γ=0.995 折扣对 effective signal 的影响（§11.3）；
 >   (e) §7.1 新增 trajectory-level fixture（从真实 train_log 抽 200 条），§7.2 新增 critic_loss / Q-value / alpha 监控。
 >   v3 不改变 v2 §5.1 的最终参数取值，只修正数值与边界、补充 RL 理论分析、收紧测试覆盖。
 > - **v4 (2026-04-27)**：经第四轮 RL + robotics review，确认 v3 的主方向正确但第一版落地偏复杂。v4 做四个收敛：
 >   (a) `R_fast_success` 从主线默认项降级为 optional ablation（默认 `0`，可用 `arrival_v2_fast` 设为 `20`）；
->   (b) 修正 §4.6：在 `gamma=0.995` 下，`ΔPhi` 不是严格 policy-invariant potential shaping，严格形式应为 `gamma Phi(s') - Phi(s)`；
+>   (b) 修正 potential shaping 表述（现 §4.8）：在 `gamma=0.995` 下，`ΔPhi` 不是严格 policy-invariant potential shaping，严格形式应为 `gamma Phi(s') - Phi(s)`；
 >   (c) 统一 §5.1 / §7.1 fixture 步数与 expected return，修正 `fast_success` 数值和 OOB 排序；
 >   (d) 明确 `HARD_FAILURE_REASONS = SAFETY_FAILURE_REASONS - {"timeout"}`，timeout 必须走单独分支。
+> - **v5 (2026-05-07)**：根据实现审查补齐四个 blocking 语义：
+>   (a) `arrival_v2` 使用 `elapsed_time_s` 与 `initial_distance_m`，因此它必须同步扩展 observation / critic state，不能让 reward 依赖 policy 不可见的 episode context；
+>   (b) `timeout` 在 `arrival_v2` 中是语义 terminal，在线 SAC replay 必须把 `terminated or truncated` 作为 non-bootstrap done，不能继续只用 `terminated`；
+>   (c) §7 测试必须通过实际 `RewardModel.compute()` / reward helper，且同时验证 undiscounted 与 `gamma=0.995` discounted return 不变量；
+>   (d) `arrival_v2_simple` 明确为 offline-only ablation preset，不是 `arrival_v2` 的实现起点；若保留在共享 registry，online SAC 必须有 guard / warning。
+> - **v6 (2026-05-07)**：根据 discounted-return 复核补齐两个实现前 gate：
+>   (a) 即使 `R_fast_success=0`，`gamma=0.995` 也会让更早拿到 `R_success` 的 risky shortcut 获得隐式速度优势；v5 的 `w_safety=0.5` 在 discounted unsafe-shortcut fixture 上失败；
+>   (b) 主线候选 `w_safety` 从 `0.5` 提高到 `2.0`，并新增 discounted unsafe-shortcut unit test；
+>   (c) 在正式集成 `arrival_v2` 到 core reward/env/train 之前，必须先用独立候选奖励 validator 通过纯公式 gate，不允许先改一轮正式路径再发现参数无效。
 
 ---
 
@@ -40,12 +49,15 @@ P1 的异常不是偶然噪声，而是当前 `efficiency_v2` 奖励与任务主
 
 因此，`efficiency_v2` 不应继续作为 `single_u15_upstream_tgt15` 在线 SAC 主实验的默认目标函数。下一步应新增一个 arrival-first 的 reward preset，用它重跑 P1，再进入 sensor envelope 主实验。
 
-推荐路线（v4 当前规范）：
+推荐路线（v6 当前规范）：
 
 1. 新增 `arrival_v2`：以到达为绝对主目标，使用归一化 progress、温和时间惩罚、强 terminal dominance。
 2. `arrival_v2` 默认不加入 `R_fast_success`；若需要比较 time-to-goal preference，单独新增 `arrival_v2_fast` 做 ablation。
 3. 不新增 training-time `efficiency_v3` reward；energy / path / soft safety 全部作为 eval-only metrics。
-4. 给 reward 加最小不变量测试，确保快速失败不会再比接近目标或成功 episode 获得更高 return。
+4. `arrival_v2` 必须同步定义 MDP state contract：policy/critic observation 至少包含 `elapsed_time_s / max_episode_time_s` 与 `initial_distance_m` 的归一化 episode context，或等价地删掉所有依赖这些 hidden variables 的 reward 项。
+5. `arrival_v2` 必须同步定义 replay terminal 语义：`timeout` 是带 terminal penalty 的 finite-horizon terminal，SAC target 里不能 bootstrap。
+6. 给 reward 加最小不变量测试，确保快速失败不会再比接近目标或成功 episode 获得更高 return；测试必须覆盖 undiscounted 与 discounted return。
+7. 正式改 `auv_nav/reward.py` / `auv_nav/env.py` / `scripts/train_sac.py` 之前，先运行独立候选奖励 validator，确认 v6 参数在 discounted unsafe-shortcut 与 terminal dominance 上成立。
 
 ---
 
@@ -162,31 +174,31 @@ w_safety > 8.3   (broad failure 比较)
 
 v2 曾用 episode-total 近似得到 `w_safety_max ≈ 4.5`，但 v3/v4 按 §7.1 fixture 一致口径重算后，flip threshold 是 **3.69**。因此当前 hard stress 上限取 **3.0**，任何高于 3.69 的取值都可能让 timeout 比 OOB 更差，重新引入 suicide 激励。
 
-**速度/安全博弈点（v4 修正）**：
+**速度/安全博弈点（v6 修正：discounted SAC 的隐式速度奖励）**：
 
-v3 对时间压力的拆分有两个问题：
+v4 的 per-second break-even 只适用于 undiscounted 近似。在线 SAC 实际优化 `gamma=0.995` 的 discounted target，即使 `R_fast_success=0`，更早到达仍会因为更早拿到 `R_success=100` 而获得隐式速度优势。
 
-1. `w_time = 5` 的每秒收益应为 `5 / 240 ≈ 0.0208 reward/sec`，不是 0.010。
-2. 若保留 `R_fast_success = 20`，unsafe-shortcut 的时间收益应近似相加：`(5 + 20) / 240 ≈ 0.104 reward/sec`。
-
-走危险捷径每秒成本仍可粗略写成：
+用 §7.1 的同口径 synthetic shortcut fixture 复核：
 
 ```text
-failure-policy avg safety × 2 step/sec × w_safety
-≈ 0.13 × 2 × w_safety
-= 0.26 × w_safety reward/sec
+safe_success:   180 steps, D_i=65, D_f=4, avg_safety=0.005
+risky_success:  120 steps, D_i=65, D_f=4, avg_safety=0.150
 ```
 
-因此：
+在 v5 默认 `w_safety=0.5` 下，discounted return 反而是：
 
-| reward variant | time pressure | break-even `w_safety` | implication |
-|---|---:|---:|---|
-| no fast-success bonus | `5 / 240 = 0.0208` | `> 0.08` | `w_safety=0.5` 有充足 margin |
-| with `R_fast_success=20` | `(5+20)/240 = 0.104` | `> 0.40` | `w_safety=0.5` 仍可行，但 margin 明显变窄 |
+```text
+risky_success ≈ 82.7  >  safe_success ≈ 70.2
+```
 
-**v4 结论**：主线 `arrival_v2` 默认不使用 `R_fast_success`。理由不是“速度不重要”，而是 SAC 的折扣因子已经偏好更早成功，且 efficiency/time-to-goal 在本 thesis 主线中应作为 eval-only metric。若实验显示无 fast bonus 的 policy 明显磨蹭，再用 `arrival_v2_fast`（`R_fast_success=20`）做受控 ablation。
+这说明“`R_fast_success=0` + `w_safety=0.5`”仍可能训练出贴边快速成功的 shortcut policy。按同一 fixture 解 discounted break-even：
 
-`w_safety=0.5` 保留为第一版固定值。它高于 no-fast 版本的 unsafe-shortcut 下限约 6×，同时远低于 v3 修正后的 dominance flip 阈值 `3.69`。因此 v4 不再把 `w_safety` 当作 sweep 维度；stress test 只验证 `[0.5, 3.0]` 内 ordering 不翻转。
+| reward variant | discounted shortcut break-even `w_safety` | v6 implication |
+|---|---:|---|
+| no fast-success bonus | `> 1.46` | 主线候选值必须高于此下限 |
+| with `R_fast_success=20` | `> 1.71` | `arrival_v2_fast` 必须单独验证，不可沿用 v5 结论 |
+
+**v6 结论**：主线 `arrival_v2` 仍默认不使用 `R_fast_success`，但 `w_safety` 候选默认值从 `0.5` 提高到 **`2.0`**。它高于 discounted unsafe-shortcut 下限，同时仍低于 timeout-vs-hard-failure dominance flip 阈值 `3.69` 与 hard stress 上限 `3.0`。若未来启用 `arrival_v2_fast`，必须重新跑 §7.1 discounted shortcut test 与 §8.1 pre-integration gate。
 
 ---
 
@@ -218,7 +230,7 @@ fast_success
 progress shaping 应帮助 SAC 学习方向，但不能压过终局。建议使用归一化 progress，而不是直接使用米制距离：
 
 ```text
-progress_delta_norm = (previous_distance - current_distance) / initial_distance
+progress_delta_norm = (previous_distance - current_distance) / D_init_safe
 ```
 
 这样不同 benchmark 的 start-goal 距离变化不会直接改变 reward 尺度。
@@ -237,7 +249,44 @@ early_failure_weight = 1 - elapsed_time / max_episode_time
 
 `out_of_bounds`、`attitude_limit`、`speed_limit` 等 hard failure 应由 terminal penalty 处理；soft safety cost 用于提前提示风险，不应承担主要的失败惩罚职责。
 
-### 4.6 Potential-Like Progress Shaping（v4 修正）
+### 4.6 Reward 必须满足 MDP State Contract（v5 新增）
+
+`arrival_v2` 中有两类项依赖 episode context：
+
+```text
+progress_delta_norm = Δd / D_init_safe
+early_failure_weight = 1 - elapsed_time_s / max_episode_time_s
+R_fast_success       = R_fast_success * (1 - elapsed_time_s / max_episode_time_s)
+final_distance_ratio = final_distance_m / D_init_safe
+```
+
+这些变量当前在 `env.step()` 的 `info` 中可见，但不在 actor/critic observation 中。若直接把它们用于训练 reward，同一个 observation-action-next_observation transition 可能因为 hidden elapsed time 或 hidden initial distance 获得不同 reward/Q target。这会让 SAC 面对非 Markov 的 value function，尤其破坏 early-failure 与 timeout 的 credit assignment。
+
+因此，实现 `arrival_v2` 时必须二选一：
+
+1. **推荐**：为 `arrival_v2` 新增 objective-specific observation context，把下面两个标量加入 actor/critic observation：
+   ```text
+   elapsed_time_frac = elapsed_time_s / max_episode_time_s
+   initial_distance_norm = D_init_safe / OBS_DISTANCE_SCALE
+   ```
+   这会改变 observation dimension；旧 checkpoint / 旧 offline dataset 与 `arrival_v2` 不兼容，必须重训 / 重收集。
+2. **备选**：不扩 observation，但从 training reward 中删掉所有依赖 hidden episode context 的项，改用 observation 可恢复的固定尺度（例如 benchmark-level distance scale）和纯 terminal reason。这个版本应另命名，不应叫本文 `arrival_v2`。
+
+v5 规范采用方案 1。`elapsed_time_frac` 是 finite-horizon MDP 的剩余时间状态；`initial_distance_norm` 是 reward normalization 与 terminal distance ratio 的 episode context。两者都应进入 actor 与 critic 的输入，AsymCritic 也不能只给 critic 看，否则 actor 执行期仍缺状态。
+
+### 4.7 Timeout 是语义 Terminal（v5 新增）
+
+本文 `arrival_v2` 给 `timeout` 单独 terminal penalty，因此 timeout 不再只是 Gymnasium 意义上的 time-limit truncation，而是 finite-horizon 任务失败的一种语义 terminal。实现要求：
+
+```text
+arrival_v2 SAC replay done = terminated or truncated
+legacy SAC replay done     = terminated   # 可保持现状以兼容旧实验
+offline dataset dones      = terminated or truncated
+```
+
+如果未来决定继续对 timeout bootstrap，就必须删除 `R_timeout` 与 timeout final-distance terminal 项，只把 timeout 当作 episode 切分边界。不能同时「给 timeout terminal penalty」又「在 Bellman target 中从 timeout bootstrap」；这会让 critic 学到的目标与 §7 的 episode-return dominance 测试不一致。
+
+### 4.8 Potential-Like Progress Shaping（v4 修正）
 
 `progress_delta_norm = (prev_dist − curr_dist) / D_init` 可以写成 potential difference：
 
@@ -298,11 +347,11 @@ terminal:
   elif reason in HARD_FAILURE_REASONS:   # excludes "timeout"
       r -= R_failure
       r -= R_early_failure * (1 - elapsed_time / max_episode_time)
-      r -= R_final_distance * clipped(final_distance / initial_distance, 0, 2)
+      r -= R_final_distance * clipped(final_distance / D_init_safe, 0, 2)
 
   elif reason == "timeout":
       r -= R_timeout
-      r -= R_final_distance * clipped(final_distance / initial_distance, 0, 2)
+      r -= R_final_distance * clipped(final_distance / D_init_safe, 0, 2)
 ```
 
 实现中必须显式定义：
@@ -313,13 +362,13 @@ HARD_FAILURE_REASONS = SAFETY_FAILURE_REASONS - {"timeout"}
 
 当前 `SAFETY_FAILURE_REASONS` 包含 `"timeout"`，不能直接复用，否则 timeout 会错误进入 hard-failure 分支。
 
-初始参数建议（v4 当前规范）：
+初始参数建议（v6 当前规范；正式集成前仍需通过 §8.1 独立 gate）：
 
-| parameter | v4 default | optional fast ablation | rationale |
+| parameter | v6 candidate default | optional fast ablation | rationale |
 |---|---:|---:|---|
 | `w_progress` | **50** | 50 | 成功 episode 总 progress reward 约 50，为 `R_success` 的一半；dense signal 与旧 objective 同量级。 |
 | `w_time` | **5** | 5 | 完整 episode 时间项约 -5，只提供温和时间压力，不主导终局。 |
-| `w_safety` | **0.5** | 0.5 | 高于 no-fast unsafe-shortcut break-even 约 6×，且远低于 dominance flip threshold 3.69。 |
+| `w_safety` | **2.0** | 2.0 | 高于 discounted unsafe-shortcut break-even 1.46，且低于 timeout-vs-OOB flip threshold 3.69。 |
 | `R_success` | **100** | 100 | 主任务语义。 |
 | `R_fast_success` | **0** | 20 | 默认不进入主线；如需显式 time-to-goal training pressure，用 `arrival_v2_fast` 单独比较。 |
 | `R_failure` | **100** | 100 | hard failure 基础重罚。 |
@@ -330,20 +379,21 @@ HARD_FAILURE_REASONS = SAFETY_FAILURE_REASONS - {"timeout"}
 **Hard parameter bounds（写入 §7.1 unit test stress 子测试）**：
 
 - `w_safety < 3.0`（dominance flip threshold = **3.69**，留 ~20% 安全余量）— v2 估的 4.5 是用近似算法（peak vs collapse episode total）得到，用 fixture 一致重算后下调，详见 §11.1
-- no-fast default 下 unsafe-shortcut toy bound 约 `w_safety > 0.08`；`w_safety=0.5` 有充分余量
-- `arrival_v2_fast` 若启用 `R_fast_success=20`，unsafe-shortcut toy bound 约 `w_safety > 0.40`，必须单独通过 ordering / behavior regression
+- no-fast default 下 discounted unsafe-shortcut bound 约 `w_safety > 1.46`；`w_safety=2.0` 是当前候选值
+- `arrival_v2_fast` 若启用 `R_fast_success=20`，discounted unsafe-shortcut bound 约 `w_safety > 1.71`，必须单独通过 ordering / behavior regression
 - `w_progress < R_success`（terminal dominance，Σprogress 不能超过 R_success=100）
 
-**预期 episode return 排序**（v4 默认 `R_fast_success=0`；与 §7.1 fixture 步数一致）：
+**预期 undiscounted episode return 排序**（v6 默认 `R_fast_success=0, w_safety=2.0`；与 §7.1 fixture 步数一致；discounted 不变量另见 §7.1）：
 
 ```text
-fast_success      (120 步, D_f/D_i=0.06, sft 0.005)  ≈ +46.9 − 1.25 − 0.30 + 100                 = +145.4
-slow_success      (240 步, D_f/D_i=0.06, sft 0.005)  ≈ +46.9 − 2.50 − 0.60 + 100                 = +143.8
-timeout_near_goal (480 步, D_f/D_i=0.20, sft 0.130)  ≈ +40.0 − 5.00 − 31.2 − 50 − 10             =  −56.2
-timeout_far_goal  (480 步, D_f/D_i=1.00, sft 0.130)  ≈   0.0 − 5.00 − 31.2 − 50 − 50             = −136.2
-late_OOB          (240 步, D_f/D_i=1.00, sft 0.150)  ≈   0.0 − 2.50 − 18.0 − 100 − 50 − 50       = −220.5
-fast_OOB          ( 60 步, D_f/D_i=1.20, sft 0.185)  ≈ −10.0 − 0.63 − 5.55 − 100 − 87.5 − 60     = −263.7
-mid_OOB           (120 步, D_f/D_i=1.50, sft 0.180)  ≈ −25.0 − 1.25 − 10.8 − 100 − 75 − 75       = −287.1
+fast_success      (120 步, D_f/D_i=0.06, sft 0.005)  ≈ +46.9 − 1.25 −   1.2 + 100                 = +144.5
+slow_success      (240 步, D_f/D_i=0.06, sft 0.005)  ≈ +46.9 − 2.50 −   2.4 + 100                 = +142.0
+unsafe_success    (180 步, D_f/D_i=0.06, sft 0.150)  ≈ +46.9 − 1.88 −  54.0 + 100                 =  +91.0
+timeout_near_goal (480 步, D_f/D_i=0.20, sft 0.130)  ≈ +40.0 − 5.00 − 124.8 − 50 − 10             = −149.8
+timeout_far_goal  (480 步, D_f/D_i=1.00, sft 0.130)  ≈   0.0 − 5.00 − 124.8 − 50 − 50             = −229.8
+late_OOB          (240 步, D_f/D_i=1.00, sft 0.150)  ≈   0.0 − 2.50 −  72.0 − 100 − 50 − 50       = −274.5
+fast_OOB          ( 60 步, D_f/D_i=1.20, sft 0.185)  ≈ −10.0 − 0.63 −  22.2 − 100 − 87.5 − 60     = −280.3
+mid_OOB           (120 步, D_f/D_i=1.50, sft 0.180)  ≈ −25.0 − 1.25 −  43.2 − 100 − 75 − 75       = −319.5
 ```
 
 每行的项依次为：`w_progress×Σprogress_norm`、`w_time×Σ(dt/T_max)`、`w_safety×Σsafety`（用 fixture per-step × n_steps）、`R_success/R_failure/R_timeout`、`R_early_failure`、`R_final_distance × D_f/D_i`。
@@ -352,10 +402,12 @@ mid_OOB           (120 步, D_f/D_i=1.50, sft 0.180)  ≈ −25.0 − 1.25 − 1
 >
 > **v3 → v4 数值差异**：v3 表中 `fast_success` 写成 60 步，而 §7.1 fixture 是 120 步；v4 统一为 120 步。同时默认 `R_fast_success=0`，所以 success return 下降约 10-17.5，但 success-vs-failure margin 仍然充足。
 
-**关键不变量**（每次调参都要用 §7.1 测试验证；v4 当前措辞）：
+**关键不变量**（每次调参都要用 §7.1 测试验证；v6 当前措辞）：
 
-- 排序：`fast_success > slow_success > timeout_near > timeout_far > late_OOB > fast_OOB > mid_OOB` ✓
-- **任何 failure mode 比任何 success mode 差至少 100**（default fixture 下约 200）✓
+- undiscounted 排序：`fast_success > slow_success > unsafe_success > timeout_near > timeout_far > late_OOB > fast_OOB > mid_OOB` ✓
+- discounted 核心排序：`success > timeout > hard_failure`，且 `fast_OOB << timeout` ✓
+- discounted unsafe-shortcut：`safe_success(180 steps, sft=0.005) > risky_success(120 steps, sft=0.150)` ✓
+- **canonical / realistic unsafe success fixtures 均显著优于 failure fixtures**（default fixture 下 margin ≥ 100；不声称对任意无限 soft-risk success 全局成立）✓
 - **`fast_OOB` 比任何 timeout 都差至少 100**（防止 OOB 自杀套利；v3 修正：原 v2 「fast_OOB 是绝对最差」**与 fixture 数值不符**——`mid_OOB` 才是绝对最差。但「无 suicide attractor」只需要 fast_OOB << timeout，这个约束依然满足）✓
 - 注意：`mid_OOB` 比 `fast_OOB` 更差是合理的——前者既走错方向又触发 hard failure，progress 项吃了 −25 而后者只 −10
 
@@ -390,6 +442,34 @@ eval summary 同时输出 success-conditioned 与 unconditioned 两个版本（�
 
 如果未来确实需要 efficiency 进入 training reward（例如做能耗-success Pareto 曲线），可以**新开一个章节**用 efficiency_v3 reward 重训单独 finalist，明确标注为「与主线 arrival_v2 不可直接比 absolute return」。但默认不做。
 
+### 5.3 `arrival_v2_simple` 的定位（v5 新增）
+
+当前代码中的 [`REWARD_OBJECTIVE_PRESETS["arrival_v2_simple"]`](../auv_nav/reward.py) 是 offline C1 reward ablation 的最小 preset，不是本文 `arrival_v2` 的第一阶段实现。它的目标是用现有字段快速改变 terminal 量级：
+
+```text
+step_penalty = -0.2
+success_reward = +200
+failure_penalty = -200
+timeout_penalty = -50
+safety_cost_gain = 0.5
+```
+
+它刻意没有实现本文完整版的四个关键机制：
+
+1. 没有 normalized progress；
+2. 没有 normalized time / early-failure penalty；
+3. 没有 final-distance terminal penalty；
+4. 没有 objective-specific observation context 与 discounted dominance tests。
+
+因此它只能作为 **offline-only ablation preset** 保留。若它继续留在共享 `REWARD_OBJECTIVE_PRESETS` 中，`scripts/train_sac.py` 应对 `arrival_v2_simple` 做显式 guard：
+
+```text
+default: forbid online SAC training with arrival_v2_simple
+override: require --allow-offline-only-objective or equivalent explicit flag
+```
+
+`arrival_v2_simple` 的现有测试也应只锁定它自己的简化行为。若继续保留这些测试，应通过 `RewardModel.compute()` 重放 fixture，而不是手写 `step_penalty * steps + progress + terminal`，以免漏掉 `safety_cost_gain` 或 timeout terminal-violation 行为。不要把这些测试当作本文 `arrival_v2` 的验收标准；未来实现完整版时应新增独立的 `arrival_v2` tests，而不是扩展 `arrival_v2_simple` 的含义。
+
 ---
 
 ## 6. 实现影响
@@ -409,6 +489,7 @@ actuator_rpm
 ```text
 elapsed_time_s
 max_episode_time_s
+previous_distance_to_goal_m
 current_distance_to_goal_m
 initial_distance_to_goal_m
 dt
@@ -416,16 +497,45 @@ dt
 
 推荐做法：
 
-1. 扩展 `RewardModelConfig`，加入 `max_episode_time_s` 和 `terminal` 系列参数。
-2. 扩展 `RewardModel.compute()` 参数，使 reward model 自己完成归一化，而不是把逻辑散落在 `env.step()` 中。
-3. 保留 `arrival_v1 / efficiency_v1 / efficiency_v2` 作为历史 preset，新增 `arrival_v2`；可选新增 `arrival_v2_fast` 只用于 ablation。
-4. `efficiency_v3` 不作为 reward preset，仅作为 eval summary 字段，详见 §5.2。
-5. 在 `scripts/train_sac.py` 的 CLI 层保持 `--objective` 接口不变。
-6. 新增 hard-failure 集合时不要复用包含 timeout 的 `SAFETY_FAILURE_REASONS`：
+1. 扩展 `RewardModelConfig`，加入 `max_episode_time_s`、`d_init_min_m`、`w_progress` / `w_time` / `w_safety`、`R_success` / `R_fast_success` / `R_failure` / `R_early_failure` / `R_timeout` / `R_final_distance` 等 terminal 系列参数。保留 legacy 字段用于旧 objective，避免重写旧实验。
+2. 扩展 `RewardModel.compute()` 参数，使 reward model 自己完成归一化，而不是把逻辑散落在 `env.step()` 中。`env.step()` 只负责传入原始量：
+   ```text
+   previous_distance_to_goal_m
+   current_distance_to_goal_m
+   initial_distance_to_goal_m
+   elapsed_time_s
+   max_episode_time_s
+   dt
+   reason / terminated / truncated
+   safety_cost / actuator_rpm
+   ```
+3. `arrival_v2` 必须有 objective-specific observation contract（见 §4.6）。推荐实现为：
+   ```text
+   PlanarRemusEnvConfig.include_episode_context_obs: bool = False
+   arrival_v2 / arrival_v2_fast preset 自动设为 True
+   observation 追加 [elapsed_time_frac, initial_distance_norm]
+   ```
+   这会把 `s0/s1/s2` 的 observation dimension 分别从 `10/12/16` 变为 `12/14/18`（未加 history 前）。所有 `ObservationHistoryWrapper`、offline dataset metadata、checkpoint metadata 和 evaluation loader 都必须记录新维度。
+4. `scripts/train_sac.py` 必须按 objective 选择 bootstrap 语义：
+   ```text
+   if reward_objective in {"arrival_v2", "arrival_v2_fast"}:
+       replay_done = terminated or truncated
+   else:
+       replay_done = terminated
+   ```
+   vector env 与 single env 两条路径都要一致。`scripts/collect_offline_data.py` 当前已保存 `dones = terminated or truncated`，可保留；`train_offline.py` 已检查 dataset objective，仍需确保 `arrival_v2` dataset 是用新 observation context 重收集的。
+5. 保留 `arrival_v1 / efficiency_v1 / efficiency_v2` 作为历史 preset，新增 `arrival_v2`；可选新增 `arrival_v2_fast` 只用于 ablation。`arrival_v2_simple` 保持 offline-only ablation，不能升级为 alias。
+6. `efficiency_v3` 不作为 reward preset，仅作为 eval summary 字段，详见 §5.2。
+7. 在 `scripts/train_sac.py` 的 CLI 层保持 `--objective` 接口不变，但新增 offline-only guard：默认禁止 `--objective arrival_v2_simple` 进入 online SAC，除非显式 override。
+8. 新增 hard-failure 集合时不要复用包含 timeout 的 `SAFETY_FAILURE_REASONS`：
 
 ```python
-HARD_FAILURE_REASONS = SAFETY_FAILURE_REASONS - {"timeout"}
+TIMEOUT_REASONS = frozenset({"timeout"})
+HARD_FAILURE_REASONS = SAFETY_FAILURE_REASONS - TIMEOUT_REASONS
+SAFETY_TERMINAL_VIOLATION_REASONS = HARD_FAILURE_REASONS
 ```
+
+`SafetyCostModel` 的 `terminal_violation` 也应使用 `SAFETY_TERMINAL_VIOLATION_REASONS`，不要把 timeout 计入 safety violation。否则 `arrival_v2` 的 timeout 会同时吃 `R_timeout` 与 soft safety terminal cost，且 eval safety metric 会把普通超时误记为安全违规。
 
 ### 6.1 边界情况与防御性实现（v2 新增）
 
@@ -459,26 +569,48 @@ env 当前会在 `nonfinite_state` / `nonfinite_derivative` 时 terminate，触�
 
 **(d) RewardModel 调用点**：
 
-需要同步更新所有调用 `RewardModel.compute()` 的地方，传入新签名所需的 `elapsed_time_s / max_episode_time_s / current_distance_to_goal_m / initial_distance_to_goal_m / dt`：
+需要同步更新所有调用 `RewardModel.compute()` 的地方，传入新签名所需的 `previous_distance_to_goal_m / current_distance_to_goal_m / initial_distance_to_goal_m / elapsed_time_s / max_episode_time_s / dt`：
 
 - `auv_nav/env.py` 的 `step()` 主路径
 - `scripts/train_utils.py` 的 eval rollout（间接通过 env）
 - `scripts/collect_offline_data.py` 的离线数据收集（用于 RLPD / offline RL 数据）
 - 测试 fixture（参见 §7.1）
 
-env 已经有 `self.initial_distance` 与 `self.last_distance`，env 直接传入即可，不需要改 env state。
+env 已经有 `self.initial_distance` 与 `self.last_distance`，env 可直接传入 reward model；但由于 v5 要求这些 episode context 也进入 observation，`_build_observation()` / observation layout / obs dim metadata 仍必须同步更新。
+
+**(e) Objective metadata 与兼容性**：
+
+实现 `arrival_v2` 后，checkpoint 与 offline dataset metadata 至少要记录：
+
+```text
+reward_objective
+reward_config
+include_episode_context_obs
+observation_dim
+history_length
+probe_layout
+timeout_bootstrap_semantics
+```
+
+加载 checkpoint / offline dataset 时必须拒绝以下混用：
+
+- `arrival_v2` checkpoint 用 legacy observation layout eval；
+- legacy checkpoint 用 `arrival_v2` observation layout eval；
+- `arrival_v2_simple` dataset 当作 `arrival_v2` dataset 训练；
+- `arrival_v2` dataset 与 `arrival_v2_fast` objective 混用。
 
 ---
 
 ## 7. 必须新增的测试
 
-### 7.1 Reward Ordering Unit Test（v4 最小必需测试）
+### 7.1 Reward Ordering Unit Test（v6 最小必需测试）
 
-构造 synthetic episode summary，直接测试累计 return 排序：
+构造 synthetic episode summary，通过实际 `RewardModel.compute()` 或与其共享的 pure helper 逐 step 重放 reward，测试累计 return 排序。测试不能手写 `sp * steps + progress + terminal` 这种近似公式，否则会漏掉 `safety_cost_gain`、timeout 分支、terminal violation 等实现细节。
 
 ```text
 fast_success
   > slow_success
+  > unsafe_success
   > timeout_near_goal
   > timeout_far_goal
   > late_out_of_bounds
@@ -486,7 +618,7 @@ fast_success
   > mid_out_of_bounds
 ```
 
-这类测试不依赖 PyTorch，也不依赖真实流场。
+这类测试不依赖 PyTorch，也不依赖真实流场，但必须复用生产 reward 逻辑。
 
 **v1 vs v2 fixture 量级差异**：v1 没有指定 fixture 中的 per-step safety_cost 量级。如果默认用 0.05（v1 的隐含猜测），unit test 会通过，但生产中 failure-policy 真实是 0.13–0.18，dominance 边界会被错估。v2 强制 fixture 使用 §3.2 实测数据量级。
 
@@ -503,7 +635,7 @@ class EpisodeFixture:
     final_distance_m: float
     avg_per_step_safety: float   # ∈ [0,1]
     # 计算 derived: elapsed_time_s = n_control_steps × control_dt
-    #               progress_sum_norm = (D_init - D_final) / D_init
+    #               progress_sum_norm = (D_init - D_final) / D_init_safe
     #               total_safety_cost = avg_per_step_safety × n_control_steps
 
 FIXTURES = [
@@ -515,17 +647,60 @@ FIXTURES = [
     EpisodeFixture("late_oob",        240, False, "out_of_bounds", 65.0, 65.0,  0.150),
     EpisodeFixture("mid_oob",         120, False, "out_of_bounds", 65.0, 97.5,  0.180),  # 走错方向
     EpisodeFixture("fast_oob",         60, False, "out_of_bounds", 65.0, 78.0,  0.185),  # 自杀
+    EpisodeFixture("unsafe_success",  180, True,  "goal",          65.0,  4.0,  0.150),  # shortcut stress
 ]
+```
+
+`compute_return()` 必须走真实 reward 逻辑。推荐把归一化公式抽成 `RewardModel.compute()` 内部可复用 helper；测试逐 step 构造距离序列和终局 reason：
+
+```python
+def compute_return(
+    objective: str,
+    fixture: EpisodeFixture,
+    *,
+    gamma: float | None = None,
+    w_safety_override: float | None = None,
+) -> float:
+    """Replay a synthetic episode through RewardModel, not a handwritten formula."""
+    reward_model = make_reward_model(objective, w_safety_override=w_safety_override)
+    distances = np.linspace(
+        fixture.initial_distance_m,
+        fixture.final_distance_m,
+        fixture.n_control_steps + 1,
+    )
+    total = 0.0
+    discount = 1.0
+    for step_idx in range(fixture.n_control_steps):
+        reason = fixture.reason if step_idx == fixture.n_control_steps - 1 else "running"
+        terminated = reason not in {"running", "timeout"}
+        truncated = reason == "timeout"
+        reward = reward_model.compute(
+            previous_distance_to_goal_m=float(distances[step_idx]),
+            current_distance_to_goal_m=float(distances[step_idx + 1]),
+            initial_distance_to_goal_m=fixture.initial_distance_m,
+            elapsed_time_s=(step_idx + 1) * CONTROL_DT,
+            max_episode_time_s=MAX_EPISODE_TIME_S,
+            dt=CONTROL_DT,
+            safety_cost=fixture.avg_per_step_safety,
+            reason=reason,
+            terminated=terminated,
+            truncated=truncated,
+            actuator_rpm=0.0,
+        ).reward
+        total += discount * reward
+        if gamma is not None:
+            discount *= gamma
+    return float(total)
 ```
 
 **Test cases**：
 
 ```python
 def test_arrival_v2_terminal_dominance():
-    """Asserts the canonical ordering at v4 default params."""
+    """Asserts the canonical ordering at v6 candidate params."""
     returns = {f.name: compute_return("arrival_v2", f) for f in FIXTURES}
     expected_order = [
-        "fast_success", "slow_success",
+        "fast_success", "slow_success", "unsafe_success",
         "timeout_near", "timeout_far",
         "late_oob", "fast_oob", "mid_oob",
     ]
@@ -533,11 +708,23 @@ def test_arrival_v2_terminal_dominance():
     assert actual == expected_order, f"order broken: {returns}"
 
 def test_success_dominates_failure():
-    """Any success > any failure (margin ≥ 100)."""
+    """Canonical and unsafe-success fixtures both dominate failures."""
     returns = {f.name: compute_return("arrival_v2", f) for f in FIXTURES}
     successes = [v for k,v in returns.items() if "success" in k]
     failures  = [v for k,v in returns.items() if "success" not in k]
     assert min(successes) > max(failures) + 100
+
+def test_discounted_terminal_dominance_gamma_0995():
+    """SAC optimizes discounted targets, so core dominance must hold under gamma."""
+    returns = {f.name: compute_return("arrival_v2", f, gamma=0.995) for f in FIXTURES}
+    success_min = min(v for k, v in returns.items() if "success" in k)
+    timeout_max = max(v for k, v in returns.items() if "timeout" in k)
+    hard_failure_max = max(v for k, v in returns.items() if "oob" in k)
+    assert success_min > timeout_max + 50, returns
+    assert returns["timeout_far"] > returns["late_oob"], returns
+    assert returns["fast_oob"] < timeout_max - 100, returns
+    assert timeout_max > hard_failure_max, returns
+    assert returns["slow_success"] > returns["unsafe_success"] + 10, returns
 
 def test_no_suicide_attractor():
     """Defends against suicide-via-fast-OOB attractor.
@@ -550,10 +737,10 @@ def test_no_suicide_attractor():
         f"suicide attractor: fast_oob={returns['fast_oob']} vs timeout_max={timeout_max}"
 
 def test_w_safety_dominance_bound():
-    """Stress: w_safety up to 3.0 must preserve ordering. >3.69 will flip.
+    """Stress: w_safety in [1.5, 3.0] must preserve timeout > hard failure.
     v3 修正：v2 上限 4.0 是用 episode-total 法估算，按 fixture per-step × n_steps
     一致重算，flip 阈值是 3.69，hard upper bound 取 3.0（~20% 余量）。"""
-    for w in [0.5, 1.0, 2.0, 3.0]:
+    for w in [1.5, 2.0, 2.5, 3.0]:
         returns = {f.name: compute_return("arrival_v2", f, w_safety_override=w) for f in FIXTURES}
         # 关键约束：timeout_far 必须好于 late_oob，否则 timeout > OOB 失败
         assert returns["timeout_far"] > returns["late_oob"], \
@@ -565,21 +752,34 @@ def test_w_safety_dominance_bound():
 
 def test_w_safety_lower_bound_blocks_unsafe_shortcut_no_fast():
     """Synthetic shortcut fixture: 30% shorter time but 30× safety cost.
-    With v4 default R_fast_success=0, w_safety=0.5 should make the safe
-    route better despite the risky route's shorter duration."""
+    With v6 candidate R_fast_success=0, w_safety=2.0 should make the safe
+    route better under both undiscounted and gamma=0.995 returns."""
     safe_route = EpisodeFixture("safe_succ",     180, True, "goal", 65, 4, 0.005)
     risky_route = EpisodeFixture("shortcut_succ", 120, True, "goal", 65, 4, 0.150)
-    r_safe = compute_return("arrival_v2", safe_route)
-    r_risky = compute_return("arrival_v2", risky_route)
-    assert r_safe > r_risky, f"unsafe shortcut wins: safe={r_safe}, risky={r_risky}"
+    for gamma in [None, 0.995]:
+        r_safe = compute_return("arrival_v2", safe_route, gamma=gamma)
+        r_risky = compute_return("arrival_v2", risky_route, gamma=gamma)
+        assert r_safe > r_risky, \
+            f"unsafe shortcut wins at gamma={gamma}: safe={r_safe}, risky={r_risky}"
+
+def test_v5_w_safety_0p5_would_fail_discounted_shortcut_gate():
+    """Regression guard for the v6 design review finding."""
+    safe_route = EpisodeFixture("safe_succ",      180, True, "goal", 65, 4, 0.005)
+    risky_route = EpisodeFixture("shortcut_succ", 120, True, "goal", 65, 4, 0.150)
+    r_safe = compute_return("arrival_v2", safe_route, gamma=0.995, w_safety_override=0.5)
+    r_risky = compute_return("arrival_v2", risky_route, gamma=0.995, w_safety_override=0.5)
+    assert r_safe < r_risky, \
+        "this guard should fail if the shortcut fixture no longer catches v5's weak safety"
 
 def test_arrival_v2_fast_optional_ablation_is_safe():
     """Only needed if enabling arrival_v2_fast with R_fast_success=20."""
     safe_route = EpisodeFixture("safe_succ",     180, True, "goal", 65, 4, 0.005)
     risky_route = EpisodeFixture("shortcut_succ", 120, True, "goal", 65, 4, 0.150)
-    r_safe = compute_return("arrival_v2_fast", safe_route)
-    r_risky = compute_return("arrival_v2_fast", risky_route)
-    assert r_safe > r_risky, f"unsafe shortcut wins under fast ablation: safe={r_safe}, risky={r_risky}"
+    for gamma in [None, 0.995]:
+        r_safe = compute_return("arrival_v2_fast", safe_route, gamma=gamma)
+        r_risky = compute_return("arrival_v2_fast", risky_route, gamma=gamma)
+        assert r_safe > r_risky, \
+            f"unsafe shortcut wins under fast ablation at gamma={gamma}: safe={r_safe}, risky={r_risky}"
 
 def test_d_init_clamp():
     """D_init < D_INIT_MIN must not blow up reward."""
@@ -588,11 +788,16 @@ def test_d_init_clamp():
     assert -1e3 < r < 1e3, f"reward exploded: {r}"
 ```
 
+注意两点：
+
+1. Discounted tests 不要求完整 OOB 内部排序与 undiscounted tests 完全一致。`gamma=0.995` 会让早期 OOB 的 terminal penalty 在 Q-space 中更大，`fast_oob` 与 `mid_oob` 的相对顺序可能交换；真正必须守住的是 `success > timeout > hard_failure` 与 `fast_oob << timeout`。
+2. `success_dominates_failure` 不是数学上对任意 `Σsafety_cost` 的全局命题。若一个“成功”episode 长时间贴着 safety limit 运行，它可以被 soft safety penalty 拉低。v6 的验收语义是：canonical success、realistic unsafe-success fixture 与 discounted unsafe-shortcut fixture 都必须优于 failure / risky shortcut；若项目要求 **任何成功都绝对优于任何失败**，实现中需要新增 success-episode safety penalty cap，并为 cap 写独立测试。
+
 **测试运行频率**：每次 `auv_nav/reward.py` 改动必须通过；CI 强制（pre-commit hook 或 GitHub Action）。
 
 **测试不覆盖的内容**（已知 limitation）：
 - 真实 SAC 训练动力学（policy 是否能找到次优解）—— 由 §7.2 P1 regression 覆盖
-- 真实流场下的 trajectory 分布 —— 由 cross_u10 behavior regression 覆盖（详见 §8.2）
+- 真实流场下的 trajectory 分布 —— 由 cross_u10 behavior regression 覆盖（详见 §8.3）
 
 #### 7.1.1 Trajectory-Level Invariant Test（可选后置）
 
@@ -638,9 +843,9 @@ def test_arrival_v2_ordering_on_real_trajectories():
 
 **实现注意**：efficiency_v2 训练出来的 policy 与 arrival_v2 想训练的 policy 不同分布（前者后期 OOB 自杀，后者期望避免 OOB），所以 success episode 数量较少（约 200 条总 success）。**抽 100 success / 100 failure 已经足够**；如果 success 不足 100 条，按实际数量抽（log 中应有 ≥ 200 条）。
 
-**预期通过判据**（基于 §3.2 实测；v4 default no-fast）：
-- success return 范围预期约 `[+135, +150]`（time / D_f / safety variation）
-- failure return 范围预期 `[−300, −80]`
+**预期通过判据**（基于 §3.2 实测；v6 candidate no-fast）：
+- success return 范围预期约 `[+90, +145]`（time / D_f / safety variation；unsafe-success fixture 会明显低于 low-safety success）
+- failure return 范围预期 `[−330, −140]`
 - success_min − failure_max ≥ 50 应当成立
 
 如果失败，**优先怀疑 fixture safety 量级与真实分布脱节**，而不是直接调 reward 参数。
@@ -660,6 +865,9 @@ eval_progress_ratio
 eval_path_efficiency
 return_success_only
 return_failure_only
+return_by_reason
+final_distance_by_reason
+observation_context_enabled
 ```
 
 **(b) Training dynamics**（建议记录；不作为第一版实现阻塞项）：
@@ -679,6 +887,8 @@ target_entropy_gap = H(π) − target_H   # SAC entropy 是否锁在 target 附�
 3. 若 `arrival_v2` 下仍出现 success collapse，需要先检查任务难度、探索和算法稳定性，而不是继续调 efficiency 项。
 4. 若 `q_value_max > 500` 或 `critic_loss_max > 100` 持续 ≥ 50k steps，判定为 reward scale 失稳。应对：将 terminal 项整体 ×0.5（不改变排序）后重跑。
 5. 若 `alpha` 在前 100k 内飙升到 > 1.0 且持续不降，说明 entropy regularization 可能在和 dense progress reward 打架。应对：先固定 `alpha` 做 50k smoke test，再决定是否改 reward scale。
+6. 若 checkpoint metadata 显示 `arrival_v2` 但 `observation_context_enabled=False`，该 run 无效；它没有满足 §4.6 的 MDP state contract。
+7. 若在线 SAC replay 仍对 timeout bootstrap（`done=terminated`），该 run 无效；它没有满足 §4.7 的 timeout terminal 语义。
 
 **为什么 critic 监控重要**：arrival_v2 的 terminal 项是 ±100 到 ±200 量级，per-step 项是 ±2 量级，**reward variance 跨度 ~100×**。这会显著放大 TD-target 的方差，潜在让 critic_loss 不稳。SAC 在 D4RL / Adroit 等环境下处理过类似 reward scale，通常 OK，但本环境的 terminal heavy 程度更极端，**早期监控这三件套比等到 eval 失败再 debug 便宜得多**。
 
@@ -692,6 +902,10 @@ eval_return_failure
 eval_return_by_reason
 eval_final_distance_m
 eval_final_distance_by_reason
+eval_terminal_violation_by_reason
+eval_timeout_count
+eval_hard_failure_count
+eval_observation_context_enabled
 ```
 
 这些指标可以让 reward hacking 在训练中被直接发现，而不是等到画图后才解释。
@@ -709,35 +923,80 @@ eval_final_distance_by_reason
 
 在这个调整完成前，不建议把 `efficiency_v2` 下的 P1 final curve 当作正式预算依据。
 
-### 8.1 Sprint 0 拆分与时间预算（v2 新增）
+### 8.1 Pre-Integration Independent Validation Gate（v6 新增）
+
+正式集成 `arrival_v2` 之前必须先过一个**独立有效性检验 gate**。这里的“独立”有两个含义：
+
+1. 不修改 `auv_nav/reward.py`、`auv_nav/env.py`、`scripts/train_sac.py` 等正式路径；
+2. 不复用未来要实现的 `RewardModel.compute()` 逻辑，避免“实现和测试复制同一个错误公式”。
+
+推荐新增一个 standalone candidate validator（当前建议路径：[`scripts/validate_arrival_v2_candidate.py`](../scripts/validate_arrival_v2_candidate.py)）。该脚本只包含候选公式、synthetic fixtures 与 pass/fail gate，用于在正式集成前回答：
+
+- v6 参数是否在 undiscounted return 下消除了 `efficiency_v2` 的 fast-failure 激励；
+- v6 参数是否在 `gamma=0.995` discounted return 下仍满足 `success > timeout > hard_failure`；
+- v6 参数是否修复 v5 暴露出的 discounted unsafe-shortcut，即 `safe_success(180 steps, sft=0.005) > risky_success(120 steps, sft=0.150)`；
+- `w_safety ∈ {1.5, 2.0, 2.5, 3.0}` 的 stress scan 是否仍保持 timeout 优于 hard failure，且 `w_safety=0.5` 是否被 validator 明确判为失败。
+
+**Gate A：纯公式 validator（必须先过）**
+
+```bash
+conda run -n mytorch1 python -m scripts.validate_arrival_v2_candidate
+```
+
+通过条件：
+
+1. default candidate `w_safety=2.0` 全部 synthetic gates 通过；
+2. `w_safety=0.5` 在 discounted unsafe-shortcut gate 上失败（证明 gate 能抓住 v5 问题）；
+3. 输出的 return table 与 §5.1 / §7.1 量级一致；
+4. 无 NaN / Inf / reward blow-up。
+
+**Gate B：真实轨迹 shadow scoring（推荐，若日志/轨迹可用）**
+
+如果本地或 Colab 保留了 P1 v2 episode-level 轨迹或 train_log summary，应在不改 core code 的情况下用同一 candidate formula 重算旧轨迹 return。通过条件：
+
+1. success episode 的 candidate return 显著高于 collapse/OOB episode；
+2. near-timeout 高于 fast-OOB suicide；
+3. return 与 `success` / `final_distance` / `termination_reason` 的方向一致。
+
+若现有 train_log 缺少逐步距离序列，只能做 summary 近似；该 gate 作为辅助证据，不替代 Gate A 和后续真实训练回归。
+
+**Gate C：隔离原型分支行为回归（通过 Gate A 后再做）**
+
+只有 Gate A 通过后，才允许在一个隔离分支中实现最小 `arrival_v2` 原型并跑 §8.3 的 cross_u10 behavior regression。这个分支仍不视为正式集成；若 cross_u10 失败，应先回到 reward 设计/参数或训练稳定性诊断，而不是继续把修改扩散到 sensor envelope 主实验。
+
+### 8.2 Sprint 0 拆分与时间预算（v6 更新）
 
 原计划的 Sprint 0 包含 P0（profiling）+ P1（u15_upstream 预算标定）+ P2（AsymCritic smoke），预算约 1 个 Colab session（~3h wallclock）。reward redesign 显著超出这个范围，必须拆分：
 
 | Sprint | 内容 | 状态 |
 |---|---|---|
 | **0a** | P0 profiling + flow_path fix（_v2_flowfix） | ✅ 已完成 |
-| **0b**（新增）| reward redesign + arrival_v2 实现 + cross_u10 regression + P1 v4 重跑 | ⬜ 进行中 |
+| **0b**（新增）| reward redesign + arrival_v2 independent gate + isolated prototype + cross_u10 regression + P1 v6 重跑 | ⬜ 进行中 |
 | 1 | §2 sensor envelope（18 run） | 推迟到 0b 完成后 |
 
-**Sprint 0b 工作量估算**（基于 v2 §6.1 列出的所有调用点）：
+**Sprint 0b 工作量估算**（v6 重新估算，包含 pre-integration gate 与 MDP/replay/test 补丁）：
 
 | 任务 | 估时 |
 |---|---:|
-| `RewardModelConfig` + `RewardModel.compute()` 扩签名 | 1h |
+| standalone candidate validator + 文档同步 | 1h |
+| `RewardModelConfig` + `RewardModel.compute()` / helper 扩签名 | 1.5h |
 | `arrival_v2` preset 写入 `REWARD_OBJECTIVE_PRESETS` | 0.5h |
-| `env.step` 透传 `elapsed_time_s / D_init / D_curr` | 1h |
+| `env.step` 透传 `elapsed_time_s / D_init / D_prev / D_curr` | 1h |
+| objective-specific observation context + obs dim metadata | 2h |
+| `scripts/train_sac.py` timeout done 语义 + `arrival_v2_simple` online guard | 1h |
+| `SafetyCostModel` timeout 从 terminal violation 中拆出 | 0.5h |
 | `D_init` clamp + edge case test | 0.5h |
-| `scripts/train_sac.py / evaluate.py / collect_offline_data.py` 调用点更新 | 2h |
-| §7.1 最小 reward ordering tests（含 stress test）| 1.5h |
-| §7.3 eval success/failure return + final_distance_by_reason 输出 | 1.5h |
+| `evaluate.py / collect_offline_data.py / train_offline.py` metadata 兼容检查 | 1.5h |
+| §7.1 RewardModel-backed ordering tests（undiscounted + discounted + stress）| 2h |
+| §7.3 eval success/failure return + by-reason summary 输出 | 1.5h |
 | 现有测试防回归 + lint | 1h |
-| **小计 coding** | **~8h（约 1 工作日）** |
+| **小计 coding** | **~14h（约 2 工作日）** |
 | **Colab cross_u10 behavior regression**（1 seed × 600k）| 1.5h wallclock |
-| **Colab P1 v4 重跑**（s1 × u15_upstream × 1M）| 2.5h wallclock |
+| **Colab P1 v6 重跑**（s1 × u15_upstream × 1M）| 2.5h wallclock |
 | **plan/doc 更新 + review 周转** | ~0.5 工作日 |
-| **总 end-to-end** | **~2 工作日** |
+| **总 end-to-end** | **~3 工作日** |
 
-### 8.2 cross_u10 Behavior Regression（v2 新增，必须通过才能进 §2）
+### 8.3 cross_u10 Behavior Regression（v2 新增，必须通过才能进 §2）
 
 unit test 只验证「预设 episode 的 return 排序」，验证不了「真实 SAC 训练在新 reward 下不会崩」。在 fire §2 sensor envelope 之前，必须用一个**已知 vanilla SAC 能学好**的 baseline 任务做行为回归：
 
@@ -759,7 +1018,9 @@ unit test 只验证「预设 episode 的 return 排序」，验证不了「真�
 
 如果 cross_u10 都过不了 → arrival_v2 在更弱的任务上反而 break，说明 reward 设计有未发现的问题，**必须 debug 完才能进 §2**。
 
-L4 wallclock 1.5h，可与 P1 v4（2.5h）背靠背放在 Sprint 0b 的最后一个 Colab session 一起跑。
+选择 vanilla SAC + `s0_k4` 是保守回归：actor/critic 只能看到最弱单点流速历史，不能依赖 AsymCritic 的 privileged flow。若这个设置都能达到 success ≥ 0.85 且不出现 OOB collapse，那么后续 AsymCritic / 更强 sensor 配置更可能受益；若它失败，则应先定位 reward/训练稳定性，而不是把失败归因给 sensor envelope。
+
+L4 wallclock 1.5h，可与 P1 v6（2.5h）背靠背放在 Sprint 0b 的最后一个 Colab session 一起跑。
 
 ---
 
@@ -788,7 +1049,7 @@ v1 提出了正确的结构（arrival-first + terminal dominance + ordering test
 
 | 议题 | v1 取值/表述 | v2 修正后 | 触发原因 |
 |---|---|---|---|
-| `w_safety` | 1–5 (range) | **0.5** (固定常数) | v1 默认 per-step safety ≈ 0.05；§3.2 实测 failure-policy 是 0.13–0.18（高 2.6–3.6×），v1 的 1.0 在真实数据上效果接近 v1 的 2.0，已偏严格 |
+| `w_safety` | 1–5 (range) | **0.5** (v2-v5); **2.0** (v6 candidate) | v2 用真实 safety 分布把 v1 range 收缩到 0.5；v6 进一步发现 discounted unsafe-shortcut 要求 `w_safety > 1.46`，因此候选默认值上调到 2.0 |
 | `w_progress` | 20 | **50** | v1 让 per-step progress 信号比 efficiency_v2 弱 3.3×（0.23 vs 0.75），早期 SAC cold-start 会显著拖慢；50 把 per-step 拉回 0.58，与 efficiency_v2 同量级 |
 | `efficiency_v3` 定位 | 「在 arrival_v2 稳定后追加」（语义模糊）| **eval-time only metric，不进 reward** | v1 表述允许「重新训练 finalist」解读，会破坏 §2/§3+ 跨节 absolute return 可比性 |
 | `D_init` 边界 | 未提 | **`max(D_init, 10.0)` clamp** | task sampler 偶尔可能采到 start ≈ goal 的 case，未防御会让单步 progress reward blow up |
@@ -797,7 +1058,7 @@ v1 提出了正确的结构（arrival-first + terminal dominance + ordering test
 
 ### 10.2 数据校准过程
 
-> 历史说明：本节记录 v2 calibration 过程。`w_safety≈4.5 / [0.5,4.0]` 等边界已被 v3/v4 修正；当前规范以 §3.2 与 §5.1 为准。
+> 历史说明：本节记录 v2 calibration 过程。`w_safety≈4.5 / [0.5,4.0]` 等边界已被 v3/v4 修正，v6 又用 discounted unsafe-shortcut fixture 修正下限；当前规范以 §3.2 与 §5.1 为准。
 
 校准对象：v2 P1 训练 11 253 episode 的真实 safety_cost 分布（详见 §3.2）。
 
@@ -807,9 +1068,9 @@ v1 提出了正确的结构（arrival-first + terminal dominance + ordering test
 
 2. **v2 当时估计 dominance flip 阈值为 `w_safety ≈ 4.5`**；v3/v4 用 fixture 一致口径修正为 **3.69**，hard stress 上限取 **3.0**。
 
-3. **v2/v3 的不安全捷径 break-even 是基于 `R_fast_success = 20` 的历史分析**。v4 默认 `R_fast_success=0` 后，no-fast break-even 约为 **0.08**；若启用 `arrival_v2_fast`，约为 **0.40**。
+3. **v2/v3/v4 的不安全捷径 break-even 没有充分纳入 discounted terminal success**。v4 的 undiscounted no-fast break-even 约 **0.08**；v6 按 `gamma=0.995` 重算后，no-fast discounted break-even 约 **1.46**，`arrival_v2_fast` 约 **1.71**。
 
-4. **当前默认值仍取 `w_safety=0.5`**：保留对成功 policy 的 minimal interference，同时与 no-fast 主线有充足 unsafe-shortcut margin。
+4. **当前候选默认值取 `w_safety=2.0`**：保留 timeout-vs-OOB dominance margin，同时修复 v5 的 discounted unsafe-shortcut 漏洞。
 
 ### 10.3 推广的方法论教训
 
@@ -825,24 +1086,27 @@ v1 提出了正确的结构（arrival-first + terminal dominance + ordering test
 
 v1 跳过了 (1) 和 (5)，所以 v2 必须补上。这套流程应当**写进 [`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md) 的 reward design 章节**，作为 thesis methodology 的一部分（而不是隐藏的工程经验）。
 
-### 10.4 v4 完成后的下一步
+### 10.4 v6 完成后的下一步
 
-1. ✅ 本文档（v4）落字
-2. ⬜ 用户 review v4
-3. ⬜ 实现 `arrival_v2` preset（默认 `R_fast_success=0`）+ 扩 `RewardModel` 签名 + 调用点更新
-4. ⬜ 写 §7.1 最小 unit tests（ordering / success dominance / no suicide / `D_init` clamp / `w_safety` stress）
-5. ⬜ 扩展 §7.3 eval summary（success/failure return、by-reason return、final distance by reason）
-6. ⬜ Colab 跑 cross_u10 behavior regression（1.5h × 单 seed，可选 ×3 seed = 4.5h，参见 §11.5），验证 §8.2 三条判据
-7. ⬜ Colab 跑 P1 v4 重跑（2.5h），同时观察 §7.2 eval 指标；training dynamics 监控可后置
-8. ⬜ 若 no-fast policy 明显磨蹭，再实现 `arrival_v2_fast` ablation
-9. ⬜ 把 P1 v4 结果落到 [`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md) §10 的新 entry
-10. ⬜ Sprint 1 §2 sensor envelope（18 run）才能 fire
+1. ✅ 本文档（v6）落字
+2. ⬜ 用户 review v6
+3. ⬜ 运行 §8.1 standalone candidate validator；若失败，不进入 core 实现
+4. ⬜ 若 validator 通过，在隔离分支实现 `arrival_v2` preset（默认 `R_fast_success=0, w_safety=2.0`）+ 扩 `RewardModel` 签名 + 调用点更新
+5. ⬜ 扩展 observation context（`elapsed_time_frac`, `initial_distance_norm`）并更新 metadata / checkpoint 兼容检查
+6. ⬜ 修正 online SAC timeout replay done 语义；给 `arrival_v2_simple` 加 online guard
+7. ⬜ 将 timeout 从 safety terminal violation 中拆出，hard failure 与 timeout 分支分离
+8. ⬜ 写 §7.1 tests（RewardModel-backed ordering / discounted dominance / unsafe-success / discounted unsafe-shortcut / no suicide / `D_init` clamp / `w_safety` stress）
+9. ⬜ 扩展 §7.3 eval summary（success/failure return、by-reason return、final distance by reason、terminal violation by reason）
+10. ⬜ Colab 跑 cross_u10 behavior regression（1.5h × 单 seed，可选 ×3 seed = 4.5h，参见 §11.5），验证 §8.3 三条判据
+11. ⬜ Colab 跑 P1 v6 重跑（2.5h），同时观察 §7.2 eval 指标；training dynamics 监控可后置
+12. ⬜ 若 no-fast policy 明显磨蹭，再实现 `arrival_v2_fast` ablation
+13. ⬜ 把 P1 v6 结果落到 active plan / report；online thesis 线若仍 shelved，则不要恢复 sensor envelope 矩阵
 
 ---
 
 ## 11. v3 第三轮校核与修正（2026-04-27）
 
-> 历史说明：本节保留 v3 review 过程。v4 已进一步修正 `R_fast_success` 默认值、`fast_success` fixture 步数、`w_time` 每秒收益，以及 discounted potential shaping 的严格表述。当前规范以 §1、§3.2、§4.6、§5.1、§7.1 为准。
+> 历史说明：本节保留 v3 review 过程。v4 已进一步修正 `R_fast_success` 默认值、`fast_success` fixture 步数、`w_time` 每秒收益，以及 discounted potential shaping 的严格表述。v5 又补齐 MDP state / timeout replay / discounted tests。当前规范以 §1、§3.2、§4.6-§4.8、§5.1、§6、§7.1 为准。
 
 v3 当时的判断是：v2 的 reward 结构与 §5.1 参数取值基本可用，但 v2 在数值计算与不变量描述上有若干不严谨之处。本节记录那轮修正；v4 对第一版落地复杂度又做了进一步收敛。
 
@@ -888,7 +1152,7 @@ v3 的定性结论仍有用：`R_fast_success` 是额外时间压力的主要来
 
 **两个 RL 含义**：
 
-1. **冷启动阶段 SAC critic 主要从 dense progress 学方向，而 R_success 要靠多步 Bellman bootstrap 才能传到起始 state**。R_success 的起始 effective 贡献跨场景在 9–55 之间，dense progress 跨场景在 18–35 之间——**真正使 progress 在「冷启动早期」占主导的不是 33 vs 9 那种数量级压制，而是「dense 信号每个 transition 都贡献，sparse terminal 信号要等数百步 backup」**。这就是为什么 §8.2 cross_u10 regression 设 600k 而不是 300k 的 RL 理由——600k 才足够 Bellman backup 把 +100 R_success 完整传到起始 state。
+1. **冷启动阶段 SAC critic 主要从 dense progress 学方向，而 R_success 要靠多步 Bellman bootstrap 才能传到起始 state**。R_success 的起始 effective 贡献跨场景在 9–55 之间，dense progress 跨场景在 18–35 之间——**真正使 progress 在「冷启动早期」占主导的不是 33 vs 9 那种数量级压制，而是「dense 信号每个 transition 都贡献，sparse terminal 信号要等数百步 backup」**。这就是为什么 §8.3 cross_u10 regression 设 600k 而不是 300k 的 RL 理由——600k 才足够 Bellman backup 把 +100 R_success 完整传到起始 state。
 2. **early OOB 的 R_failure 在早期就强**（~74），意味着冷启动阶段 critic 学到的主要 negative signal 是「不要 OOB」，而 positive signal 来自 progress。这是个**有利的归纳偏差**——SAC 先学避免 OOB、再学到达，与论文 narrative「arrival first」也一致。
 
 ### 11.4 R_fast_success 是否值得保留：A/B 实验比经验判断更稳
@@ -897,36 +1161,36 @@ v3 的定性结论仍有用：`R_fast_success` 是额外时间压力的主要来
 
 v2 §5.2 把 efficiency 推到 eval-only，但 reward 里仍保留 `R_fast_success = 20`。这条「success 越快越好」的梯度对 SAC 在 success 维度的 time-to-goal 学习有 ±7.5 的 Q 差距贡献（见 §5.1 表 fast vs slow）。
 
-**不主张直接砍掉**，因为：
+**历史 v3 判断**：
 - 砍掉后 success 维度内部失去明确梯度，可能让 SAC 收敛到「能到就好，磨蹭也行」的 policy
-- 但保留它就要承受 `w_safety > 0.32` 的 break-even 约束（§3.2）
+- 但保留它就要承受额外 unsafe-shortcut 约束；v6 按 discounted fixture 重算后，`arrival_v2_fast` 至少需要 `w_safety > 1.71`（§3.2），不是历史 v3 的 `>0.32`
 
 **v3 推荐方案**：cross_u10 regression 阶段做小型 A/B 实验，多花 1.5h L4 wallclock：
-- 主分支：`arrival_v2` with R_fast_success = 20（默认）
-- A/B 分支：`arrival_v2_no_fast` with R_fast_success = 0
+- 历史 v3 主分支：`arrival_v2_fast` with R_fast_success = 20（v6 中仅作为 optional ablation）
+- 历史 v3 A/B 分支：`arrival_v2` with R_fast_success = 0（v6 default）
 
-若 A/B 分支 success_rate 与主分支 ≤ 5pp 差距，且 mean_time_to_goal 没有显著恶化（≤ +20%），则可以**砍掉 R_fast_success 简化 reward**，同时 hard lower bound `w_safety > 0.32` 也消失，参数空间从 9 降到 8、安全约束从 2 个降到 1 个。
+若 A/B 分支 success_rate 与主分支 ≤ 5pp 差距，且 mean_time_to_goal 没有显著恶化（≤ +20%），则可以**继续砍掉 R_fast_success 简化 reward**，同时避免把 discounted shortcut margin 压得太窄。
 
 如果 A/B 分支 mean_time_to_goal 显著恶化（>+20%），则保留 R_fast_success 是有价值的。
 
 ### 11.5 cross_u10 single seed 的统计风险
 
-§8.2 行为回归用 single seed (46) 跑 600k。这是 v2 的合理 trade-off（节省 wallclock），但**RL 标准做法是 ≥ 3 seed**——single seed 失败时无法区分「reward 设计差」vs「seed 运气不好」。
+§8.3 行为回归用 single seed (46) 跑 600k。这是 v2 的合理 trade-off（节省 wallclock），但**RL 标准做法是 ≥ 3 seed**——single seed 失败时无法区分「reward 设计差」vs「seed 运气不好」。
 
 **v3 不强制改**，但建议：
-- 如果 single seed 通过 §8.2 三条判据（success ≥ 0.85、无 collapse、n_oob/n_total ≤ 0.10），可以直接进 §2
+- 如果 single seed 通过 §8.3 三条判据（success ≥ 0.85、无 collapse、n_oob/n_total ≤ 0.10），可以直接进 §2
 - 如果 single seed **edge-case 通过**（例如 success 在 0.85-0.90 之间，刚刚踩线），强烈建议**多花 3h 补两个 seed**（47, 48），用 3-seed mean ± std 重新判据
 - 如果 single seed 失败，**先补 2 个 seed 确认是否一致失败**，再决定是 reward debug 还是其它问题
 
 ### 11.6 AsymCritic 与新 reward 的相互作用
 
-这是个 **AsymCritic thesis**，最终 §2 sensor envelope 用 AsymCritic 跑。但 §8.2 cross_u10 用 vanilla SAC——**这是个保守测试**：
+这是个 **AsymCritic thesis**，最终 §2 sensor envelope 用 AsymCritic 跑。但 §8.3 cross_u10 用 vanilla SAC——**这是个保守测试**：
 
 - vanilla SAC critic 只能看到 actor 的 single-point 流速观测（s0），对 OOB 风险预测能力有限
 - AsymCritic critic 看 hull-integral 流（privileged_obs），能更早识别「这个位置流场推力大，未来 OOB 概率高」，对 `R_failure + R_early_failure` 这套大额惩罚的 credit assignment **更有利**
 - 所以「vanilla 能过 0.85 → AsymCritic 应当更好」是一个有合理性的演绎
 
-这条 reasoning 应当**显式写入 §8.2**作为「为什么 single seed vanilla 可以接受」的辅证，而不是只说「单 seed 仅做回归不做统计推断」（这个理由本身偏弱）。v3 此处只在本节记录，§8.2 文本暂不改，留给下次评审决定。
+这条 reasoning 已在 v6 写入 §8.3，作为「为什么 single seed vanilla 可以接受」的辅证，而不是只说「单 seed 仅做回归不做统计推断」（这个理由本身偏弱）。
 
 ### 11.7 Reward variance 与 SAC 训练动力学的潜在风险
 
@@ -941,5 +1205,5 @@ v3 §7.2 加入 `critic_loss / Q-value / alpha` 监控就是为这条风险设�
 
 ### 11.8 v3 没改、v4 部分处理的事
 
-- §3.2 `w_safety` 推导用 efficiency_v2 训练数据估的 fail-policy avg cost。**arrival_v2 训练出的 policy 不一定有同样的 safety 分布**——若 arrival_v2 真的更安全，failure-policy avg safety 会更低，break-even 阈值也会变。第一轮 P1 v4 跑完后应当用新数据重新校准一次（«v2 → v4 流程的二次迭代»，而不是再用 v2 数据）。
-- v4 已将 9 参数体系收敛为固定比例 + 单一 optional fast ablation。若 cross_u10 + P1 v4 都顺利通过，可以考虑把 `arrival_v2` vs `arrival_v2_fast` 做成短附录；不建议再做大规模 `w_safety` sweep，除非 behavior regression 暴露明确问题。
+- §3.2 `w_safety` 推导用 efficiency_v2 训练数据估的 fail-policy avg cost。**arrival_v2 训练出的 policy 不一定有同样的 safety 分布**——若 arrival_v2 真的更安全，failure-policy avg safety 会更低，break-even 阈值也会变。第一轮 P1 v6 跑完后应当用新数据重新校准一次（«v2 → v6 流程的二次迭代»，而不是再用 v2 数据）。
+- v6 保留 v4 的单一 optional fast ablation，但把主线 `w_safety` 候选值提高到 2.0。若 cross_u10 + P1 v6 都顺利通过，可以考虑把 `arrival_v2` vs `arrival_v2_fast` 做成短附录；不建议再做大规模 `w_safety` sweep，除非 behavior regression 暴露明确问题。

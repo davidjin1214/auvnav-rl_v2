@@ -13,7 +13,11 @@ from typing import Any
 import numpy as np
 import gymnasium as gym
 
-from auv_nav.reward import REWARD_OBJECTIVE_PRESETS
+from auv_nav.reward import (
+    ARRIVAL_V2_OBJECTIVES,
+    OFFLINE_ONLY_OBJECTIVES,
+    REWARD_OBJECTIVE_PRESETS,
+)
 from auv_nav.sac import SACAgent, SACConfig
 from auv_nav.replay import DualBufferSampler, TransitionReplay, TransitionReplayConfig
 from auv_nav.networks import require_torch
@@ -211,6 +215,17 @@ def _extra_state_with_selection(
     }
 
 
+def replay_done_for_objective(
+    reward_objective: str | None,
+    *,
+    terminated: bool,
+    truncated: bool,
+) -> bool:
+    if reward_objective in ARRIVAL_V2_OBJECTIVES:
+        return bool(terminated or truncated)
+    return bool(terminated)
+
+
 def _metadata_path_ref(meta_root: Path, path: Path) -> str:
     return os.path.relpath(path.resolve(), start=meta_root.resolve())
 
@@ -247,6 +262,12 @@ def train(args: argparse.Namespace) -> None:
     flow_path = args.flow or discover_flow_path()
     benchmark_manifest = maybe_load_benchmark_manifest(args.eval_manifest)
     env_config_overrides = make_env_config_overrides(args)
+    reward_objective = env_config_overrides.get("reward_objective")
+    if reward_objective in OFFLINE_ONLY_OBJECTIVES and not args.allow_offline_only_objective:
+        raise ValueError(
+            f"Objective {reward_objective!r} is offline-only and must not be used "
+            "for online SAC unless --allow-offline-only-objective is set."
+        )
 
     probe_layout = args.probe_layout
 
@@ -337,6 +358,14 @@ def train(args: argparse.Namespace) -> None:
                     f"Offline objective={offline_objective} != "
                     f"training objective={env_config_overrides.get('reward_objective')}."
                 )
+            metadata_context = offline_metadata.get("include_episode_context_obs")
+            if metadata_context is not None:
+                expected_context = bool(reward_objective in ARRIVAL_V2_OBJECTIVES)
+                if bool(metadata_context) != expected_context:
+                    raise ValueError(
+                        "Offline data include_episode_context_obs="
+                        f"{metadata_context} != expected {expected_context}."
+                    )
             offline_reward_config = offline_metadata.get("reward_config")
             if isinstance(offline_reward_config, dict):
                 mismatched_reward_keys = []
@@ -400,6 +429,11 @@ def train(args: argparse.Namespace) -> None:
         env_config_overrides,
     ) | {
         "checkpoint_dir": _metadata_path_ref(save_dir, checkpoints_dir),
+        "observation_dim": obs_dim,
+        "include_episode_context_obs": bool(reward_objective in ARRIVAL_V2_OBJECTIVES),
+        "timeout_bootstrap_semantics": (
+            "terminal" if reward_objective in ARRIVAL_V2_OBJECTIVES else "bootstrap"
+        ),
     }
 
     start_step, start_episode = maybe_resume(
@@ -480,7 +514,11 @@ def train(args: argparse.Namespace) -> None:
                     reward=float(reward[i]),
                     cost=step_cost,
                     next_obs=real_next_obs,
-                    done=bool(terminated[i]),
+                    done=replay_done_for_objective(
+                        reward_objective,
+                        terminated=bool(terminated[i]),
+                        truncated=bool(truncated[i]),
+                    ),
                     privileged_obs=priv_obs,
                     next_privileged_obs=next_priv_obs,
                 )
@@ -554,7 +592,11 @@ def train(args: argparse.Namespace) -> None:
                 reward=float(reward),
                 cost=float(step_info["step_safety_cost"]),
                 next_obs=next_obs,
-                done=terminated,
+                done=replay_done_for_objective(
+                    reward_objective,
+                    terminated=bool(terminated),
+                    truncated=bool(truncated),
+                ),
                 privileged_obs=current_privileged_obs,
                 next_privileged_obs=next_priv_obs,
             )
@@ -787,6 +829,11 @@ def main() -> None:
         choices=sorted(REWARD_OBJECTIVE_PRESETS.keys()),
         default="arrival_v1",
         help="Reward objective preset. Use efficiency_v1 for efficiency-aware training.",
+    )
+    parser.add_argument(
+        "--allow-offline-only-objective",
+        action="store_true",
+        help="Allow objectives marked offline-only to run through train_sac.",
     )
     parser.add_argument("--energy-cost-gain", type=float, default=None)
     parser.add_argument("--safety-cost-gain", type=float, default=None)

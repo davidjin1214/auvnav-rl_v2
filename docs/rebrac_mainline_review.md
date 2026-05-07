@@ -1,8 +1,9 @@
 # ReBRAC 主线总结、专家分析与下一步建议
 
-> 文档版本：2026-05-01 rev.2
+> 文档版本：2026-05-07 rev.3
 > 文档定位：ReBRAC 离线主线 rev.8 收口后的独立 review，作为 paper drafting 与战略决策的输入。
 > rev.2 修订（2026-05-01）：rev.1 §2.2 + §3.1 列出的 4 项 paper-readiness 必做 (A/B/C/D) **全部完成**。本文 §2.2.1~§2.2.4 的 "建议处理" 段已改写为 "已完成 → docs/..."；§3.1 表格已 strikethrough；§4 caveats item 3 已升级；§5.1 主对照表 Phase 2 行升 5-seed。详见 [notebooks/rebrac_paper_followup_completed.ipynb](../notebooks/rebrac_paper_followup_completed.ipynb)、[docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md)、[docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md)。
+> rev.3 修订（2026-05-07）：在 paper-readiness 4/4 之后做了一轮**有限算力广验**（三轴 8 spoke × 5 seed parity + C1 deep-dive 5 ablations，~30h L4）。本文新增 §3.5 broad validation 结论回写、§4 caveat (8) broad validation underpowered seed budgets。Paper claim 不需要修订，但 §experiments 应增加 broad validation 一节（A2 mid-gap collapse boundary + C1 task-fundamental floor）。详见 [docs/rebrac_broad_validation_report.md](./rebrac_broad_validation_report.md)、[docs/rebrac_c1_s1_followup_report.md](./rebrac_c1_s1_followup_report.md)。
 > 配套文档：[rebrac_experiment_plan.md](./rebrac_experiment_plan.md)（计划）、[rebrac_experiment_report.md](./rebrac_experiment_report.md)（实验数据）、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)（baseline）、[td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)（worldcomp baseline）。
 > 阅读建议：本文不重复 plan / report 的全部细节，重点是**结论的可信度评估**、**论文化时会被审稿人挑战的点**、**下一步该做什么不该做什么**。
 
@@ -12,7 +13,7 @@
 
 ### 0.1 现状
 
-ReBRAC 主线（Stage A→B0→B→C→D Phase 1+2+probe→E (a)→**F (rev.2 paper-readiness probes A/B/C/D)**）已全部跑完，约 **70 个新训练 run** + 4 项 paper-readiness probes。**rev.2 修订**：原 §2.2.1~§2.2.4 列出的 4 项审稿人弱点全部堵死。四条论文级 finding 已经成立：
+ReBRAC 主线（Stage A→B0→B→C→D Phase 1+2+probe→E (a)→**F (rev.2 paper-readiness probes A/B/C/D)**→**G (rev.3 broad validation 三轴 8 spoke + C1 deep-dive 5 ablations)**）已全部跑完，约 **70 个新训练 run** + 4 项 paper-readiness probes + 广验 ~30h L4 (8 spoke × 5 seed parity + C1 deep-dive)。**rev.2 修订**：原 §2.2.1~§2.2.4 列出的 4 项审稿人弱点全部堵死。**rev.3 修订**：广验确认 paper claim 不需要修订，但发现两条 generality 边界 (A2 mid-gap collapse / C1 task-fundamental floor at deployable sensors s0/s1)，应作为 paper §experiments 的 boundary case 引用，详见 §3.5。四条论文级 finding 已经成立：
 
 1. **crosscomp 上 ReBRAC 显著优于 TD3BC**：crosscomp-1000 `+23.0pp`，crosscomp-2000 `+32.2pp`，且 std 同时不增反降；并翻转了 TD3BC 主线 "2000 < 1000" 的退化（[report §7](./rebrac_experiment_report.md)）。
 2. **worldcomp 上 ReBRAC + deployable obs 与 TD3BC privileged-critic 协议持平**：0.928 vs 0.922（5-seed），Welch's p=0.9195 量化确认持平（[stats followup](./rebrac_statistical_test_followup.md)）；privileged critic 在 ReBRAC 上不再贡献 mean 抬升（5-seed Δ priv−dep=+0.6pp），只在 outlier seed 44 上独立救回 +12pp（[report §7.10 + §7.12](./rebrac_experiment_report.md)）。
@@ -23,7 +24,9 @@ ReBRAC 主线（Stage A→B0→B→C→D Phase 1+2+probe→E (a)→**F (rev.2 pa
 
 **rev.2 修订**：**实验本身已"够发"**且**审稿人弱点全部堵死**。原 rev.1 列出的 3 个弱点（Q-normalized 变体不是原版 ReBRAC、Phase 2 仅 3 seeds、缺 LayerNorm 单独 ablation）已在 rev.2 通过 4 项 paper-readiness probes (A/B/C/D, ~4h L4) 全部 closed。**paper drafting 可正式启动**，无需再做更多实验补强。之后可把研究力量切到 online thesis 线。
 
-继续追加 Stage E (b) 或扩 ablation 网格（capacity / dropout / hidden_dim）的边际收益仍然低于继续投入的机会成本——rev.2 维持不做。
+**rev.3 修订**：广验在 paper claim 之外发现两条 generality 边界 (A2 mid-gap collapse / C1 task-fundamental floor)。这些是 **限定条件而非反例**——paper §experiments 应增加 broad validation 一节作为 deployability boundary case，但不需要回退主 claim。**paper drafting 仍维持启动状态**，broad validation 段落可与正文并行起草（[docs/rebrac_broad_validation_report.md](./rebrac_broad_validation_report.md) 已是 publication-ready draft）。
+
+继续追加 Stage E (b) 或扩 ablation 网格（capacity / dropout / hidden_dim）的边际收益仍然低于继续投入的机会成本——rev.2 维持不做。**rev.3 新增 backlog**：BC penalty 强度 sweep on C1（task-fundamental floor 假设的 mechanism discriminator）— 优先级取决于 paper review 反馈。
 
 ### 0.3 三句话答辩稿（写论文时的 narrative spine）
 
@@ -275,6 +278,28 @@ ReBRAC 主线已经 "够发"。继续在它上面投入的边际收益曲线已�
 2. **当前**：开始 paper drafting（method + main results + discussion），用 §0.3 的 narrative spine + 直接 import [docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md) + [docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md) 的现成段落与表注脚；
 3. **并行启动**：online thesis 线（[online_rl_thesis_plan.md](./online_rl_thesis_plan.md)）的 Sprint 0 / Sprint 1 实验。两条线在 paper 时间表上是互补的——offline RL paper 写作可以与 online thesis 实验并行。
 
+### 3.5 Broad validation 结论回写 `【rev.3 新增 2026-05-07】`
+
+继 §3.1 paper-readiness 4/4 之后，做了一轮 **有限算力广验**（Stage C finalist anchor 之外，三轴 OFAT，~30h L4）：8 spoke × 5 seed parity + C1 deep-dive (5 个独立 ablation)。完整报告见 [docs/rebrac_broad_validation_report.md](./rebrac_broad_validation_report.md)，C1-s1 sensor upgrade follow-up 见 [docs/rebrac_c1_s1_followup_report.md](./rebrac_c1_s1_followup_report.md)。
+
+**对应 §2.2 / §2.3 留下的 generality 弱点的回应**：
+
+1. **C1 task-fundamental floor at deployable sensors s0/s1 + target_speed=1.5**（C 轴 upstream geometry）：4 类 5 个独立 ablation（reward swap n=2 / asym critic n=2 / epoch ×4 single seed / sensor s0→s1 n=2 eff_v2 clean comparison / convergence check at 64 ep）全部未恢复 success；5-config cross-consistency 钉在 0.195–0.225 (3pp range，<2× single-run 噪声半径)。reward 与 sensor 各自独立 modulate failure mode (timeout-only 77.5/0 ↔ mixed ~53/~26) 但都不动 goal-reaching ceiling → ceiling 来自 task / data 物理上限，不是 actor 探索风格的 function。**机制候选（reward 失配 / BC penalty 限制 / 其他）需要 BC penalty 强度 sweep 直接区分（未做，记入 future work）**；online SAC 在同 task 下也失败 → 至少部分原因在 task / reward 这一侧，不是 offline 特有。
+2. **B1 sensor envelope robust，B2 std_blow_up**：B1 (s0 → s1) Δ=−0.2pp、std=0.028 ≈ anchor std (1.35×) → s0/s1 success 等效。B2 (s0 → s2) mean 持平 anchor 但 std=0.058 (2.78× anchor) 触发 std_blow_up flag → paper 引用应限定为「s0/s1 等效；s2 需要扩 seed 预算或 sensor-aware regularization」。
+3. **A1 collector quality 敏感，refit_b directional consistent (underpowered)**：goalseek 弱数据下 refit_b critic_β=1.0 比 anchor (4.0, 2.0) 平均高 4.0pp、std 低 0.018，5/5 seeds 4 个非负差。**paired t=2.05 (df=4, p≈0.11)** 未达 5% 显著线但方向稳；做 paired bootstrap n_boot=10000 是后续 sanity 选项。
+4. **A2 mid-gap collapse — broad validation 新发现的 data-coherence boundary**：主线 crosscomp-1000 上 ReBRAC vs TD3+BC = +23pp（Stage C），广验 mix5050-1000 上同样比较 = **+0.2pp（matched 5v5）**。两个算法 std 都展开到 0.14–0.16 (anchor std 0.021 的 6.7–7.5×)。**这不是修订 paper 已有 claim，也不是反例**——是 broad validation 揭示 ReBRAC quantitative advantage 的 data-coherence-dependent 边界。paper §experiments 应明确 scope 到 single-mode coherent behavior data，并把 mix5050 收口列为 generality boundary。机制（双峰 action / mode collapse）是 working hypothesis，未做直接 ablation。
+
+**对 paper 的含义**：
+- §experiments 增加 broad validation 一节，引用 §3.2 mix5050 boundary 与 §3.5 C1 task-fundamental floor 作为 deployability boundary case；
+- §discussion 把 C1 与 Stage D Phase 2 的 `cross_stream + worldcomp` deploy-graded 区间对比，构成完整的 deployability 谱系（哪些 task algorithmic 可解 / 哪些是物理边界）；
+- §limitations 增加 (8) "broad validation underpowered seed budgets：A2 boundary 与 A1 paired t 在 n=5 下 underpowered；C1 deep-dive 4 algorithm-side ablations 是 n=2 / single-seed，BC penalty 强度 sweep 未做"。
+
+**Future work backlog（按优先级）**：
+1. **BC penalty 强度 sweep on C1**（β1 ∈ {0, 1, 2, 4, 8}）— 关键 mechanism discriminator；
+2. **C1-s2 (16-D) 与 target_speed=2.0 backlog** — 上探 sensor / task-parameter 维度上限；
+3. **Reward redesign for upstream**（[online_sac_reward_redesign.md](./online_sac_reward_redesign.md) 已起草）— task-side 工作；
+4. **Spec rev.2 — winner select 改为 2-seed minimum**（A3 case lessons learned）。
+
 ---
 
 ## 4. 已知 caveats（必须写进 paper limitations）
@@ -288,6 +313,7 @@ ReBRAC 主线已经 "够发"。继续在它上面投入的边际收益曲线已�
 5. **`crosscomp-2000` 上的 critic-penalty-off 未跑**：cross-extrapolate 风险低（Stage C 已显示 ep1000 / ep2000 winner 一致），但严格说没有数据。
 6. **mean_target_q 的 dataset-specific 符号差异**：见 §2.3.3。
 7. **TD3BC baseline 是别人跑出来的而不是我们重跑的**：TRAIN_EPOCHS 历史上有过调整（TD3BC worldcomp teacher-gap=96，ReBRAC=64）。`crosscomp` 对比无影响，`worldcomp` 对比应在 paper 里单独澄清预算口径。
+8. **Broad validation underpowered seed budgets** `【rev.3 新增 2026-05-07】`：A2 mid-gap matched 5v5 与 A1 paired t (n=5) 都 underpowered；C1 deep-dive 4 个 algorithm-side ablations 是 n=2 / single-seed (n=1) 而不是 5-seed parity；BC penalty 强度 sweep（C1 task-fundamental floor 假设的 mechanism discriminator）未做。详见 [rebrac_broad_validation_report.md §4.3](./rebrac_broad_validation_report.md) 与 [rebrac_c1_s1_followup_report.md §9](./rebrac_c1_s1_followup_report.md)。
 
 ---
 

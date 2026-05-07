@@ -146,7 +146,7 @@
 
 注：C2 (Re250) 砍掉（双 confound，见 §1.3）。
 
-> **事后修正 (2026-05-06)**：C1 P1 5-seed 实测 success=0.225 ± 0.005（远低于本节 §8.3 表的预期 0.85–0.95），触发了完整的事后 ablation 链。三轮 ablation（reward landscape / privileged asym critic / 4× epoch budget）都未能突破 0.19–0.23 区间，确认 C1 是 **sensor floor spoke**。详见 [§13 C1 sensor-floor ablation](#13-c1-sensor-floor-ablation-事后追加-2026-05-06)。后续追加 follow-up spoke C1-s1（s1 sensor + upstream + u10）以完成 sensor 维度对照。
+> **事后修正 (2026-05-06，C1-s1 update 2026-05-07)**：C1 P1 5-seed 实测 success=0.225 ± 0.005（远低于本节 §8.3 表的预期 0.85–0.95），触发完整事后 ablation 链。**四个独立干预**（reward landscape / privileged asym critic / 4× epoch budget / sensor 升级 s0→s1）全部未能突破 0.195–0.225 区间。结论从 "sensor floor" 升格为 **task-fundamental floor spoke**——u10 upstream + crosscomp dataset 在所有 deployable sensor 上是 deploy-impossible 物理边界。详见 [§13 C1 sensor-floor → task-fundamental floor ablation](#13-c1-sensor-floor-ablation-事后追加-2026-05-06)。
 
 ### 3.5 矩阵汇总
 
@@ -374,7 +374,7 @@ P1 不带 TD3+BC 在 B1/B2 上做对照，因此 paper 仅 claim "ReBRAC 在 s1/
 
 **Paper claim 升级路径**：C 轴若两条 spoke 都 ≥ 0.85，可 claim "ReBRAC 跨 task geometry / wake topology generalize"；若 tandem 显著退化（< 0.70），则在 §limitations 显式声明 "tandem 双尾流场景需要进一步算法工作"。
 
-> **事后修正 (2026-05-06) — C1 实测远低于本节预期**：upstream "更易"的物理直觉在 s0 单点 DVL 上失败：u10 upstream 流场需要预知前方流场结构才能 deploy，s0 单点观测无此能力。C1 实测 = 0.225 ± 0.005，三轮事后 ablation 全部未能突破 0.19–0.23（详见 §13）。本节 C1 行的 paper-claim 路径从 "task generality" 重定位为 "sensor floor demonstration" + "C1-s1 sensor upgrade contrast"。
+> **事后修正 (2026-05-06，C1-s1 update 2026-05-07) — C1 实测远低于本节预期**：upstream "更易"的物理直觉在 s0 单点 DVL 上失败：u10 upstream 流场需要预知前方流场结构才能 deploy，s0 单点观测无此能力。C1 实测 = 0.225 ± 0.005，**四轮事后 ablation**（reward / asym critic / 4× epochs / sensor 升级 s0→s1）全部未能突破 0.195–0.225（详见 §13）。本节 C1 行的 paper-claim 路径从 "task generality" 重定位为 **"deployment-impossible boundary demonstration"**——upstream u10 + crosscomp dataset 在所有 deployable sensor 上是 task-fundamental floor，不再走 "sensor upgrade unlocks" 路径。
 
 ### 8.4 全局 Paper Claim 升级
 
@@ -589,62 +589,78 @@ Notebook：[`notebooks/rebrac_c1_epoch_sensitivity_ablation_completed.ipynb`](..
 
 所有干预的 success 都被钉在 **0.19–0.23 区间**（4-pp 区间，远小于 ablation A/B 的 3-pp 噪声半径）。三个独立 root-cause 假设（reward landscape / critic supervision / training budget）全部排除。
 
-### 13.4 结论：sensor floor
+### 13.4 结论：task-fundamental floor（C1-s1 retrofit, 2026-05-07）
 
-C1 (s0 / upstream / u10 / crosscomp / Re150) 是 **sensor floor spoke**：s0 (DVL water-track only) 在 u10 upstream 流场上提供的信息量不足以让 actor 学到 deploy-grade policy（success ≥ 0.6），即使在以下多重优待下也不能突破：
+> **2026-05-07 update**：原结论假设 "需要 sensor 升级到 s1+ 才能 deploy"。C1-s1 (s1, DVL + 短程 ADCP, 12-D) 实测 success = 0.205 ± 0.005，与 P1 anchor 0.225 仅差 −2 pp（噪声内），sensor 升级假设被实测推翻。结论升格为 task-fundamental floor。
 
-1. collector dataset success=1.0（数据本身可达 goal）
-2. training reward 已正向（mean_terminal_R = +200）
-3. privileged critic 已给 hull-integral signal
-4. epochs 已扩 4×（256 ep）
+C1 (s0 / upstream / u10 / crosscomp / Re150) 是 **task-fundamental floor spoke**：u10 upstream 流场 + crosscomp dataset 在所有 5 个独立 deployability lever 上都不能突破 0.225 success ceiling：
 
-这是 paper-grade finding：**deployment-realistic 单点传感器 + upstream 流场是真实的物理 deployability 边界**——不是算法 / reward / budget 问题。需要 sensor 升级（至少 s1 = DVL + 短程 ADCP）才能 deploy。
+1. collector dataset success=1.0（数据本身可达 goal）→ 数据不是问题
+2. training reward 已正向（mean_terminal_R = +200）→ reward landscape 不是问题（Ablation A）
+3. privileged critic 已给 hull-integral signal → critic supervision 不是问题（Ablation B）
+4. epochs 已扩 4×（256 ep）→ training budget 不是问题（Ablation C）
+5. **deployable sensor 已升级到 s1（DVL + 短程 ADCP, 12-D）→ sensor 维度不是问题（Ablation D / C1-s1）**
+
+paper-grade finding：**upstream u10 + crosscomp dataset 在 s0/s1 deployable sensor 上是 deploy-impossible 物理边界**——不是单一维度（算法 / reward / budget / 单步 sensor 升级）问题，是 task-dataset 共同决定的下界。
+
+**reward 决定 failure mode，但不决定 ceiling**（次要 finding）：P1 (eff_v2) 几乎全部失败 = timeout (77.5% / 0% oob)；Ablation A/C (arr_v2_s) + Ablation D (sensor 升级) 都切换到 timeout/oob mixed (~53/26)。Reward landscape 决定 actor 是否倾向激进探索，但激进没转化为更多 success——success ceiling 与 reward / sensor 维度都解耦。这是更强的 task-fundamental 信号。
 
 ### 13.5 输出落点新增（对 §10.1 / §10.2 的补充）
 
 ```
 offline_data/
   crosscomp_s0_h4_arrival_v2_simple_re150_u10upstream_fixdone_ep1000/    # ablation A/B/C 复用
+  crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/        # C1-s1 follow-up (Ablation D)
 
 benchmarks/
-  c1_reward_ablation/{val_40, test_100}/single_u10_upstream_tgt15.json
+  c1_reward_ablation/{val_40, test_100}/single_u10_upstream_tgt15.json   # C1-s1 也复用此 manifest
 
 checkpoints/offline/rebrac/
-  c1_reward_ablation/<dataset>/actorb_4p0__criticb_2p0/seed_{42,44}/
-  c1_asym_critic_ablation/<dataset>/actorb_4p0__criticb_2p0/seed_{42,44}/
-  c1_epoch_sensitivity/<dataset>/actorb_4p0__criticb_2p0/seed_42_e256/
+  c1_reward_ablation/<dataset_s0_arr>/actorb_4p0__criticb_2p0/seed_{42,44}/
+  c1_asym_critic_ablation/<dataset_s0_arr>/actorb_4p0__criticb_2p0/seed_{42,44}/
+  c1_epoch_sensitivity/<dataset_s0_arr>/actorb_4p0__criticb_2p0/seed_42_e256/
+  c1_s1_sensor_upgrade/<dataset_s1_eff>/actorb_4p0__criticb_2p0/seed_{42,44}/
 
 results/offline/rebrac/
-  c1_reward_ablation/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json
-  c1_asym_critic_ablation/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json
-  c1_epoch_sensitivity/<dataset>/actorb_4p0__criticb_2p0/seed_42_e256/test/epoch_{64,128,192,256}.json
+  c1_reward_ablation/<dataset_s0_arr>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json
+  c1_asym_critic_ablation/<dataset_s0_arr>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json
+  c1_epoch_sensitivity/<dataset_s0_arr>/actorb_4p0__criticb_2p0/seed_42_e256/test/epoch_{64,128,192,256}.json
+  c1_s1_sensor_upgrade/<dataset_s1_eff>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json
 
 notebooks/
   rebrac_c1_reward_ablation_completed.ipynb
   rebrac_c1_asym_critic_ablation_completed.ipynb
   rebrac_c1_train_convergence_check_completed.ipynb
   rebrac_c1_epoch_sensitivity_ablation_completed.ipynb
+  rebrac_c1_s1_sensor_upgrade_completed.ipynb
 ```
 
-### 13.6 后续行动 — C1-s1 sensor-upgrade follow-up
+### 13.6 C1-s1 sensor-upgrade follow-up — 实测落地（closed 2026-05-07）
 
-为把 sensor floor 从 "single-spoke 失败" 升格到 "sensor 维度 controllable axis"，加一条 follow-up spoke：
+C1-s1 spoke 已执行（[notebook](../../../notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb)），目的是测试 sensor 升级 s0 → s1 是否解锁 upstream u10：
 
-| spoke | probe | obs_dim | seeds | 预期 |
-|---|---|---:|---:|---|
-| **C1-s1** (新增) | s1 (DVL + 短程 ADCP, 2 probes) | 12 | 2 (42, 44) | ≥ 0.50 → sensor 升级解锁 upstream；< 0.30 → upstream u10 是更深 fundamental limitation |
+| spoke | probe | obs_dim | seeds | 实测 success | 实测 mean_R | termination |
+|---|---|---:|---:|---:|---:|---|
+| **C1-s1** | s1 (DVL + 短程 ADCP, 2 probes) | 12 | 2 (42, 44) | **0.205 ± 0.005** | **−381.7 ± 1.7** | goal 20.5 / timeout 53.5 / oob 26.0 |
 
-实施骨架：
-- 数据收集：复用 `crosscomp` baseline policy + `--probe-layout s1`，生成 `offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/`
-- 训练：ReBRAC anchor (β1=4, β2=2) × 64 epochs × 2 seeds
-- 评估：test_100 manifest（同 C1）
-- 预算：~2h L4
+实施记录：
+- 数据集：`offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/`（collector_success_rate = 1.0，n_transitions = 268,329）
+- 训练：ReBRAC anchor (β1=4, β2=2) × 64 epochs × seeds {42, 44}
+- 评估：复用 `benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json`
+- 输出：`results/offline/rebrac/c1_s1_sensor_upgrade/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json`
 
-**Paper 叙事分支**：
+**事先 commit 的 verdict 选择**（< 0.30 区间触发）：
 
-| C1-s1 实测 | paper claim |
-|---|---|
-| ≥ 0.50 | "upstream u10 在 s0 上不可 deploy；s1 提供的短程 ADCP 解锁该任务" → paper headline + sim2real narrative 的强证据 |
-| 0.30–0.50 | "sensor 单步升级仅部分解锁 upstream，需要 s2（长程 ADCP + 横向梯度）" → 触发 C1-s2 follow-up |
-| < 0.30 | "upstream u10 在所有 deployable sensor 上都接近 sensor floor" → §6 limitations 段写 "upstream 流场是任务-传感器共同的物理上限" |
+| C1-s1 实测 | verdict | paper claim |
+|---|---|---|
+| ≥ 0.50 | sensor 升级解锁 | (未触发) |
+| 0.30–0.50 | 部分有效 | (未触发) |
+| **< 0.30** ← **0.205 实测** | **task-fundamental floor** | **upstream u10 + crosscomp dataset 在所有 deployable sensor 上 deploy-impossible；§6 limitations 显式声明 task 物理边界** |
+
+**升格的 finding**：
+
+1. **结论从 "sensor floor" 升格为 "task-fundamental floor"**——不仅 s0 不行，s1 也不行；u10 upstream + crosscomp dataset 是 task-dataset 物理边界，不是单一传感器问题。详见 §13.4 retrofit。
+2. **reward 决定 failure mode 但不决定 ceiling**（次要发现）：P1 (eff_v2) timeout-dominated (77.5/0)；arr_v2_s 与 sensor 升级 都切换到 timeout/oob mixed (~53/26)；success ceiling 与 reward / sensor 维度都解耦。
+3. **C1-s2 (4 probes 16-D) 不再触发**：C1-s1 与 P1 几乎同 success（差 −2 pp 噪声内）已强烈暗示边界不在 sensor 维度，s2 升级（信息量更高，但 trade-off 与 cost ~2h L4）不值得；记入 backlog。
+4. **可选 follow-up**：把 `target_speed` 从 1.5 升到 2.0（顺流方向更快）看 task 是否变 deploy-grade；不阻塞 broad-validation 报告。
 

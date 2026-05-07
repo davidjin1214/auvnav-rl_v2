@@ -280,7 +280,8 @@ CELLS.append(code(
 CELLS.append(md(
     "## 5. Sanity card + obs_dim hard-assert",
     "",
-    "必须验证 `obs_dim_matches_probe_layout=true` 且 `obs_dim=12`（s1 = 8 base + 2 probes × 2）。",
+    "必须验证 `obs_dim_matches_probe_layout=true` 且 `obs_dim = 12 × history_length = 48`"
+    "（s1 per-step = 8 base + 2 probes × 2 = 12 维，stack 4 帧 → dataset 存 48 维）。",
     "如果 obs_dim 与 s1 不匹配（例如收集时 layout 配置错），数据集不可用，停下。",
 ))
 CELLS.append(code(
@@ -297,16 +298,18 @@ CELLS.append(code(
     "for k, v in card.items():",
     "    print(f'  {k:35s} = {v}')",
     "",
-    "# Hard-assert: obs_dim must match s1 (12-D)",
-    "EXPECTED_OBS_DIM = 12",
-    "assert card['obs_dim'] == EXPECTED_OBS_DIM, (",
-    "    f'obs_dim mismatch: got {card[\"obs_dim\"]}, expected {EXPECTED_OBS_DIM} (s1)'",
+    "# Hard-assert: dataset obs_dim must match s1 (per-step 12) × history_length (4) = 48",
+    "PER_STEP_OBS_DIM_S1 = 12  # 8 base + 2 probes × 2",
+    "EXPECTED_DATASET_OBS_DIM = PER_STEP_OBS_DIM_S1 * HISTORY_LENGTH",
+    "assert card['obs_dim'] == EXPECTED_DATASET_OBS_DIM, (",
+    "    f'obs_dim mismatch: got {card[\"obs_dim\"]}, '",
+    "    f'expected {EXPECTED_DATASET_OBS_DIM} (s1 per-step={PER_STEP_OBS_DIM_S1} × h={HISTORY_LENGTH})'",
     ")",
     "assert card.get('obs_dim_matches_probe_layout', False), (",
     "    'obs_dim_matches_probe_layout=False — collector / probe_layout misaligned'",
     ")",
     "print()",
-    "print(f'[OK] obs_dim={card[\"obs_dim\"]} matches s1 layout')",
+    "print(f'[OK] obs_dim={card[\"obs_dim\"]} matches s1 × history_length={HISTORY_LENGTH}')",
     "print(f'     collector_success_rate={card.get(\"collector_success_rate\", \"N/A\")}')",
     "print(f'     n_transitions={card.get(\"n_transitions\", \"N/A\")}')",
 ))

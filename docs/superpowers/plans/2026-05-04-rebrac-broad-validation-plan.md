@@ -2614,23 +2614,25 @@ git commit -m "docs(rebrac-broad): broad validation report — three-axis findin
   - `notebooks/rebrac_c1_asym_critic_ablation_completed.ipynb`
   - `notebooks/rebrac_c1_train_convergence_check_completed.ipynb`
   - `notebooks/rebrac_c1_epoch_sensitivity_ablation_completed.ipynb`
+  - `notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb` (Step 8)
 - Reward preset: `auv_nav/reward.py::REWARD_OBJECTIVE_PRESETS["arrival_v2_simple"]`
 - Tests: `tests/test_reward_objective.py::test_arrival_v2_simple_*`
 
 ### Background
 
-C1 P1 5-seed result: success=0.225 ± 0.005, far below the spec §8.3 expectation of 0.85–0.95. Termination distribution was 77.5% timeout / 22.5% goal / 0% OOB — actor "deterministic-collapse". To rule out non-sensor root causes, three ablations were run. All three failed to break the 0.19–0.23 success ceiling, confirming C1 (s0 / upstream u10 / crosscomp / Re150) as a **sensor-floor spoke**.
+C1 P1 5-seed result: success=0.225 ± 0.005, far below the spec §8.3 expectation of 0.85–0.95. Termination distribution was 77.5% timeout / 22.5% goal / 0% OOB — actor "deterministic-collapse". To rule out non-sensor root causes, three ablations were run; all failed to break the ~0.20 success ceiling. A fourth ablation (sensor upgrade s0 → s1) was added to test the sensor axis directly. **All four ablations failed**, confirming C1 (s0 / upstream u10 / crosscomp / Re150) as a **task-fundamental floor spoke** (deployment-impossible boundary, not just sensor floor).
 
 ### Ablation summary table
 
-| Intervention | dataset / critic / budget | seeds | success | Δ vs P1 anchor (pp) | Verdict |
-|---|---|---:|---:|---:|---|
-| P1 anchor | eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | 0.0 | baseline |
-| Ablation A: reward swap | arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −1.0 | reward landscape ruled out |
-| Ablation B: asym critic | arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −3.0 | privileged critic supervision ruled out |
-| Ablation C: epoch 4× | arr_v2_s / sym / 256 ep (1 seed) | 1 | 0.220 (ep 256) | −0.5 | training budget ruled out |
+| Intervention | dataset / sensor / critic / budget | seeds | success | mean_R | Δ vs P1 (pp) | Verdict |
+|---|---|---:|---:|---:|---:|---|
+| P1 anchor | s0 / eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | −371.0 | 0.0 | baseline |
+| Ablation A: reward swap | s0 / arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −98.2 | −1.0 | reward landscape ruled out |
+| Ablation B: asym critic | s0 / arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −114.9 | −3.0 | privileged critic supervision ruled out |
+| Ablation C: epoch 4× | s0 / arr_v2_s / sym / 256 ep | 1 | 0.220 (ep 256) | −96.2 | −0.5 | training budget ruled out |
+| **Ablation D: sensor upgrade (C1-s1)** | **s1 / eff_v2 / sym / 64 ep** | **2** | **0.205 ± 0.005** | **−381.7** | **−2.0** | **deployable sensor upgrade ruled out** |
 
-All four configurations land inside 0.19–0.23 — a 4-pp range, within Ablation A/B's 3-pp noise radius. Three independent root-cause hypotheses (reward / critic supervision / budget) all eliminated → sensor-floor verdict confirmed.
+All five configurations land inside 0.195–0.225 — a 3-pp full range, within Ablation A/B's 3-pp noise radius. **Four independent root-cause hypotheses** (reward / critic supervision / budget / deployable sensor upgrade) all eliminated → **task-fundamental floor verdict** (stronger than the original sensor-floor verdict). Secondary finding: reward landscape decides actor's failure mode (P1 timeout-dominated 77.5/0 vs Ablation A/C/D's timeout/oob mixed ~53/26) but **does not** decide ceiling — success ceiling is decoupled from both reward and sensor dimensions.
 
 ### Steps (already done; recorded for traceability)
 
@@ -2660,34 +2662,41 @@ Done in `docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`. I
 
 - [ ] **Step 7: Reflect in broad-validation report § (deferred to Task 11)**
 
-When Task 11 is executed, the report's §3 (P1 results), §5.3 (C-axis discussion), and §6 (limitations) must reflect the post-ablation framing:
-- §3.1 row C1: fill `mean_success=0.225, std=0.005, Δ=−68pp vs anchor` (5-seed, not 2-seed — broad-validation ran the full 5 for C1 because of how anomalous P1 was).
-- §3.2 row C1: triggered (mean shift) → P2 deepening → ablation chain (not β refit).
-- §5.3: paper claim is no longer "C1 generality". Replace with "C1 demonstrates the deployment-realistic sensor floor; three ablations (reward / asym critic / 4× epochs) all fail to break it; C1-s1 follow-up validates the sensor axis as the controllable lever."
-- §6 Limitations: explicit statement "upstream u10 is not deploy-grade on s0; sensor upgrade (s1+) is required."
+When Task 11 is executed, the report's §3 (P1 results), §5.3 (C-axis discussion), and §6 (limitations) must reflect the post-ablation framing (now task-fundamental floor, not just sensor floor):
+- §3.1 row C1: fill `mean_success=0.225, std=0.005, Δ=−68pp vs anchor` (5-seed).
+- §3.2 row C1: triggered (mean shift) → P2 deepening → 4-ablation chain (not β refit).
+- §5.3: paper claim is no longer "C1 generality" or "C1-s1 sensor-axis controllable lever". Replace with **"C1 demonstrates a deployment-impossible boundary: four independent interventions (reward / asym critic / 4× epochs / sensor upgrade s0→s1) all fail to break the 0.19–0.23 ceiling; reward determines failure mode (timeout vs oob) but not ceiling; upstream u10 + crosscomp dataset is a task-fundamental floor."**
+- §6 Limitations: explicit statement "upstream u10 + crosscomp dataset is deploy-impossible on s0/s1; sensor upgrade alone is not a sufficient lever." Mention C1-s2 (16-D) and target_speed=2.0 as backlog items.
 
-- [ ] **Step 8: Plan + run C1-s1 sensor-upgrade follow-up (per spec §13.6)**
+- [x] **Step 8: Plan + run C1-s1 sensor-upgrade follow-up (per spec §13.6) — closed 2026-05-07**
 
-Skeleton:
-```bash
-# 1. Collect dataset (~30 min L4)
-python -m scripts.collect_offline_data \
-  --policy crosscomp \
-  --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
-  --probe-layout s1 --task-geometry upstream --target-speed 1.5 \
-  --history-length 4 --objective efficiency_v2 \
-  --episodes 1000 --seed 0 --num-workers 8 \
-  --output-dir offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000
+Notebook: [`notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb`](../../../notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb).
 
-# 2. Train 2 seeds × 64 ep ReBRAC anchor (β1=4, β2=2) (~1.5h L4)
-# 3. Test on benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json
-```
-Notebook: `notebooks/rebrac_c1_s1_sensor_upgrade.ipynb` (TBD by Task 11A user run).
+**Empirical result (n=2 seeds × 64 ep × s1, sym critic):**
 
-Post-run verdict (per spec §13.6):
-- ≥ 0.50 → sensor 升级解锁 → paper headline + sim2real narrative;
-- 0.30–0.50 → trigger C1-s2 follow-up;
-- < 0.30 → §6 limitations: upstream u10 hits sensor floor on all deployable layouts.
+| seed | success | mean_R | termination (goal / timeout / oob) |
+|---:|---:|---:|---|
+| 42 | 0.210 | −379.98 | 21 / 53 / 26 |
+| 44 | 0.200 | −383.42 | 20 / 54 / 26 |
+| **mean** | **0.205 ± 0.005** | **−381.70 ± 1.72** | **20.5 / 53.5 / 26.0** |
+
+Outputs:
+- `offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/transitions.npz` (collector_success_rate=1.0, n_transitions=268,329)
+- `checkpoints/offline/rebrac/c1_s1_sensor_upgrade/<dataset>/actorb_4p0__criticb_2p0/seed_{42,44}/`
+- `results/offline/rebrac/c1_s1_sensor_upgrade/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json`
+
+**Verdict: < 0.30 → task-fundamental floor.** Δ vs P1 anchor = **−2.0 pp** (within ±1.5pp noise radius). Sensor upgrade ruled out as deployability lever.
+
+Downstream actions triggered:
+1. spec §13.4 conclusion upgraded from "sensor floor" to "task-fundamental floor" (4 ablations all fail).
+2. spec §13.6 paper-claim branch fixed at "deployment-impossible boundary demonstration".
+3. report §10A.3/§10A.4 updated with 5-row ablation table + § §10A.5 limitation "C1-s1 未跑" removed and replaced with "C1-s2 / target_speed=2.0 backlog".
+4. C1-s2 (s2, 4 probes, 16-D) **NOT triggered**: C1-s1 already shows sensor upgrade is not the lever; s2 expected to land in same band; backlogged.
+5. Optional follow-up `target_speed=2.0` (downstream geometry) backlogged as Step 9 below.
+
+- [ ] **Step 9 (backlog, not blocking broad-validation report): target_speed=2.0 follow-up**
+
+If broad-validation main pipeline closes and time permits, test whether raising `target_speed` from 1.5 to 2.0 m/s (downstream-favored geometry) flips C1 from deploy-impossible to deploy-grade. Single-seed P1 probe sufficient; ~1h L4. If success ≥ 0.5 → fine-grain ablation; if < 0.3 → confirm "u10 upstream is task-fundamental even at higher target speeds" and close.
 
 ---
 
@@ -2741,7 +2750,7 @@ Per spec §12, broad-validation closure requires:
 2. ✅ 16 P1 runs complete, `summaries/p1_overview.csv` generated (Task 9).
 3. ✅ All triggered spokes complete β refit + 5-seed expansion, OR `len(triggered) == 0` documented (Task 10).
 4. ✅ `docs/rebrac_broad_validation_report.md` complete §1–§5 (Task 11).
-5. ✅ C1 sensor-floor ablation chain (3 ablations) closed and reflected in spec §13 + report §5.3 / §6 (Task 11A); C1-s1 follow-up either complete or backlogged.
+5. ✅ C1 task-fundamental floor ablation chain (4 ablations: reward / asym critic / 4× epochs / sensor upgrade s0→s1) closed and reflected in spec §13 + report §10A (Task 11A Step 8 closed 2026-05-07; verdict = task-fundamental floor, < 0.30); C1-s2 and target_speed=2.0 backlogged as non-blocking.
 6. ✅ `docs/rebrac_mainline_review.md` §3.5 cross-link added (Task 12).
 7. ✅ `paper/sections/experiments.tex` broad-validation subsection drafted (out of scope for this plan; follows from Task 11 + 11A + 12).
 

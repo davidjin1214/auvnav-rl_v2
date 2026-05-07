@@ -4,6 +4,19 @@
 > 文档定位：[rebrac_experiment_plan.md](./rebrac_experiment_plan.md) Stage C 主线已 5-seed 收口（finalist `(β1=4.0, β2=2.0)` 在 `crosscomp-1000` 上 success = 0.902 ± 0.021）、[rebrac_mainline_review.md](./rebrac_mainline_review.md) §2.2/§3.2 留下的三条 generality 弱点之后做的一轮**有限算力广验**。
 > 配套文档：[broad_validation design spec](./superpowers/specs/2026-05-04-rebrac-broad-validation-design.md)、[broad_validation plan](./superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md)
 > 阅读顺序：先读 §1–§3 拿主结论；§4 是 discussion 与 working hypotheses；§5 是 station headline、broad validation 找到的限定条件、future work；§6 是与 paper 主线的 cross-link 索引。
+>
+> ---
+>
+> **★ Status（2026-05-07 user direction）**：本报告**保持 standalone exploratory side study**，**不回写**主报告 [`rebrac_experiment_report.md`](rebrac_experiment_report.md) 与 strategic review [`rebrac_mainline_review.md`](rebrac_mainline_review.md) 的 finding spine。`mainline_review §3.5` 现有的顶层指针保留（不复制内容），`experiment_report §10A` 已退回为 pointer（删除 cf5cfff 的 sensor-floor framing）。
+>
+> **理由**：8 spoke 中只有 B1 sensor envelope (Δ=−0.2pp, std=0.028) 是 clean positive；其余 7 个 work-in-progress：A1 underpowered (paired t p≈0.11)、A2 mid-gap collapse 的 mode-collapse 机制是 hypothesis（未做直接 ablation）、A3 5-seed 反转 1-seed 决策、B2/C3 std blow-up 无 mechanism ablation、C1 task-fundamental floor 的 BC penalty 强度 sweep 未做。把还在动的 commentary 钉死进静态 finding spine 会把后续 sweep 的 churn cost 转嫁给主线。
+>
+> **Retrofit trigger condition**（满足后再考虑统一回写）：
+> 1. **C1 BC penalty 强度 sweep**（β1 ∈ {0, 1, 2, 4, 8}）— 区分 BC floor vs task-fundamental floor，§5.3 future work #1
+> 2. **A1 paired bootstrap (n_boot=10000)** 或 **mix ratio sweep on A2** — 区分 directional consistent 与 statistically robust，§3.3 + §3.2
+> 3. **target_speed=2.0 P1 probe** — 测试 task-fundamental claim 的 speed-axis 边界，§5.3 future work #2
+>
+> 上述 trigger 闭环之前，paper §experiments / §discussion 引用本报告时仅以 cross-link 形式（不复制数字）。
 
 ---
 
@@ -399,13 +412,16 @@ A3 case 暴露了 spec §6.2 winner select 阈值 (+3pp) 在 std≈0.05 量级 c
 
 > "广验 (broad validation) 在三轴 (data quality / sensor / task geometry) 上做了 8 spoke × 5 seed 的覆盖 + C1 deep-dive：(1) **C1 upstream geometry 上 4 类 5 个独立 ablation (reward swap / asym critic / epoch ×4 / sensor s0→s1 / convergence check) 全部未恢复 success → task-fundamental floor at deployable sensors s0/s1 and target_speed=1.5**（baseline 0.218 ± 0.008，5-config cross-consistency 钉在 0.195–0.225 / 3pp range）；reward 与 sensor 各自独立 modulate failure mode 但都不动 ceiling；BC penalty 强度 sweep 是关键 mechanism discriminator (未做)；online SAC 同 task 下也失败；(2) B1 sensor s1 与 s0 success 等效（Δ=−0.2pp），B2 s2 mean-on-anchor 但 std_blow_up；(3) A1 goalseek 弱数据下 refit_b critic_β=1.0 比 anchor 高 4.0pp（directional consistent，paired t=2.05 df=4 p≈0.11，underpowered at n=5）；(4) **A2 mix5050 上 ReBRAC vs TD3+BC = +0.2pp**，与主线 crosscomp-1000 上的 +23pp 形成对比，揭示 ReBRAC quantitative advantage 的 data-coherence boundary。详见 [docs/rebrac_broad_validation_report.md](./rebrac_broad_validation_report.md) 与 [docs/rebrac_c1_s1_followup_report.md](./rebrac_c1_s1_followup_report.md)。"
 
-### 6.3 应提交的 Commit 序列
+### 6.3 已完成的 commit 序列（截至 2026-05-07）
 
-| 顺序 | 内容 | 文件 |
-|---|---|---|
-| 1 | 本报告 rev.2（C1-s1 集成升级） | `docs/rebrac_broad_validation_report.md` |
-| 2 | C1-s1 follow-up 报告 §6.2/§6.3/§7.1 修正 | `docs/rebrac_c1_s1_followup_report.md` |
-| 3 | mainline_review §3.5 cross-link | `docs/rebrac_mainline_review.md` |
+| 顺序 | 内容 | 文件 | 状态 |
+|---|---|---|---|
+| 1 | 本报告 rev.2（C1-s1 集成升级） | `docs/rebrac_broad_validation_report.md` | ✓ 已提交 |
+| 2 | C1-s1 follow-up 报告 §6.2/§6.3/§7.1 修正 | `docs/rebrac_c1_s1_followup_report.md` | ✓ 已提交 |
+| 3 | mainline_review §3.5 cross-link（顶层指针） | `docs/rebrac_mainline_review.md` | ✓ 已提交 |
+| 4 | experiment_report §10A 退回为 pointer（删 cf5cfff sensor-floor framing） | `docs/rebrac_experiment_report.md` | ✓ 2026-05-07 退回 |
+
+**experiment_report 主线 retrofit (新增 §10B/§10C 等扩展 spoke 内容) deferred**——见文档头部 status note 列出的 trigger condition (BC penalty sweep on C1 / A1 paired bootstrap / mix ratio sweep / target_speed=2.0 P1)。
 
 ---
 

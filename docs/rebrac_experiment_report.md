@@ -1168,63 +1168,32 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 
 ---
 
-## 10A. Broad validation — C1 sensor-floor probe（retrofit, 2026-05-06）
+## 10A. Broad validation — pointer to standalone reports
 
-> **范围说明**：本节是 ReBRAC 主线 closure 之后启动的 broad validation 阶段（spec：[2026-05-04-rebrac-broad-validation-design.md](superpowers/specs/2026-05-04-rebrac-broad-validation-design.md)）的第一个 retrofit。主线 §1–§10 的结论不变；本节只新增"广验 C1 spoke 跑出 anomalous result 后追加的 ablation 链"作为独立证据。完整 evidence 见 spec §13；这里只放头部数据 + 一句话结论。
-
-### 10A.1 起点
-
-广验 C1 spoke (`crosscomp / s0 / upstream / u10 / Re150`，`efficiency_v2`，64 epochs，β1=4 / β2=2，5 seeds) 实测：
-
-| run | seeds | success | mean_R | termination |
-|---|---:|---:|---:|---|
-| 广验 anchor (cross_stream) | 5 | 0.902 ± 0.021 | — | — |
-| C1 P1 (upstream) | 5 | **0.225 ± 0.005** | −371 ± 0.41 | timeout 77.5% / oob 0% / goal 22.5% |
-
-C1 mean 比 spec §8.3 的预期 0.85–0.95 低 60+ pp，且 termination 几乎全部 timeout——actor "deterministic-collapse"。触发完整 ablation 链。
-
-### 10A.2 三 ablation 汇总
-
-| 干预 | dataset / critic / budget | seeds | success | Δ vs P1 anchor (pp) |
-|---|---|---:|---:|---:|
-| **P1 anchor** | eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | 0.0 |
-| Ablation A: reward swap (`arrival_v2_simple`) | arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −1.0 |
-| Ablation B: asym critic (privileged hull-flow, dim=2) | arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −3.0 |
-| Ablation C: epoch 4× (256 ep) | arr_v2_s / sym / 256 ep | 1 | 0.220 (ep 256) | −0.5 |
-
-所有干预的 success 都被钉在 **0.19–0.23 区间**（4-pp 区间，远小于 ablation A/B 的 ±3pp 噪声半径）。三个独立 root-cause 假设（reward landscape / privileged critic supervision / training budget）全部排除。
-
-**Ablation C 的关键观察**：epoch 192 与 256 在 100-ep test 上**所有数字一字不差**——actor 在 epoch 192 后已 deterministic 锁死。这与 convergence diagnostic 显示的 "mean_q 末段还在 +44.8% 上升" **协调解释**：critic 仍在 fitting Q-landscape，但 actor 被 BC anchor 钉死，即便 4× budget 也不能越界。这是 ReBRAC β floor 在 sensor-info-deficient 条件下的教科书表现。
-
-### 10A.3 结论与 paper 影响
-
-C1 (s0 / upstream / u10 / crosscomp / Re150) 是 **sensor floor spoke**：deployment-realistic 单点 DVL 在 u10 upstream 流场上的信息量物理上不足以让 actor 学到 deploy-grade policy（success ≥ 0.6），即使在 collector dataset success=1.0 + reward 已正向 + privileged critic + 4× epochs 多重优待下也是如此。
-
-**对 §10 主线结论的影响**：无修订。广验 C1 不改变主线 finding (i)–(iv)，但在 paper §experiments / §discussion 增加一条 sensor-floor 论据：
-
-- §experiments (broad-validation subsection)：C1 列入"sensor floor demonstration"行（不再走 task generality 路径）。
-- §discussion：与 Stage D Phase 2 finding "ReBRAC + deployable obs 已能关闭 worldcomp 上 ~52~58% 的 deployable→teacher gap" 形成对照——deployability 不是单纯的算法或数据问题，而是 **sensor × task geometry 共同决定的物理边界**：在 cross_stream + worldcomp dataset 下 deployable 已可关闭大部分 gap；在 upstream + crosscomp dataset 下 sensor floor 是真实下界。两个 finding 合在一起为 sim2real 论文提供完整的 deployability map。
-
-### 10A.4 后续行动
-
-加一条 follow-up spoke：**C1-s1**（probe_layout=s1, DVL + 短程 ADCP, 12-D obs；其余与 C1 一致），跑 ReBRAC anchor × 64 epochs × 2 seeds，预算 ~2h L4。
-
-| C1-s1 实测 | paper claim |
-|---|---|
-| ≥ 0.50 | "sensor 升级解锁 upstream u10" → paper headline + sim2real narrative 的强证据 |
-| 0.30–0.50 | 触发 C1-s2 follow-up |
-| < 0.30 | "upstream u10 在所有 deployable sensor 上都接近 sensor floor" → §6 limitations |
-
-完整 evidence 与 notebook 索引见 spec §13；ablation closure 进度见 plan Task 11A。
-
-> **2026-05-07 update**：C1-s1 follow-up 已执行；finding 与 verdict **暂不集成进本主报告**，独立归档于 [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md)。本节 §10A.1–§10A.3 的 sensor-floor 框架按 cf5cfff 时点保留；与 C1-s1 实测一致的更强升格论述（如适用）将在主报告下一次 retrofit 时统一集成。
-
-### 10A.5 局限性
-
-1. **Ablation B 仅 2 seeds × 64 ep**：在 epoch 4× 与 asym critic 的 joint sweep 没做；理论上 asym critic + 256 ep 可能解锁，但 Ablation C 的 deterministic-lock 信号说明 epochs 不是主因，joint sweep 优先级低。
-2. **C1 P1 anchor 5 seeds 但 ablation 仅 2 seeds**：3-pp 量级的差不能严格区分 ablation 之间，但 4-pp 总区间 + 三个独立 hypothesis 均失败已足以支撑 sensor-floor 结论。
-3. **`arrival_v2_simple` preset 没有在 cross_stream 上回归测试**：仅用于 C1；如未来用于其他 spoke，需补 cross_stream sanity（reward inversion 在 cross_stream 上不存在，预期等价 efficiency_v2，but not verified）。
-4. **C1-s1 follow-up 已跑但暂不集成主报告**：实测 finding（sensor-axis 对照、verdict、paper-narrative 升格建议）独立归档于 [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md)；§10A 主线在 sensor-floor 框架下保持封闭，等待主报告下一次 retrofit 时统一融合。
+> **Status（2026-05-07 rev — 退回 commit cf5cfff 的 retrofit）**
+>
+> 本节原 retrofit（cf5cfff，sensor-floor framing + C1-s1 verdict gate）含两处过期论述：
+> 1. §10A.3 的 "sensor floor → 预期 sensor 升级解锁 upstream u10" 已被 [`c1_s1_followup`](rebrac_c1_s1_followup_report.md) 实测反证（s1 升级 −2pp，落 <0.30 verdict）；
+> 2. 整个 §10A.4 verdict gate 表是该反证之前的预登记。
+>
+> 按用户 2026-05-07 判断，**广验 (broad validation) 与 C1-s1 follow-up 结果尚不达 paper-quality**——
+> - broad_validation rev.2 的 8 spoke 中只有 B1 sensor envelope (Δ=−0.2pp) 是 clean positive；A1 underpowered (paired t p≈0.11)、A2 mid-gap collapse 的 mode-collapse 机制 hypothesis 未做直接 ablation、B2/C3 std blow-up 无 mechanism ablation；
+> - C1 task-fundamental floor 的 mechanism discriminator（**BC penalty 强度 sweep on C1**）未做；
+> - mix ratio sweep / target_speed=2.0 P1 probe / A1 paired bootstrap 都在 backlog。
+>
+> 在这些下游 sweep 闭环、broad validation 结果稳定到 paper-quality 之前，**主线主报告 retrofit deferred**。本节正文退回为 pointer，避免把还在动的 commentary 钉死进 finding spine。
+>
+> ### 广验证据的 standalone 入口
+>
+> | 文档 | 内容 |
+> |---|---|
+> | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) | 三轴广验全表（A/B/C × 8 spoke × 5-seed parity）+ C1 deep-dive（§3.5：5 个 ablation 全部钉在 0.195–0.225 → task-fundamental floor 候选） |
+> | [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) | C1-s1 sensor-upgrade follow-up（s1 升级 −2pp、<0.30 verdict、reward 与 sensor 各自独立 modulate failure mode 但都不动 ceiling） |
+> | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §3.5 | strategic review 顶层指针（不复制内容，链接到上面两份） |
+>
+> ### 对 §10 主线结论的影响
+>
+> **无**。Finding (i)–(iv) 在主线 cell（`crosscomp-1000 / s0 / cross_stream / Re150 / target_speed=1.5`）上严密成立、5-seed 收口、未受广验影响。广验是对 generality 边界的 commentary，下游 sweep 完成后再统一考虑回写主线。
 
 ---
 

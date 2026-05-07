@@ -1,10 +1,13 @@
 # ReBRAC C1-s1 Sensor-Upgrade Follow-up — Standalone Report
 
 > **Date**: 2026-05-07
-> **Status**: independent follow-up; **not** yet integrated into the main `rebrac_experiment_report.md` (per user direction 2026-05-07). Main report §10A keeps the sensor-floor framing as of commit cf5cfff; this document records the C1-s1 evidence and proposes an upgrade narrative to be merged in a later main-report retrofit.
+> **Status (2026-05-07 user direction 升级)**：本 follow-up **保持 standalone exploratory side study**，**不回写**主报告 [`rebrac_experiment_report.md`](rebrac_experiment_report.md)。原稿 §1/§7.1/§9 多处「待 later main-report retrofit」「下一次主报告 retrofit 时统一集成」措辞已过期——按用户 2026-05-07 判断，task-fundamental floor claim 的 mechanism discriminator（**BC penalty 强度 sweep on C1**，β1 ∈ {0, 1, 2, 4, 8}）未做之前，结论尚不达 paper-quality；主报告 retrofit deferred until 该 sweep 闭环。
+>
+> 主报告 §10A 已**退回**为 pointer（删除 cf5cfff 的 sensor-floor framing 与 verdict gate），不再保留与本 follow-up 实测矛盾的「预期 sensor 升级解锁」论述。
 >
 > **Cross-references**:
-> - Main report (does **not** integrate this follow-up): [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §10A
+> - Main report（已退回 §10A 为 pointer，不集成本 follow-up）: [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §10A
+> - 同源 broad validation 报告（同样 standalone）: [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md)
 > - Spec (full evidence): [`docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`](superpowers/specs/2026-05-04-rebrac-broad-validation-design.md) §13
 > - Plan (Task 11A Step 8 closed 2026-05-07): [`docs/superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md`](superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md)
 > - Notebook archive: [`notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb`](../notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb)
@@ -105,9 +108,11 @@ Ablation C 的 epoch sensitivity（64 / 128 / 192 / 256）在 100-ep test 上 ep
 
 ## 7. Implications
 
-### 7.1 Paper-narrative 升级建议（主报告下一次 retrofit 时集成）
+### 7.1 Paper-narrative 升级建议（**deferred — 待 mechanism discriminator 闭环后再考虑统一集成**）
 
-C1 spoke 的论文角色从「sensor floor demonstration + sensor upgrade unlocks deployment（双向证据）」改写为：
+> ⚠ **2026-05-07 status 升级**：原标题「主报告下一次 retrofit 时集成」已过期。task-fundamental floor claim 的 mechanism discriminator（BC penalty 强度 sweep on C1）未做之前，下面这段升级建议**仅作为 candidate paper narrative 留底**，主报告 retrofit deferred；paper writing 阶段如需 generality 章节，可直接综合 broad_validation + 本 follow-up，不必走主报告 retrofit。
+
+C1 spoke 的论文角色（candidate narrative，待 BC penalty sweep 验证 task-fundamental claim 后再正式采用）：
 
 > **C1 demonstrates a deployment-impossible task-dataset combination at deployable sensors s0/s1 and target_speed=1.5**: four independent interventions（reward landscape / privileged asym critic / 4× training budget / deployable sensor upgrade s0 → s1）all fail to break the 0.195–0.225 ceiling. Reward 与 sensor 各自独立 modulate failure mode (timeout-only ↔ timeout/oob mixed)，but neither moves the goal-reaching ceiling. upstream u10 + crosscomp dataset 在 deployable sensors s0/s1 与 target_speed=1.5 下构成 task-fundamental floor；s2 (16-D) 与 target_speed=2.0 未测，记入 backlog。
 
@@ -159,4 +164,4 @@ notebooks/
 1. **2 seeds**：与 P1 anchor 5 seeds 不对称；3-pp 总区间小于 single-run 噪声半径已足以支撑 verdict，但严格的 effect-size CI 需要升 5-seed × bootstrap。优先级低，因为 5 个配置的 ceiling 一致性已是更强的统计证据。
 2. **C1-s2 (4 probes 16-D) 未跑**：理论上更高维 sensor 升级可能在 < 0.30 verdict 之外突破，但 s0→s1 几乎同 success（差 −2 pp）已强烈暗示边界不在 sensor 维度；s2 backlog 优先级低。
 3. **`target_speed=2.0` 未测**：当前 task 物理上限假设是 "u10 upstream 流速 + 1.5 m/s 目标速度" 的组合；速度提升是否解锁 deployability 未验证。
-4. **主报告未集成**（per user direction 2026-05-07）：本 follow-up 的发现暂未融入主 `rebrac_experiment_report.md` §10A 主线；主报告对 C1 spoke 的论文叙事到 §10A.3 sensor-floor 为止。下一次主报告 retrofit 时统一升格集成。
+4. **主报告不集成（standalone status 已升级）**：本 follow-up 与同源 [`broad_validation_report`](rebrac_broad_validation_report.md) 一并保持 standalone exploratory side study，不回写主 `rebrac_experiment_report.md`。主报告 §10A 已**退回**为 pointer（不再保留 cf5cfff 的 sensor-floor framing 或 verdict gate）。Retrofit trigger condition：BC penalty 强度 sweep on C1（β1 ∈ {0, 1, 2, 4, 8}）闭环、task-fundamental floor 的 mechanism discriminator 给出确定结论之后，再考虑统一回写。在此之前 paper §experiments / §discussion 引用本 follow-up 仅以 cross-link 形式。

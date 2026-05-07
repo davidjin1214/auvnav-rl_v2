@@ -1183,54 +1183,48 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 
 C1 mean 比 spec §8.3 的预期 0.85–0.95 低 60+ pp，且 termination 几乎全部 timeout——actor "deterministic-collapse"。触发完整 ablation 链。
 
-### 10A.2 四 ablation 汇总（含 sensor-axis follow-up）
+### 10A.2 三 ablation 汇总
 
-| 干预 | dataset / sensor / critic / budget | seeds | success | mean_R | Δ vs P1 (pp) | termination (goal/timeout/oob) |
-|---|---|---:|---:|---:|---:|---|
-| **P1 anchor** | s0 / eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | −371.0 ± 0.4 | 0.0 | 22.5 / **77.5** / 0.0 |
-| Ablation A: reward swap (`arrival_v2_simple`) | s0 / arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −98.2 ± 4.0 | −1.0 | 21.5 / 52.5 / 26.0 |
-| Ablation B: asym critic (privileged hull-flow, dim=2) | s0 / arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −114.9 ± 8.0 | −3.0 | 19.5 / 48.5 / 32.0 |
-| Ablation C: epoch 4× (256 ep) | s0 / arr_v2_s / sym / 256 ep | 1 | 0.220 (ep 256) | −96.2 | −0.5 | 22.0 / 52.0 / 26.0 |
-| **Ablation D (C1-s1): sensor upgrade s0→s1** | **s1 / eff_v2 / sym / 64 ep** | 2 | **0.205 ± 0.005** | **−381.7 ± 1.7** | **−2.0** | 20.5 / 53.5 / 26.0 |
+| 干预 | dataset / critic / budget | seeds | success | Δ vs P1 anchor (pp) |
+|---|---|---:|---:|---:|
+| **P1 anchor** | eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | 0.0 |
+| Ablation A: reward swap (`arrival_v2_simple`) | arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −1.0 |
+| Ablation B: asym critic (privileged hull-flow, dim=2) | arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −3.0 |
+| Ablation C: epoch 4× (256 ep) | arr_v2_s / sym / 256 ep | 1 | 0.220 (ep 256) | −0.5 |
 
-所有 5 个配置的 success 都被钉在 **0.195–0.225 区间**（3-pp 全幅，小于 Ablation A/B 单 run ±1.5 pp 噪声半径的 2×）。**四个独立 root-cause 假设**（reward landscape / privileged critic supervision / training budget / **deployable sensor 升级**）全部排除。
+所有干预的 success 都被钉在 **0.19–0.23 区间**（4-pp 区间，远小于 ablation A/B 的 ±3pp 噪声半径）。三个独立 root-cause 假设（reward landscape / privileged critic supervision / training budget）全部排除。
 
-**两个 paper-relevant 的关键观察**：
-
-1. **Ablation C — epoch deterministic-lock**：epoch 192 与 256 在 100-ep test 上**所有数字一字不差**——actor 在 epoch 192 后已 deterministic 锁死。这与 convergence diagnostic 显示的 "mean_q 末段还在 +44.8% 上升" **协调解释**：critic 仍在 fitting Q-landscape，但 actor 被 BC anchor 钉死，即便 4× budget 也不能越界。这是 ReBRAC β floor 在 sensor-info-deficient 条件下的教科书表现。
-2. **Ablation D — reward 决定 failure mode，但 ceiling 不变**：sensor 升级 s0→s1 没抬 success（−2 pp 在噪声内），但 termination 模式从 "P1 timeout-dominated (77.5 / 0)" 切换到 "Abl A/C/D 共有的 timeout/oob mixed (~53 / ~26)"——actor 变得更激进探索（更多 oob），但激进没转化为更多 goal，反而 mean_R 恶化（−381 vs −371）。**reward landscape 决定 actor 的 timeout-vs-oob 倾向，但 success ceiling 与 reward / sensor 解耦**——这是更强的 task-fundamental 信号。
+**Ablation C 的关键观察**：epoch 192 与 256 在 100-ep test 上**所有数字一字不差**——actor 在 epoch 192 后已 deterministic 锁死。这与 convergence diagnostic 显示的 "mean_q 末段还在 +44.8% 上升" **协调解释**：critic 仍在 fitting Q-landscape，但 actor 被 BC anchor 钉死，即便 4× budget 也不能越界。这是 ReBRAC β floor 在 sensor-info-deficient 条件下的教科书表现。
 
 ### 10A.3 结论与 paper 影响
 
-C1 (`crosscomp / s0 / upstream / u10 / Re150`) 是 **task-fundamental floor spoke**（不仅是 sensor floor）：u10 upstream 流场 + crosscomp dataset 在所有四个干预维度（reward / critic / budget / sensor 升级到 s1）上都不能突破 0.225 success ceiling。这不是某一维度的 deployability 问题，是**任务-数据集共同决定的物理上限**。
+C1 (s0 / upstream / u10 / crosscomp / Re150) 是 **sensor floor spoke**：deployment-realistic 单点 DVL 在 u10 upstream 流场上的信息量物理上不足以让 actor 学到 deploy-grade policy（success ≥ 0.6），即使在 collector dataset success=1.0 + reward 已正向 + privileged critic + 4× epochs 多重优待下也是如此。
 
-**对 §10 主线结论的影响**：无修订。广验 C1 不改变主线 finding (i)–(iv)，但在 paper §experiments / §discussion 增加一条 deployment-boundary 论据：
+**对 §10 主线结论的影响**：无修订。广验 C1 不改变主线 finding (i)–(iv)，但在 paper §experiments / §discussion 增加一条 sensor-floor 论据：
 
-- **§experiments (broad-validation subsection)**：C1 spoke 列入 **"deployment-impossible boundary demonstration"** 行（不走 task generality 路径，也不走单纯 sensor-floor 路径）。展示 4-ablation 表作为单一 spoke 的深度 evidence。
-- **§discussion**：与 Stage D Phase 2 finding "ReBRAC + deployable obs 已能关闭 worldcomp 上 ~52~58% 的 deployable→teacher gap" 形成完整的 deployability map：
-  - **deploy-graded 区间**（cross_stream + worldcomp dataset, s0）：deployable 已可关闭大部分 gap → algorithmic / data improvement 有效
-  - **deploy-impossible 区间**（upstream u10 + crosscomp dataset，s0/s1）：sensor 升级到 s1、reward 重塑、privileged critic、4× budget 全部失效 → 任务-数据集物理边界
-  - 两个 finding 合在一起为 sim2real 论文提供**完整的 deployability 谱系**：哪些任务 deployable 可解（algorithmic）、哪些是物理边界（task fundamental）、reward 决定 failure mode 但不决定 ceiling。
+- §experiments (broad-validation subsection)：C1 列入"sensor floor demonstration"行（不再走 task generality 路径）。
+- §discussion：与 Stage D Phase 2 finding "ReBRAC + deployable obs 已能关闭 worldcomp 上 ~52~58% 的 deployable→teacher gap" 形成对照——deployability 不是单纯的算法或数据问题，而是 **sensor × task geometry 共同决定的物理边界**：在 cross_stream + worldcomp dataset 下 deployable 已可关闭大部分 gap；在 upstream + crosscomp dataset 下 sensor floor 是真实下界。两个 finding 合在一起为 sim2real 论文提供完整的 deployability map。
 
-### 10A.4 后续行动（C1-s1 verdict 已落定）
+### 10A.4 后续行动
 
-**C1-s1 实测 = 0.205 ± 0.005 < 0.30 → verdict: task-fundamental floor**（事先 commit 的判定规则，详见 spec §13.6）。
+加一条 follow-up spoke：**C1-s1**（probe_layout=s1, DVL + 短程 ADCP, 12-D obs；其余与 C1 一致），跑 ReBRAC anchor × 64 epochs × 2 seeds，预算 ~2h L4。
 
-由此触发的下游动作：
-
-1. **paper §6 limitations**：显式声明 "u10 upstream + crosscomp dataset 在 s0/s1 deployable sensor 上是 deploy-impossible 边界；sensor 升级到 s1 不能突破，因此 sensor 升级单独不是 sufficient lever"。
-2. **C1-s2 follow-up 不再触发**：原计划在 C1-s1 部分有效（0.30–0.50）时跑 s2 = 4 probes 16-D；现 C1-s1 已落 < 0.30，s2 升级（信息量更高）很可能也落在同一区间，trade-off 与 cost (~2h L4) 不值得；记入 backlog 但**不在当前 broad-validation 范围内执行**。
-3. **可选 follow-up**（不阻塞 broad validation 报告）：把 `target_speed` 从 1.5 提升到 2.0 看 task 是否变 deploy-grade（顺流方向更快可能转化 deployability）；记入 plan Task 11A Step 9 backlog。
+| C1-s1 实测 | paper claim |
+|---|---|
+| ≥ 0.50 | "sensor 升级解锁 upstream u10" → paper headline + sim2real narrative 的强证据 |
+| 0.30–0.50 | 触发 C1-s2 follow-up |
+| < 0.30 | "upstream u10 在所有 deployable sensor 上都接近 sensor floor" → §6 limitations |
 
 完整 evidence 与 notebook 索引见 spec §13；ablation closure 进度见 plan Task 11A。
 
+> **2026-05-07 update**：C1-s1 follow-up 已执行；finding 与 verdict **暂不集成进本主报告**，独立归档于 [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md)。本节 §10A.1–§10A.3 的 sensor-floor 框架按 cf5cfff 时点保留；与 C1-s1 实测一致的更强升格论述（如适用）将在主报告下一次 retrofit 时统一集成。
+
 ### 10A.5 局限性
 
-1. **C1-s2 (4 probes, 16-D) 未跑**：理论上更高维 sensor 升级可能在 < 0.30 verdict 之外突破，但 C1-s1 (s1, 12-D) 与 P1 (s0, 10-D) 几乎同 success（差 −2 pp，噪声内）已强烈暗示边界不在 sensor 维度；s2 follow-up 优先级低，记入 backlog。
-2. **target_speed=2.0（顺流）未测**：当前 task 物理上限假设是 "u10 upstream 流速 + 1.5 m/s 目标速度" 的组合；速度提升是否解锁 deployability 未验证。
-3. **Ablation B 仅 2 seeds × 64 ep**：与 epoch 4× 的 joint sweep 没做；但 Ablation C/D 的 deterministic-lock 与 sensor-floor 信号说明 joint sweep 不会改变 verdict。
-4. **C1 P1 anchor 5 seeds 但 ablation 仅 2 seeds**：3-pp 量级的差不能严格区分 ablation 之间，但 3-pp 总区间 + **四个独立 hypothesis 均失败** 已足以支撑 task-fundamental floor 结论。
-5. **`arrival_v2_simple` preset 没有在 cross_stream 上回归测试**：仅用于 C1；如未来用于其他 spoke，需补 cross_stream sanity（reward inversion 在 cross_stream 上不存在，预期等价 efficiency_v2，but not verified）。
+1. **Ablation B 仅 2 seeds × 64 ep**：在 epoch 4× 与 asym critic 的 joint sweep 没做；理论上 asym critic + 256 ep 可能解锁，但 Ablation C 的 deterministic-lock 信号说明 epochs 不是主因，joint sweep 优先级低。
+2. **C1 P1 anchor 5 seeds 但 ablation 仅 2 seeds**：3-pp 量级的差不能严格区分 ablation 之间，但 4-pp 总区间 + 三个独立 hypothesis 均失败已足以支撑 sensor-floor 结论。
+3. **`arrival_v2_simple` preset 没有在 cross_stream 上回归测试**：仅用于 C1；如未来用于其他 spoke，需补 cross_stream sanity（reward inversion 在 cross_stream 上不存在，预期等价 efficiency_v2，but not verified）。
+4. **C1-s1 follow-up 已跑但暂不集成主报告**：实测 finding（sensor-axis 对照、verdict、paper-narrative 升格建议）独立归档于 [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md)；§10A 主线在 sensor-floor 框架下保持封闭，等待主报告下一次 retrofit 时统一融合。
 
 ---
 
@@ -1300,7 +1294,6 @@ C1 (`crosscomp / s0 / upstream / u10 / Re150`) 是 **task-fundamental floor spok
 - [notebooks/rebrac_c1_asym_critic_ablation_completed.ipynb](../notebooks/rebrac_c1_asym_critic_ablation_completed.ipynb) — **§10A.2 Ablation B（broad validation C1 retrofit）**
 - [notebooks/rebrac_c1_train_convergence_check_completed.ipynb](../notebooks/rebrac_c1_train_convergence_check_completed.ipynb) — **§10A.2 Ablation C 先决无 GPU 诊断**
 - [notebooks/rebrac_c1_epoch_sensitivity_ablation_completed.ipynb](../notebooks/rebrac_c1_epoch_sensitivity_ablation_completed.ipynb) — **§10A.2 Ablation C（broad validation C1 retrofit）**
-- [notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb](../notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb) — **§10A.2 Ablation D / C1-s1 sensor upgrade（task-fundamental floor verdict）**
 - [scripts/run_offline_rebrac_screen.sh](../scripts/run_offline_rebrac_screen.sh)（Stage B / Stage C / Stage E (a) 共用；Stage D 通过 `run_offline_rebrac_worldcomp_teacher_gap.sh` 间接调用）
 - [scripts/run_offline_rebrac_worldcomp_teacher_gap.sh](../scripts/run_offline_rebrac_worldcomp_teacher_gap.sh) — Stage D 专用驱动
 

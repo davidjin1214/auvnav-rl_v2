@@ -1,0 +1,157 @@
+# ReBRAC C1-s1 Sensor-Upgrade Follow-up — Standalone Report
+
+> **Date**: 2026-05-07
+> **Status**: independent follow-up; **not** yet integrated into the main `rebrac_experiment_report.md` (per user direction 2026-05-07). Main report §10A keeps the sensor-floor framing as of commit cf5cfff; this document records the C1-s1 evidence and proposes an upgrade narrative to be merged in a later main-report retrofit.
+>
+> **Cross-references**:
+> - Main report (does **not** integrate this follow-up): [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §10A
+> - Spec (full evidence): [`docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`](superpowers/specs/2026-05-04-rebrac-broad-validation-design.md) §13
+> - Plan (Task 11A Step 8 closed 2026-05-07): [`docs/superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md`](superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md)
+> - Notebook archive: [`notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb`](../notebooks/rebrac_c1_s1_sensor_upgrade_completed.ipynb)
+
+---
+
+## 1. Background
+
+广验 C1 spoke (`crosscomp / s0 / upstream / u10 / Re150`，`efficiency_v2`，64 epochs，β1=4 / β2=2，5 seeds) P1 anchor 实测 **success = 0.225 ± 0.005**，远低于 spec §8.3 期望的 0.85–0.95。三轮 ablation 跟进（详见主报告 §10A.2）：
+
+| 干预 | dataset / sensor / critic / budget | seeds | success | Δ vs P1 (pp) |
+|---|---|---:|---:|---:|
+| P1 anchor | s0 / eff_v2 / sym / 64 ep | 5 | 0.225 ± 0.005 | 0.0 |
+| Ablation A: reward swap | s0 / arr_v2_s / sym / 64 ep | 2 | 0.215 ± 0.015 | −1.0 |
+| Ablation B: asym critic | s0 / arr_v2_s / asym / 64 ep | 2 | 0.195 ± 0.015 | −3.0 |
+| Ablation C: epoch 4× | s0 / arr_v2_s / sym / 256 ep | 1 | 0.220 (ep 256) | −0.5 |
+
+主报告 §10A.3 收口为 **sensor floor spoke**：deployment-realistic 单点 DVL 在 u10 upstream 上信息不足；**预期** sensor 升级到 s1 (DVL + 短程 ADCP, 12-D) 能解锁 → §10A.5 列「C1-s1 未跑」为待验证 limitation。
+
+本 follow-up 直接测试该预期。
+
+## 2. Hypothesis & verdict gate（事先 commit）
+
+唯一变量：`--probe-layout s0 → s1`（其余完全等同 C1 P1 anchor：crosscomp / upstream / target_speed=1.5 / history=4 / efficiency_v2 / β1=4 β2=2 / 64 ep）。
+
+| C1-s1 实测 success | verdict | next step |
+|---:|---|---|
+| **≥ 0.50** | sensor 升级解锁 | paper headline + sim2real narrative；考虑 5-seed bootstrap CI |
+| **0.30–0.50** | 部分有效 | 触发 C1-s2 follow-up（s2 = 4 probes, 16-D） |
+| **< 0.30** | task-fundamental floor | C1 spoke 在所有 deployable sensor 上接近 floor；§6 limitations 表述升级 |
+
+## 3. Setup
+
+- **Sensor**: s1 = 2 probes at (0, 0) + (4.5, 0) m，DVL water-track + 2 MHz 短程 ADCP，~3 步前向流场 advance warning，per-step obs_dim=12 → dataset obs_dim=48 (× history=4)
+- **Dataset**: `offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/`
+  - collector_success_rate = **1.0**（s1 比 s0 多 advance warning，crosscomp 在 s1 上 100% 成功）
+  - n_transitions = 268,329；mean_return = −108.21；episode_length = 268.3 ± 66.7
+- **Train**: ReBRAC anchor (β1=4.0, β2=2.0) × seeds {42, 44} × 64 epochs，sym critic
+- **Eval**: 复用 `benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json`（与 P1 anchor + 三轮 ablation 共用 manifest，跨 5 配置可比）
+- **Cost**: ~2h L4
+
+## 4. Result
+
+### 4.1 Per-seed test (100 ep, deterministic)
+
+| seed | success | mean_R | safety_cost | termination (goal / timeout / oob) |
+|---:|---:|---:|---:|---|
+| 42 | 0.210 | −379.98 | 26.06 | 21 / 53 / 26 |
+| 44 | 0.200 | −383.42 | 25.27 | 20 / 54 / 26 |
+| **mean** | **0.205 ± 0.005** | **−381.70 ± 1.72** | **25.66** | **20.5 / 53.5 / 26.0** |
+
+### 4.2 Five-way comparison (all on `c1_reward_ablation/test_100`)
+
+| config | n_seeds | success | mean_R | termination (goal / timeout / oob) |
+|---|---:|---:|---:|---|
+| s0 + eff_v2 + sym + 64 ep (P1) | 5 | 0.225 ± 0.005 | −371.0 | 22.5 / **77.5** / 0.0 |
+| s0 + arr_v2_s + sym + 64 ep (Abl A) | 2 | 0.215 ± 0.015 | −98.2 | 21.5 / 52.5 / 26.0 |
+| s0 + arr_v2_s + asym + 64 ep (Abl B) | 2 | 0.195 ± 0.015 | −114.9 | 19.5 / 48.5 / 32.0 |
+| s0 + arr_v2_s + sym + 256 ep (Abl C) | 1 | 0.220 | −96.2 | 22.0 / 52.0 / 26.0 |
+| **s1 + eff_v2 + sym + 64 ep (C1-s1)** | 2 | **0.205 ± 0.005** | **−381.7** | 20.5 / 53.5 / 26.0 |
+
+- Δ vs P1 anchor = **−2.0 pp**（在 ±1.5 pp single-run noise radius 内）
+- 全部 5 行 success 钉在 **0.195–0.225** 区间（3-pp 全幅，小于 single-run 噪声半径的 2×）
+
+## 5. Verdict
+
+**< 0.30 → task-fundamental floor**（事先 commit 的判定规则触发）。
+
+主报告 §10A.3 的 "sensor floor" 框架在 C1-s1 实测下应升格为 **task-fundamental floor**：
+- s0 (10-D, DVL only) 失败
+- s1 (12-D, DVL + 短程 ADCP) 同样失败 → sensor 维度不是 deployability lever
+- 4 个独立干预（reward / privileged critic / 4× budget / sensor 升级）全部钉在同一 ceiling
+
+C1 spoke (`crosscomp / upstream / u10 / Re150`) 是一个 **deployment-impossible boundary**——upstream u10 流速 + crosscomp dataset 在所有 deployable sensor 上的物理上限。
+
+## 6. Findings
+
+### 6.1 Primary: task-fundamental floor (vs sensor floor)
+
+升格原因：sensor 升级是 deployment-realism 视角下的最 obvious lever（更多前向流场 advance warning → 理论上 actor 能预判流场结构）。该 lever 失效（−2 pp 在噪声内）说明边界**不在 sensor 维度**，而在「u10 upstream 流速 + crosscomp 行为分布」共同决定的 task-dataset 上限。
+
+### 6.2 Secondary: reward governs failure mode, not ceiling
+
+观察 termination 分布在 5 个配置之间的切换模式：
+- **eff_v2 (P1)**：timeout-dominated (77.5 / 0)——actor 保守，几乎全程留在边界内但超时
+- **arr_v2_s (Abl A/C) 与 sensor 升级 (C1-s1)**：timeout/oob mixed (~53 / ~26)——actor 更激进探索，但激进没转化为更多 goal，反而 mean_R 恶化（−381 vs −371）
+
+reward landscape **决定** actor 的 timeout-vs-oob 倾向（保守 vs 激进），但 **不决定** success ceiling。这是更强的 task-fundamental 信号——即使 actor 探索行为模式被 reward / sensor 改变，goal-reaching 的物理上限不动。
+
+### 6.3 ReBRAC β floor 的教科书表现
+
+Ablation C 的 epoch sensitivity（64 / 128 / 192 / 256）在 100-ep test 上 epoch 192 与 256 **所有数字一字不差**——actor 已 deterministic-locked。convergence diagnostic 显示 critic 末段还在 +44.8% 上升、actor 已被 BC anchor 钉死，验证了 ReBRAC 在 sensor-info-deficient 条件下的 β floor signature：critic 仍在 fitting Q-landscape，但 actor 不能越界。C1-s1 的 sensor 升级也不能改变这一点——这是 BC penalty 机制本身在 task-fundamental 边界下的体现。
+
+## 7. Implications
+
+### 7.1 Paper-narrative 升级建议（主报告下一次 retrofit 时集成）
+
+C1 spoke 的论文角色从「sensor floor demonstration + sensor upgrade unlocks deployment（双向证据）」改写为：
+
+> **C1 demonstrates a deployment-impossible boundary**: four independent interventions（reward landscape / privileged asym critic / 4× training budget / deployable sensor upgrade s0 → s1）all fail to break the 0.195–0.225 ceiling. Reward governs failure mode but not ceiling. upstream u10 + crosscomp dataset is a task-fundamental floor on all deployable sensors.
+
+与 Stage D Phase 2 finding（cross_stream + worldcomp dataset 上 deployable→teacher gap 关闭 ~52~58%）形成完整 deployability map：
+- **deploy-graded 区间**（cross_stream + worldcomp，s0）：algorithmic lever 有效（ReBRAC + deployable obs 已可关闭主要 gap）
+- **deploy-impossible 区间**（upstream u10 + crosscomp，s0/s1）：4 维度 lever 全失效 → 任务-数据集物理边界
+
+两个 finding 合在一起为 sim2real 论文提供**完整的 deployability 谱系**：哪些任务 deployable 可解（algorithmic）、哪些是物理边界（task fundamental）。
+
+### 7.2 C1-s2 不再触发
+
+原 verdict gate 中的 0.30–0.50 区间对应 C1-s2 (s2, 4 probes, 16-D) follow-up。C1-s1 实测落在 < 0.30 → 边界**不在 sensor 维度**，s2 升级（信息量更高）很可能也落在同一区间，trade-off 与 cost (~2h L4) 不值得；记入 backlog 但不在当前 broad validation 范围内执行。
+
+### 7.3 可选 follow-up: target_speed=2.0 (downstream)
+
+把 `target_speed` 从 1.5 提升到 2.0（顺流方向更快）测试是否解锁 deployability。单 seed P1 probe ~1h L4：
+- success ≥ 0.5 → 验证「u10 upstream 是 task-fundamental，但更高目标速度反向更易」→ 触发更细 ablation
+- success < 0.3 → 进一步确认「u10 upstream + crosscomp 在所有 task-tunable parameter 下都接近 floor」
+
+记入 plan Task 11A Step 9 backlog。
+
+## 8. Outputs
+
+```
+offline_data/
+  crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/
+    transitions.npz
+    metadata.json
+    sanity_card.json    # collector_success_rate=1.0, obs_dim=48, n_transitions=268329
+
+checkpoints/offline/rebrac/c1_s1_sensor_upgrade/
+  crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/
+    actorb_4p0__criticb_2p0/
+      seed_42/agent_final.pt + trainer_state.json + train_log.jsonl
+      seed_44/agent_final.pt + trainer_state.json + train_log.jsonl
+
+results/offline/rebrac/c1_s1_sensor_upgrade/
+  crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/
+    actorb_4p0__criticb_2p0/test/
+      seed_42.json   # success=0.21, mean_R=-379.98
+      seed_44.json   # success=0.20, mean_R=-383.42
+
+notebooks/
+  rebrac_c1_s1_sensor_upgrade_completed.ipynb    # 完整 run-archive
+```
+
+## 9. Limitations of this follow-up
+
+1. **2 seeds**：与 P1 anchor 5 seeds 不对称；3-pp 总区间小于 single-run 噪声半径已足以支撑 verdict，但严格的 effect-size CI 需要升 5-seed × bootstrap。优先级低，因为 5 个配置的 ceiling 一致性已是更强的统计证据。
+2. **C1-s2 (4 probes 16-D) 未跑**：理论上更高维 sensor 升级可能在 < 0.30 verdict 之外突破，但 s0→s1 几乎同 success（差 −2 pp）已强烈暗示边界不在 sensor 维度；s2 backlog 优先级低。
+3. **`target_speed=2.0` 未测**：当前 task 物理上限假设是 "u10 upstream 流速 + 1.5 m/s 目标速度" 的组合；速度提升是否解锁 deployability 未验证。
+4. **主报告未集成**（per user direction 2026-05-07）：本 follow-up 的发现暂未融入主 `rebrac_experiment_report.md` §10A 主线；主报告对 C1 spoke 的论文叙事到 §10A.3 sensor-floor 为止。下一次主报告 retrofit 时统一升格集成。

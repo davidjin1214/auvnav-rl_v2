@@ -78,7 +78,7 @@
 - s1 (12-D, DVL + 短程 ADCP) 同样失败 → sensor 维度不是 deployability lever
 - 4 个独立干预（reward / privileged critic / 4× budget / sensor 升级）全部钉在同一 ceiling
 
-C1 spoke (`crosscomp / upstream / u10 / Re150`) 是一个 **deployment-impossible boundary**——upstream u10 流速 + crosscomp dataset 在所有 deployable sensor 上的物理上限。
+C1 spoke (`crosscomp / upstream / u10 / Re150 / target_speed=1.5`) 是一个 **deployment-impossible task-dataset combination at deployable sensors s0/s1**——upstream u10 流速 + crosscomp dataset + target_speed=1.5 在 deployable sensors s0/s1 上的物理上限。s2 (16-D) 与 target_speed=2.0 未测，记入 §7 backlog。
 
 ## 6. Findings
 
@@ -86,17 +86,22 @@ C1 spoke (`crosscomp / upstream / u10 / Re150`) 是一个 **deployment-impossibl
 
 升格原因：sensor 升级是 deployment-realism 视角下的最 obvious lever（更多前向流场 advance warning → 理论上 actor 能预判流场结构）。该 lever 失效（−2 pp 在噪声内）说明边界**不在 sensor 维度**，而在「u10 upstream 流速 + crosscomp 行为分布」共同决定的 task-dataset 上限。
 
-### 6.2 Secondary: reward governs failure mode, not ceiling
+### 6.2 Secondary: reward 与 sensor 都是 failure-mode 的独立 driver，但都不动 ceiling
 
 观察 termination 分布在 5 个配置之间的切换模式：
-- **eff_v2 (P1)**：timeout-dominated (77.5 / 0)——actor 保守，几乎全程留在边界内但超时
-- **arr_v2_s (Abl A/C) 与 sensor 升级 (C1-s1)**：timeout/oob mixed (~53 / ~26)——actor 更激进探索，但激进没转化为更多 goal，反而 mean_R 恶化（−381 vs −371）
+- **eff_v2 + s0 (P1)**：timeout-dominated (77.5 / 0)——actor 保守，几乎全程留在边界内但超时
+- **arr_v2_s + s0 (Abl A/C)**：timeout/oob mixed (~53 / ~26)——保 reward 不变换 reward 后 actor 更激进
+- **eff_v2 + s1 (C1-s1)**：timeout/oob mixed (53.5 / 26.0)——保 reward 不变只换 sensor，actor **同样**变激进
 
-reward landscape **决定** actor 的 timeout-vs-oob 倾向（保守 vs 激进），但 **不决定** success ceiling。这是更强的 task-fundamental 信号——即使 actor 探索行为模式被 reward / sensor 改变，goal-reaching 的物理上限不动。
+⚠ **重要订正**：原稿曾写「reward governs failure mode」是错的。C1-s1 与 P1 **同 reward** (eff_v2)，仅 sensor 升级 s0→s1 就把 0 oob 翻到 26 oob。**reward 与 sensor 都是独立 driver**：两条不相交的路径（换 reward 或换 sensor）都能把 timeout-only (77.5/0) 翻到 mixed (~53/~26)。
 
-### 6.3 ReBRAC β floor 的教科书表现
+但 **无论 failure mode 如何切换**，goal-reaching ceiling 都钉在 0.195–0.225。这是更强的 task-fundamental 信号——actor 行为模式（保守 vs 激进）被两个独立 driver 各自调节，goal-reaching 的物理上限却不动 → ceiling 来自 task / data 更上游，不是 actor 探索风格的 function。
 
-Ablation C 的 epoch sensitivity（64 / 128 / 192 / 256）在 100-ep test 上 epoch 192 与 256 **所有数字一字不差**——actor 已 deterministic-locked。convergence diagnostic 显示 critic 末段还在 +44.8% 上升、actor 已被 BC anchor 钉死，验证了 ReBRAC 在 sensor-info-deficient 条件下的 β floor signature：critic 仍在 fitting Q-landscape，但 actor 不能越界。C1-s1 的 sensor 升级也不能改变这一点——这是 BC penalty 机制本身在 task-fundamental 边界下的体现。
+### 6.3 ReBRAC β floor signature（待 BC penalty sweep 验证）
+
+Ablation C 的 epoch sensitivity（64 / 128 / 192 / 256）在 100-ep test 上 epoch 192 与 256 **所有数字一字不差**——actor 已 deterministic-locked。convergence diagnostic 显示 critic 末段还在 +44.8% 上升、actor 已被 BC anchor 钉死，看上去像 ReBRAC 在 sensor-info-deficient 条件下的 β floor signature：critic 仍在 fitting Q-landscape，但 actor 不能越界。C1-s1 的 sensor 升级也不能改变这一点。
+
+⚠ **论证缺口**：当前论证依赖「critic 仍动 + actor 不动 = β floor」的解读，但严格的 β floor 判定应通过 **BC penalty 强度 sweep**（β1 ∈ {0, 1, 2, 4, 8}）：若降 β1 不能恢复 success → β floor 升格为 task-fundamental 现象（actor 即使从 BC anchor 释放也碰不到更高的 success）；若降 β1 能恢复 → 当前 ceiling 是 BC penalty 的副产品而非 task-fundamental。**该 sweep 未做**，记入 §7 backlog。
 
 ## 7. Implications
 
@@ -104,7 +109,7 @@ Ablation C 的 epoch sensitivity（64 / 128 / 192 / 256）在 100-ep test 上 ep
 
 C1 spoke 的论文角色从「sensor floor demonstration + sensor upgrade unlocks deployment（双向证据）」改写为：
 
-> **C1 demonstrates a deployment-impossible boundary**: four independent interventions（reward landscape / privileged asym critic / 4× training budget / deployable sensor upgrade s0 → s1）all fail to break the 0.195–0.225 ceiling. Reward governs failure mode but not ceiling. upstream u10 + crosscomp dataset is a task-fundamental floor on all deployable sensors.
+> **C1 demonstrates a deployment-impossible task-dataset combination at deployable sensors s0/s1 and target_speed=1.5**: four independent interventions（reward landscape / privileged asym critic / 4× training budget / deployable sensor upgrade s0 → s1）all fail to break the 0.195–0.225 ceiling. Reward 与 sensor 各自独立 modulate failure mode (timeout-only ↔ timeout/oob mixed)，but neither moves the goal-reaching ceiling. upstream u10 + crosscomp dataset 在 deployable sensors s0/s1 与 target_speed=1.5 下构成 task-fundamental floor；s2 (16-D) 与 target_speed=2.0 未测，记入 backlog。
 
 与 Stage D Phase 2 finding（cross_stream + worldcomp dataset 上 deployable→teacher gap 关闭 ~52~58%）形成完整 deployability map：
 - **deploy-graded 区间**（cross_stream + worldcomp，s0）：algorithmic lever 有效（ReBRAC + deployable obs 已可关闭主要 gap）

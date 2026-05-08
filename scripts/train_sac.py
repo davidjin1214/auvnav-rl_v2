@@ -161,7 +161,13 @@ def apply_resume_defaults(args: argparse.Namespace, parser: argparse.ArgumentPar
     }
     for arg_name, state_name in train_arg_map.items():
         apply_default(arg_name, train_state.get(state_name))
-    apply_default("checkpoint_dir", trainer_state.get("checkpoint_dir"))
+
+    saved_ckpt_dir = trainer_state.get("checkpoint_dir")
+    if saved_ckpt_dir is not None and getattr(args, "checkpoint_dir") == parser.get_default("checkpoint_dir"):
+        ckpt_path = Path(saved_ckpt_dir)
+        if not ckpt_path.is_absolute():
+            ckpt_path = (Path(args.resume) / ckpt_path).resolve()
+        args.checkpoint_dir = str(ckpt_path)
 
     apply_default("flow", trainer_state.get("flow_path"))
     apply_default("eval_manifest", trainer_state.get("eval_manifest"))
@@ -442,6 +448,13 @@ def train(args: argparse.Namespace) -> None:
         resume_path=args.resume,
     )
 
+    if start_step >= train_cfg.total_env_steps:
+        print(
+            f"[skip] resumed env_step={start_step:,} >= total_env_steps={train_cfg.total_env_steps:,}; "
+            f"nothing to train. raise --total-steps to extend."
+        )
+        return
+
     obs, info = env.reset(seed=train_cfg.seed + start_episode, options=reset_options)
     policy_state = agent.reset_policy_state()
     
@@ -464,7 +477,7 @@ def train(args: argparse.Namespace) -> None:
         else (info["privileged_obs"] if "privileged_obs" in info else None)
     )
 
-    for env_step in range(start_step + 1, (train_cfg.total_env_steps // num_envs) + 1):
+    for env_step in range(start_step // num_envs + 1, (train_cfg.total_env_steps // num_envs) + 1):
         global_step = env_step * num_envs
         if global_step <= train_cfg.random_steps:
             action = env.action_space.sample()

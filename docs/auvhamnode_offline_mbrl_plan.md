@@ -1,9 +1,9 @@
 # AUVHamNODE-based Offline RL:Cross-Domain Transfer via Frozen Physics-Structured 1-Step Dynamics
 
-**版本**:v2.1
-**日期**:2026-05-09
-**状态**:locked plan,待 fire-condition 满足后启动(见 §11.1)
-**前序**:v1.0(2026-05-06)consolidated plan → v2.0(2026-05-08)经 v2.1/v2.2 严格审查迭代后定型 → **v2.1(2026-05-09)RL 专家 meta-review patch:Phase 0 新增 F 测试(critic Q overestimation hard gate)、§5.2 明确 done flag / wake time index / σ_a sampling 协议、§5.4 主对照升 5-seed 加 mix-ratio pilot、§5.5 改 paired bootstrap 95% CI 检验、§11.1 重写 fire-condition**
+**版本**:v2.1(2026-05-10 amendment:§11.1.0 零号前置增补)
+**日期**:2026-05-09(原版)/ 2026-05-10(amendment)
+**状态**:locked plan,待 §11.1.0 零号前置 + §11.1.1 fire-condition 路径满足后启动
+**前序**:v1.0(2026-05-06)consolidated plan → v2.0(2026-05-08)经 v2.1/v2.2 严格审查迭代后定型 → **v2.1(2026-05-09)RL 专家 meta-review patch:Phase 0 新增 F 测试(critic Q overestimation hard gate)、§5.2 明确 done flag / wake time index / σ_a sampling 协议、§5.4 主对照升 5-seed 加 mix-ratio pilot、§5.5 改 paired bootstrap 95% CI 检验、§11.1 重写 fire-condition** → **v2.1 amendment(2026-05-10):新增 §11.1.0 零号前置(checkpoint + wrapper + audit table),修正 §11.1 路径 A/B/C 共享前置的疏漏**
 **作者**:基于 [`docs/offline_mbrl_plan/`](offline_mbrl_plan/) 下 6 份草案的批判性合并 + Plan B(`NODE_IQL_FQL_SORL_revised_roadmap_v3.md`)的选择性吸收 + audit 后简化 + v2.1 RL 专家审查反馈整合
 
 ---
@@ -23,6 +23,7 @@
 | 9 | P1 | Probe wake field 时间 index 协议明确(用 dataset frame t+1) | §5.2 步骤 4 |
 | 10 | P1 | privileged_obs 在 augmented transition 上的 hull-integral 生成(Path B 工程量警示) | §5.3 hint |
 | 11 | P1 | Reward 重算的 progress / terminal 项分别处理 | §5.2 步骤 5 |
+| **12** | **P0** | **§11.1.0 零号前置:checkpoint + wrapper + audit table 入库(2026-05-10 amendment 增补)** | **§11.1.0** |
 
 ---
 
@@ -512,27 +513,68 @@ NODE feature 可独立叠到 ReBRAC critic 上,不需要换算法主干。
 | ReBRAC broad validation(S2 P1 等) | 在跑;**B1 sensor spoke** 已 paper-quality 闭环;**C1 BC-penalty sweep** 列为 future work §5.3 未排期 | 本方案的 dataset 选择和 reward 配置由这里产出 |
 | **本方案(offline RL with frozen AUVHamNODE)** | **planning(v2.1 locked)** | fire-condition 见 §11.1 |
 
-### 11.1 Fire-condition(v2.1 重写)
+### 11.1 Fire-condition(v2.1 重写;2026-05-10 修订增补 §11.1.0 零号前置)
 
 v2.0 原文 fire-condition "ReBRAC paper revision 收尾 + broad validation 至少 1 项 mechanism discriminator 闭环" 与 broad validation 实际排期不匹配:
 
 - broad validation **B1 (sensor s1)** 已闭环,但**不是 mechanism discriminator**(B1 是协议变量改变,不是机制 ablation)
 - broad validation **C1 BC-penalty sweep**(首选 mechanism discriminator)被列为 [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) 的 future work §5.3,**未排期**
 
-为避免无限期等待,v2.1 重新定义 fire-condition:
+为避免无限期等待,v2.1 重新定义 fire-condition。
 
-**Fire-condition(满足任一即可启动 Phase 0)**:
+#### 11.1.0 零号前置(2026-05-10 增补,**所有路径共享的硬前置**)
 
-| 路径 | 满足条件 | paper claim 支撑度 |
+下列 dynamics-model 侧基础设施**必须先入库**,否则即使 fire-condition 满足也无法启动 Phase 0:
+
+| 资产 | 当前状态(2026-05-10 核查) | 责任方 |
+|---|---|---|
+| `auv_nav/auvhamnode.py`(wrapper) | ✗ 不存在 | 本方案作者编写,wraps 上游 checkpoint |
+| `auv_nav/dynamics_ensemble.py`(wrapper) | ✗ 不存在 | 同上 |
+| `scripts/generate_model_augmented_buffer.py` | ✗ 不存在 | 同上 |
+| `tests/test_auvhamnode_wrapper.py` | ✗ 不存在 | 同上 |
+| `tests/test_vehicle_oracle_phase0.py`(§4.2 B) | ✗ 不存在 | 同上 |
+| `checkpoints/auvhamnode/<name>.pt` + metadata | ✗ 不存在 | **AUVHamNODE 上游工作 export** |
+| `checkpoints/dynamics_ensemble/<name>.pt` + N 个 ensemble 成员 | ✗ 不存在 | 同上 |
+| **§4.2 G 要求的 protocol audit table**(参数量、训练数据、训练 epoch、LR、ensemble size N) | ✗ 不存在 | AUVHamNODE 上游工作提供,本方案作者归档 |
+
+**已就绪侧**:
+
+| 资产 | 状态 |
+|---|---|
+| `wake_data/` | ✓ 5 组 wake field(dummy / sbs Re150 + Re250 / tandem Re150 + Re250),含 `_meta.json` 与 `_phase.npy` |
+| `offline_data/` | ✓ broad_validation 多个 cell 的 dataset(crosscomp / worldcomp 等)已生成 |
+| `auv_nav/rebrac.py` + `scripts/train_offline_rebrac.py` | ✓ ReBRAC mainline 已 paper-readiness 4/4 闭环(rev.8) |
+| `auv_nav/replay.py` `DualBufferSampler` | ✓ RLPD 双 buffer 路径已实现 |
+| `auv_nav/autopilot.py` `EquivalentCurrentModel` | ✓ Path B privileged_obs 重生成所需 |
+
+**关键路径风险**:checkpoint export 时间不在本方案作者掌控之内,而是 AUVHamNODE 上游工作的 release 排期决定。**该 ETA 是整个方案启动的唯一外部依赖**。建议:
+- 在 [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) §3.4 增加一行 status note 跟踪 checkpoint 入库 ETA
+- 若 checkpoint ETA 比 ReBRAC paper drafting 收尾还晚,wrapper / generate_model_augmented_buffer.py / 单测**可以提前**编写(用 mock NODE 跑通 pipeline),避免 checkpoint 入库后才开始 4 周 wrapper 工程
+
+#### 11.1.1 三条 fire-condition 路径
+
+**前提**:§11.1.0 零号前置全部满足。否则路径 A/B/C 全部 N/A。
+
+| 路径 | 满足条件(在零号前置之上) | paper claim 支撑度 |
 |---|---|---|
 | **路径 A(优选)** | ReBRAC paper revision 收尾 + C1 BC-penalty sweep 闭环 | 完整论文级 |
-| **路径 B(备选,排期延后超过 4 周时启用)** | ReBRAC paper revision 收尾 + B1 已闭环 + 本方案 §4.2 D 测试 D(ReBRAC 在 25% data scale 下的 saturation 测试)同时承担 mechanism discriminator 角色 | 论文级,但需在 §10.1 paper claim 中说明 mechanism discriminator 由本方案自带 |
-| **路径 C(应急)** | ReBRAC paper revision 收尾 + B1 已闭环 + AUVHamNODE checkpoint 已入库可用 | appendix-level,作为 ReBRAC paper appendix ablation |
+| **路径 B(备选,C1 sweep 排期注定晚于 ReBRAC 投稿时启用)** | ReBRAC paper revision 收尾 + B1 已闭环(✓ 当前已满足) + 本方案 §4.2 D 测试同时承担 mechanism discriminator 角色 | 论文级,但需在 §10.1 paper claim 中说明 mechanism discriminator 由本方案自带 |
+| **路径 C(应急)** | ReBRAC paper revision 收尾 + B1 已闭环 | appendix-level,作为 ReBRAC paper appendix ablation,无独立 mechanism 证据 |
 
-**资源冲突管理**:
-- 本方案 Phase 0-2A 累计 5-6 周(offline RL run 单 run ~30-45 min on L4,显著快于 online SAC)
-- Colab L4 quota 与 broad validation 共享;启动时机由 fire-condition 路径决定
-- **预算估算**:Phase 1 主对照 4 cell × 5 seed × 1.5M-grad-step ≈ 25 L4-hour;σ_a / mix ratio sweep 各 ~12 hour;总 Phase 1 约 60-80 L4-hour
+**当前(2026-05-10)各路径前置达成度速查**:
+
+| 前置项 | 状态 |
+|---|---|
+| §11.1.0 零号前置(checkpoint + wrapper + audit table) | ✗ 全部空白 |
+| ReBRAC paper revision 收尾 | drafting 中(rev.3 已合并 broad_val §3.5;method/experiment section 编写中) |
+| C1 BC-penalty sweep 闭环(路径 A) | ✗ 未排期(工程量小:1-seed probe ~5 L4-hour;5-seed 升级 ~25 L4-hour) |
+| B1 已闭环(路径 B/C) | ✓ success 0.900±0.028,Δ=−0.2pp,5-seed 完整 |
+
+#### 11.1.2 资源冲突管理
+
+- 本方案 Phase 0–2A 累计 5–6 周(offline RL run 单 run ~30–45 min on L4,显著快于 online SAC)
+- Colab L4 quota 与 broad validation 共享;启动时机由 §11.1.0 零号前置 + §11.1.1 路径选择联合决定
+- **预算估算**:Phase 1 主对照 4 cell × 5 seed × 1.5M-grad-step ≈ 25 L4-hour;σ_a / mix ratio sweep 各 ~12 hour;总 Phase 1 约 60–80 L4-hour
 
 ---
 
@@ -559,6 +601,7 @@ v2.0 原文 fire-condition "ReBRAC paper revision 收尾 + broad validation 至�
 | **明确** Probe wake field 时间 index = dataset frame t+1 snapshot | P1 | §5.2 步骤 4 | v2.0 文本未明确 augmented s̃_{t+1} 用 w_t / w_{t+1} / 插值,会偷偷引入时间错位 bias |
 | **明确** Path B privileged_obs 必须走 hull-integral 流程(非单点) | P1 | §5.3 hint | v2.0 简化为单点 wake query,Path B 实际工程量被低估(5-point hull sampling + EquivalentCurrentModel weighted integration) |
 | **明确** Reward 重算分项处理(progress 重算 + terminal 沿用 dataset) | P1 | §5.2 步骤 5 | 与"明确 done flag 协议"配套,确保 reward / done 一致性 |
+| **(2026-05-10 amendment)新增** §11.1.0 零号前置:checkpoint + wrapper + audit table 入库 | P0 | §11.1.0 | v2.1(2026-05-09)原文 §11.1 路径 A/B 条件未明示 dynamics-model 侧基础设施依赖,实际所有路径都共享此硬前置;2026-05-10 仓库现状核查显示 checkpoint / wrapper / audit table 全部空白,该 ETA 是整个方案启动的唯一外部依赖 |
 
 ### A.2 v1.0 → v2.0(2026-05-08)
 
@@ -593,5 +636,5 @@ v2.0 原文 fire-condition "ReBRAC paper revision 收尾 + broad validation 至�
 
 ---
 
-*文档版本:v2.1(2026-05-09,locked plan,经 RL 专家 meta-review patch)*
-*下次更新:Phase 0 ablation 完成后写入实测数值;P2 条目(critic 配对、held-out flow、σ_eval、verifier sampling、ODE solver、Q overestimation monitor、近期 foundation model baseline 对比、checkpoint 入库依赖、25% baseline ceiling sanity)在作者下一轮 review 时整合。*
+*文档版本:v2.1(2026-05-09 RL 专家 meta-review patch,2026-05-10 §11.1.0 零号前置 amendment)*
+*下次更新:Phase 0 ablation 完成后写入实测数值;P2 条目(critic 配对、held-out flow、σ_eval、verifier sampling、ODE solver、Q overestimation monitor、近期 foundation model baseline 对比、25% baseline ceiling sanity)在作者下一轮 review 时整合。*

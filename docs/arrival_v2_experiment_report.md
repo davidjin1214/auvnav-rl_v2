@@ -209,12 +209,16 @@
 Gate 五条与 [设计 §8.3] 同口径；四个 phase 各自独立判定。
 
 **复现路径**：
-- §7.1 / §7.2：[`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb)
-- §7.3 / §7.4：[`notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb`](../notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb)
+- §7.1 / §7.2：scaffold [`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb) / archival [`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation_completed.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation_completed.ipynb)
+- §7.3 / §7.4：archival [`notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb`](../notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb)
 
 **Combined gate JSONs**：
 - 单柱二组：[`experiments/arrival_v2_prototype/single_u15_seed42_1M_control_summary/combined_gate_summary.json`](../experiments/arrival_v2_prototype/single_u15_seed42_1M_control_summary/combined_gate_summary.json)（`both_pass: true`）
 - 双柱二组：[`experiments/arrival_v2_prototype/topology_validation_summary/combined_gate_summary.json`](../experiments/arrival_v2_prototype/topology_validation_summary/combined_gate_summary.json)（`both_pass: true`）
+
+**Figures (paper-ready, gitignored)**：
+- 4 训练曲线 + 4 终态条形图 + 4 单回合轨迹（PDF/PNG, 138 mm 单栏）+ 4 逐帧动画（GIF）落在 `figures/arrival_v2_strict_control_validation/`（受 `.gitignore: figures/` 屏蔽，仅本机 / Drive 留档）。指标释义与图轴语义见目录内 [`README.md`](../figures/arrival_v2_strict_control_validation/README.md) + [`manifest.json`](../figures/arrival_v2_strict_control_validation/manifest.json)。
+- 生成入口：scaffold [`notebooks/sac_arrival_v2_strict_control_visualization.ipynb`](../notebooks/sac_arrival_v2_strict_control_visualization.ipynb) / archival [`notebooks/sac_arrival_v2_strict_control_visualization_completed.ipynb`](../notebooks/sac_arrival_v2_strict_control_visualization_completed.ipynb)。
 
 ### 7.1 Single + cross_stream（`single_u15_cross_tgt15`）
 

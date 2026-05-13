@@ -98,3 +98,8 @@ temp/
 wake_data/
 offline_data/
 .claude/
+docs/offline_mbrl_plan
+
+# AUVHamNODE checkpoint + reference simulator (kept on-disk but not tracked;
+# AUVHamNODE+MBRL line paused 2026-05-13, see docs/auvhamnode_mbrl_line_pause_memo.md)
+phnode_full_oc_clean/

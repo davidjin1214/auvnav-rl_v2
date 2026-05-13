@@ -25,9 +25,9 @@
 | **Phase 1 — TD3+BC baseline 收口** | 2026-Q1 → ~2026-04 | TD3+BC（D4RL 经典 single-BC 作算法基线） | ✅ 已收口（不再扩展） | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
 | **Phase 2 — ReBRAC 主线** | ~2026-04 → 2026-05-07 | ReBRAC（dual-BC + critic-side BC penalty） | ✅ 主线 paper-ready 4/4 closed (rev.8) | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) |
 | **Phase 2.5 — Broad validation（standalone）** | 2026-05-04 → 2026-05-07 | ReBRAC 跨三轴 generality 广验 + C1 deep-dive | ⚠ 8 spoke 5-seed parity 完成；6/8 work-in-progress，**结论尚不达 paper-quality** | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) |
-| **Phase 3 — AUVHamNODE Offline MBRL** | 2026-05-06 起 | AUVHamNODE world model + offline MBRL | 📋 计划态（v1.0 plan，待 ReBRAC 收尾后启动） | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) |
+| **Phase 3 — AUVHamNODE Offline RL(cross-domain transfer)** | 2026-05-06 → 2026-05-13 | frozen AUVHamNODE 1-step prior + ReBRAC augmentation | ⏸ **PAUSED 2026-05-13**(原状态 v2.1 locked → α 路径 Step 0-4 审计 → 4 项硬接口差异 + wake current 2-4× OOD 暴露;用户决定暂停) | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★ |
 
-**当前位置**：Phase 2 主线已 freeze；Phase 2.5 广验保持 standalone 等下游 sweep 闭环；Phase 3 plan v1.0 待 fire。
+**当前位置**：Phase 2 主线已 freeze；Phase 2.5 广验保持 standalone 等下游 sweep 闭环；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)。
 
 ---
 
@@ -122,18 +122,27 @@
 
 **关键决策（2026-05-07）**：广验 + c1_s1 保持 standalone，**不回写**主报告 / mainline_review。理由 + retrofit trigger condition 见 §2.1 与 [`broad_validation_report`](rebrac_broad_validation_report.md) 头部 status note。
 
-### 3.4 Phase 3 — AUVHamNODE Offline MBRL（计划态）
+### 3.4 Phase 3 — AUVHamNODE Offline RL（⏸ PAUSED 2026-05-13）
 
-**入口**：[`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) (v1.0, 2026-05-06)
+**Anchor 入口**:[`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★(pause 详情 + 累计决策 + 恢复条件 + 文件清单)
 
-**v1.0 status**：批判性合并了 [`docs/offline_mbrl_plan/`](offline_mbrl_plan/) 下 5 份草案；v1.0 是**唯一活跃入口**，5 份草案已被吸收。
+**简要时间轴**:
+- 2026-05-06: v1.0 plan(批判性合并 5 份 `docs/offline_mbrl_plan/` 草案)
+- 2026-05-08: v2.0 locked(升级到 cross-domain transfer framing,Plan B 算法栈撤销)
+- 2026-05-09 ~ 05-10: v2.1 + amendment(RL 专家 meta-review;§11.1.0 零号前置增补)
+- 2026-05-12: 战略转折——ReBRAC mainline + paper + broad_validation 暂停;主线试图转 MBRL+arrival_v2;v3 pre-notes 落地(α 路径)
+- 2026-05-13: Step 0-4 廉价审计完成(详见 [`experiments/auvhamnode_spike/`](../experiments/auvhamnode_spike/));**4 项硬接口差异 + wake current 2-4× OOD 暴露**;用户决定暂停整条线
 
-**核心思路**（详见 plan §0–§1）：
-- World model = AUVHamNODE（Hamiltonian Neural ODE 引入 AUV 物理结构先验）
-- Offline MBRL 框架: world model rollout 增广 + ReBRAC actor-critic
-- 跨线复用：online 线 [`auv_nav/autopilot.py`](../auv_nav/autopilot.py) `EquivalentCurrentModel` + offline 线 [`auv_nav/rebrac.py`](../auv_nav/rebrac.py) ReBRAC agent
+**累计决策**(pause memo §4):
+- ✅ `mytorch1` env 可驱动 AUVHamNODE checkpoint
+- ✅ 6/7 个条件轴对齐;唯一不对齐的是海流 v_c_n 幅度(2-4× 训练分布外)
+- ✅ `vehicle.py` 不要换 `remus100_core.py`(swap 修 30% 问题,余 70% 无解)
+- ✅ arrival_v2 reward 在 `auv_nav/reward.py` 已 in-tree,与本线解耦
+- ⏸ Path 1B spike-lite(~5h kill-test)未执行
 
-**触发条件**：等 ReBRAC paper revision 收尾 + broad validation 下游 sweep 状态稳定后再 fire。
+**未做**(pause memo §5):未跑 spike;3/6 wake 文件统计缺失;Path 2 finetune 可行性未确认;Path 4 vehicle.py oracle 未细化;AUVHamNODE 训练 dataset 未取回。
+
+**恢复条件**(pause memo §6):AUVHamNODE 上游 pipeline 可访问 OR wake-compatible 数据生成 OR 项目转低速任务 OR 用户主动恢复。
 
 ---
 
@@ -160,9 +169,11 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) §4.3 列了 D4RL-style SAC collector 作为 broad validation **平行第四轴**（不替代 A2 mix5050），spec 未定。本线消费方角度：等 §4.2 下游 sweep 收敛后再决定是否真的需要 RL-trained behavior policy 数据集。
 
-### 4.4 AUVHamNODE Offline MBRL fire 时机
+### 4.4 AUVHamNODE Offline RL(⏸ PAUSED 2026-05-13)
 
-ReBRAC paper revision 收尾 + 广验下游 sweep 至少 1 项闭环后启动。
+整条线已 paused,**不在当前 backlog 内**。Anchor 见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md);恢复条件见同文 §6;恢复时 first step 见 §7。
+
+短期不需要的工作:Path 1B spike-lite 实施、Path 2 finetune 评估、Path 4 vehicle.py oracle plan 起草、AUVHamNODE 上游 dataset 取回。这些都在 pause memo §5 留作债务表。
 
 ---
 
@@ -180,7 +191,8 @@ ReBRAC paper revision 收尾 + 广验下游 sweep 至少 1 项闭环后启动。
 | Broad validation 三轴 8 spoke 全表 | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3 |
 | C1 spoke task-fundamental floor 候选证据链 | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3.5 + [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) |
 | TD3+BC baseline 详细收口 | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
-| AUVHamNODE Offline MBRL 计划 | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) |
+| AUVHamNODE Offline MBRL 线为何 paused / 累计决策 / 恢复条件 | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★(pause anchor) |
+| AUVHamNODE Offline MBRL 历史 plan(paused) | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md)(v2.1, paused) + [`auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) + [`experiments/auvhamnode_spike/`](../experiments/auvhamnode_spike/) |
 | Env / sensor / reward / benchmark 规格 | [`docs/environment_design.md`](environment_design.md) |
 | World model + offline RL 综述 | [`docs/world_model_and_offline_rl_survey.md`](world_model_and_offline_rl_survey.md) |
 | RLPD 设计（offline-to-online，跨线复用） | [`docs/rlpd_design.md`](rlpd_design.md) |
@@ -226,12 +238,16 @@ ReBRAC paper revision 收尾 + 广验下游 sweep 至少 1 项闭环后启动。
 | [`rlpd_design.md`](rlpd_design.md) | RLPD 设计（online + offline 跨线复用） |
 | [`environment_design.md`](environment_design.md) | Env / sensor / reward / benchmark 规格（跨线共享） |
 
-#### E. Offline MBRL 下一阶段（计划态）
+#### E. Offline RL 下一阶段(⏸ AUVHamNODE+MBRL 线已 paused 2026-05-13)
 
 | 文件 | 状态 |
 |---|---|
-| [`auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) (v1.0, 2026-05-06) ★ | 唯一活跃入口 |
-| [`offline_mbrl_plan/`](offline_mbrl_plan/) 下 5 份草案 | 已被 v1.0 批判性合并吸收；deprecated banner 待加 |
+| [`auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★ | **pause anchor**(累计决策 + 恢复条件 + 未做的事 + 文件清单)。**任何 resume 工作必读** |
+| [`auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md)(v2.1) | ⏸ paused;原 v1.0 → v2.0 → v2.1 三轮迭代 plan;顶部 banner 已加 |
+| [`auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) | ⏸ paused;α 路径交接备忘(4 项硬接口差异);顶部 banner 已加 |
+| [`experiments/auvhamnode_spike/`](../experiments/auvhamnode_spike/)(Step 0-4 审计 + spike-lite 设计 + decision memo) | ⏸ Step 0-4 ✅;Path 1B spike 未执行 |
+| [`offline_mbrl_plan/`](offline_mbrl_plan/) 下 6 份草案 | 已被 v2.0 批判性合并/选择性吸收;6 份均已加 deprecated banner |
+| [`offline_rl_implementation_plan.md`](offline_rl_implementation_plan.md)(rev.5, 2026-04-22) | 已 deprecated(XQL/FQL 主线撤销);TD3+BC / ReBRAC 段落仍可作论文引用源 |
 
 ### 5.3 实验数据 / checkpoints / offline data
 
@@ -275,10 +291,10 @@ ReBRAC paper revision 收尾 + 广验下游 sweep 至少 1 项闭环后启动。
 | **2 小时** | + [`rebrac_experiment_report.md`](rebrac_experiment_report.md) §1 + §10（主线总结） + [`rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §0 + §3（广验摘要 + 全表） |
 | **1 天** | + [`rebrac_experiment_plan.md`](rebrac_experiment_plan.md) §1–§5（动机 / stage 设计） + [`rebrac_experiment_report.md`](rebrac_experiment_report.md) §7 选段（具体 stage per-seed） |
 | **想看 baseline 故事** | + [`td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) §1 |
-| **想看未来方向** | + [`auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) §0–§1 |
+| **想看 paused 的 AUVHamNODE+MBRL 线** | [`auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md)(累计决策 + 恢复条件) |
 
 ---
 
 ## 7. 一句话总结
 
-Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure（Phase 0c 5 文档已归档）+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + 三轴 broad validation 8 spoke 5-seed parity**；主线 paper drafting 进入 revision 阶段；广验与 c1_s1 follow-up 因结果尚不达 paper-quality（mechanism discriminator 如 BC penalty sweep on C1 / mix ratio sweep / target_speed=2.0 P1 / paired bootstrap 未做）**保持 standalone 不回写主线**；下一阶段是 AUVHamNODE Offline MBRL（v1.0 plan 待 fire）。
+Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;广验与 c1_s1 follow-up 因结果尚不达 paper-quality(mechanism discriminator 如 BC penalty sweep on C1 / mix ratio sweep / target_speed=2.0 P1 / paired bootstrap 未做)**保持 standalone 不回写主线**;**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md))。

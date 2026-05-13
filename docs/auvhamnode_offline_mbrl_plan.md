@@ -1,8 +1,12 @@
 # AUVHamNODE-based Offline RL:Cross-Domain Transfer via Frozen Physics-Structured 1-Step Dynamics
 
+> **⚠ PAUSED 2026-05-13** — 本线已暂停。详情、累计决策、恢复条件全部记录在 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md)。本文(v2.1 plan)保留作历史 + resume 起点;**直接照此 plan 实施前**必须先读 pause memo §4(累计决策)与 §5(未做的事),否则会重复已做过的 Step 0-4 审计。
+>
+> Pause 期间影响:v2.1 §11.1 fire-condition 路径 A/B/C 已被 v3 pre-notes §3 的 4 项硬接口差异叠加暂停决策**取代**;v2.1 §4.2 A 阈值"normalized MSE < 0.1"在 wake U=1.5 上已被审计判定不可达。
+
 **版本**:v2.1(2026-05-10 amendment:§11.1.0 零号前置增补)
 **日期**:2026-05-09(原版)/ 2026-05-10(amendment)
-**状态**:locked plan,待 §11.1.0 零号前置 + §11.1.1 fire-condition 路径满足后启动
+**状态**:**PAUSED 2026-05-13**(原状态:locked plan,待 §11.1.0 零号前置 + §11.1.1 fire-condition 路径满足后启动)
 **前序**:v1.0(2026-05-06)consolidated plan → v2.0(2026-05-08)经 v2.1/v2.2 严格审查迭代后定型 → **v2.1(2026-05-09)RL 专家 meta-review patch:Phase 0 新增 F 测试(critic Q overestimation hard gate)、§5.2 明确 done flag / wake time index / σ_a sampling 协议、§5.4 主对照升 5-seed 加 mix-ratio pilot、§5.5 改 paired bootstrap 95% CI 检验、§11.1 重写 fire-condition** → **v2.1 amendment(2026-05-10):新增 §11.1.0 零号前置(checkpoint + wrapper + audit table),修正 §11.1 路径 A/B/C 共享前置的疏漏**
 **作者**:基于 [`docs/offline_mbrl_plan/`](offline_mbrl_plan/) 下 6 份草案的批判性合并 + Plan B(`NODE_IQL_FQL_SORL_revised_roadmap_v3.md`)的选择性吸收 + audit 后简化 + v2.1 RL 专家审查反馈整合
 

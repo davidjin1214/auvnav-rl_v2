@@ -1,8 +1,12 @@
 # AUVHamNODE Offline MBRL — v3.0 Pre-Notes(交接备忘)
 
+> **⚠ PAUSED 2026-05-13** — 本备忘的 α 路径(spike + audit → v3.0 plan)已完成 Step 0-4 审计,但因用户决定暂停本线,**v3.0 plan 未写、Path 1B spike-lite 未执行**。详情、累计决策、resume 起点见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md)。
+>
+> 本文继续作为 resume 时的次要 anchor:§3 的 4 项硬接口差异、§7 的下一步动作清单、§9 的 open questions 在恢复时仍是有效起点;但**必须先读 pause memo §4 与 §5** 才能避免重做。
+
 **版本**:v3 pre-notes
 **日期**:2026-05-13
-**状态**:战略转折已确定 + 接口差异已发现 + 用户选 α 推进路径;v3.0 plan 待写
+**状态**:**PAUSED 2026-05-13**(原状态:战略转折已确定 + 接口差异已发现 + 用户选 α 推进路径;v3.0 plan 待写)
 **前序**:[`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) v2.1(commits `4367474` + `e95dea5`)
 **用途**:在 /compact 后,本备忘是 v3.0 plan 工作的自包含交接;不依赖任何对话历史
 

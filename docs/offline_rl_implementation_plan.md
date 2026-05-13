@@ -1,6 +1,13 @@
 # 离线强化学习实现方案与计划
 
-> 文档版本：2026-04-22 rev.5
+> **⚠ DEPRECATED 2026-05-08(2026-05-13 update)** — 本文档(rev.5,2026-04-22)的"算法阶梯 TD3+BC → ReBRAC → XQL → FQL"在 2026-04 是合理的,但已被实际研究轨迹超越:
+> - **XQL / FQL 主线正式撤销**(§7.4 / §7.5):专家审查认为 XQL 的进入条件"ReBRAC 不能解释 1000>2000"在 ReBRAC paper-ready 4/4 闭环后不成立;FQL 的多模态前提在确定性 baseline 数据上无 evidence;两者均与 CLAUDE.md "不追求通用算法论文式改进"原则冲突。
+> - **AUVHamNODE Offline MBRL 线已于 2026-05-13 paused**(2026-05-08 时曾接棒作"下一阶段",但因 4 项硬接口差异 + wake current 2-4× OOD 暴露而暂停)。详情 + 累计决策 + 恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md)。
+> - **当前没有明确的"下一阶段 plan"**;ReBRAC 主线 paper revision 仍 active。线总览见 [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md)。
+>
+> 本文档保留作历史:Phase 0 / Phase 1 / Phase 2 (TD3+BC / ReBRAC) 段落仍可作 ReBRAC paper 引用源;§7.4 / §7.5 / §11.1 中关于 XQL/FQL 的优先级已撤销。
+
+> 文档版本:2026-04-22 rev.5(已 deprecated;末次有效内容截止 §7.3 ReBRAC)
 > 适用范围：当前仓库的 SAC / RLPD 基础设施，以及截至 `phase0c` 已经落地的 TD3BC 离线实验主线
 > 核心结论：**实现优先级仍应保持 `TD3+BC -> ReBRAC -> XQL -> FQL`；截至当前，TD3BC 主线收口已基本完成，下一阶段的重点应转向 ReBRAC，并以现有 teacher-gap 与数据支持集结论作为约束**
 > 交叉验证来源：原始论文 + 官方代码仓库 + 当前 repo 现有实现接口 + 仓库内 `phase0b_v2` / `phase0c` 正式实验结果

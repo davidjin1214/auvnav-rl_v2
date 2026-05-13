@@ -1,0 +1,7 @@
+wake_dir = /Users/xiangjin/Library/CloudStorage/OneDrive-Personal/我的/Code/new_off_rl/rl_v2/wake_data
+file_short                                        U_ref                  shape  speed_med  speed_p50  speed_p95  speed_p99  speed_max    |u|_med    |v|_p99
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+v8_U1p00_Re150_D12p00                              1.00    (1200, 320, 100, 3)     1.0296     1.0296     1.2543     1.3118     1.4317     0.9976     0.6030
+v8_U1p50_Re250_D12p00                              1.50    (1200, 320, 100, 3)     1.5801     1.5801     1.9632     2.0880     2.3783     1.5020     1.1572
+tandem_G35_v8_U1p00_Re150_D12p00                   1.00    (1200, 510, 120, 3)     1.0464     1.0464     1.2110     1.2868     1.5603     1.0371     0.5352
+wake_tandem_G35_v8_U1p50_Re250_D12p00_dx0p60_Ti5pct_1200f_roi.npy ERROR [Errno 60] Operation timed out

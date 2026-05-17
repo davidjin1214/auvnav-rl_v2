@@ -24,10 +24,11 @@
 |---|---|---|---|---|
 | **Phase 1 — TD3+BC baseline 收口** | 2026-Q1 → ~2026-04 | TD3+BC（D4RL 经典 single-BC 作算法基线） | ✅ 已收口（不再扩展） | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
 | **Phase 2 — ReBRAC 主线** | ~2026-04 → 2026-05-07 | ReBRAC（dual-BC + critic-side BC penalty） | ✅ 主线 paper-ready 4/4 closed (rev.8) | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) |
-| **Phase 2.5 — Broad validation（standalone）** | 2026-05-04 → 2026-05-07 | ReBRAC 跨三轴 generality 广验 + C1 deep-dive | ⚠ 8 spoke 5-seed parity 完成；6/8 work-in-progress，**结论尚不达 paper-quality** | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) |
+| **Phase 2.5 v1 — Broad validation (efficiency_v2)** | 2026-05-04 → 2026-05-07 | ReBRAC 跨三轴 generality 广验 + C1 deep-dive | ⚠ **SUPERSEDED 2026-05-18** by v2 plan；v1 archive 保留，不重跑、不进 paper | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md)（archive） |
+| **Phase 2.5 v2 — Broad validation (arrival_v2 cross-only)** | 2026-05-18 → | cross-only spotlight + 2 flow regime + 精简 collector + conditional BC sweep | 🆕 **active plan, 未开跑**（5 cell core + 1 conditional sweep；~28–40h L4） | [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) ★ |
 | **Phase 3 — AUVHamNODE Offline RL(cross-domain transfer)** | 2026-05-06 → 2026-05-13 | frozen AUVHamNODE 1-step prior + ReBRAC augmentation | ⏸ **PAUSED 2026-05-13**(原状态 v2.1 locked → α 路径 Step 0-4 审计 → 4 项硬接口差异 + wake current 2-4× OOD 暴露;用户决定暂停) | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★ |
 
-**当前位置**：Phase 2 主线已 freeze；Phase 2.5 广验保持 standalone 等下游 sweep 闭环；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)。
+**当前位置**：Phase 2 主线已 freeze；**Phase 2.5 v1 广验已 SUPERSEDED 2026-05-18**（reward 失配 + online §7.6 更强 finding），**v2 plan active 未开跑**（cross-only + arrival_v2，详见 [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)）；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)。
 
 ---
 
@@ -98,7 +99,21 @@
 - Stage E (a) `crosscomp-1000` cross-dataset 二次验证
 - Stage F (B) critic LayerNorm-off probe + Stage F (C) 统计检验
 
-### 3.3 Phase 2.5 — Broad validation（standalone exploratory）
+### 3.3 Phase 2.5 — Broad validation（v1 SUPERSEDED → v2 active plan）
+
+**2026-05-18 status 升级**：v1 全套（design spec / implementation plan / report rev.2 / c1_s1_followup）已 SUPERSEDED by [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)。取代原因：
+1. v1 跑在 `efficiency_v2` 下，但 [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §3 证 `efficiency_v2` 在 upstream / 高难度 cell 有 OOB-suicide failure mode，v1 C1 task-fundamental floor claim 受 reward bias 污染
+2. online 线 §7.6 已独立产出 `cross_u15 + s0` catastrophic FAIL（s0–s1 gap 80pp，A0 的 24× 放大）— 比 v1 B1 (Δ=−0.2pp clean positive) 强得多的 sensor envelope finding
+3. v1 8 spoke 中只有 B1 是 clean positive，其余 7 spoke retrofit trigger 未闭环
+
+**v2 plan 关键变化**（详见 v2 plan §3 diff 表）：
+- 收敛到 cross-stream geometry（砍 upstream / tandem / sbs）
+- 增加 (U, Re, λ) 两 regime：sub-critical (u10/Re150/λ=0.67) + critical (u15/Re250/λ=1.0)
+- 精简 collector 到 crosscomp + privileged（砍 goalseek / worldcomp / mix5050）
+- C1 5 ablation 串联 → conditional BC penalty sweep on stuck cell
+- paper role 明确为 reward-bridge appendix + deployability boundary map（不是 standalone TBD）
+
+**v1 archive 现状（保留不动）**：
 
 **目标**：在三轴 (data quality / sensor / task geometry) 上各拉 2–3 条 spoke 测试 ReBRAC main finding 的 generality 边界。
 
@@ -154,16 +169,17 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 - [`docs/rebrac_method_section_draft.md`](rebrac_method_section_draft.md) Method 节
 - [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §0/§1.5 是写作期反复回看的 One Page
 
-### 4.2 Broad validation 下游 sweep（决定能否 retrofit 主线）
+### 4.2 Broad validation v2（active plan，未开跑）
 
-按优先级：
-1. **★ BC penalty 强度 sweep on C1**（β1 ∈ {0, 1, 2, 4, 8}）— 区分 BC floor vs task-fundamental floor，是 task-fundamental claim 的关键 mechanism discriminator
-2. **A1 paired bootstrap (n_boot=10000)** — 区分 directional consistent 与 statistically robust
-3. **mix ratio sweep on A2**（70/30, 90/10）— 验证 mid-gap collapse 是否单调，是否真的是 mode collapse 现象
-4. **target_speed=2.0 P1 probe** — 测试 task-fundamental claim 的 speed-axis 边界
-5. **C1 BC penalty sweep on mix dataset** — A2 hypothesis 的直接验证
+详见 [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)。
 
-完成 1–2 项后即可考虑把广验 + c1_s1 部分回写主报告。
+**执行顺序**（v2 plan §6）：
+1. **Stage 0A — Collector sanity** (5 sanity card, ~3–5h CPU): crosscomp / privileged 在 cross_u10 + cross_u15 + s0 + s1 下的 success rate；GO/NO-GO 关卡 = crosscomp 在 (cross_u15, s0) 下 success ≥ 0.4
+2. **Stage 0B — Dataset 重收** (5 dataset, ~3h CPU): N0–N4 各 1 dataset 含 sanity_card + privileged_obs 列
+3. **Stage 1 — Core 5 cell × 5 seed** (~25h L4): N0 anchor / N1 sensor probe / N2 critical regime / N3 sensor rescue / N4 priv teacher；N0 跑完后重设 std_blow_up 阈值
+4. **Stage 2 — Conditional BC sweep M1** (~0–15h L4): if exist stuck cell (success ∈ [0.20, 0.60])，5 β1 × 3 seed on highest-paper-priority stuck cell
+
+**v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v2 直接通过 conditional BC sweep on stuck cell 提供 mechanism discriminator。v1 finding 不进 paper。
 
 ### 4.3 Online 线交付的 SAC collector（待 spec）
 
@@ -210,8 +226,11 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | [`rebrac_method_section_draft.md`](rebrac_method_section_draft.md) | active | 论文 Method 节草稿 |
 | [`rebrac_paper_writing_index.md`](rebrac_paper_writing_index.md) | active | 写论文期 reading map |
 | [`rebrac_statistical_test_followup.md`](rebrac_statistical_test_followup.md) | active | Welch's p / bootstrap CI 后续 |
-| [`rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) (rev.2) | **standalone exploratory** | 三轴广验 publication-ready draft；保持独立直到下游 sweep 闭环 |
-| [`rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) | **standalone exploratory** | C1-s1 sensor upgrade follow-up；保持独立直到 BC penalty sweep on C1 闭环 |
+| [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) ★ | **active plan (2026-05-18 rev.1)** | v2 cross-only spotlight under arrival_v2；5 cell core + 1 conditional sweep；paper § appendix 角色明确 |
+| [`rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) (rev.2) | **SUPERSEDED 2026-05-18 (archive)** | v1 三轴 8 spoke 数据 archive；不重跑、不进 paper |
+| [`rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) | **SUPERSEDED 2026-05-18 (archive)** | v1 C1-s1 sensor upgrade follow-up archive |
+| [`superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`](superpowers/specs/2026-05-04-rebrac-broad-validation-design.md) | **SUPERSEDED 2026-05-18 (archive)** | v1 design spec archive |
+| [`superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md`](superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md) | **SUPERSEDED 2026-05-18 (archive)** | v1 implementation plan archive |
 
 #### B. TD3+BC 已归档（不再扩展）
 
@@ -297,4 +316,4 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 ## 7. 一句话总结
 
-Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;广验与 c1_s1 follow-up 因结果尚不达 paper-quality(mechanism discriminator 如 BC penalty sweep on C1 / mix ratio sweep / target_speed=2.0 P1 / paired bootstrap 未做)**保持 standalone 不回写主线**;**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md))。
+Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 plan active 未开跑**(cross-only + arrival_v2 + 2 flow regime + 精简 collector，详见 [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md))。

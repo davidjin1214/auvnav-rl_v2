@@ -1,5 +1,18 @@
 # ReBRAC 广验报告：跨数据质量 / 传感器 / 任务三轴的 Probe-then-Deepen
 
+> ---
+> **⚠ SUPERSEDED 2026-05-18**：本 v1 实验报告已被 v2 plan [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) 取代。
+>
+> **保留作 archive 的理由**：v1 在 `efficiency_v2` 下产出的 8 spoke + C1 deep-dive 数据（5-seed parity，含 60+ runs）记录完整，作为 v2 设计的对照基线 + reward-bridge 出发点保留；不重跑、不修订、不进 paper finding spine。
+>
+> **v1 报告 finding 在 paper 中的处理**：
+> - 仅 B1 sensor envelope (Δ=−0.2pp) 是 clean positive，但已被 online §7.6 的 80pp s0–s1 gap finding 在 paper 中取代；v1 B1 不引用。
+> - C1 task-fundamental floor、A2 mid-gap collapse、A1 paired-t underpowered 等均 deferred；v2 plan §3 diff 表与 §8 paper narrative 章节说明替代方案。
+> - 历史 retrofit trigger condition（C1 BC penalty sweep / A1 paired bootstrap / mix ratio sweep / target_speed=2.0 P1）作废 — v2 直接通过 conditional BC sweep on stuck cell 提供 mechanism discriminator。
+>
+> **v2 取代原因摘要**：(1) `efficiency_v2` reward 失配证据，(2) online 线 arrival_v2 §7.6 更强 sensor envelope finding，(3) cross-only spotlight + 2 flow regime + 精简 collector 设计更聚焦。详见 v2 plan §2 动机章节。
+> ---
+>
 > 文档版本：2026-05-07 rev.2（集成 C1-s1 sensor upgrade follow-up）
 > 文档定位：[rebrac_experiment_plan.md](./rebrac_experiment_plan.md) Stage C 主线已 5-seed 收口（finalist `(β1=4.0, β2=2.0)` 在 `crosscomp-1000` 上 success = 0.902 ± 0.021）、[rebrac_mainline_review.md](./rebrac_mainline_review.md) §2.2/§3.2 留下的三条 generality 弱点之后做的一轮**有限算力广验**。
 > 配套文档：[broad_validation design spec](./superpowers/specs/2026-05-04-rebrac-broad-validation-design.md)、[broad_validation plan](./superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md)

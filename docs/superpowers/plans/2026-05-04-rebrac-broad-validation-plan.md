@@ -1,5 +1,13 @@
 # ReBRAC Broad Validation Implementation Plan
 
+> ---
+> **⚠ SUPERSEDED 2026-05-18**：本 v1 implementation plan 已被 [`docs/rebrac_broad_validation_v2_plan.md`](../../rebrac_broad_validation_v2_plan.md) 取代。详细取代原因见 v1 spec 头部 banner（[`docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`](../specs/2026-05-04-rebrac-broad-validation-design.md)）。
+>
+> v1 plan 在 `efficiency_v2` reward 下定义的 8 spoke × Probe-then-Deepen 流程不再 active；v2 plan 在 `arrival_v2` reward 下收敛到 5 cell core + 1 conditional sweep。
+>
+> v1 实验产物（`experiments/offline/rebrac/broad_validation/` + 完成的 notebook archive）保留作历史 reference，不重跑。
+> ---
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Execute the three-axis (data quality / sensor / task geometry) Probe-then-Deepen broad validation defined in [docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md](../specs/2026-05-04-rebrac-broad-validation-design.md), producing 7 new offline datasets, 16 P1 runs, conditional P2 deepening, and a paper-ready broad-validation subsection.

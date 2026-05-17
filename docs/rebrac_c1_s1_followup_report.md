@@ -1,5 +1,13 @@
 # ReBRAC C1-s1 Sensor-Upgrade Follow-up — Standalone Report
 
+> ---
+> **⚠ SUPERSEDED 2026-05-18**：本 v1 C1-s1 follow-up 已被 v2 plan [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) 取代。
+>
+> 本 follow-up 在 `efficiency_v2` + upstream geometry 下做的 sensor s0→s1 ablation 结论（C1 task-fundamental floor 在 upstream + crosscomp + u10 + target=1.5 下成立）保留作 v1 archive，不重跑、不进 paper。
+>
+> v2 plan 改变 framing：upstream geometry 整体砍掉（online §7.2 已 saturate），sensor envelope 故事重心转到 cross_stream 下的 s0 vs s1 对照（v2 N1 / N3 cell + online §7.6 平行证据）。原 follow-up 提出的「C1-s2 backlog」「target_speed=2.0 probe」「BC penalty sweep on C1」三项都已在 v2 plan 中以不同形式处理或砍掉，详见 v2 plan §3 diff 表 + §9 backlog。
+> ---
+>
 > **Date**: 2026-05-07
 > **Status (2026-05-07 user direction 升级)**：本 follow-up **保持 standalone exploratory side study**，**不回写**主报告 [`rebrac_experiment_report.md`](rebrac_experiment_report.md)。原稿 §1/§7.1/§9 多处「待 later main-report retrofit」「下一次主报告 retrofit 时统一集成」措辞已过期——按用户 2026-05-07 判断，task-fundamental floor claim 的 mechanism discriminator（**BC penalty 强度 sweep on C1**，β1 ∈ {0, 1, 2, 4, 8}）未做之前，结论尚不达 paper-quality；主报告 retrofit deferred until 该 sweep 闭环。
 >

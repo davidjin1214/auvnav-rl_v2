@@ -1,5 +1,18 @@
 # ReBRAC 广验实验设计：跨数据质量 / 传感器 / 任务三轴的 Probe-then-Deepen
 
+> ---
+> **⚠ SUPERSEDED 2026-05-18**：本 v1 设计 spec 已被 [`docs/rebrac_broad_validation_v2_plan.md`](../../rebrac_broad_validation_v2_plan.md) 取代。
+>
+> **取代原因**：
+> 1. v1 全套实验跑在 `efficiency_v2` reward 下，但 [`docs/arrival_v2_experiment_report.md`](../../arrival_v2_experiment_report.md) §3 已证 `efficiency_v2` 在 upstream / 高难度 cell 上存在 OOB-suicide failure mode；v1 C1 task-fundamental floor claim 受 reward bias 污染，不能升格为 paper-quality finding。
+> 2. online 线 §7.6 已独立产出更强 sensor envelope finding（cross_u15 + s0 catastrophic FAIL，s0–s1 gap 80pp，A0 的 24× 放大），v1 在 cross_u10 / efficiency_v2 下完全看不到。
+> 3. v1 8 spoke 中只有 B1 是 clean positive，其余 7 spoke standalone exploratory + retrofit trigger 未闭环。
+>
+> **v2 改变**：收敛到 cross-stream geometry + 2 个 flow regime（u10/Re150 sub-critical, u15/Re250 critical）+ 精简到 crosscomp/privileged 2 collector + conditional BC penalty sweep on stuck cell。详见 v2 plan §3 diff 表。
+>
+> **本 v1 spec 保留作设计 archive**，不重跑、不进 paper。
+> ---
+>
 > 文档版本：2026-05-04 rev.1
 > 文档定位：ReBRAC 主线（`docs/rebrac_experiment_plan.md` rev.8 + `docs/rebrac_mainline_review.md` rev.2）已完整收口、paper-readiness 4 项 probe 全部 closed 之后，针对 review §2.2 / §3.2 列出的 generality 边界做的一轮**有限算力广验**。本文是 design spec，对应 implementation plan 将在 spec 通过用户审查后由 writing-plans skill 单独产出。
 > 配套文档：[rebrac_experiment_plan.md](../../rebrac_experiment_plan.md)、[rebrac_mainline_review.md](../../rebrac_mainline_review.md)、[rebrac_experiment_report.md](../../rebrac_experiment_report.md)

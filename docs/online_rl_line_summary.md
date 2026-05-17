@@ -166,6 +166,7 @@
 - **修复**：preflight P0b 实测 num_envs=6 → 12 wallclock 5.61 → 3.88 min（**1.45× 加速**），切到 12。
 - **教训**：(a) **优先级反转**——`AsyncVectorEnv(shared_memory=True)` 上限收益 ~50% wallclock，远高于 Numba JIT vehicle.py 的 ~30% 上限收益；(b) NN 不是瓶颈说明加大 batch / hidden_dim 不会显著拖慢 wallclock，可以放心加。
 - **位置**：[`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md) §10.1-§10.2、§10.5。
+- **Update 2026-05-17**：[`docs/wallclock_profile_2026_05_17.md`](wallclock_profile_2026_05_17.md) §4.5 用 5-bucket `perf_counter` + CUDA sync profile 在 L4 + thesis baseline (n=6, UTD=4) 上重测，**修正归因**：实际瓶颈是 SAC update (64-77% wallclock)，不是 IPC；cProfile 看到的 `posix.read` ~55% 反映的是 worker 等待 main 而非 IPC pickle 本身。本节"`num_envs 6→12` 拿加速"的实操修复仍然有效，但教训 (a) 中 "~50% wallclock 上限收益" 乐观了，实测在 effective UTD 不变前提下加速上限只有 1.17×；教训 (b) 中 "加大 hidden_dim 不会拖慢" 需要重新 profile 才能成立。归因解释以新归档为准。
 
 ### 2.6 跨阶段 num_envs 不一致破坏可比性
 

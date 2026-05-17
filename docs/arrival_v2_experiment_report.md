@@ -24,7 +24,16 @@
 | §7.3 tandem          | `tandem_u15_upstream_tgt15` | double tandem (G/D=3.5) | upstream | **PASS** |
 | §7.4 sbs             | `sbs_u15_upstream_tgt15`    | double sbs (G/D=3.5) | upstream | **PASS** |
 
-**Reference baselines（§2 / §3，不参与 §7.5 严格对比；seed/step/U 与上面 4 组不一致）**：
+**Sensor envelope 扩展（§7.6，2026-05-13 补跑，唯一变量 = sensor）**：上述 4 cell 仅 sensor 切到 `s0_k4`（DVL-only, 10-D obs），其它（reward / U / target / seed / 1M / num_envs / vanilla SAC）全部冻结。
+
+| Run | s0 result | s1 reference | s0–s1 final gap |
+|---|---|---|---:|
+| §7.6 tandem | PASS（final=1.000, OOB=0） | PASS（final=1.000） | 0 |
+| §7.6 sbs | PASS（final=1.000, OOB=0） | PASS（final=1.000） | 0 |
+| §7.6 single_upstream | PASS（final=1.000, OOB=0） | PASS（final=1.000） | 0 |
+| §7.6 **single_cross** | **FAIL**（final=0.100, OOB=0.667）| PASS（final=0.900） | **0.80（80pp）** |
+
+**Reference baselines（§2 / §3，不参与 §7.5/§7.6 严格对比；seed/step/U 与主对照 4 组不一致）**：
 
 | Run | Benchmark | Probe | Seed | Total steps | Confound | 5/5 Gate |
 |---|---|---|---:|---:|---|---|
@@ -36,7 +45,9 @@
 - 三组 upstream（single / tandem / sbs）均 final=1.000 / OOB=0.000 / 30/30 全 goal，peak first-hit step 都在 475k–625k → **topology 在严格控制下未引入额外 sample 难度**。
 - 单柱 cross_stream 是四组里唯一 OOB 踩线 (0.10) 的 run、final=0.900、return std=112 → **cross_stream geometry 比 upstream 更难**。
 - 末段 safety 排序：single_upstream (0.142) < sbs (0.586) < tandem (6.85) — 与 wake topology 物理直觉一致。
-- §2 cross_u10 / §3 P1 v6 旁证 arrival_v2 在更慢流速、更弱 sensor、不同 seed 下也 PASS，但因 seed/step/U confound 仅作 reference，不进入 §7.5 主对照。
+- **§7.6 s0 sensor envelope**（单 seed exploratory）：arrival_v2 + s0 在三个上游几何下（tandem / sbs / single_upstream）全部 PASS（与 s1 在 `last100k_mean` 上 ±0.05 内），但 `single_cross_s0` **catastrophic FAIL**（5/5 gate 中 3 个 fail；final=0.100, OOB=0.667）。**A0（cross_u10 + arrival_v1）s0–s1 gap 3pp 在 cross_u15 + arrival_v2 下放大 24× 到 80pp** — partial-observability gap 在 production-difficulty regime 下真正显化的实证。
+- `single_cross_s0` 是仓库内目前**唯一对 improved SAC（AsymCritic + privileged hull-integral flow）有 ablation headroom 的 cell**（其它 3 phase 已饱和到 1.000）。
+- §2 cross_u10 / §3 P1 v6 旁证 arrival_v2 在更慢流速、更弱 sensor、不同 seed 下也 PASS，但因 seed/step/U confound 仅作 reference，不进入 §7.5/§7.6 主对照。
 
 ---
 
@@ -44,21 +55,23 @@
 
 - arrival_v2 8 参数完整版按 [设计 §5.1](online_sac_reward_redesign.md) v6 spec 在 commit `813096e`（2026-05-07）落地进 `auv_nav/reward.py`，与 `arrival_v2_simple`（commit `bd37412`）非同一物。
 - [设计 §8.1] Gate A pure-formula validator（`scripts/validate_arrival_v2_candidate`）通过：default `w_safety=2.0` discounted unsafe-shortcut + terminal dominance + OOB ordering 全部成立；`w_safety=0.5` 在 discounted unsafe-shortcut 上被明确判失败（与 v6 设计预言一致）。
-- 隔离 prototype 分支 `codex-arrival-v2-prototype` 跑了**6 组实验**（4 组严格控制 + 2 组 reference baselines）：
+- 隔离 prototype 分支 `codex-arrival-v2-prototype` 跑了**10 组实验**（4 组 §7 严格控制 + 4 组 §7.6 sensor envelope + 2 组 reference baselines）：
   - **§2 cross_u10 behavior regression**（reference）：先按计划跑 600k，未通过 last100k_mean gate（曲线仍在上升），延到 1M 后 5/5 gate 全过。
   - **§3 P1 v6 重跑**（reference）：从原计划 1M 提到 1.5M（s1 + upstream + 12-D 比 cross + s0 + 10-D 难，留缓冲）；事后由 §7.2 (seed=42 / 1M PASS) 推翻这个 budget 假设 — 1.5M 是 seed=46 specific。
   - **§7.3 tandem 拓扑泛化**（strict control，旧编号 §7.1）：1M cap，seed=42，5/5 gate 全过。
   - **§7.4 sbs 拓扑泛化**（strict control，旧编号 §7.2）：1M cap，seed=42，5/5 gate 全过。
   - **§7.1 single_cross 控制对照**（strict control，2026-05-09 补跑）：1M cap，seed=42，5/5 gate 全过（OOB 踩线 0.10）。
   - **§7.2 single_upstream 控制对照**（strict control，2026-05-09 补跑）：1M cap，seed=42，5/5 gate 全过；与 §3 P1 v6 同 benchmark 的二点 seed 观测。
+  - **§7.6 s0 sensor envelope**（strict-control sensor 扩展，4 cell，2026-05-13 补跑）：3/4 PASS（tandem / sbs / single_upstream），1/4 catastrophic FAIL（single_cross_s0：3/5 gate fail）。数据完整性 footnote：本地下载时两个上游 dir 一度互换，已通过 6 个内部指针交叉验证 + `mv` 修复，详见 §7.6 末尾。
 - 实施期间发现并修了一个 SAC trainer resume 路径上的 silent bug，参见 §6。
-- 闭环 commit：`f179c5b`（§2 + §3 闭环），`1adee4e`（doc split + tandem/sbs notebook scaffold + §7.3/§7.4 回填），单柱补跑 (§7.1/§7.2) 在 2026-05-09 落 commit（待提交）。
+- 闭环 commit：`f179c5b`（§2 + §3 闭环），`1adee4e`（doc split + tandem/sbs notebook scaffold + §7.3/§7.4 回填），`f00074e`（§7 4-way strict control 重写 + 单柱 §7.1/§7.2 补跑落地），`f771414`（strict-control viz + single_u15 completed archival），§7.6 s0 envelope 落 commit（待提交）。
 
 **复现路径**：
 - §2 cross_u10 + §3 P1 v6：[`notebooks/sac_arrival_v2_cross_extension_and_p1_v6_completed.ipynb`](../notebooks/sac_arrival_v2_cross_extension_and_p1_v6_completed.ipynb)
 - 600k cross_u10 prototype 归档：[`notebooks/sac_arrival_v2_cross_u10_regression_completed.ipynb`](../notebooks/sac_arrival_v2_cross_u10_regression_completed.ipynb)
-- §7.3 tandem + §7.4 sbs：[`notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb`](../notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb)
-- §7.1 single_cross + §7.2 single_upstream（严格控制对照）：[`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb)
+- §7.3 tandem + §7.4 sbs（s1）：[`notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb`](../notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb)
+- §7.1 single_cross + §7.2 single_upstream（s1, 严格控制对照）：scaffold [`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb) / archival [`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation_completed.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation_completed.ipynb)
+- §7.6 s0 sensor envelope（4 cell）：scaffold [`notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope.ipynb`](../notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope.ipynb) / archival [`notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope_completed.ipynb`](../notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope_completed.ipynb)
 
 ---
 
@@ -389,19 +402,118 @@ Gate 五条与 [设计 §8.3] 同口径；四个 phase 各自独立判定。
 
 **重要约束**：以上 takeaway 全部基于**单 seed**。§7.1 的 3/30 OOB、§7.3 的 1/30 risky-success outlier、§7.4 的 700k–775k transient dip 都是单 seed 现象；§7.2 与 §3 的 budget 反差也只是二点 seed sample。多 seed 复现是 thesis-grade 重启的前置条件（参见 §8）。
 
+### 7.6 s0 sensor envelope（单 seed exploratory，2026-05-13 补跑）
+
+**动机**：§7.1–§7.5 4 组严格控制都跑在 `s1_k4`（DVL + 短程 ADCP, 12-D obs）。本研究的 sensor 主轴是 `s0_k4`（DVL-only, deployment-realistic, 10-D obs，见 [`CLAUDE.md`](../CLAUDE.md) Architecture / [`online_rl_thesis_plan.md`](online_rl_thesis_plan.md) §1）。本节把 §7 唯一变量从 *topology × geometry* 扩展到 *sensor*，**仅 sensor 切到 s0**，其它（reward, U, target, seed, total_steps, num_envs, algorithm, 4 个 benchmark）全部冻结：
+
+> `arrival_v2 / k4 / U=1.5 / target=1.5 / seed=42 / 1M / num_envs=6 / vanilla SAC`，新增唯一变量 = **`PROBE_LAYOUT = s0`**
+
+Gate 5 条同 §7 口径。**Single seed = 42**，与 §7 平行 1:1 exploratory（**不是** multi-seed thesis-grade）。
+
+**复现路径**：scaffold [`notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope.ipynb`](../notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope.ipynb) / archival [`notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope_completed.ipynb`](../notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope_completed.ipynb)。Combined gate JSON：[`experiments/arrival_v2_prototype/s0_sensor_envelope_summary/combined_gate_summary.json`](../experiments/arrival_v2_prototype/s0_sensor_envelope_summary/combined_gate_summary.json)（gitignored）。
+
+**结果（s0 vs §7 s1，单 seed，严格 1:1 对比）**：
+
+| Phase | s0 final | s0 peak@step | s0 last100k | s0 OOB | **s0 gate** | s1 final | s1 peak@step | s1 last100k | s1 OOB | **s1 gate** |
+|---|---:|---:|---:|---:|:-:|---:|---:|---:|---:|:-:|
+| §7.3 tandem | 1.000 | 1.000 @ 650k | 0.975 | 0.000 | PASS | 1.000 | 1.000 @ 475k | 0.975 | 0.000 | PASS |
+| §7.4 sbs | 1.000 | 1.000 @ 550k | 0.925 | 0.000 | PASS | 1.000 | 1.000 @ 625k | 0.983 | 0.000 | PASS |
+| §7.2 single_upstream | 1.000 | 1.000 @ 350k | 1.000 | 0.000 | PASS | 1.000 | 1.000 @ 475k | 0.975 | 0.000 | PASS |
+| **§7.1 single_cross** | **0.100** | **0.367 @ 975k** | **0.267** | **0.667** | **FAIL（3/5 gate fail）** | 0.900 | 0.900 @ 725k | 0.883 | 0.100 | PASS |
+
+`single_cross_s0` final eval termination：`{out_of_bounds: 20, timeout: 7, goal: 3}`（30 个 deterministic episode，20 个跨出工作域，仅 3 个达成 goal）。
+
+**Finding F1 — Upstream geometry 下 s0 完全够用（3/4 PASS）**
+
+`tandem / sbs / single_upstream` 三个上游几何下 s0 vanilla 在 arrival_v2 + production 难度（U=1.5）下都达到 `final=1.000 / OOB=0 / 30/30 goal`，5/5 gate 全过。`last100k_mean` 与 s1 在 ±0.05 内（s0: 0.925 / 0.975 / 1.000；s1: 0.983 / 0.975 / 0.975），无显著差异。**deployable-only s0 sensor 在上游几何 + arrival_v2 reward + production 难度下是 production-ready 的**。
+
+**Finding F2 — Cross-stream s0 catastrophic FAIL；对接 A0 的 24× gap 放大**
+
+`single_cross_s0` 与 `single_cross_s1` 之间的 gap 从 A0（[`online_rl_line_summary.md`](online_rl_line_summary.md) §1.1）的 3pp 放大到 80pp：
+
+| 维度 | A0（cross_u10 + arrival_v1） | §7.6（cross_u15 + arrival_v2） | Δ |
+|---|---:|---:|---:|
+| s1 final | 1.000 | 0.900 | −0.10 |
+| s0 final | 0.967 | 0.100 | **−0.867** |
+| **s0–s1 gap** | **0.033** | **0.800** | **~24×** |
+
+两个变量同时升级：① flow speed `U=1.0 → 1.5`（涡街 Strouhal 周期变快，单点 DVL 看到的脉动信息密度变低）② reward `arrival_v1 → arrival_v2`（penalty 结构不同）。**Difficulty 升级把 sensor 信息差异从可忽略放大到致命** — 这是 partial-observability gap 在 production-difficulty regime 下真正显化的实证，可作为论文方法节立论。
+
+**Finding F3 — single_cross_s0 训练曲线呈 plasticity-loss 形态**
+
+每 100k 采样的 s0 cross 训练曲线：
+
+| step | s0 success | s0 path_eff | s1 success（同步对比） |
+|---:|---:|---:|---:|
+| 25k | 0.000 | −0.39 | 0.000 |
+| 125k | 0.000 | −0.18 | 0.000 |
+| 225k | 0.267 | 0.18 | 0.033 |
+| 325k | 0.100 | 0.13 | 0.267 |
+| 425k | 0.233 | 0.26 | 0.200 |
+| 525k | 0.333 | 0.26 | 0.500 |
+| 625k | 0.333 | 0.24 | 0.800 |
+| 725k | 0.300 | 0.24 | 0.900 |
+| 825k | 0.300 | 0.31 | 0.900 |
+| 925k | 0.233 | 0.31 | 0.900 |
+
+s0：225k 起来 → 525k–625k 高点 0.367 → 然后 drift down 至 ~0.23–0.30 → final eval 0.100。**从未越过 gate 阈值 0.85**。`path_efficiency` 同步 plateau 在 ~0.25。
+
+这比 "没收敛" 严重一档 — 策略学到了一个局部 mode（success rate 短暂攀升）然后**被 OOB-incentive 反向 erode**（缓慢下滑 + final eval 反而最低）。对比 s1 同 benchmark：225k → 625k 单调爬到 0.800，725k 起稳定 plateau 0.900。s1 学到稳定策略，s0 学到的策略不稳定。
+
+**Finding F4 — Peak step 在上游 3 phase 上 s0 vs s1 不单调慢**
+
+| Phase | s0 peak step | s1 peak step | Δ |
+|---|---:|---:|---:|
+| tandem | 650k | 475k | s0 **慢 175k** |
+| sbs | 550k | 625k | s0 **快 75k** |
+| single_upstream | 350k | 475k | s0 **快 125k** |
+
+`peak_step` 是 "首次 hit 100% success rate" 的 noisy 度量（单次 30-episode deterministic eval 抽样）。Peak step 之间的差异在 noise floor 量级，**不要据此 over-claim sensor 与收敛速度的关系**。真正稳定的 `last100k_mean` 在三个上游 phase 上 s0 vs s1 都在 ±0.05 内（见 F1）。
+
+**机理解释 — 为什么 cross 崩、upstream 没崩**
+
+| | upstream geometry | cross_stream geometry |
+|---|---|---|
+| 任务方向 vs 主流 | 沿主流 | 横切主流 |
+| Flow 主分量对 AUV 的作用 | u ≈ −U（顶推 AUV，速度反向减速）| u = 横向施加力（侧向推） |
+| 失败模式主因 | timeout（走得太慢） | OOB（被流推出工作域边界） |
+| arrival_v2 在失败时的 reward 信号 | OOB + timeout 都给 terminal penalty；timeout 还保留 distance shaping 引导 | OOB 是 terminal，**没有继续推进的机会** |
+| s0 (单点 DVL) 的信息局限 | k=4 历史覆盖 ~2 s；涡街周期 10–20 s | 同 |
+
+**cross 几何下 OOB 是"一次定胜负"事件**。s0 没有提前预知涡街相位的能力（[`SAC_improvements_survey.md`](SAC_improvements_survey.md) §10.2：K=4 仅覆盖涡街周期的 10–20%），就只能事后反应；横切瞬间被涡推出工作域 → 立刻 terminal。upstream 几何下 timeout 还有继续推进的 reward 信号能 bail out，cross 没有这条 escape 路径。
+
+这一观察对接 [`SAC_improvements_survey.md`](SAC_improvements_survey.md) §10.2 P1#5 — AsymCritic + privileged hull-integral flow 的设计意图：critic 训练时看到真实涡街相位（actor 看不到），引导 actor 在 cross 几何下学到何时启动横切。**`single_cross_s0` 因此是仓库内目前唯一真有 AsymCritic ablation headroom 的 cell**（其它 3 phase 已饱和到 1.000，没有 headroom）。
+
+**Writeable claim**：arrival_v2 reward + deployable s0 sensor 在 upstream-geometry production benchmarks（tandem / sbs / single_upstream）下单 seed exploratory 全部 saturate；唯独 cross_stream geometry 上 sensor envelope 出现 catastrophic gap，从 A0（cross_u10 + arrival_v1）的可忽略放大 24 倍。这一 catastrophic gap 为后续 improved SAC ablation 提供了清晰的非饱和 target cell。
+
+**重要约束 / disclaimers**
+
+- **单 seed (=42)**，与 §7 平行 exploratory；任何 ±5pp 内的 cell-level 差异不要 over-claim。F2 的 24× gap 是单 seed 数；多 seed 复现 single_cross_s0 是后续工作（§8 新增条目）。
+- **数据完整性 footnote**：本地下载 Drive 时 `tandem_u15_*/s0_k4/seed_42/` 与 `sbs_u15_*/s0_k4/seed_42/` 两个目录在文件系统上一度互换。通过 6 个独立内部指针交叉验证（`trainer_state.json` 的 `flow_path` / `eval_manifest` / `checkpoint_dir` / `agent_path` + `results/train_config.txt` 的 `save_dir` + `results/*_gate_summary.json` 文件名）并 `mv` swap 回去；**所有 4 phase 数据本身完整可信**。`combined_gate_summary.json` 是 Colab 上 dir 还在正确位置时生成的，反映正确 label，无需 regen。Drive 上对应两个 dir 同样错置但未处理；以后 resume 训练或读 checkpoint 时需要去 Drive 上做同样 swap。
+
 ---
 
 ## 8. 后续可选工作
 
-§7 4-way strict-control 验证证明 arrival_v2 在 single + double 拓扑 × cross + upstream geometry 下都「在 online 单 seed 上 work」。若 thesis 重启或 offline 线决定升级 reward preset，可基于本报告做下一步：
+§7 4-way strict-control + §7.6 s0 sensor envelope 共同证明 arrival_v2 在 8/8 个 production cell（4 topology×geometry × 2 sensor，单 seed）下：7 cell PASS（其中 6 个 saturate 到 1.000，1 个 borderline `single_cross_s1` 0.900），1 cell **catastrophic FAIL（`single_cross_s0` 0.100，OOB=0.667）**。若 thesis 重启或 offline 线决定升级 reward preset，按以下优先级展开：
 
-1. **多 seed 复现**（thesis statistics）：四组 strict-control 各 × 3-4 seeds（4 × 1M × 4 seeds ≈ 40h L4）。**优先复现 §7.1 single_cross**（OOB 踩线，单 seed 信号最弱），其次 §7.3 tandem（验证 ep_0011 风格 outlier 是否 seed-specific），最后 §7.2 / §7.4。
-2. **Budget 预言订正**（§7.2 vs §3 已揭示）：[设计 §8.2] 默认 1.5M cap 对 seed=42 是 0.5M overestimate；多 seed 复现时建议先按 1M cap 跑完再判，未稳态再上调，**不要默认 1.5M**。
-3. **`arrival_v2` vs `arrival_v2_fast` 短附录**（[设计 §11.8] 留口）：`R_fast_success=20` 看 time-to-goal 在 §7.2 single_upstream baseline 上的边际改进。
-4. **`w_safety` 二次校准**（[设计 §11.8]）：用 §7.3 tandem 的 actual failure-policy safety 分布（mean 6.85 主要来自 1/30 outlier）重算 break-even 阈值，看 v6 候选 2.0 是否需要调整。
-5. **AsymCritic × arrival_v2 联动**（[设计 §11.6] 留口）：privileged hull-integral flow 与新 reward 的交互在本 prototype 未测；若 online 线重启，可在 §7.2 single_upstream baseline 上加一次 `--use-asymmetric-critic` ablation。
-6. **`scripts/train_sac.py` resume regression test**（§6 留口）。
-7. **更多 benchmark scenarios**：`single_u15_upstream_tgt20` (over-target / λ<1)、`single_u15_downstream_tgt15` (顺流) 等，参考 `benchmarks/` 列表；尤其 `tgt20` 可检验 §7 takeaway「拓扑未引入 sample 难度」是否泛化到 over-actuation 区。
-8. **§7.1 single_cross 物理机制深挖**：cross_stream geometry 在 4 组中最难的根因（侧向被推出边界 vs upstream 的逆流恢复），值得在多 seed 数据基础上做 OOB 时间分布分析。
+**P1 — 围绕 `single_cross_s0` catastrophic FAIL 收紧**（§7.6 finding F2 + 机理段直接驱动）：
 
-是否启动以上任何一项，由 [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) 的产品决策驱动，**不应自动从本节 PASS 跳到展开**。
+1. **AsymCritic × `single_cross_s0` ablation**：`single_cross_s0` 是仓库内目前唯一对 improved SAC 有 ablation headroom 的 cell（其它 7 cell 已 PASS 且 6 个 saturate）。跑一次 `sac_asym_lnutd`（`--use-asymmetric-critic` + `--use-layernorm` + `--updates-per-step 4`）× seed=42 × 1M，看 privileged hull-integral flow 能否闭合 80pp gap。`~2.5h L4`。这是 [设计 §11.6] / [`SAC_improvements_survey.md`](SAC_improvements_survey.md) §10.2 P1#5 留口的直接展开。
+2. **`single_cross_s0` multi-seed 复现**：单 seed 数据已经显示 catastrophic FAIL（5/5 gate 中 3 个 fail），但要 claim "vanilla SAC 在此 cell 上失败" 需要 3-4 seed × 1M。优先级**低于 #1**：若 #1 闭合到 ≥0.85，single_cross_s0 的 baseline framing 改变（vanilla baseline → improved baseline），此时再做 multi-seed 复现 vanilla 才有 narrative。`~7.5–10h L4`。
+
+**P2 — 其它 cell 的 multi-seed 巩固**（§7 takeaway 进入 thesis-grade 的前置）：
+
+3. **§7 4-way × 3-4 seeds**（除 single_cross 之外）：3 个上游 cell 都 saturate 到 1.000，多 seed 主要确认 `last100k_mean` 在 [0.95, 1.0] 区间稳定；优先级看 thesis 重启与否。`~30h L4`。
+4. **§7.6 上游 3 cell × multi-seed**：tandem_s0 / sbs_s0 / single_upstream_s0 三个 phase 多 seed 复现，确认 s0 在上游几何下 saturate 不是 seed-specific 偶然。`~30h L4`。
+
+**P3 — Reward / 工程余项**：
+
+5. **Budget 预言订正**（§7.2 vs §3 已揭示）：[设计 §8.2] 默认 1.5M cap 对 seed=42 是 0.5M overestimate；多 seed 复现时建议先按 1M cap 跑完再判，未稳态再上调，**不要默认 1.5M**。
+6. **`arrival_v2` vs `arrival_v2_fast` 短附录**（[设计 §11.8] 留口）：`R_fast_success=20` 看 time-to-goal 在 §7.2 single_upstream baseline 上的边际改进。
+7. **`w_safety` 二次校准**（[设计 §11.8]）：用 §7.3 tandem 的 actual failure-policy safety 分布（mean 6.85 主要来自 1/30 outlier）重算 break-even 阈值，看 v6 候选 2.0 是否需要调整。
+8. **`scripts/train_sac.py` resume regression test**（§6 留口）。
+9. **更多 benchmark scenarios**：`single_u15_upstream_tgt20` (over-target / λ<1)、`single_u15_downstream_tgt15` (顺流) 等，参考 `benchmarks/` 列表；尤其 `tgt20` 可检验 §7 takeaway「拓扑未引入 sample 难度」是否泛化到 over-actuation 区。
+10. **`single_cross_s0` 物理机制深挖**：F3 plasticity-loss 形态值得做 OOB 时间分布分析 + 涡街相位 vs OOB event 的耦合分析（验证 §7.6 机理段的"涡街 phase 不可见 → 横切瞬间被推出"假设）。
+
+是否启动以上任何一项，由 [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) 的产品决策驱动，**不应自动从本节 PASS 跳到展开**。当前推荐最小展开：**P1#1 (AsymCritic ablation on `single_cross_s0`)** — single run, single seed, 2.5h L4，直接测 [设计 §11.6] 留口。

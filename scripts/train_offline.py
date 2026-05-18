@@ -66,7 +66,7 @@ class OfflineTrainConfig:
 def _resolve_num_hidden_layers(args: argparse.Namespace, algo: str) -> int:
     if args.num_hidden_layers is not None:
         return int(args.num_hidden_layers)
-    return 3 if algo == "rebrac" else 2
+    return 3 if algo in {"rebrac", "fql"} else 2
 
 
 def _resolve_rebrac_actor_layernorm(args: argparse.Namespace) -> bool:
@@ -117,6 +117,29 @@ def _build_agent_config(
             **common,
             alpha=args.alpha,
             use_layernorm=bool(args.use_layernorm),
+        )
+
+    if algo == "fql":
+        # FQLConfig does not accept privileged_obs_dim /
+        # privileged_actor_update_mode: drop them before dispatch.
+        fql_common = {
+            key: value
+            for key, value in common.items()
+            if key not in {
+                "privileged_obs_dim",
+                "privileged_actor_update_mode",
+            }
+        }
+        return make_agent_config(
+            algo,
+            **fql_common,
+            teacher_lr=args.teacher_lr,
+            flow_steps=args.flow_steps,
+            flow_time_embed_dim=args.flow_time_embed_dim,
+            distill_alpha_bc=args.distill_alpha_bc,
+            actor_use_layernorm=_resolve_rebrac_actor_layernorm(args),
+            critic_use_layernorm=_resolve_rebrac_critic_layernorm(args),
+            normalize_q=not args.disable_q_normalization,
         )
 
     return make_agent_config(
@@ -706,7 +729,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Train an offline RL agent on a fixed dataset.")
     parser.add_argument(
         "--algo",
-        choices=["td3bc", "rebrac"],
+        choices=["td3bc", "rebrac", "fql"],
         default="td3bc",
         help="Offline RL algorithm to train.",
     )
@@ -841,7 +864,32 @@ def main() -> None:
         "--disable-q-normalization",
         action="store_true",
         default=False,
-        help="Disable ReBRAC Q normalization in the actor loss.",
+        help="Disable ReBRAC / FQL Q normalization in the actor loss.",
+    )
+    # --- FQL-specific flags (ignored by other algorithms) ---
+    parser.add_argument(
+        "--teacher-lr",
+        type=float,
+        default=3e-4,
+        help="FQL flow-matching teacher learning rate.",
+    )
+    parser.add_argument(
+        "--flow-steps",
+        type=int,
+        default=10,
+        help="FQL teacher Euler ODE integration steps.",
+    )
+    parser.add_argument(
+        "--flow-time-embed-dim",
+        type=int,
+        default=32,
+        help="FQL teacher sinusoidal time-embedding dimension (must be even).",
+    )
+    parser.add_argument(
+        "--distill-alpha-bc",
+        type=float,
+        default=1.0,
+        help="FQL student BC-distillation coefficient.",
     )
     parser.add_argument(
         "--checkpoint-every",

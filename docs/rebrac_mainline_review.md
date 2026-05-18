@@ -279,7 +279,17 @@ ReBRAC 主线已经 "够发"。继续在它上面投入的边际收益曲线已�
 2. **当前**：开始 paper drafting（method + main results + discussion），用 §0.3 的 narrative spine + 直接 import [docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md) + [docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md) 的现成段落与表注脚；
 3. **并行启动**：online thesis 线（[online_rl_thesis_plan.md](./online_rl_thesis_plan.md)）的 Sprint 0 / Sprint 1 实验。两条线在 paper 时间表上是互补的——offline RL paper 写作可以与 online thesis 实验并行。
 
-### 3.5 Broad validation 结论回写 `【rev.3 新增 2026-05-07】`
+### 3.5 Broad validation 结论回写 `【rev.3 新增 2026-05-07；v2 PASS 2026-05-19】`
+
+> **⚠ 2026-05-19 update — v2 PASS**: v2 broad validation 4-run 闭环完成（2 seed × 2 cell × 30 ep）。完整报告 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。**Paper drafting 时本节 §experiments 应直接引用 v2 report（不引用本节以下 v1 archive 内容）**。
+> - **N0** (sub-critical, crosscomp/Re150, `arrival_v2`): success = **0.850 ± 0.024**（per-seed [42=0.867, 0=0.833]）→ plan §5.2 verdict **HOLDS**；Δ vs efficiency_v2 main-line anchor 0.902 = **−5.20pp**（paired same-direction，paper 写作时需明标）
+> - **N2'** (critical, privileged/Re250, `arrival_v2`): success = **0.000 ± 0.000**（per-seed [42=0.000, 0=0.000]）→ plan §5.3 verdict **STRONG_NEGATIVE**；recovery_of_oracle = 0%, lift_vs_online_floor = **−10pp**（跌破 online §7.6 catastrophic floor，三 candidate mechanism 见 v2 report §4）
+> - **M1** BC sweep §5.4: **NOT triggered**（N2' ∉ [0.15, 0.40] partial zone）
+> - **Paper-level claim**: **actor-fundamental partial-observability ceiling under s0 in critical regime** — 即便 oracle teacher 提供 demonstrations，s0-conditioned BC 不能传递 hull-integral flow 知识。这条 claim **不冲突**主 paper claim（main paper +23pp 限定在 sub-critical / efficiency_v2，本节 v2 N0 anchor holds 0.85 仍远超 catastrophic floor），且为 paper §experiments 增加 deployability boundary map
+> - **下游待 paper drafting 时整合**: §experiments appendix 入口指向 v2 report；§discussion ceiling decomposition 表（4 行：hand-coded 0% / offline+oracle 0% / online RL 10% / oracle direct 70%）；§robustness 1 段
+> - **Seed-count caveat**: 2 seed 而非 plan §6.2 预登记 3 seed（详见 v2 report §6.1）；3rd seed 补全已转 backlog 不立即跑
+
+> **以下是 v1 broad validation archive（保留供历史参考，paper drafting 不再引用）。**
 
 继 §3.1 paper-readiness 4/4 之后，做了一轮 **有限算力广验**（Stage C finalist anchor 之外，三轴 OFAT，~30h L4）：8 spoke × 5 seed parity + C1 deep-dive (5 个独立 ablation)。完整报告见 [docs/rebrac_broad_validation_report.md](./rebrac_broad_validation_report.md)，C1-s1 sensor upgrade follow-up 见 [docs/rebrac_c1_s1_followup_report.md](./rebrac_c1_s1_followup_report.md)。
 

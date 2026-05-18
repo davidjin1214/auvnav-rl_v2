@@ -525,7 +525,7 @@ only 0.10 in critical regime), we conduct two experiments:
 - [x] `auv_nav/reward.py` `arrival_v2` preset 在当前 branch 可用
 - [x] **S sanity 已完成**（crosscomp = 0% / privileged = 70%）
 - [x] `offline_rl_line_summary.md` 已同步更新 §3.3 / §4（rev.3 → PASS）
-- [ ] `mainline_review.md` §3.5 pointer 已更新（指向 v2 plan rev.3 → PASS） — 待 follow-up
+- [x] `mainline_review.md` §3.5 pointer 已更新（指向 v2 PASS report，2026-05-19）
 - [x] Colab L4 至少 2 session 预算可用（实际 2-seed 单 session ~30 min L4 即闭环）
 
 逐 Step 检查：

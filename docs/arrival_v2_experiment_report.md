@@ -15,7 +15,7 @@
 
 ## 0. Overview
 
-**严格控制对照（§7，唯一变量 = topology × geometry）**：固定 `s1 / k4 / arrival_v2 / U=1.5 / target=1.5 / seed=42 / 1M / num_envs=6`。
+**严格控制对照（§7，唯一变量 = topology × geometry）**：固定 `s1 / k4 / arrival_v2 / U=1.5 / target=1.5 / seed=42 / 1M / num_envs=6 / vanilla SAC`。
 
 | Run | Benchmark | Topology | Geometry | 5/5 Gate |
 |---|---|---|---|---|
@@ -33,6 +33,15 @@
 | §7.6 single_upstream | PASS（final=1.000, OOB=0） | PASS（final=1.000） | 0 |
 | §7.6 **single_cross** | **FAIL**（final=0.100, OOB=0.667）| PASS（final=0.900） | **0.80（80pp）** |
 
+**AsymCritic 单变量 ablation（§7.7，2026-05-17 补跑，pure B 路径，唯一变量 = `--use-asymmetric-critic`）**：在 §7.6.4 vanilla 基础上仅启用 AsymCritic，其它（s0 / k4 / arrival_v2 / U / target / seed / 1M / num_envs / no-LN / UTD=1）全部冻结。
+
+| Run | final | full-trajectory mean | safety_cost | progress_ratio | 5/5 Gate |
+|---|---:|---:|---:|---:|:-:|
+| §7.6.4 vanilla baseline | 0.100 (3/30 goal) | 0.221 | 25.85 | 0.277 | FAIL（3/5） |
+| §7.7 sac_asym (pure B) | 0.167 (5/30 goal) | **0.044（5× 更差）** | **16.93（−34%）** | **0.453（+64%）** | FAIL（3/5） |
+
+→ **negative finding**：AsymCritic 改变了行为风格但**未闭合 task-level gap**；瓶颈在 actor-side information access，不是 critic estimation accuracy。
+
 **Reference baselines（§2 / §3，不参与 §7.5/§7.6 严格对比；seed/step/U 与主对照 4 组不一致）**：
 
 | Run | Benchmark | Probe | Seed | Total steps | Confound | 5/5 Gate |
@@ -46,7 +55,7 @@
 - 单柱 cross_stream 是四组里唯一 OOB 踩线 (0.10) 的 run、final=0.900、return std=112 → **cross_stream geometry 比 upstream 更难**。
 - 末段 safety 排序：single_upstream (0.142) < sbs (0.586) < tandem (6.85) — 与 wake topology 物理直觉一致。
 - **§7.6 s0 sensor envelope**（单 seed exploratory）：arrival_v2 + s0 在三个上游几何下（tandem / sbs / single_upstream）全部 PASS（与 s1 在 `last100k_mean` 上 ±0.05 内），但 `single_cross_s0` **catastrophic FAIL**（5/5 gate 中 3 个 fail；final=0.100, OOB=0.667）。**A0（cross_u10 + arrival_v1）s0–s1 gap 3pp 在 cross_u15 + arrival_v2 下放大 24× 到 80pp** — partial-observability gap 在 production-difficulty regime 下真正显化的实证。
-- `single_cross_s0` 是仓库内目前**唯一对 improved SAC（AsymCritic + privileged hull-integral flow）有 ablation headroom 的 cell**（其它 3 phase 已饱和到 1.000）。
+- **§7.7 AsymCritic 单变量 ablation on `single_cross_s0`**（pure B 路径，单 seed exploratory，**negative finding**）：在 §7.6.4 vanilla 基础上仅加 `--use-asymmetric-critic`，**未闭合 80pp gap**。final 看似 +6.7pp 是 noise；全程 mean_success 从 vanilla 的 0.221 跌至 0.044（5× 更差，35/39 → 19/39 evals 有 success）。但**行为风格明显改变**：safety_cost −34%、progress_ratio +64%、return +26%。机理：critic 端 privileged info 让 actor 学到 critic-validated 的 "safer + more progressive" 策略，但 actor 端 s0 信息不足以将其兑现成任务级 success。**推翻 [`SAC_improvements_survey.md`](SAC_improvements_survey.md) §10.2 P1#5 / 旧 §8 P1#1 预期**，将 `single_cross_s0` 瓶颈从 critic estimation accuracy 重定位到 **actor-side information access**。
 - §2 cross_u10 / §3 P1 v6 旁证 arrival_v2 在更慢流速、更弱 sensor、不同 seed 下也 PASS，但因 seed/step/U confound 仅作 reference，不进入 §7.5/§7.6 主对照。
 
 ---
@@ -55,7 +64,7 @@
 
 - arrival_v2 8 参数完整版按 [设计 §5.1](online_sac_reward_redesign.md) v6 spec 在 commit `813096e`（2026-05-07）落地进 `auv_nav/reward.py`，与 `arrival_v2_simple`（commit `bd37412`）非同一物。
 - [设计 §8.1] Gate A pure-formula validator（`scripts/validate_arrival_v2_candidate`）通过：default `w_safety=2.0` discounted unsafe-shortcut + terminal dominance + OOB ordering 全部成立；`w_safety=0.5` 在 discounted unsafe-shortcut 上被明确判失败（与 v6 设计预言一致）。
-- 隔离 prototype 分支 `codex-arrival-v2-prototype` 跑了**10 组实验**（4 组 §7 严格控制 + 4 组 §7.6 sensor envelope + 2 组 reference baselines）：
+- 隔离 prototype 分支 `codex-arrival-v2-prototype` 跑了**11 组实验**（4 组 §7 严格控制 + 4 组 §7.6 sensor envelope + 1 组 §7.7 AsymCritic ablation + 2 组 reference baselines）：
   - **§2 cross_u10 behavior regression**（reference）：先按计划跑 600k，未通过 last100k_mean gate（曲线仍在上升），延到 1M 后 5/5 gate 全过。
   - **§3 P1 v6 重跑**（reference）：从原计划 1M 提到 1.5M（s1 + upstream + 12-D 比 cross + s0 + 10-D 难，留缓冲）；事后由 §7.2 (seed=42 / 1M PASS) 推翻这个 budget 假设 — 1.5M 是 seed=46 specific。
   - **§7.3 tandem 拓扑泛化**（strict control，旧编号 §7.1）：1M cap，seed=42，5/5 gate 全过。
@@ -63,8 +72,9 @@
   - **§7.1 single_cross 控制对照**（strict control，2026-05-09 补跑）：1M cap，seed=42，5/5 gate 全过（OOB 踩线 0.10）。
   - **§7.2 single_upstream 控制对照**（strict control，2026-05-09 补跑）：1M cap，seed=42，5/5 gate 全过；与 §3 P1 v6 同 benchmark 的二点 seed 观测。
   - **§7.6 s0 sensor envelope**（strict-control sensor 扩展，4 cell，2026-05-13 补跑）：3/4 PASS（tandem / sbs / single_upstream），1/4 catastrophic FAIL（single_cross_s0：3/5 gate fail）。数据完整性 footnote：本地下载时两个上游 dir 一度互换，已通过 6 个内部指针交叉验证 + `mv` 修复，详见 §7.6 末尾。
+  - **§7.7 AsymCritic 单变量 ablation on `single_cross_s0`**（pure B 路径，2026-05-17 补跑）：仅加 `--use-asymmetric-critic`，其它与 §7.6.4 完全一致。**Negative finding**：3/5 gate fail；行为风格改变（safety −34%、progress +64%），但 task-level mean_success 反而比 vanilla 差 5×。推翻 §10.2 P1#5 / 旧 §8 P1#1 预期。
 - 实施期间发现并修了一个 SAC trainer resume 路径上的 silent bug，参见 §6。
-- 闭环 commit：`f179c5b`（§2 + §3 闭环），`1adee4e`（doc split + tandem/sbs notebook scaffold + §7.3/§7.4 回填），`f00074e`（§7 4-way strict control 重写 + 单柱 §7.1/§7.2 补跑落地），`f771414`（strict-control viz + single_u15 completed archival），§7.6 s0 envelope 落 commit（待提交）。
+- 闭环 commit：`f179c5b`（§2 + §3 闭环），`1adee4e`（doc split + tandem/sbs notebook scaffold + §7.3/§7.4 回填），`f00074e`（§7 4-way strict control 重写 + 单柱 §7.1/§7.2 补跑落地），`f771414`（strict-control viz + single_u15 completed archival），`01b78ad`（§7.6 s0 sensor envelope 闭环 + §8 P1 重排），§7.7 AsymCritic ablation 落 commit（待提交）。
 
 **复现路径**：
 - §2 cross_u10 + §3 P1 v6：[`notebooks/sac_arrival_v2_cross_extension_and_p1_v6_completed.ipynb`](../notebooks/sac_arrival_v2_cross_extension_and_p1_v6_completed.ipynb)
@@ -72,6 +82,7 @@
 - §7.3 tandem + §7.4 sbs（s1）：[`notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb`](../notebooks/sac_arrival_v2_tandem_sbs_validation_completed.ipynb)
 - §7.1 single_cross + §7.2 single_upstream（s1, 严格控制对照）：scaffold [`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation.ipynb) / archival [`notebooks/sac_arrival_v2_single_u15_seed42_1M_validation_completed.ipynb`](../notebooks/sac_arrival_v2_single_u15_seed42_1M_validation_completed.ipynb)
 - §7.6 s0 sensor envelope（4 cell）：scaffold [`notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope.ipynb`](../notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope.ipynb) / archival [`notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope_completed.ipynb`](../notebooks/sac_arrival_v2_s0_seed42_1M_sensor_envelope_completed.ipynb)
+- §7.7 AsymCritic 单变量 ablation（1 cell, pure B）：scaffold [`notebooks/sac_arrival_v2_s0_cross_asym_ablation.ipynb`](../notebooks/sac_arrival_v2_s0_cross_asym_ablation.ipynb) / archival [`notebooks/sac_arrival_v2_s0_cross_asym_ablation_completed.ipynb`](../notebooks/sac_arrival_v2_s0_cross_asym_ablation_completed.ipynb)
 
 ---
 
@@ -493,14 +504,115 @@ s0：225k 起来 → 525k–625k 高点 0.367 → 然后 drift down 至 ~0.23–
 
 ---
 
+### 7.7 AsymCritic 单变量 ablation on `single_cross_s0`（pure ablation, 单 seed，2026-05-17，**negative finding**）
+
+**动机**：§7.6.4 揭示 `single_cross_s0` 是仓库内唯一对 improved SAC 有 ablation headroom 的 cell（其它 7 cell 已 PASS、6 个 saturate 到 1.000）。[`SAC_improvements_survey.md`](SAC_improvements_survey.md) §10.2 P1#5 留口预期：privileged hull-integral flow（critic 训练时额外看 `[u_eq, v_eq]`，actor 仍只用 s0 单点）应该能闭合 cross 几何下的 80pp gap。本节做这个 ablation 的**最干净版本（pure B 路径）**：仅加 `--use-asymmetric-critic`，**显式拒绝** LayerNorm / UTD>1 / Dropout，让 final 的差异**只能归因于 critic 信息差异本身**，不被其它 SAC 改进项 confound。
+
+> 仅一个变量：`AgentConfig.privileged_obs_dim = 2`（即 `--use-asymmetric-critic`）。`use_layernorm=False / updates_per_step=1 / dropout_rate=0.0` 均与 §7.6.4 baseline 完全一致（核验自 `results/train_config.txt`）。
+
+**复现路径**：scaffold [`notebooks/sac_arrival_v2_s0_cross_asym_ablation.ipynb`](../notebooks/sac_arrival_v2_s0_cross_asym_ablation.ipynb) / archival [`notebooks/sac_arrival_v2_s0_cross_asym_ablation_completed.ipynb`](../notebooks/sac_arrival_v2_s0_cross_asym_ablation_completed.ipynb)。Run dir：`experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_asym/s0_k4/seed_42/`（gitignored）。
+
+**5/5 Gate 实测**：
+
+| Gate | 阈值 | sac_asym | vanilla (§7.6.4) |
+|---|---|---:|---:|
+| final_success_rate | ≥ 0.85 | **0.1667 FAIL** | 0.1000 FAIL |
+| last100k_mean / peak | ≥ 0.90 | 0.1167 / 0.267 = 0.438 **FAIL** | 0.2667 / 0.367 = 0.728 FAIL |
+| OOB rate | ≤ 0.10 | **0.6333 FAIL** | 0.6667 FAIL |
+| arrival_v2 context obs enabled | True | PASS | PASS |
+| arrival_v2 timeout terminal semantics | terminal | PASS | PASS |
+| **总判** | | **3/5 FAIL** | 3/5 FAIL |
+
+AsymCritic 同样未达 gate；末尾 final +6.7pp 是 noise（30-ep eval 上 2 个 episode 的差）。**真正的信号必须看全程曲线，不是末尾单点。**
+
+**Finding F1 — final +6.7pp 是 noise；全程 mean −17.7pp（差 5×）**
+
+| 指标 | vanilla §7.6.4 | sac_asym | Δ |
+|---|---:|---:|---:|
+| final_success @ 1M | 0.100 (3/30 goal) | 0.167 (5/30 goal) | +6.7pp |
+| **mean_success across 39 evals** | **0.221** | **0.044** | **−17.7pp（−5×）** |
+| evals with ≥1 success | 35/39 | **19/39** | **−16 evals** |
+| peak_success | 0.367 @ 975k | 0.267 @ 950k | −10pp |
+| final OOB rate | 0.667 (20/30) | 0.633 (19/30) | −3.4pp（同量级） |
+
+整训练区间 39 次评估的均值是 final 的 5× 信号量。**vanilla 几乎每次 eval 都偶尔抓到 success（35/39 evals 至少 1 个 goal），sac_asym 一半 eval 是全 0（19/39）**。末尾 +6.7pp 与"sac_asym 比 vanilla 好" 无关 — 是 random fluctuation 在最后一个 25k 窗里偶然摆向 asym 那边。
+
+**Finding F2 — 行为风格反向：sac_asym 显著更安全 + 更朝目标推进，但任务级 success 反而更低**
+
+| 行为指标 | vanilla §7.6.4 | sac_asym | Δ |
+|---|---:|---:|---:|
+| safety_cost（全程 mean） | 25.85 | **16.93** | **−34%（更安全）** |
+| progress_ratio（final eval） | 0.277 | **0.453** | **+64%（朝目标推进更多）** |
+| eval_return（final eval） | −173.7 | −129.9 | +43.8（return 更高） |
+| **eval_success_rate（全程 mean）** | **0.221** | **0.044** | **−80%（任务级反而崩）** |
+
+这是一个**清晰的反向 trade-off**：critic 拿到 `[u_eq, v_eq]` 后通过 Q-gradient 引导 actor 学到一个"少触 boundary + 稳定朝目标走"的行为模式（safety_cost ↓ 34%, progress_ratio ↑ 64%, return ↑ 26%），但 **actor 在 s0 端没有获得任何新信息**（asymmetric critic 的标准结构），在 cross 几何下接近目标的最后一段仍然 navigate 不过去。**结果是 sac_asym 大量 episodes 都是"稳定推进 30%–45% 然后 OOB"，比 vanilla "无序硬冲偶尔过去" 还要 less successful。**
+
+**Finding F3 — Quartile dynamics 揭示完整轨迹差异**
+
+| Quartile | sac_asym SR | vanilla SR | sac_asym progress | vanilla progress | sac_asym safety | vanilla safety |
+|---|---:|---:|---:|---:|---:|---:|
+| Q1 (0–250k) | 0.011 | 0.096 | **−1.017** | −0.444 | 15.4 | 31.5 |
+| Q2 (250k–500k) | 0.033 | 0.210 | −0.164 | 0.288 | 18.8 | 30.9 |
+| Q3 (500k–750k) | 0.048 | 0.300 | 0.175 | 0.287 | 18.7 | 20.4 |
+| Q4 (750k–1M) | **0.081** | **0.287** | **0.287** | 0.322 | **14.3** | 21.4 |
+
+- **Q1 早期**：sac_asym progress=−1.017（朝相反方向走），比 vanilla 还差；表明 critic 引导初期把 actor 推到一个**更糟的探索起点**。
+- **Q2–Q3 中期**：sac_asym 才慢慢学到"朝目标走"；vanilla 已经在 0.2–0.3 区间反复 spike。
+- **Q4 末期**：sac_asym **行为指标几乎追平 vanilla**（progress 0.287 vs 0.322, safety 14.3 vs 21.4），**但任务 success 依旧 3× 落后**（0.081 vs 0.287）。
+
+**Finding F4 — 推翻 §10.2 P1#5 / §8 P1#1 的预期**
+
+| 原预期 | 实测 |
+|---|---|
+| AsymCritic 单独闭合 80pp gap → 论文写充分 | mean success **比 vanilla 还差 5×**；final 差异在 noise 内 |
+| privileged hull-integral flow 对本任务理论收益最高 | 行为风格变了，但 deployment-realistic success 反而下降 |
+| `single_cross_s0` 的瓶颈在 critic estimation accuracy | **瓶颈在 actor 侧 information access**（actor 端 s0 单点信息不足以 navigate cross 几何最后一段） |
+
+**机理性解读**（asymmetric-critic literature 里少见的负面 case）：
+
+```
+critic info:        s0 + [u_eq, v_eq]   (训练时)
+actor info:         s0 only             (训练 & 部署一致)
+
+→ Q(s, a) 估计更准
+→ ∂Q/∂a 把 actor 推向"在 critic 看来更好"的 a
+→ 但 actor 决策依据是 s0，s0 信息根本不够区分"看似更好"和"实际更好"
+→ actor 收敛到一个 critic-validated 但 actor-information-poor 的 local optimum
+→ 行为风格变 "safer + more progressive" 但任务 success 反而下降
+```
+
+这意味着 **single_cross_s0 的根本瓶颈是 information-theoretic ceiling**：actor 在 s0 单点信息下学不到能稳定通过 cross 几何的策略，再准的 critic gradient 也无法越过这个 ceiling。**推论：走 A 路径（叠加 LN + UTD=4 = `sac_asym_lnutd`）的理论支撑被打掉了** — LN / UTD 都是优化 critic estimation 的，但 critic estimation 不是这里的瓶颈。
+
+**Writeable claim**（negative finding）：在 production-difficulty cross-stream geometry × deployment-realistic single-point DVL sensor × arrival_v2 reward 的严格控制下，pure AsymCritic ablation（仅加 `--use-asymmetric-critic`）**未能闭合 80pp gap**：mean_success 反而从 vanilla 的 0.221 跌至 0.044（5× 更差），final 差异在 noise 内。行为风格层 critic 信号确实在起作用（safety_cost −34%, progress_ratio +64%），但 actor 端 s0 信息不足以将 critic-validated 行为兑现成任务级 success。这一观察推翻 [`SAC_improvements_survey.md`](SAC_improvements_survey.md) §10.2 P1#5 「privileged hull-integral flow 对本任务理论收益最高」的预期，将 `single_cross_s0` 的瓶颈从 critic estimation accuracy 重定位到 actor-side information access。
+
+**重要约束 / disclaimers**
+
+- **单 seed (=42)**，与 §7.6 平行 exploratory；F1 的 −17.7pp mean gap 与 F2 的 ±34%/64% 行为指标变化在量级上不会因为换 seed 变号（vanilla 35/39 vs asym 19/39 的"有 success eval 数"差是 16 个 eval，远超 seed-level noise），但精确数值不要 over-claim。
+- 仅做了 **pure B 路径**（only `--use-asymmetric-critic`）。**不再推荐做 A 路径**（`sac_asym_lnutd` 组合）— 见 F4 机理解读。
+- 数据完整性核验：5 路径（`flow_path` / `eval_manifest` / `checkpoint_dir` / `agent_path` / `save_dir`）一致指向 `sac_asym/s0_k4/seed_42`；`train_config.txt` line 36 `privileged_obs_dim=2` 确认 AsymCritic 真的进了。无 dir-swap。
+
+**重新校准的下一步**（驱动 §8 P1 改写）：
+
+- **C1（推荐）** — `single_cross_s0` history k=4→8 单变量 ablation：在 §7.6.4 baseline 上**仅**加大 `--history-length 4 → 8`，测 actor-side temporal info 是否能解决 s0 cross 信息瓶颈。与 deployment realism 一致（仍然只用 DVL 单点），cost 同 §7.6.4 (~2.5h L4)。如果 PASS → 直接写「s0 + 更长 history 闭合 sensor 信息瓶颈」，是一个干净的 actor-side 正面发现。如果仍 FAIL → 强证据指向 s0 在 cross 几何下存在 information-theoretic ceiling。
+- **C2**（已在文档）— s1 actor 的 §7.1 baseline 即是上界（0.900），80pp 的 gap 完全是 sensor-side。无需再跑。
+- **C3 / C4**（备用）— boundary 软化 / 接受 s0 在 cross 上 catastrophic failure 作为 thesis 的诚实结论。
+
+---
+
 ## 8. 后续可选工作
 
-§7 4-way strict-control + §7.6 s0 sensor envelope 共同证明 arrival_v2 在 8/8 个 production cell（4 topology×geometry × 2 sensor，单 seed）下：7 cell PASS（其中 6 个 saturate 到 1.000，1 个 borderline `single_cross_s1` 0.900），1 cell **catastrophic FAIL（`single_cross_s0` 0.100，OOB=0.667）**。若 thesis 重启或 offline 线决定升级 reward preset，按以下优先级展开：
+§7 4-way strict-control + §7.6 s0 sensor envelope + §7.7 AsymCritic ablation 共同覆盖了 arrival_v2 在 production-difficulty regime 下的关键 cell：8 个 vanilla cell 中 7 个 PASS（其中 6 个 saturate 到 1.000，1 个 borderline `single_cross_s1` 0.900）+ 1 个 **catastrophic FAIL（`single_cross_s0`）**；针对该 FAIL cell 的 pure AsymCritic ablation（§7.7）**未闭合 gap**，将瓶颈从 critic estimation accuracy 重定位到 actor-side information access。若 thesis 重启或 offline 线决定升级 reward preset，按以下优先级展开：
 
-**P1 — 围绕 `single_cross_s0` catastrophic FAIL 收紧**（§7.6 finding F2 + 机理段直接驱动）：
+**P1 — 围绕 `single_cross_s0` catastrophic FAIL 的 actor-side information access**（§7.6 finding F2 + §7.7 机理段直接驱动）：
 
-1. **AsymCritic × `single_cross_s0` ablation**：`single_cross_s0` 是仓库内目前唯一对 improved SAC 有 ablation headroom 的 cell（其它 7 cell 已 PASS 且 6 个 saturate）。跑一次 `sac_asym_lnutd`（`--use-asymmetric-critic` + `--use-layernorm` + `--updates-per-step 4`）× seed=42 × 1M，看 privileged hull-integral flow 能否闭合 80pp gap。`~2.5h L4`。这是 [设计 §11.6] / [`SAC_improvements_survey.md`](SAC_improvements_survey.md) §10.2 P1#5 留口的直接展开。
-2. **`single_cross_s0` multi-seed 复现**：单 seed 数据已经显示 catastrophic FAIL（5/5 gate 中 3 个 fail），但要 claim "vanilla SAC 在此 cell 上失败" 需要 3-4 seed × 1M。优先级**低于 #1**：若 #1 闭合到 ≥0.85，single_cross_s0 的 baseline framing 改变（vanilla baseline → improved baseline），此时再做 multi-seed 复现 vanilla 才有 narrative。`~7.5–10h L4`。
+1. **`single_cross_s0` × history k=4→8 单变量 ablation**（推荐先做）：在 §7.6.4 vanilla baseline 上**仅**加大 `--history-length 4 → 8`，其它（s0 / arrival_v2 / U / target / seed / 1M / num_envs / vanilla SAC）全部冻结。测 actor-side temporal info 是否能解码 cross 几何下涡街相位（k=8 对应 ~4 s 历史窗，已接近涡街周期 10–20 s 的 30–50%）。与 deployment realism 一致（仍然只用 DVL 单点）；cost 同 §7.6.4（~2.5h L4）。
+   - 若 PASS（final ≥ 0.85）→ 论点："s0 + 更长 history 闭合 sensor 信息瓶颈"；后续再扫 k=12 / k=16 看是否单调。
+   - 若仍 FAIL → 强证据指向 s0 单点 sensor 在 cross 几何下存在 information-theoretic ceiling；落入 P3 #10 物理机制深挖 / 接受为 thesis 诚实结论。
+2. **`single_cross_s0` multi-seed 复现**：单 seed 数据已显示 catastrophic FAIL（5/5 gate 中 3 个 fail），但要 claim "vanilla SAC 在此 cell 上系统性失败" 需要 3–4 seed × 1M。优先级**低于 #1**：若 #1 闭合到 ≥0.85，single_cross_s0 的 baseline framing 改变（k=4 baseline → k=8 baseline），此时再做 multi-seed 复现才有 narrative。`~7.5–10h L4`。
+
+> **已关闭（不再推荐展开）**：
+> - ~~AsymCritic × `single_cross_s0` ablation（原 P1#1）~~ — §7.7 已闭环（pure B 路径，negative finding）。**不再推荐继续走 A 路径（`sac_asym_lnutd` 组合）**：LN / UTD 都是优化 critic estimation 的，但 §7.7 F4 已经证明 critic estimation 不是这里的瓶颈；继续叠加缺乏理论支撑。
 
 **P2 — 其它 cell 的 multi-seed 巩固**（§7 takeaway 进入 thesis-grade 的前置）：
 
@@ -514,6 +626,6 @@ s0：225k 起来 → 525k–625k 高点 0.367 → 然后 drift down 至 ~0.23–
 7. **`w_safety` 二次校准**（[设计 §11.8]）：用 §7.3 tandem 的 actual failure-policy safety 分布（mean 6.85 主要来自 1/30 outlier）重算 break-even 阈值，看 v6 候选 2.0 是否需要调整。
 8. **`scripts/train_sac.py` resume regression test**（§6 留口）。
 9. **更多 benchmark scenarios**：`single_u15_upstream_tgt20` (over-target / λ<1)、`single_u15_downstream_tgt15` (顺流) 等，参考 `benchmarks/` 列表；尤其 `tgt20` 可检验 §7 takeaway「拓扑未引入 sample 难度」是否泛化到 over-actuation 区。
-10. **`single_cross_s0` 物理机制深挖**：F3 plasticity-loss 形态值得做 OOB 时间分布分析 + 涡街相位 vs OOB event 的耦合分析（验证 §7.6 机理段的"涡街 phase 不可见 → 横切瞬间被推出"假设）。
+10. **`single_cross_s0` 物理机制深挖**：§7.6 F3 plasticity-loss 形态 + §7.7 F2 行为风格反向 trade-off 值得做 OOB 时间分布分析 + 涡街相位 vs OOB event 的耦合分析（验证 §7.6 机理段的"涡街 phase 不可见 → 横切瞬间被推出"假设；同时验证 §7.7 的 "actor-side information ceiling" 是否对应明确的物理量缺失）。
 
-是否启动以上任何一项，由 [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) 的产品决策驱动，**不应自动从本节 PASS 跳到展开**。当前推荐最小展开：**P1#1 (AsymCritic ablation on `single_cross_s0`)** — single run, single seed, 2.5h L4，直接测 [设计 §11.6] 留口。
+是否启动以上任何一项，由 [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) 的产品决策驱动，**不应自动从本节 PASS 跳到展开**。当前推荐最小展开：**P1#1（history k=4→8 on `single_cross_s0`）** — single run, single seed, 2.5h L4，直接测 §7.7 机理段重定位后的新假设（actor-side temporal information 是否能解锁 cross 几何下的 s0 ceiling）。

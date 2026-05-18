@@ -1,8 +1,9 @@
 # ReBRAC Broad Validation v2 — Cross-Only Spotlight under `arrival_v2`
 
-> **文档版本**：2026-05-18 rev.2（精简版；rev.1 5-cell 矩阵已并入 backlog）
-> **状态**：active plan（未开跑）
-> **作用**：取代 v1 broad validation 全部产出（spec / plan / report），把广验从「efficiency_v2 三轴 8 spoke + C1 deep-dive」收敛成「arrival_v2 cross-only **2 core cell + 2 conditional follow-up**」。
+> **文档版本**：2026-05-18 rev.3（pivot 版；rev.2 的 crosscomp-based N2 被 S sanity 证伪）
+> **状态**：active plan（pre-train sanity done；core training 未开跑）
+> **作用**：取代 v1 broad validation 全部产出（spec / plan / report），把广验从「efficiency_v2 三轴 8 spoke + C1 deep-dive」收敛成「arrival_v2 cross-only **2 core cell + 1 conditional sweep**」。**Rev.3 关键改动**：S sanity 实测显示 crosscomp 在 cross_u15/s0/arrival_v2 下 success=0%（与 online §7.6 vanilla SAC = 0.10 共同证伪 "simple baseline 可救 critical regime"），privileged 同 setup 下 70%。因此 N2 collector 从 crosscomp 改为 privileged，N2 与 rev.2 原 N4 合并为单一 cell N2'，narrative 重 framing 为 "**actor-fundamental partial-observability ceiling under deployable s0 sensor**"。
+>
 > **取代的 v1 文档**（已加 SUPERSEDED banner）：
 > - [`docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`](superpowers/specs/2026-05-04-rebrac-broad-validation-design.md)
 > - [`docs/superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md`](superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md)
@@ -10,7 +11,7 @@
 > - [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md)（v1 C1 follow-up archive）
 >
 > **不取代的文档**（保持不动）：
-> - ReBRAC 主线三层文档（plan rev.8 / report rev.8 / mainline_review rev.3）— main paper 主线维持 `efficiency_v2`，v2 广验在 paper 里作为 reward-bridge appendix
+> - ReBRAC 主线三层文档（plan rev.8 / report rev.8 / mainline_review rev.3）— main paper 主线维持 `efficiency_v2`，v2 广验在 paper 里作为 partial-obs ceiling appendix
 > - 既有 TD3+BC 归档文档（5 份 Phase 0c 系列）
 >
 > **配套参考**：
@@ -23,11 +24,11 @@
 ## 目录
 
 1. [TL;DR](#1-tldr)
-2. [动机：为什么 v1 不够 + 为什么收敛到 cross](#2-动机)
+2. [动机：为什么 v1 不够 + 为什么收敛到 cross + 为什么 rev.3 pivot](#2-动机)
 3. [v1 → v2 关键变化（diff 表）](#3-v1--v2-关键变化)
-4. [实验矩阵：2 core cell + 2 conditional](#4-实验矩阵)
+4. [实验矩阵：2 core cell + 1 conditional](#4-实验矩阵)
 5. [Pre-commit verdict gates](#5-pre-commit-verdict-gates)
-6. [Stage 流程：sanity → datasets → core train → conditional](#6-stage-流程)
+6. [Stage 流程：sanity (done) → datasets → core train → conditional](#6-stage-流程)
 7. [触发判据 / std 处理](#7-触发判据)
 8. [Paper narrative role](#8-paper-narrative-role)
 9. [Backlog（明确不在本广验范围内）](#9-backlog)
@@ -40,13 +41,15 @@
 ## 1. TL;DR
 
 - ReBRAC paper main results 维持 `efficiency_v2` / `cross_u10` anchor 不变（rev.8 已 closed，不翻盘）
-- v2 广验在 `arrival_v2` reward 下做 **2 core cell（N0 sub-critical anchor + N2 critical regime）+ 1 sanity baseline（S）+ 2 conditional follow-up（N4 teacher ceiling、M1 BC sweep）**，全部 cross-stream geometry
-- **每个 cell 跑 3 seed**（rev.2 调整；rev.1 是 5 seed）— broad val 是 appendix，3 seed acceptable + 在文档中明标
+- v2 广验在 `arrival_v2` reward 下做 **2 core cell (N0 sub-critical anchor + N2' critical regime with oracle teacher) + 1 conditional follow-up (M1 BC sweep)**，全部 cross-stream geometry
+- **每个 cell 跑 3 seed [42, 43, 44]** — broad val 是 appendix，3 seed acceptable + 在文档中明标
+- **S sanity 已完成（rev.3 pivot trigger）**：crosscomp@critical = 0% (0/30) ↔ privileged@critical = 70% (21/30)；前者证伪 rev.2 的 crosscomp-based N2 dataset 路径，后者证明 oracle teacher 可收
 - 砍掉的 v1 内容：upstream / tandem / sbs geometry、goalseek / worldcomp / mix5050 collector、C1 deep-dive 5 ablation
-- 砍掉的 rev.1 内容：N1（sub-critical sensor probe）、N3（critical sensor rescue）— 都已被 v1 B1 + online §7.6 覆盖
-- 增加：(U, Re, λ) 两 regime 探针（sub-critical u10/Re150/λ=0.67 vs critical u15/Re250/λ=1.0）、与 online §7.6 形成 offline ↔ online 对位、S sanity card 兼任 paper crosscomp baseline control
-- paper 角色：**reward-bridge appendix + critical regime head-to-head**，不是替代 main results 而是辅助说明 main finding 对 reward 选择的稳健性
-- 预算：**~6–24 h L4 + 2–3 h CPU**（最好 vs 最坏情况）。对比 v1 ~50h L4，砍 ~70%；对比 rev.1 28-40h L4，再砍 ~50%
+- 砍掉的 rev.1 内容：N1（sub-critical sensor probe）、N3（critical sensor rescue）
+- 砍掉的 rev.2 内容：N4 独立 cell（已合并到 N2'）
+- 增加（rev.3）：N2' 用 privileged dataset；§5.3 verdict gate 重校准到 oracle ceiling；§8 paper framing 改为 "actor-fundamental partial-obs ceiling"
+- paper 角色：**partial-observability ceiling appendix** — 围绕 "在 critical regime + deployable s0 actor 下，给 offline RL 喂 oracle teacher data，能突破多少 partial-obs ceiling" 这一核心 question
+- 预算：**~6–24 h L4 + ~1 h CPU**（最好 vs 最坏情况）；S sanity 已花 ~2 min CPU
 
 ---
 
@@ -56,82 +59,120 @@
 
 v1 全套实验跑在 `efficiency_v2` 下，但两条独立证据线都表明 `efficiency_v2` 在 upstream / 高难度 cell 上有 reward shaping 失配：
 
-1. [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §3 — `efficiency_v2` 在 `single_u15_upstream` 上 vanilla SAC collapse 到 `success=0`（agent 学会快速出界），arrival_v2 修复到 1.000
-2. v1 broad val C1 baseline termination 分布是 `goal=22.5 / timeout=77.5 / oob=0` — 这是 `efficiency_v2` 把 agent 钉在「保守憋边界」上的 footprint；reward swap 到 `arrival_v2_simple` 后翻成 `goal=21.5 / timeout=52.5 / oob=26`
+1. [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §3 — `efficiency_v2` 在 `single_u15_upstream` 上 vanilla SAC collapse 到 `success=0`，arrival_v2 修复到 1.000
+2. v1 broad val C1 baseline termination 分布是 `goal=22.5 / timeout=77.5 / oob=0` — 这是 `efficiency_v2` 把 agent 钉在「保守憋边界」上的 footprint
 
-含义：v1 C1 「task-fundamental floor at deployable sensors s0/s1」claim 受 reward bias 污染，**不能在不切换 reward 的前提下被升格为 paper-quality finding**。
+含义：v1 finding 受 reward bias 污染，**不能在不切换 reward 的前提下被升格为 paper-quality finding**。
 
-### 2.2 online 线已经给出更强 sensor envelope finding
+### 2.2 online 线已经给出 sensor envelope finding
 
-online [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §7.6 显示：在 `arrival_v2 / cross_u15` 下 vanilla SAC + s0 catastrophic FAIL（`final=0.10 / OOB=0.667`），s1 PASS（`final=0.9`）。**s0–s1 gap = 80pp**，相比 A0 (cross_u10 + arrival_v1) 的 3pp **放大 24×**。
+online §7.6 显示：在 `arrival_v2 / cross_u15` 下 vanilla SAC + s0 catastrophic FAIL（`final=0.10 / OOB=0.667`），s1 PASS（`final=0.9`）。**s0–s1 gap = 80pp**，相比 A0 (cross_u10 + arrival_v1) 的 3pp **放大 24×**。
 
-这条 finding 在 v1 broad val（cross_u10, efficiency_v2）里完全看不到 — v1 B1 (s1) untriggered, robust 是 weak positive；online 线的 80pp gap 才是 paper-grade sensor envelope claim。
+### 2.3 rev.3 pivot：S sanity 揭示 crosscomp dataset 路径不可行
 
-**v2 直接把 online §7.6 作为 narrative spine**：在 cross_u15/s0/critical regime 上跑 offline ReBRAC，与 online §7.6 catastrophic FAIL 做 head-to-head。这是 v2 最强 paper hook。
+**实测**（2026-05-18，30 ep on `single_u15_cross_tgt15` manifest，arrival_v2 reward, probe_layout=s0, history=4）：
 
-### 2.3 收敛到 cross-stream 的理由
+| Collector | success | terminations | progress_ratio |
+|---|---:|---|---:|
+| crosscomp | **0.0%** (0/30) | timeout 8 / OOB 22 | −0.682 |
+| privileged | **70.0%** (21/30) | goal 21 / OOB 7 / timeout 2 | +0.685 |
 
-- upstream + arrival_v2 + vanilla SAC online 已 saturate 到 1.000（§7.2 single / §7.3 tandem / §7.4 sbs）— offline ReBRAC 上未必 saturate 但 ROI 低于 cross
-- tandem / sbs 的几何 prior 在 cross_stream 主线 paper 里没承载 narrative 责任
-- cross_stream 是 OOB-once-and-done regime，partial-observability 在这里显化 — sensor envelope 故事最干净
+**含义**：
+- crosscomp 在 critical regime 完全无法 produce viable demonstration data（dataset 100% 失败示范，ReBRAC BC penalty 训不出有意义 policy）
+- 但 critical regime 不是 "无论如何都 unsolvable" — privileged teacher（拿到 hull-integral flow `[u_eq, v_eq]`）仍能 70% success
+- 这两个 sanity 数据共同给出 paper §discussion 的 **performance ceiling decomposition**（见 §8.2）
 
-### 2.4 (U, Re, λ) 两 regime 的科学性 framing
+rev.2 §6.2 给出的三个 fallback (a 降流速 / b 接受退化 / c 砍 critical cell) 都不如直接 pivot：**把 N2 collector 从 crosscomp 改成 privileged**，N2 与原 N4 合并为单一 cell N2'。
 
-v1 单档 (u10 / Re150 / λ=0.67) 是 sub-critical under-actuation；v2 增加的第二档 (u15 / Re250 / λ=1.0) 是 critical under-actuation regime。**两档是两个 physics regime 而非 continuous ladder**（涡街 Strouhal 频率 + wake 几何随 Re 变化）。v2 plan 明确按 "sub-critical vs critical regime comparison" 来 frame，paper 写作时不当 ladder 用。
+### 2.4 Rev.3 paper question 的物理本质 + 关键 caveat
 
-如果未来需要 ladder 中间档（如 U=1.25 / Re=200），需要先用 `scripts/generate_wake.py` 跑新 LBM 设定，记入 backlog。
+**Paper core question**（修订后 framing）：**「Can offline RL with oracle demonstrations elevate a deployable s0-only policy above online RL's catastrophic failure floor in the critical regime?」**
 
-### 2.5 为什么不做 sensor probe（N1 / N3 砍掉）
+**关键 caveat（必须 honestly addressed 在 paper 中）**：
 
-- **N1 sub-critical s1 重测**：v1 B1（cross_u10/s1/efficiency_v2）已是 weak positive；online sub-critical 下 s0/s1 gap 本就小；arrival_v2 下重测的边际信息只是 confirmatory 一行。砍。
-- **N3 critical s1 rescue**：online §7.6 已直接报告 cross_u15/s1 vanilla SAC = 0.90（PASS borderline）。offline 上重测主要是闭合 2×2 表，paper 故事并不依赖。砍 + 推 backlog。
+ReBRAC 默认配置是 vanilla critic（`hidden=256, critic_LN=on`，**不带 asym critic**）。因此：
+
+| Component | Input |
+|---|---|
+| Actor | s0 obs (40-D stacked) only |
+| Critic | s0 obs only |
+| Dataset | (s0_obs, **privileged_action**, ..., privileged_obs) |
+
+ReBRAC actor 通过 BC penalty 学的是 **E[privileged_action | s0_obs]**，**不是 privileged_action 本身**。privileged baseline 用 `[u_eq, v_eq]` (hull-integral flow) 做决策，这个 oracle 信息 actor 看不到。
+
+**因此 N2' 的实际 ceiling 远低于 privileged 70%**，因为：
+- privileged_action 在 critical regime 下对 hull-integral flow 高度敏感
+- s0_obs（单点 DVL 样本，AUV 中心位置）在 critical regime 下与 hull-integral flow weakly correlated（这正是 partial-observability gap 的物理本质 — sub-critical 下 strongly correlated，critical 下 weakly correlated）
+- s0-conditioned imitation 是 intrinsically lossy
+
+这是 **actor-fundamental partial-obs ceiling**：即便给 oracle dataset，s0 actor 也不能 fully recover privileged 的 decision rule。Paper claim 必须严格围绕这个 ceiling 来 frame，不能 oversell 为 "offline RL 突破 partial-obs"。
+
+### 2.5 (U, Re, λ) 两 regime 的科学性 framing
+
+v1 单档 (u10 / Re150 / λ=0.67) 是 sub-critical under-actuation；v2 增加的第二档 (u15 / Re250 / λ=1.0) 是 critical under-actuation regime。**两档是两个 physics regime 而非 continuous ladder**（涡街 Strouhal 频率 + wake 几何随 Re 变化）。Paper 写作时不当 ladder 用。
+
+### 2.6 收敛到 cross-stream + 砍 N1/N3 的理由
+
+- upstream + arrival_v2 + vanilla SAC online 已 saturate；offline ROI 低
+- tandem / sbs 几何在主 narrative 里没承载责任
+- **N1**（sub-critical s1 sensor probe）：v1 B1 已是 weak positive，sub-critical 下 sensor gap 本就小，砍
+- **N3**（critical s1 sensor rescue）：online §7.6 已直接报告 cross_u15/s1 vanilla SAC = 0.90 PASS，offline 重测信息量低，砍
 
 ---
 
 ## 3. v1 → v2 关键变化
 
-| 维度 | v1 (efficiency_v2) | v2 rev.2 (arrival_v2) | 理由 |
+| 维度 | v1 (efficiency_v2) | v2 rev.3 (arrival_v2) | 理由 |
 |---|---|---|---|
-| **Reward** | `efficiency_v2` | `arrival_v2`（8 参数 v6，commit `813096e`） | v1 reward shaping 在 high-difficulty cell 失配 |
-| **Task geometry** | C 轴 3 spoke（main cross + C1 upstream + C3 tandem）| 只 cross_stream | upstream saturate；tandem 与主 narrative 重叠 |
-| **Flow regime 轴** | 单档 `wake_v8_U1p00_Re150` | 双档：u10/Re150 (sub-critical) + u15/Re250 (critical) | online §7.6 显示 critical 是 partial-obs gap 显化 regime |
-| **Collector 集合** | 4 collector + 1 mix | 2 collector：crosscomp + privileged（privileged 仅 conditional 用） | 其余 collector ROI 低或假设不成立 |
-| **Sensor 轴** | s0 / s1 / s2 | 只 s0 | s1 重测信息量低（见 §2.5）；s2 在 online 故事中无角色 |
-| **Cell 数** | 8 spoke + C1 ablation 5 | **2 core (N0/N2) + 1 sanity baseline (S) + 2 conditional (N4/M1)** | 砍重复 / 砍 confirmatory；只保留 paper-essential |
-| **Seed/cell** | 5 seed | **3 seed** [42, 43, 44] | broad val appendix，3 seed acceptable；M1 sweep 已经是 3 seed，对齐 |
-| **Mechanism discriminator** | C1 5 ablation 串联 | BC penalty sweep on **stuck cell**（conditional） | 直接、可证伪、与 v1 retrofit trigger 之一对齐 |
+| **Reward** | `efficiency_v2` | `arrival_v2`（commit `813096e`） | v1 reward shaping 在 high-difficulty cell 失配 |
+| **Task geometry** | C 轴 3 spoke | 只 cross_stream | upstream saturate；tandem 与主 narrative 重叠 |
+| **Flow regime 轴** | 单档 u10/Re150 | 双档：u10/Re150 (sub-critical) + u15/Re250 (critical) | online §7.6 显示 critical 是 partial-obs gap 显化 regime |
+| **Collector 集合** | 4 + 1 mix | **N0=crosscomp, N2'=privileged**（rev.3：crosscomp 在 critical regime 失败被 S sanity 证伪） | S sanity 数据；其余 collector ROI 低 |
+| **Sensor 轴** | s0 / s1 / s2 | 只 s0 | N1/N3 砍后 sensor 只用 s0 |
+| **Cell 数** | 8 spoke + C1 ablation 5 | **2 core (N0/N2') + 1 conditional (M1)** | 砍重复 / 砍 confirmatory；rev.3 进一步合并 N4 入 N2' |
+| **Seed/cell** | 5 seed | **3 seed** [42, 43, 44] | broad val appendix，3 seed acceptable |
+| **Mechanism discriminator** | C1 5 ablation 串联 | M1 BC penalty sweep on stuck N2'（conditional） | 直接、可证伪 |
 | **Anchor** | `efficiency_v2` 5-seed 0.902 ± 0.021 | `arrival_v2` 3-seed N0 重测 | 新 reward 必须新 anchor |
-| **N0 GO 阈值** | n/a | **≥ 0.70**（不是 rev.1 的 0.50） | 严格 reward-bridge 判定，避免 "weak bridge" 进 paper |
-| **std_blow_up 阈值** | 0.042 = 2 × 旧 std | **改为 warning，不进 verdict gate** | 3 seed 估 std 自由度 df=2 不稳，不作为 hard gate |
-| **A2 td3bc head-to-head** | 是 | 砍 | 无 mix dataset |
-| **C1 deep-dive 5 ablation** | reward/asym/epoch/sensor/conv | 砍 | 由 conditional BC sweep 替代 |
-| **Paper role** | standalone exploratory | reward-bridge appendix + critical regime head-to-head | 明确 paper section |
+| **N0 GO 阈值** | n/a | **≥ 0.70** | 严格 reward-bridge 判定 |
+| **N2' verdict 校准** | n/a | 基于 privileged ceiling 70%（≥ 0.40 strong / 0.15-0.40 partial / < 0.15 negative） | rev.3 重新校准；不再用 absolute success threshold |
+| **N0 dataset 路径** | n/a | **新 collect**（不 relabel） | rev.3 改：v1 transitions.npz 缺 `distance/elapsed_time` 字段，relabel 复杂度高于预期 |
+| **N2' dataset** | n/a | privileged @ cross_u15/s0（rev.3 新增；rev.2 中 N2=crosscomp 已撤回） | S sanity 证明 privileged @ critical 可收 |
+| **std_blow_up 阈值** | 0.042 = 2 × 旧 std | **改为 warning，不进 verdict gate** | 3 seed std df=2 不稳 |
+| **Paper role** | standalone exploratory | partial-observability ceiling appendix | 明确 paper section + 严格 caveat |
 
 ---
 
 ## 4. 实验矩阵
 
-**固定基底**：`cross_stream / target_speed=1.5 / arrival_v2 / probe_layout=s0 / ReBRAC (β1=4, β2=2, hidden=256, critic_LN=on) / 64 epochs / 3 seeds [42, 43, 44] / test_episodes=100`
+**固定基底**：`cross_stream / target_speed=1.5 / arrival_v2 / probe_layout=s0 / ReBRAC (β1=4, β2=2, hidden=256, critic_LN=on, vanilla critic) / 64 epochs / 3 seeds [42, 43, 44] / test_episodes=100`
 
-### 4.1 主体：1 sanity baseline + 2 core cell
+### 4.1 主体：1 sanity baseline (done) + 2 core cell
 
-| Cell | 类型 | Collector | Sensor | Flow | (U, Re, λ) | 角色 | 训练？ |
+| Cell | 类型 | Collector | Sensor | Flow | (U, Re, λ) | 角色 | 状态 |
 |---|---|---|---|---|---|---|---|
-| **S** Sanity baseline | sanity | crosscomp | s0 | `wake_v8_U1p50_Re250` | (1.5, 250, 1.0) critical | (a) 数据集可收性 GO/NO-GO；(b) **paper §discussion 必须呈现的 crosscomp baseline control**（让 N2 的 "offline beats online" claim 可证伪） | ❌（纯 rollout 评估） |
-| **N0** Anchor | core | crosscomp | s0 | `wake_v8_U1p00_Re150` | (1.0, 150, 0.67) sub-critical | reward-bridge baseline；与 main line `efficiency_v2 / 0.902` 对照 | ✅ 3 seed |
-| **N2** Critical regime | core | crosscomp | s0 | `wake_v8_U1p50_Re250` | (1.5, 250, 1.0) critical | 与 online §7.6 `single_cross_s0` (vanilla SAC 0.10) 对位 + crosscomp baseline (S) 做 control；offline 是否更稳 | ✅ 3 seed |
+| **S** Sanity baseline | sanity | **crosscomp + privileged** | s0 | `wake_v8_U1p50_Re250` | (1.5, 250, 1.0) critical | paper §discussion ceiling decomposition：crosscomp = 0% (lower bound), privileged = 70% (oracle upper bound) | ✅ **DONE** (2026-05-18) |
+| **N0** Anchor | core | crosscomp | s0 | `wake_v8_U1p00_Re150` | (1.0, 150, 0.67) sub-critical | reward-bridge baseline；与 main line `efficiency_v2 / 0.902` 对照 | 待跑（3 seed） |
+| **N2'** Critical regime + oracle teacher | core | **privileged** | s0 | `wake_v8_U1p50_Re250` | (1.5, 250, 1.0) critical | actor-fundamental partial-obs ceiling probe：oracle teacher data + s0 actor + critic 能否突破 online catastrophic FAIL (§7.6 = 0.10) | 待跑（3 seed） |
 
-### 4.2 Conditional follow-up（视 N2 结果触发）
+### 4.2 Conditional follow-up
 
 | Cell | 触发条件 | Collector | Sensor | Flow | 角色 | 成本 |
 |---|---|---|---|---|---|---|
-| **N4** Priv teacher | N2 success < 0.7 | **privileged** | s0 | u15/Re250 critical | task-data ceiling 证据：oracle teacher 在 deployable obs 下能拿多少 | 3 seed × 1h = ~3h L4 |
-| **M1** BC sweep | N2 success ∈ [0.20, 0.70] | crosscomp | s0 | u15/Re250 critical | mechanism discriminator：BC penalty floor vs task-data floor；β1 ∈ {0, 1, 2, 4, 8} × 3 seed = 15 runs | ~15h L4 |
+| **M1** BC sweep | N2' success ∈ [0.15, 0.40]（mid-ceiling stuck region） | privileged | s0 | u15/Re250 critical | mechanism discriminator：BC penalty floor vs actor-fundamental floor；β1 ∈ {0, 1, 2, 4, 8} × 3 seed = 15 runs | ~15h L4 |
 
-**双 conditional 协同**：
-- N2 < 0.20：N4 必跑（验证 ceiling），M1 skip（β-tuning 在 catastrophic 区间无意义）
-- N2 ∈ [0.20, 0.70]：N4 + M1 都跑
-- N2 ≥ 0.70：都 skip，paper 引用 N0 + N2 + S 即可
+**协同规则**：
+- N2' < 0.15：M1 skip（β-tuning 在 catastrophic 区间无信息）。结论已是 strong negative（actor-fundamental ceiling）
+- N2' ∈ [0.15, 0.40]：M1 跑 — 区分 "卡在 partial recovery 因为 BC 太硬" vs "卡在 actor-fundamental"
+- N2' ≥ 0.40：M1 skip。结论已是 strong positive（offline RL meaningfully bridges gap）
+
+### 4.3 已删除的 cells（vs rev.2）
+
+| Cell (rev.2) | rev.3 处理 | 理由 |
+|---|---|---|
+| rev.2 N2 (crosscomp / critical) | **删除并替换为 N2' (privileged)** | S sanity 证伪 — crosscomp dataset 100% 失败示范 |
+| rev.2 N4 (privileged / critical, conditional) | **合并到 N2' main** | N2' 已经用 privileged，N4 独立 cell 多余 |
+| rev.1 N1 (s1 / sub-critical) | 已在 rev.2 删除（保持） | v1 B1 已 cover |
+| rev.1 N3 (s1 / critical) | 已在 rev.2 删除（保持） | online §7.6 cross_u15/s1 = 0.90 已 cover |
 
 ---
 
@@ -139,107 +180,103 @@ v1 单档 (u10 / Re150 / λ=0.67) 是 sub-critical under-actuation；v2 增加�
 
 **所有 gate 在跑实验之前预登记，不允许 post-hoc 调整**（v1 教训：A3 1-seed → 5-seed 反转）。
 
-### 5.1 S Sanity baseline（GO/NO-GO + control）
+### 5.1 S Sanity baseline（DONE）
 
-| S success (crosscomp 100 ep rollout) | Verdict | 后续动作 |
-|---:|---|---|
-| ≥ 0.40 | dataset 可收 + 提供 paper control | proceed N2 dataset 收集 |
-| 0.20–0.40 | dataset 退化但仍可用 | proceed，paper 标注 "low-quality teacher data" |
-| < 0.20 | dataset 几乎全失败示范 | **暂停** N2；fallback 选项见 §6.2 |
+实测结果记录见 `experiments/offline/rebrac/broad_validation_v2/S_sanity/`：
+
+| Sanity | success | verdict |
+|---|---:|---|
+| crosscomp @ cross_u15/s0/arrival_v2 (30 ep) | 0.0% | hand-coded baseline lower bound — dataset 不可收 |
+| privileged @ cross_u15/s0/arrival_v2 (30 ep) | 70.0% | oracle ceiling 上界 — N2' dataset 可收 |
+
+**S sanity 直接 GO to N2' dataset collection（using privileged，不用 crosscomp）。**
 
 ### 5.2 N0 Anchor GO/NO-GO（最关键）
 
 | N0 3-seed success | Verdict | 后续动作 |
 |---:|---|---|
-| ≥ 0.70 | reward bridge holds | N2 按计划跑 |
-| 0.50–0.70 | weak bridge | N2 仍跑，paper 写作时明标 "arrival_v2 下 ReBRAC anchor 比 efficiency_v2 下退化 X pp（仍 deployable，但 reward shaping sensitivity 需在 discussion 注明）" |
+| ≥ 0.70 | reward bridge holds | N2' 按计划跑 |
+| 0.50–0.70 | weak bridge | N2' 仍跑，paper 写作时明标 "arrival_v2 下 ReBRAC anchor 比 efficiency_v2 下退化 X pp" |
 | < 0.50 | **reward bridge 失败** | **暂停**所有后续 cell；review reward / collector / dataset；可能整套设计推翻 |
 
-### 5.3 N2 Critical regime（与 online §7.6 对位）
+### 5.3 N2' Critical regime with oracle teacher（rev.3 重校准）
 
-| N2 success | vs S (crosscomp baseline) | Verdict | Paper claim 候选 |
-|---:|---|---|---|
-| ≥ 0.70 | typically > S | offline ReBRAC 在 critical regime 比 vanilla SAC online (§7.6 = 0.10) 显著更稳 + 比 crosscomp baseline 更强 | "offline RL 提供 stability advantage in production-difficulty regime, beyond simple imitation of baseline policy" |
-| 0.40–0.70 | typically ≈ S 或略 > S | partial 一致，与 baseline policy 持平 | "offline RL partial mitigation; advantage primarily from imitation, not policy improvement" |
-| 0.20–0.40 | ≤ S | offline 比 baseline 弱 | trigger N4 + M1 来诊断 |
-| < 0.20 | ≪ S | offline 与 online 同样 catastrophic | trigger N4 验证 "critical regime sensor-fundamental at s0 across both online and offline RL" |
+校准基线：privileged oracle ceiling 70%（actor-fundamental upper bound），online §7.6 catastrophic floor 10%。
 
-### 5.4 N4 Privileged teacher（conditional, if triggered）
+| N2' success | vs online 10% | vs oracle 70% | Verdict | Paper claim |
+|---:|---|---|---|---|
+| ≥ 0.40 | substantial improvement | recovers ≥ 57% of teacher ceiling | strong positive | "offline RL with oracle demonstrations meaningfully bridges partial-obs gap under deployable sensor; s0-conditioned imitation extracts ≥ half of oracle ceiling" |
+| 0.15–0.40 | mild–moderate improvement | recovers 21–57% of teacher | partial / trigger M1 | "offline RL extracts some value from oracle demonstrations, but s0-conditioned imitation is intrinsically lossy in critical regime" |
+| < 0.15 | ≈ online catastrophic | < 21% of teacher | strong negative | "critical regime is **actor-fundamental** under s0 sensor; even oracle demonstrations cannot bridge the partial-obs gap when actor lacks hull-integral flow access" |
 
-| N4 success | Verdict |
-|---:|---|
-| ≥ 0.70 | teacher quality 在 critical regime 下能给出可学的 dataset；student (deployable obs) 能利用 |
-| 0.50–0.70 | teacher 帮助有限 |
-| < 0.50 | 即便 oracle data 在 critical regime 下也救不回来 → 强 "task-data fundamental ceiling" 证据 |
+三档均有 publishable narrative。No "weak / unclear" zone。
 
-### 5.5 M1 BC penalty sweep（conditional, if triggered）
+### 5.4 M1 BC penalty sweep（conditional, if triggered）
 
 | β1=0 success vs β1=4 baseline | Verdict |
 |---|---|
-| Δ > +10pp | BC penalty 是 limiting factor（floor 来自 BC 强度，非 task） |
-| Δ ∈ [−5pp, +10pp] | β1 与 ceiling 解耦（floor 来自 task / data，非 BC） |
+| Δ > +10pp | BC penalty 是 limiting factor（floor 来自 BC 强度，非 actor-fundamental） |
+| Δ ∈ [−5pp, +10pp] | β1 与 ceiling 解耦（floor 来自 actor-fundamental） |
 | Δ < −5pp | β1=0 退化（BC penalty 在 stuck cell 仍提供 stabilization） |
 
 ---
 
 ## 6. Stage 流程
 
-### 6.1 Sanity & Datasets（pre-train phase）
+### 6.1 Pre-train phase
 
-**Step 1: S sanity rollout**（critical regime crosscomp 评估，约 1h CPU）
+**Step 1: S sanity — DONE (2026-05-18)**
+
+完成命令（reference）：
 
 ```bash
-# 不训练，纯 rollout 评估 crosscomp 在 cross_u15/s0 下的行为
-python -m scripts.evaluate \
+# crosscomp
+python -m scripts.evaluate_baseline_on_manifest \
   --policy crosscomp \
-  --flow wake_data/wake_v8_U1p50_Re250_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
-  --probe-layout s0 --task-geometry cross_stream --target-speed 1.5 \
-  --history-length 4 --objective arrival_v2 \
-  --episodes 100 --seed 0 \
-  --output-dir experiments/offline/rebrac/broad_validation_v2/S_sanity/
+  --manifest benchmarks/single_u15_cross_tgt15.json \
+  --probe-layout s0 --history-length 4 --objective arrival_v2 \
+  --target-speed 1.5 --task-geometry cross_stream \
+  --num-workers 4 --seed 123 \
+  --output-json experiments/offline/rebrac/broad_validation_v2/S_sanity/sanity_card_u15_cross_s0_crosscomp.json
+# privileged — 同结构，只换 --policy privileged
 ```
 
-结果写入 `sanity_card.json` 兼 paper §discussion control 数据。**§5.1 verdict gate 判定**：< 0.20 触发 fallback。
+结果见 §5.1。**结论触发 rev.3 pivot**。
 
-**Step 2: N0 dataset relabel**（约 10-20 min CPU）
+**Step 2: N0 dataset 新 collect**（约 30 min CPU）
 
-复用 v1 cross_u10/crosscomp/s0 dataset（已存在 `offline_data/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/transitions.npz`），只重新计算 `rewards` 列：
-
-```bash
-# 新工具：scripts/relabel_rewards.py
-# 复用现有 (obs, action, next_obs, done) 不变，按 arrival_v2 公式重打 rewards
-python -m scripts.relabel_rewards \
-  --input  offline_data/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/transitions.npz \
-  --output offline_data/crosscomp_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/transitions.npz \
-  --objective arrival_v2
-```
-
-`obs / actions / next_obs / dones / privileged_obs` 列原样拷贝；只 `rewards` 列重算。同步写新 `metadata.json` + `sanity_card.json` reference 到原 dataset。
-
-**Step 3: N2 dataset 新收**（约 30-60 min CPU；仅在 S 通过 GO/NO-GO 后执行）
+> **rev.3 改路径**：rev.2 原计划 relabel v1 dataset；研判发现 `arrival_v2` reward 计算需 `previous/current/initial_distance_to_goal_m` + `elapsed_time_s` 等字段，v1 transitions.npz 未存，需从 obs 反推 + 维护 episode boundary，复杂度过高且易错。直接新 collect 更稳。
 
 ```bash
 python -m scripts.collect_offline_data \
   --policy crosscomp \
+  --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
+  --probe-layout s0 --task-geometry cross_stream --target-speed 1.5 \
+  --history-length 4 --objective arrival_v2 \
+  --episodes 1000 --seed 0 --num-workers 8 \
+  --output-dir offline_data/crosscomp_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000
+```
+
+写 `sanity_card.json` + verify `success_rate ≥ 0.70`（crosscomp 在 sub-critical 应该稳定，v1 metadata 0.87，arrival_v2 切换不影响 collector 行为）。
+
+**Step 3: N2' dataset 新 collect**（约 30 min CPU；privileged sanity 已 70%，可收）
+
+```bash
+python -m scripts.collect_offline_data \
+  --policy privileged \
   --flow wake_data/wake_v8_U1p50_Re250_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
   --probe-layout s0 --task-geometry cross_stream --target-speed 1.5 \
   --history-length 4 --objective arrival_v2 \
   --episodes 1000 --seed 0 --num-workers 8 \
-  --output-dir offline_data/crosscomp_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000
+  --output-dir offline_data/privileged_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000
 ```
 
-需含 `privileged_obs` / `next_privileged_obs` 列，为未来 asym critic ablation 留口。
+写 `sanity_card.json` + verify `success_rate ≈ 0.70`（与 S sanity 一致）。
 
-### 6.2 GO/NO-GO Fallback（若 S < 0.20）
-
-- (a) 降到 u12.5 / Re~200（需要 `generate_wake` 新跑，~1h CPU）
-- (b) 接受 N2 dataset 退化，但明确 paper 中说明
-- (c) 砍掉 N2/N4/M1，v2 缩到只剩 N0，paper 仅讲 reward bridge 不讲 critical regime
-
-### 6.3 Core training（N0 + N2，6 runs）
+### 6.2 Core training（N0 + N2'，6 runs）
 
 ```bash
-# Per cell, per seed（示例 N0；N2 同结构换 dataset + manifest）
+# Per cell, per seed（N0 示例；N2' 同结构换 dataset + manifest）
 python -m scripts.train_offline_rebrac \
   --offline-data offline_data/crosscomp_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/transitions.npz \
   --actor-bc 4.0 --critic-bc 2.0 \
@@ -252,102 +289,101 @@ python -m scripts.train_offline_rebrac \
   --seed <42|43|44> \
   --device cuda \
   --save-dir checkpoints/offline/rebrac/broad_validation_v2/N0/seed_<n>
+
+# N2' 改用：
+#   --offline-data offline_data/privileged_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000/transitions.npz
+#   --eval-manifest benchmarks/single_u15_cross_tgt15.json
+#   --save-dir checkpoints/offline/rebrac/broad_validation_v2/N2p/seed_<n>
 ```
 
-**执行顺序**：N0 3 seed 先跑 → §5.2 GO/NO-GO 判定 → 通过则 N2 3 seed → §5.3 判定决定是否触发 conditional。
+**执行顺序**：N0 3 seed 先跑 → §5.2 GO/NO-GO 判定 → 通过则 N2' 3 seed → §5.3 判定决定是否触发 M1。
 
 **成本**：2 cell × 3 seed × ~1h L4 = **~6h L4**
 
-### 6.4 Conditional follow-up（N4 / M1，0 / 3 / 15 / 18 h L4）
+### 6.3 Conditional M1（0 或 15 h L4）
 
 执行判定：
 
 ```python
-if N2_mean < 0.20:
-    run_N4()                  # ~3h L4
-elif 0.20 <= N2_mean < 0.70:
-    run_N4()                  # ~3h L4
+if 0.15 <= N2p_mean < 0.40:
     run_M1_bc_sweep()         # ~15h L4
-else:  # N2_mean >= 0.70
-    skip_all_conditional()
+else:
+    skip_M1()                 # 结论已 strong (positive ≥0.40 或 negative <0.15)
 ```
 
-**N4 dataset 收集**（仅 N4 触发时执行，~30 min CPU）：
+**M1 BC sweep**：N2' 配置不变（privileged dataset, s0, critical regime）×  β1 ∈ {0, 1, 2, 4, 8} × 3 seed [42, 43, 44] = 15 runs ≈ 15h L4。
 
-```bash
-python -m scripts.collect_offline_data \
-  --policy privileged \
-  --flow wake_data/wake_v8_U1p50_Re250_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
-  --probe-layout s0 ... \
-  --output-dir offline_data/privileged_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000
-```
-
-**N4 训练**：3 seed × 1h L4 = ~3h L4，配置同 N2 但换 dataset。
-
-**M1 BC sweep**：选定 N2 cell 配置不变，β1 ∈ {0, 1, 2, 4, 8} × 3 seed [42, 43, 44] = 15 runs ≈ 15h L4。
-
-### 6.5 总预算
+### 6.4 总预算
 
 | 情形 | Sanity | Datasets | Core train | Conditional | Total |
 |---|---|---|---|---|---|
-| 最好（N2 ≥ 0.70，无 conditional） | 1h CPU | 1h CPU | 6h L4 | 0 | **~6h L4 + 2h CPU** |
-| 仅 N4 (N2 < 0.20) | 1h CPU | 1.5h CPU | 6h L4 | 3h L4 | **~9h L4 + 2.5h CPU** |
-| N4 + M1 (N2 ∈ [0.20, 0.70]) | 1h CPU | 1.5h CPU | 6h L4 | 18h L4 | **~24h L4 + 2.5h CPU** |
+| S done + N2' ≥ 0.40 (strong positive，无 M1) | done (~2 min CPU) | 1h CPU | 6h L4 | 0 | **~6h L4 + 1h CPU** |
+| S done + N2' < 0.15 (strong negative，无 M1) | done | 1h CPU | 6h L4 | 0 | **~6h L4 + 1h CPU** |
+| S done + N2' ∈ [0.15, 0.40] (M1 triggered) | done | 1h CPU | 6h L4 | 15h L4 | **~21h L4 + 1h CPU** |
 
-对比：v1 ~50h L4 → **砍 ~70%**；rev.1 5-cell 28-40h L4 → 再砍 ~50%。
+对比：v1 ~50h L4 → **砍 ~70%**；rev.1 5-cell 28-40h L4 → 再砍 ~50%；rev.2 6-24h L4 → 持平偏低。
 
 ---
 
 ## 7. 触发判据
 
-继承 v1 spec §6.1 框架，简化：
-
 | 判据 | 阈值 | 触发后处理 |
 |---|---|---|
 | `mean_shift` | \|cell mean − N0 mean\| > **5pp** | 记录方向 + 是否进入 verdict gate 下一档 |
-| `std_blow_up` | cell std > **2 × N0 std** | **仅 warning，不进 verdict gate**（3 seed std 估计 df=2 太不稳；rev.1 hard gate 撤销） |
+| `std_blow_up` | cell std > **2 × N0 std** | **仅 warning，不进 verdict gate**（3 seed std df=2 不稳） |
 | `verdict_gate_violation` | cell success 落入 pre-commit 表的下一档 | 按 §5 verdict gate 处理 |
 
-v1 旧 `td3bc_gap_collapse` 判据（A2 专用）**砍掉** — v2 没有 mix dataset。
+v1 旧 `td3bc_gap_collapse` 判据（A2 专用）**砍掉**。
 
 ---
 
 ## 8. Paper Narrative Role
 
-v2 在 paper 里的明确角色：**§experiments 的 reward-bridge appendix + §discussion 的 critical regime head-to-head**。
+v2 在 paper 里的明确角色：**§experiments appendix — partial-observability ceiling probe in critical regime**。
 
 ### 8.1 §experiments 引用方式
 
 ```
 Main results (Section X.Y) report ReBRAC's +23.0 pp gain over TD3+BC on
-`crosscomp / cross_u10 / s0 / efficiency_v2`. To verify this finding is not
-an artifact of the `efficiency_v2` reward design (whose limitations in
-upstream geometries are documented in [arrival_v2_experiment_report]),
-we re-anchor under `arrival_v2` (cell N0) and probe critical-regime
-generality (cell N2 + sanity baseline S + conditional N4/M1).
+`crosscomp / cross_u10 / s0 / efficiency_v2` (sub-critical regime). To
+(a) verify this finding is not a `efficiency_v2`-specific artifact, and
+(b) probe the actor-fundamental partial-observability ceiling identified
+by the online sensor envelope analysis (§7.6: vanilla SAC + s0 achieves
+only 0.10 in critical regime), we conduct two experiments:
+
+  N0 (reward-bridge anchor): re-train under arrival_v2 on the same
+  sub-critical setup. Verifies the +23pp finding persists under the
+  redesigned reward.
+
+  N2' (critical-regime oracle-teacher probe): re-train under arrival_v2
+  in the critical regime (U=1.5, Re=250, λ=1.0) using privileged-teacher
+  demonstrations. The privileged teacher achieves 0.70 success directly
+  but uses hull-integral flow `[u_eq, v_eq]` unavailable to the actor;
+  N2' tests whether offline RL with oracle demonstrations can elevate
+  a deployable s0-only policy above the online catastrophic floor.
+
 [Insert main table + verdict summary.]
 ```
 
-### 8.2 §discussion: critical regime head-to-head
+### 8.2 §discussion: performance ceiling decomposition（核心 paper hook）
 
-paper §discussion 关键素材（v2 独有的 paper hook）：
+| Layer | Setup | Performance | Source |
+|---|---|---:|---|
+| hand-coded baseline | crosscomp / s0 / cross_u15 / arrival_v2 | **0.0%** (0/30) | S sanity (done) |
+| online RL | vanilla SAC / s0 / cross_u15 / arrival_v2 / 1M steps | **10.0%** | online §7.6 |
+| **offline RL + oracle teacher** | ReBRAC β1=4 / s0 / privileged dataset / arrival_v2 | **?** | **N2'** |
+| oracle direct | privileged baseline / s0 actor 但 hull-integral knowledge | **70.0%** (21/30) | S sanity (done) |
 
-| Cell | Setup | online vanilla SAC (§7) | offline (this work) | Δ |
-|---|---|---|---|---|
-| cross / s0 / u10 (sub-critical) | reward-bridge anchor | (待补，1 seed ~1h L4) | **N0** | reward-bridge holds? |
-| cross / s0 / u15 (critical) | **stress test** | **§7.6 = 0.10** (catastrophic FAIL) | **N2** vs **S** (crosscomp baseline) | **offline stability advantage?** |
+**核心 paper claim**：N2' 落在这个 ceiling decomposition 的什么位置，决定 paper §discussion 主结论方向（见 §5.3 三档）。
 
-**关键 control**：N2 的 "offline beats online" claim 必须配 S（crosscomp baseline rollout）一起呈现 — paper 必须先告诉读者 "crosscomp 在这个场景下 success 是多少"，才能区分 "ReBRAC 是真有提升" 和 "ReBRAC 是平凡地模仿 crosscomp"。
-
-**Optional online supplement**：online 线如果方便在 cross_u10 / s0 + s1 各跑 1 seed × 1M（~2h L4 total），就能闭合 sub-critical 对位。记入 §9 backlog。
+**关键 caveat（必须 in paper）**：privileged oracle uses hull-integral flow knowledge `[u_eq, v_eq]` that the actor cannot observe. N2' actor's ceiling is bounded above by E[privileged_action | s0_obs]，not by privileged_action itself. The gap between N2' and the 70% oracle line **is** the actor-fundamental partial-observability ceiling.
 
 ### 8.3 与 main paper claim 的关系（明确不冲突）
 
 - main paper claim "ReBRAC +23pp on crosscomp / cross_u10 / s0 / efficiency_v2" — **不变**
 - v2 N0 结果用于声明 "this advantage persists under the redesigned `arrival_v2` reward (Section appendix)"
-- v2 N2 + S 用于声明 "the deployable-sensor envelope identified by online SAC analysis extends (or doesn't extend) to offline ReBRAC" — 具体 claim 视 N2 数值与 §5.3 verdict gate
-- v2 N4（若触发）用于声明 "even oracle teacher data fails to bridge the critical-regime ceiling under deployable obs"
-- v2 M1（若触发）用于声明 "the ceiling is task-data fundamental, not a BC-penalty artifact"
+- v2 N2' 提供 partial-observability ceiling probe：要么 strong positive（offline RL bridges gap），要么 strong negative（critical regime is actor-fundamental），要么 partial + M1 mechanism discriminator
+- 所有三种 N2' outcome 都是 paper-quality finding，无 "weak / unclear" 退路
 
 ---
 
@@ -355,17 +391,19 @@ paper §discussion 关键素材（v2 独有的 paper hook）：
 
 | Backlog item | 优先级 | 理由 |
 |---|---|---|
-| N1 sub-critical s1 sensor probe | 低 | v1 B1 已是 weak positive；sub-critical 下 sensor gap 本就小 |
-| N3 critical s1 sensor rescue | 低 | online §7.6 已直接报告 cross_u15/s1 = 0.90 PASS；offline 重测仅闭合 2×2 表 |
-| C3 tandem geometry × arrival_v2 | 低 | cross 优先级更高，且 v1 C3 std blow-up 机制未明 |
+| N1 sub-critical s1 sensor probe | 低 | v1 B1 已是 weak positive |
+| N3 critical s1 sensor rescue | 低 | online §7.6 已直接报告 cross_u15/s1 = 0.90 PASS |
+| 原 N4 独立 cell | 砍 | 已合并到 N2' |
+| **AsymCritic ablation on N2'** | **中** | 如果 N2' < 0.40，asym critic（critic 拿 privileged_obs，actor 仍 s0）可能 partially close gap — 与 online 线 §8 P1#1 已列 asym critic ablation 对齐；可作为 rev.4 candidate |
+| sub-critical 下 privileged sanity | 低 | privileged 在 sub-critical 接近 1.0 是自明的 |
+| 其他 baseline (goalseek/worldcomp) 在 critical regime 的 sanity | 低 | crosscomp 已证明 hand-coded 在 critical 失败；goalseek/worldcomp 是 strict subset of crosscomp logic |
+| C3 tandem geometry × arrival_v2 | 低 | cross 优先级更高 |
 | upstream geometry × arrival_v2 × offline | 低 | online 已 saturate |
-| mix dataset (cross_u15 dual-mode) | 低 | dual-mode 配方在 cross_u15 下未找到 |
 | Online SAC trained collector | 待 spec | online 线 sprint 中 |
-| s2 (4 probes) cells | 低 | sensor envelope 重心在 s0 vs s1 |
-| Online cross_u10 s0/s1 1-seed 1 跑 | 中 | 闭合 §8.2 表的 sub-critical 行；~2h L4 |
+| s2 (4 probes) cells | 低 | sensor envelope 重心在 s0 |
+| Online cross_u10 s0/s1 1-seed 各 1 跑 | 中 | 闭合 §8.2 ceiling decomposition 的 sub-critical 行 |
 | Flow regime intermediate (U=1.25 / Re~200) | 低 | 需 `generate_wake` 新跑 |
-| asym critic ablation on stuck cell | 中（依赖 online 线） | 如先在 online 上做出来再 mirror 到 offline |
-| 5-seed 补全（main cell 从 3 → 5） | 中 | 若审稿人 push back 3 seed power，对 N0/N2 各补 2 seed，约 4h L4 |
+| 5-seed 补全（main cell 从 3 → 5） | 中 | 若审稿人 push back 3 seed power，对 N0/N2' 各补 2 seed |
 
 ---
 
@@ -377,7 +415,7 @@ paper §discussion 关键素材（v2 独有的 paper hook）：
 |---|---|
 | `docs/superpowers/specs/2026-05-04-rebrac-broad-validation-design.md` | banner: "SUPERSEDED by v2 plan, retain as v1 design archive" |
 | `docs/superpowers/plans/2026-05-04-rebrac-broad-validation-plan.md` | banner: 同上 |
-| `docs/rebrac_broad_validation_report.md` (rev.2) | banner: "v1 实验结果 archive；v2 重启后保留作历史 reference；v1 finding 不进 paper" |
+| `docs/rebrac_broad_validation_report.md` (rev.2) | banner: v1 实验结果 archive |
 | `docs/rebrac_c1_s1_followup_report.md` | banner: 同上 |
 
 ### 10.2 main paper 文档（不变）
@@ -385,7 +423,7 @@ paper §discussion 关键素材（v2 独有的 paper hook）：
 | 文档 | 处理 |
 |---|---|
 | `docs/rebrac_experiment_plan.md` (rev.8) | 不动 |
-| `docs/rebrac_experiment_report.md` (rev.8) | 不动；§10A pointer 保留指向 v1 report |
+| `docs/rebrac_experiment_report.md` (rev.8) | 不动 |
 | `docs/rebrac_mainline_review.md` (rev.3) | §3.5 顶层 pointer 指向本 v2 plan |
 | `docs/rebrac_method_section_draft.md` | 不动 |
 | `docs/rebrac_paper_writing_index.md` | 写作期 §experiments appendix 添加 v2 入口 |
@@ -394,11 +432,11 @@ paper §discussion 关键素材（v2 独有的 paper hook）：
 
 | 文档 | 处理 |
 |---|---|
-| `docs/offline_rl_line_summary.md` | §3.3 broad validation 段落 "v1 archive + v2 active plan"；§4 backlog 更新 |
+| `docs/offline_rl_line_summary.md` | §3.3 broad validation 段落 "v1 archive + v2 active plan rev.3"；§4 backlog 更新 |
 
 ### 10.4 Online 线 cross-link
 
-`docs/arrival_v2_experiment_report.md` §7.6 是 v2 narrative 的 online 平行证据来源；paper 写作时 §discussion 段明确引用。
+`docs/arrival_v2_experiment_report.md` §7.6 是 v2 narrative 的 online 平行证据来源；paper 写作时 §discussion §8.2 ceiling decomposition 表直接引用 §7.6 = 0.10 数据。
 
 ---
 
@@ -408,74 +446,84 @@ paper §discussion 关键素材（v2 独有的 paper hook）：
 
 | Path | Role | Status |
 |---|---|---|
-| `scripts/relabel_rewards.py` | 复用 v1 dataset 但 reward 列重打（N0 dataset 走这条路径） | **TBD（新增）** |
-| `scripts/broad_validation_v2_cell_registry.py` | N0 / N2 / S / N4 / M1 配置 single source of truth（简化版，5 个条目） | TBD |
-| `scripts/run_offline_rebrac_broad_v2.sh` | core train driver（N0 / N2 / N4），skip-resume，复用 train_offline_rebrac | TBD |
+| `scripts/broad_validation_v2_cell_registry.py` | N0 / N2' / S / M1 配置 single source of truth | TBD |
+| `scripts/run_offline_rebrac_broad_v2.sh` | core train driver（N0 / N2'），skip-resume | TBD |
 | `scripts/run_broad_validation_v2_bc_sweep.sh` | M1 conditional sweep driver | TBD |
 | `scripts/summarize_broad_validation_v2.py` | aggregation + verdict gate evaluation | TBD |
-| `notebooks/rebrac_broad_validation_v2_pretrain.ipynb` | S sanity + N0 relabel + N2 collect（一个 notebook 串完 pre-train phase） | TBD |
-| `notebooks/rebrac_broad_validation_v2_core.ipynb` | N0 + N2 训练 + verdict gate 判定 + conditional 决策 | TBD |
-| `notebooks/rebrac_broad_validation_v2_conditional.ipynb` | N4 / M1（视触发） | TBD |
+| `notebooks/rebrac_broad_validation_v2_pretrain.ipynb` | N0 + N2' dataset collection（S sanity 已完成，无需 notebook） | TBD |
+| `notebooks/rebrac_broad_validation_v2_core.ipynb` | N0 + N2' 训练 + verdict gate 判定 + M1 决策 | TBD |
+| `notebooks/rebrac_broad_validation_v2_conditional.ipynb` | M1（视触发） | TBD |
 | `experiments/offline/rebrac/broad_validation_v2/<cell>/seed_*.json` | run results | TBD |
 | `checkpoints/offline/rebrac/broad_validation_v2/<cell>/seed_*/` | checkpoints | TBD |
-| `offline_data/crosscomp_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/` | N0 dataset（relabel 自 v1） | TBD |
-| `offline_data/crosscomp_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000/` | N2 dataset（新收） | TBD |
-| `offline_data/privileged_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000/` | N4 dataset（conditional 新收） | TBD（按需） |
-| `benchmarks/single_u15_cross_tgt15.json` | 已存在（online §7.1 用过），复用 | EXISTS |
+| `offline_data/crosscomp_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/` | N0 dataset（**新 collect，不 relabel**） | TBD |
+| `offline_data/privileged_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000/` | N2' dataset（rev.3 升格为必收） | TBD |
+| `benchmarks/single_u15_cross_tgt15.json` | 已存在，复用 | EXISTS |
 | `benchmarks/single_u10_cross_tgt15.json` | 已存在，复用 | EXISTS |
 
-### 11.2 复用既有（不变）
+### 11.2 已删除（vs rev.2 计划）
+
+| Path | 删除理由 |
+|---|---|
+| `scripts/relabel_rewards.py` | rev.3 改路径：N0 dataset 改为新 collect（见 §6.1 Step 2） |
+| `offline_data/<crosscomp>_re250_u15cross_*` | rev.3 删除：S sanity 证伪 crosscomp 在 critical regime 可收 |
+
+### 11.3 复用既有（不变）
 
 | Path | Role |
 |---|---|
 | `auv_nav/rebrac.py` | ReBRAC agent；与 reward 解耦 |
-| `auv_nav/reward.py` | `arrival_v2` reward preset 已 in-tree（commit `813096e`） |
+| `auv_nav/reward.py` | `arrival_v2` reward preset (commit `813096e`) |
 | `auv_nav/baselines.py` | crosscomp + privileged policy classes |
 | `scripts/train_offline_rebrac.py` | ReBRAC 训练入口 |
-| `scripts/evaluate.py` | online policy rollout（S sanity 用） |
+| `scripts/evaluate_baseline_on_manifest.py` | baseline policy rollout (S sanity 用过) |
 | `scripts/evaluate_offline.py` | manifest 评估 |
 | `scripts/collect_offline_data.py` | offline data collection |
 | `scripts/write_sanity_card.py` | dataset sanity card 工具 |
-| `offline_data/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/` | v1 dataset，N0 relabel 的源 |
 
-### 11.3 Wake data 检查（执行前必查）
+### 11.4 已完成（S sanity 产物）
 
-执行前确认两份 wake 文件本地 + Drive 可用：
-- `wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy` (+ `_meta.json`) — 已用于 v1
-- `wake_data/wake_v8_U1p50_Re250_D12p00_dx0p60_Ti5pct_1200f_roi.npy` (+ `_meta.json`) — online §7.6 已用，复用
+| Path | Role |
+|---|---|
+| `experiments/offline/rebrac/broad_validation_v2/S_sanity/sanity_card_u15_cross_s0_crosscomp.json` | S sanity card — crosscomp (0%) |
+| `experiments/offline/rebrac/broad_validation_v2/S_sanity/sanity_card_u15_cross_s0_privileged.json` | S sanity card — privileged (70%) |
+| `experiments/offline/rebrac/broad_validation_v2/S_sanity/sanity_run.log` | crosscomp run log |
 
-如缺，按 `docs/generate_wake_usage.md` profile `navigation` / `single_u15` 重新生成。
+### 11.5 Wake data 检查（已确认）
+
+执行前已确认两份 wake 文件本地 + Drive 可用：
+- `wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy` ✓
+- `wake_data/wake_v8_U1p50_Re250_D12p00_dx0p60_Ti5pct_1200f_roi.npy` ✓
 
 ---
 
 ## 12. 执行检查清单
 
 执行前确认：
-- [ ] 用户 review + approve 本 plan rev.2
-- [ ] v1 文档已加 SUPERSEDED banner（spec / plan / report / c1_s1_followup）— 已完成（rev.1 期间）
-- [ ] `offline_rl_line_summary.md` 已同步更新 §3.3 / §4
-- [ ] `mainline_review.md` §3.5 pointer 已更新（指向 v2 plan + v1 archive）
-- [ ] Wake data 两份文件已确认可用
-- [ ] `auv_nav/reward.py` `arrival_v2` preset 在当前 branch 可用
-- [ ] v1 N0-source dataset `offline_data/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/transitions.npz` 本地可用
-- [ ] Colab L4 至少 2 session 预算可用（基础 6h + conditional 最坏 18h）
+- [x] 用户 review + approve plan rev.3
+- [x] v1 文档已加 SUPERSEDED banner（spec / plan / report / c1_s1_followup）
+- [x] Wake data 两份文件已确认可用
+- [x] `auv_nav/reward.py` `arrival_v2` preset 在当前 branch 可用
+- [x] **S sanity 已完成**（crosscomp = 0% / privileged = 70%）
+- [ ] `offline_rl_line_summary.md` 已同步更新 §3.3 / §4（指向 rev.3）
+- [ ] `mainline_review.md` §3.5 pointer 已更新（指向 v2 plan rev.3）
+- [ ] Colab L4 至少 2 session 预算可用
 
-执行启动后逐 Stage 检查：
-- [ ] **Step 1** S sanity 完成，crosscomp success rate ≥ 0.40（否则触发 §6.2 fallback）
-- [ ] **Step 2** N0 dataset relabel 完成 + `sanity_card.json` 写入
-- [ ] **Step 3** N2 dataset 新收完成 + `sanity_card.json` 写入
-- [ ] **Core** N0 3-seed 完成 → §5.2 verdict 判定（≥ 0.70 proceed / 0.50-0.70 weak bridge / < 0.50 暂停）
-- [ ] **Core** N2 3-seed 完成 → §5.3 verdict 判定 + 触发判定
-- [ ] **Conditional**（若触发）N4 3-seed 完成
-- [ ] **Conditional**（若触发）M1 15 runs 完成
+逐 Step 检查：
+- [x] **Step 1 (S sanity)** crosscomp + privileged sanity cards 完成 + JSON 落盘
+- [ ] **Step 2 (N0 dataset)** crosscomp / s0 / cross_u10 / arrival_v2 新 collect 1000 ep 完成 + sanity_card.json 写入 + 验证 success ≥ 0.70
+- [ ] **Step 3 (N2' dataset)** privileged / s0 / cross_u15 / arrival_v2 新 collect 1000 ep 完成 + sanity_card.json 写入 + 验证 success ≈ 0.70
+- [ ] **Core N0** 3-seed 完成 → §5.2 verdict 判定（≥ 0.70 proceed / 0.50-0.70 weak / < 0.50 暂停）
+- [ ] **Core N2'** 3-seed 完成 → §5.3 verdict 判定 + M1 触发判定
+- [ ] **Conditional M1**（若 N2' ∈ [0.15, 0.40]）15 runs 完成
 
 paper 写作前最终检查：
 - [ ] 所有 verdict gate 结果 documented in v2 report
-- [ ] §8.2 critical regime head-to-head 表 fully populated（含 S baseline 数据）
+- [ ] §8.2 ceiling decomposition 表 fully populated（含 S baseline 数据 + N2' + online §7.6 引用）
+- [ ] **核心 caveat (actor-fundamental partial-obs ceiling) 明确写入 paper**
 - [ ] cross-link 到 `arrival_v2_experiment_report.md` §7.6 完整
 - [ ] v1 archive cross-link 完整
-- [ ] 3-seed 局限性在 v2 report 明确标注（且 backlog §9 5-seed 补全已记录）
+- [ ] 3-seed 局限性在 v2 report 明确标注（backlog §9 5-seed 补全已记录）
 
 ---
 
-**END of v2 plan rev.2**
+**END of v2 plan rev.3**

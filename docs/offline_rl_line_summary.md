@@ -99,9 +99,20 @@
 - Stage E (a) `crosscomp-1000` cross-dataset 二次验证
 - Stage F (B) critic LayerNorm-off probe + Stage F (C) 统计检验
 
-### 3.3 Phase 2.5 — Broad validation（v1 SUPERSEDED → v2 active plan）
+### 3.3 Phase 2.5 — Broad validation（v1 SUPERSEDED → v2 ✅ PASS 2026-05-19）
 
-**2026-05-18 status 升级**：v1 全套（design spec / implementation plan / report rev.2 / c1_s1_followup）已 SUPERSEDED by [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)。取代原因：
+**2026-05-19 status 升级**：v2 broad validation 4-run 闭环完成。详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。
+
+**v2 核心结果（2 seed [42, 0], cross_stream / s0 / arrival_v2）**：
+| Cell | Setup | success | verdict (plan §5) |
+|---|---|---:|---|
+| **N0** | crosscomp / s0 / cross_u10 / Re150 (sub-critical) | **0.850 ± 0.024** (per-seed [0.867, 0.833]) | **HOLDS** — Δ vs efficiency_v2 main-line anchor 0.902 = **−5.20pp** (paired same-direction) |
+| **N2'** | privileged / s0 / cross_u15 / Re250 (critical) | **0.000 ± 0.000** (per-seed [0.000, 0.000]) | **STRONG_NEGATIVE** — recovery_of_oracle = 0%, lift_vs_online_floor = **−10pp** |
+| M1 BC sweep | conditional | NOT triggered | N2' ∉ [0.15, 0.40] partial zone |
+
+**核心 paper finding**：actor-fundamental partial-observability ceiling under deployable `s0` sensor in critical regime — 即便 oracle teacher (privileged 70% direct success) 提供 demonstrations，s0-conditioned BC 不能传递 hull-integral flow 知识；N2' 甚至 跌破 online §7.6 catastrophic floor 10pp（report §4 列三个 candidate mechanism: OOD shift / BC trap / online 10% exploration luck）。
+
+**2026-05-18 status (v1 SUPERSEDE 历史)**：v1 全套（design spec / implementation plan / report rev.2 / c1_s1_followup）已 SUPERSEDED by [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)。取代原因：
 1. v1 跑在 `efficiency_v2` 下，但 [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §3 证 `efficiency_v2` 在 upstream / 高难度 cell 有 OOB-suicide failure mode，v1 C1 task-fundamental floor claim 受 reward bias 污染
 2. online 线 §7.6 已独立产出 `cross_u15 + s0` catastrophic FAIL（s0–s1 gap 80pp，A0 的 24× 放大）— 比 v1 B1 (Δ=−0.2pp clean positive) 强得多的 sensor envelope finding
 3. v1 8 spoke 中只有 B1 是 clean positive，其余 7 spoke retrofit trigger 未闭环
@@ -169,17 +180,22 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 - [`docs/rebrac_method_section_draft.md`](rebrac_method_section_draft.md) Method 节
 - [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §0/§1.5 是写作期反复回看的 One Page
 
-### 4.2 Broad validation v2（active plan，未开跑）
+### 4.2 Broad validation v2（✅ PASS 2026-05-19）
 
-详见 [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)。
+详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)（report） + [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)（plan rev.3）。
 
-**执行顺序**（v2 plan §6）：
-1. **Stage 0A — Collector sanity** (5 sanity card, ~3–5h CPU): crosscomp / privileged 在 cross_u10 + cross_u15 + s0 + s1 下的 success rate；GO/NO-GO 关卡 = crosscomp 在 (cross_u15, s0) 下 success ≥ 0.4
-2. **Stage 0B — Dataset 重收** (5 dataset, ~3h CPU): N0–N4 各 1 dataset 含 sanity_card + privileged_obs 列
-3. **Stage 1 — Core 5 cell × 5 seed** (~25h L4): N0 anchor / N1 sensor probe / N2 critical regime / N3 sensor rescue / N4 priv teacher；N0 跑完后重设 std_blow_up 阈值
-4. **Stage 2 — Conditional BC sweep M1** (~0–15h L4): if exist stuck cell (success ∈ [0.20, 0.60])，5 β1 × 3 seed on highest-paper-priority stuck cell
+**实际执行**（vs plan §6 原 4-stage 计划）：
+- Stage 0A (S sanity): ✅ 完成 2026-05-18，crosscomp 0% / privileged 70% — 触发 rev.3 pivot（N2 → N2'）
+- Stage 0B (dataset 收集): ✅ N0 + N2' 各 1000 ep 新 collect 完成
+- Stage 1 (core training + eval): ✅ **2 seed [42, 0]**（plan 原 3 seed，缩水原因见 report §6.1）；N0 0.850 → HOLDS，N2' 0.000 → STRONG_NEGATIVE
+- Stage 2 (conditional M1): ⏭ NOT triggered（N2' ∉ [0.15, 0.40]）
 
-**v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v2 直接通过 conditional BC sweep on stuck cell 提供 mechanism discriminator。v1 finding 不进 paper。
+**剩余 follow-up**（不在主线 paper revision 关键路径上，详见 report §6.3）：
+- 5-seed 补全 N0（+43, 44, 45）— Medium priority，若审稿人 push back
+- Asym-critic ablation on N2'（plan §9 backlog）— **High priority** 若 paper §discussion 想区分 "actor-fundamental" vs "critic-fundamental" partial-obs ceiling
+- online §7.6 candidate-C 验证（3 success episode trajectory 分析）— Medium，若 paper §discussion 想 strengthen anomaly section
+
+**v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v1 finding 不进 paper。
 
 ### 4.3 Online 线交付的 SAC collector（待 spec）
 

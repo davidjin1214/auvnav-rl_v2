@@ -1,7 +1,7 @@
 # ReBRAC Broad Validation v2 — Cross-Only Spotlight under `arrival_v2`
 
 > **文档版本**：2026-05-18 rev.3（pivot 版；rev.2 的 crosscomp-based N2 被 S sanity 证伪）
-> **状态**：active plan（pre-train sanity done；core training 未开跑）
+> **状态**：✅ **PASS — completed 2026-05-19**。N0 HOLDS (0.850 ± 0.024) / N2' STRONG_NEGATIVE (0.000 ± 0.000) / M1 not triggered；actor-fundamental partial-obs ceiling 实证确认。报告见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。
 > **作用**：取代 v1 broad validation 全部产出（spec / plan / report），把广验从「efficiency_v2 三轴 8 spoke + C1 deep-dive」收敛成「arrival_v2 cross-only **2 core cell + 1 conditional sweep**」。**Rev.3 关键改动**：S sanity 实测显示 crosscomp 在 cross_u15/s0/arrival_v2 下 success=0%（与 online §7.6 vanilla SAC = 0.10 共同证伪 "simple baseline 可救 critical regime"），privileged 同 setup 下 70%。因此 N2 collector 从 crosscomp 改为 privileged，N2 与 rev.2 原 N4 合并为单一 cell N2'，narrative 重 framing 为 "**actor-fundamental partial-observability ceiling under deployable s0 sensor**"。
 >
 > **取代的 v1 文档**（已加 SUPERSEDED banner）：
@@ -311,6 +311,8 @@ python -m scripts.train_offline \
 
 **成本**：2 cell × 3 seed × ~1h L4 = **~6h L4**
 
+> **Update 2026-05-18 (notebook execution pass)**：实际首轮 Colab pass 缩到 **2 seed [42, 0]**（4 runs ≈ 2–3h L4），目的是先快速拿到 verdict 信号。若 N2' 落入 §5.3 partial zone (mean ∈ [0.15, 0.40]) 或需要 spec 完整 3 seed power，再补 seed 43 收尾。Driver `notebooks/rebrac_broad_validation_v2_core.ipynb`。
+
 ### 6.3 Conditional M1（0 或 15 h L4）
 
 执行判定：
@@ -420,6 +422,13 @@ only 0.10 in critical regime), we conduct two experiments:
 
 ## 10. Cross-link 与文档影响
 
+> **Status (2026-05-19)**: ✅ **PASS** — broad val v2 4-run 闭环完成（2 seed [42, 0]，非预登记的 3 seed — 见 report §6.1 limitations）。
+> - **N0** (sub-critical, crosscomp/Re150): success = **0.850 ± 0.024**, per-seed [42=0.867, 0=0.833] → §5.2 verdict **HOLDS** (Δ vs efficiency_v2 anchor 0.902 = **−5.20pp**, paired same-direction)
+> - **N2'** (critical, privileged/Re250): success = **0.000 ± 0.000**, per-seed [42=0.000, 0=0.000] → §5.3 verdict **STRONG_NEGATIVE** (recovery_of_oracle = 0%, lift_vs_online_floor = **−10pp**)
+> - **M1** BC sweep §5.4: **NOT triggered** (N2' ∉ [0.15, 0.40] partial zone)
+> - **Paper claim ready**: actor-fundamental partial-obs ceiling under s0 in critical regime — 详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)
+> - **Raw outputs**: `results/offline/rebrac/broad_validation_v2/{N0,N2p}/seed_{42,0}/test_result.json` + `summaries/{verdict_decision.json, p1_overview.csv}`
+
 ### 10.1 v1 文档处理（已加 SUPERSEDED banner）
 
 | v1 文档 | 处理 |
@@ -515,26 +524,28 @@ only 0.10 in critical regime), we conduct two experiments:
 - [x] Wake data 两份文件已确认可用
 - [x] `auv_nav/reward.py` `arrival_v2` preset 在当前 branch 可用
 - [x] **S sanity 已完成**（crosscomp = 0% / privileged = 70%）
-- [ ] `offline_rl_line_summary.md` 已同步更新 §3.3 / §4（指向 rev.3）
-- [ ] `mainline_review.md` §3.5 pointer 已更新（指向 v2 plan rev.3）
-- [ ] Colab L4 至少 2 session 预算可用
+- [x] `offline_rl_line_summary.md` 已同步更新 §3.3 / §4（rev.3 → PASS）
+- [ ] `mainline_review.md` §3.5 pointer 已更新（指向 v2 plan rev.3 → PASS） — 待 follow-up
+- [x] Colab L4 至少 2 session 预算可用（实际 2-seed 单 session ~30 min L4 即闭环）
 
 逐 Step 检查：
 - [x] **Step 1 (S sanity)** crosscomp + privileged sanity cards 完成 + JSON 落盘
-- [ ] **Step 2 (N0 dataset)** crosscomp / s0 / cross_u10 / arrival_v2 新 collect 1000 ep 完成 + sanity_card.json 写入 + 验证 success ≥ 0.70
-- [ ] **Step 3 (N2' dataset)** privileged / s0 / cross_u15 / arrival_v2 新 collect 1000 ep 完成 + sanity_card.json 写入 + 验证 success ≈ 0.70
-- [ ] **Core N0** 3-seed 完成 → §5.2 verdict 判定（≥ 0.70 proceed / 0.50-0.70 weak / < 0.50 暂停）
-- [ ] **Core N2'** 3-seed 完成 → §5.3 verdict 判定 + M1 触发判定
-- [ ] **Conditional M1**（若 N2' ∈ [0.15, 0.40]）15 runs 完成
+- [x] **Step 2 (N0 dataset)** crosscomp / s0 / cross_u10 / arrival_v2 新 collect 1000 ep 完成（dataset 路径见 §11.1）
+- [x] **Step 3 (N2' dataset)** privileged / s0 / cross_u15 / arrival_v2 新 collect 1000 ep 完成
+- [x] **Core N0** **2-seed [42, 0]** 完成 → §5.2 verdict 判定 = **HOLDS** (0.850 ≥ 0.70)
+- [x] **Core N2'** **2-seed [42, 0]** 完成 → §5.3 verdict 判定 = **STRONG_NEGATIVE** (< 0.15) + M1 NOT triggered (∉ [0.15, 0.40])
+- [N/A] **Conditional M1** 不触发（N2' = 0.0 < 0.15 catastrophic 区间，β-tuning 无信息，按 §4.2 协同规则 skip）
+
+**Seed-count 说明**：本轮执行实际跑 2 seed 而非 plan §6.2 原定 3 seed。N2' 0.000/0.000 deterministic 给出 strong signal；N0 0.867/0.833 同向退化 informative。**3rd seed 补全** 已转入 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) §6.3 follow-up backlog。
 
 paper 写作前最终检查：
-- [ ] 所有 verdict gate 结果 documented in v2 report
-- [ ] §8.2 ceiling decomposition 表 fully populated（含 S baseline 数据 + N2' + online §7.6 引用）
-- [ ] **核心 caveat (actor-fundamental partial-obs ceiling) 明确写入 paper**
-- [ ] cross-link 到 `arrival_v2_experiment_report.md` §7.6 完整
-- [ ] v1 archive cross-link 完整
-- [ ] 3-seed 局限性在 v2 report 明确标注（backlog §9 5-seed 补全已记录）
+- [x] 所有 verdict gate 结果 documented in v2 report (§1, §2.3, §3.3)
+- [x] §8.2 ceiling decomposition 表 fully populated（含 S baseline 0.0% + N2' 0.0% + online §7.6 = 10.0% + privileged 70.0%）— v2 report §3.2 + §5.2
+- [x] **核心 caveat (actor-fundamental partial-obs ceiling) 明确写入 v2 report** §5.1 / §5.2 / §5.4；paper §discussion 待起草
+- [x] cross-link 到 `arrival_v2_experiment_report.md` §7.6 完整（v2 report §7.3）
+- [x] v1 archive cross-link 完整（v2 report §7.3）
+- [x] 3-seed 局限性在 v2 report 明确标注（v2 report §6.1，本节亦标注）
 
 ---
 
-**END of v2 plan rev.3**
+**END of v2 plan rev.3 — completed 2026-05-19**

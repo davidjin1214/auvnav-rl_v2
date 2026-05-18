@@ -277,24 +277,35 @@ python -m scripts.collect_offline_data \
 
 ```bash
 # Per cell, per seed（N0 示例；N2' 同结构换 dataset + manifest）
-python -m scripts.train_offline_rebrac \
+python -m scripts.train_offline \
+  --algo rebrac \
   --offline-data offline_data/crosscomp_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/transitions.npz \
-  --actor-bc 4.0 --critic-bc 2.0 \
-  --hidden-dim 256 --critic-layernorm \
-  --epochs 64 --batch-size 256 \
+  --manifest benchmarks/single_u10_cross_tgt15.json \
   --probe-layout s0 --history-length 4 \
-  --objective arrival_v2 \
-  --eval-manifest benchmarks/single_u10_cross_tgt15.json \
-  --eval-episodes 100 \
+  --task-geometry cross_stream --target-speed 1.5 --objective arrival_v2 \
+  --sampling-mode shuffle_no_replacement --num-epochs 64 --batch-size 256 \
+  --hidden-dim 256 --num-hidden-layers 3 \
+  --actor-lr 3e-4 --critic-lr 3e-4 --gamma 0.99 --tau 0.005 \
+  --actor-penalty-coef 4.0 --critic-penalty-coef 2.0 \
+  --policy-noise 0.2 --noise-clip 0.5 --policy-freq 2 \
+  --grad-clip-norm 10.0 --normalizer-eps 1e-3 \
+  --critic-layernorm --no-actor-layernorm \
+  --eval-every 0 --skip-final-eval --log-every 1000 \
   --seed <42|43|44> \
   --device cuda \
   --save-dir checkpoints/offline/rebrac/broad_validation_v2/N0/seed_<n>
 
 # N2' 改用：
 #   --offline-data offline_data/privileged_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000/transitions.npz
-#   --eval-manifest benchmarks/single_u15_cross_tgt15.json
+#   --manifest benchmarks/single_u15_cross_tgt15.json
 #   --save-dir checkpoints/offline/rebrac/broad_validation_v2/N2p/seed_<n>
+
+# Evaluation (after training, separate run):
+#   python -m scripts.evaluate_offline --algo rebrac --checkpoint <save-dir> \
+#     --manifest <same manifest> --episodes 100 --output-json <save-dir>/test_result.json
 ```
+
+> **Smoke test (2026-05-18)**: N0 / seed=42 / num-epochs=2 / device=cpu / ~1 min wallclock. All ReBRAC losses converge correctly (critic 120→27, actor 4.5→0.4, bc 0.9→0.05). Pipeline verified on new env (`obs_dim=48`) + `arrival_v2` reward + `privileged_obs` columns. Full 64-epoch run extrapolates to ~30-45 min/seed on L4.
 
 **执行顺序**：N0 3 seed 先跑 → §5.2 GO/NO-GO 判定 → 通过则 N2' 3 seed → §5.3 判定决定是否触发 M1。
 

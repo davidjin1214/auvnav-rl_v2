@@ -1,4 +1,4 @@
-"""Flow Q-Learning (FQL) agent for offline reinforcement learning.
+r"""Flow Q-Learning (FQL) agent for offline reinforcement learning.
 
 Reference: Park, Li, Levine, "Flow Q-Learning", ICML 2025.
 
@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 
-from .networks import MLP, require_torch
+from .networks import MLP, polyak_update, require_torch
 from .sac import QNetwork
 from .td3bc import ObservationNormalizer, ObservationNormalizerState
 
@@ -186,14 +186,9 @@ class FlowMatchingTeacher(_ModuleBase):
         t: "torch.Tensor",    # [B, 1] or [B]
         obs: "torch.Tensor",  # [B, O]
     ) -> "torch.Tensor":      # [B, A]
-        if x_t.ndim != 2:
-            raise ValueError(
-                f"x_t must have shape [B, action_dim], got {tuple(x_t.shape)}"
-            )
-        if obs.ndim != 2:
-            raise ValueError(
-                f"obs must have shape [B, obs_dim], got {tuple(obs.shape)}"
-            )
+        # Validate the one shape mismatch PyTorch silently broadcasts past:
+        # torch.cat would happily merge [B1, *] with [B2, *] in dim=-1 by
+        # treating them as a single dim-0 mismatch error far from here.
         if x_t.shape[0] != obs.shape[0]:
             raise ValueError(
                 "x_t and obs must have the same batch size, "
@@ -239,7 +234,7 @@ class FlowMatchingTeacher(_ModuleBase):
 
 
 class DistilledStudent(_ModuleBase):
-    """One-step deterministic actor :math:`\\pi_\\phi(s) \\to a \\in [-1, 1]^A`.
+    r"""One-step deterministic actor :math:`\pi_\phi(s) \to a \in [-1, 1]^A`.
 
     Mirrors :class:`auv_nav.rebrac.DeterministicActor` 1:1; only the config
     type differs.
@@ -430,25 +425,9 @@ class FQLAgent:
 
     def _soft_update_targets(self) -> None:
         tau = self.config.tau
-        with torch.no_grad():
-            for src, tgt in zip(
-                self.student.parameters(),
-                self.student_target.parameters(),
-                strict=True,
-            ):
-                tgt.data.mul_(1.0 - tau).add_(tau * src.data)
-            for src, tgt in zip(
-                self.q1.parameters(),
-                self.q1_target.parameters(),
-                strict=True,
-            ):
-                tgt.data.mul_(1.0 - tau).add_(tau * src.data)
-            for src, tgt in zip(
-                self.q2.parameters(),
-                self.q2_target.parameters(),
-                strict=True,
-            ):
-                tgt.data.mul_(1.0 - tau).add_(tau * src.data)
+        polyak_update(self.student, self.student_target, tau)
+        polyak_update(self.q1, self.q1_target, tau)
+        polyak_update(self.q2, self.q2_target, tau)
 
     def _teacher_loss(
         self,
@@ -463,6 +442,38 @@ class FQLAgent:
         v_target = actions - x_0
         v_pred = self.teacher(x_t, t, obs)
         return F.mse_loss(v_pred, v_target)
+
+    def _compute_actor_quantities(
+        self,
+        obs: "torch.Tensor",
+    ) -> "tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]":
+        """Compute the student-actor objective and its components.
+
+        Returns ``(actor_loss, bc_loss, q_min, lambda_coef)``.  Caller controls
+        whether this runs inside ``torch.no_grad()`` (sentinel path) or with
+        gradients (training path).
+        """
+        a_teacher = self.teacher.integrate(
+            obs, n_steps=self.config.flow_steps
+        )  # always @no_grad inside FlowMatchingTeacher.integrate
+        a_student = self.student(obs)
+        q_min = torch.min(
+            self.q1(obs, a_student), self.q2(obs, a_student)
+        )
+        if self.config.normalize_q:
+            lambda_coef = (
+                q_min.abs().mean().detach().clamp_min(1e-6).reciprocal()
+            )
+        else:
+            lambda_coef = torch.ones(
+                (), dtype=torch.float32, device=obs.device
+            )
+        bc_loss = (a_student - a_teacher).pow(2).mean()
+        actor_loss = (
+            -lambda_coef * q_min.mean()
+            + self.config.distill_alpha_bc * bc_loss
+        )
+        return actor_loss, bc_loss, q_min, lambda_coef
 
     # --- act -----------------------------------------------------------
 
@@ -546,28 +557,9 @@ class FQLAgent:
         ) == 0
 
         if should_update_actor:
-            with torch.no_grad():
-                a_teacher = self.teacher.integrate(
-                    obs, n_steps=self.config.flow_steps
-                )
-            a_student = self.student(obs)
-            q_min = torch.min(
-                self.q1(obs, a_student), self.q2(obs, a_student)
+            actor_loss, bc_loss, q_min, lambda_coef = (
+                self._compute_actor_quantities(obs)
             )
-            if self.config.normalize_q:
-                lambda_coef = (
-                    q_min.abs().mean().detach().clamp_min(1e-6).reciprocal()
-                )
-            else:
-                lambda_coef = torch.ones(
-                    (), dtype=torch.float32, device=obs.device
-                )
-            bc_loss = (a_student - a_teacher).pow(2).mean()
-            actor_loss = (
-                -lambda_coef * q_min.mean()
-                + self.config.distill_alpha_bc * bc_loss
-            )
-
             self.student_opt.zero_grad(set_to_none=True)
             actor_loss.backward()
             student_grad_norm = nn.utils.clip_grad_norm_(
@@ -584,27 +576,11 @@ class FQLAgent:
             }
             self._has_actor_metrics = True
         elif not self._has_actor_metrics:
-            # First-step sentinel so CSV columns are non-NaN.
+            # Sentinel populated only on the first ``update()`` call when
+            # ``policy_freq > 1``, so CSV columns are non-NaN immediately.
             with torch.no_grad():
-                a_teacher = self.teacher.integrate(
-                    obs, n_steps=self.config.flow_steps
-                )
-                a_student = self.student(obs)
-                q_min = torch.min(
-                    self.q1(obs, a_student), self.q2(obs, a_student)
-                )
-                if self.config.normalize_q:
-                    lambda_coef = (
-                        q_min.abs().mean().clamp_min(1e-6).reciprocal()
-                    )
-                else:
-                    lambda_coef = torch.ones(
-                        (), dtype=torch.float32, device=obs.device
-                    )
-                bc_loss = (a_student - a_teacher).pow(2).mean()
-                actor_loss = (
-                    -lambda_coef * q_min.mean()
-                    + self.config.distill_alpha_bc * bc_loss
+                actor_loss, bc_loss, q_min, lambda_coef = (
+                    self._compute_actor_quantities(obs)
                 )
             self._last_actor_metrics = {
                 "actor_loss": float(actor_loss.item()),

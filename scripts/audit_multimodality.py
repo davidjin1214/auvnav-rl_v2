@@ -34,13 +34,16 @@ from typing import Any
 
 import numpy as np
 
+from scripts.concat_offline_datasets import _load_dataset
+
 try:
+    from joblib import Parallel, delayed
     from sklearn.mixture import GaussianMixture
     from sklearn.neighbors import NearestNeighbors
 except ImportError as exc:  # pragma: no cover - explicit guard
     raise ImportError(
-        "scripts/audit_multimodality.py requires scikit-learn. "
-        "Install with: pip install scikit-learn\n"
+        "scripts/audit_multimodality.py requires scikit-learn (joblib comes "
+        "with it). Install with: pip install scikit-learn\n"
         "(audit is a separate dev-time tool; sklearn is not in the repo's "
         "main training requirements.)"
     ) from exc
@@ -67,6 +70,7 @@ class AuditConfig:
     seed: int = 0
     label_a: str = "A"
     label_b: str = "B"
+    n_jobs: int = -1  # -1 = use all cores; 1 = sequential (for tests/debug)
 
 
 # ---------------------------------------------------------------------------
@@ -77,22 +81,22 @@ class AuditConfig:
 def _load_obs_actions(
     dataset_dir: Path,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
-    """Load (obs, actions, metadata) from a dataset directory."""
-    transitions_path = dataset_dir / "transitions.npz"
-    metadata_path = dataset_dir / "metadata.json"
-    if not transitions_path.exists():
-        raise FileNotFoundError(
-            f"Missing transitions.npz under {dataset_dir}"
-        )
-    transitions = np.load(transitions_path)
-    if "obs" not in transitions.files:
+    """Load (obs, actions, metadata) from a dataset directory.
+
+    Delegates I/O to :func:`scripts.concat_offline_datasets._load_dataset`
+    (canonical npz+metadata loader; uses a context-managed ``np.load`` so the
+    file handle is released).  We then project to the two arrays the audit
+    cares about, with shape validation.
+    """
+    arrays, metadata = _load_dataset(dataset_dir)
+    if "obs" not in arrays:
         raise KeyError(f"transitions.npz at {dataset_dir} is missing 'obs'")
-    if "actions" not in transitions.files:
+    if "actions" not in arrays:
         raise KeyError(
             f"transitions.npz at {dataset_dir} is missing 'actions'"
         )
-    obs = np.asarray(transitions["obs"], dtype=np.float32)
-    actions = np.asarray(transitions["actions"], dtype=np.float32)
+    obs = np.asarray(arrays["obs"], dtype=np.float32)
+    actions = np.asarray(arrays["actions"], dtype=np.float32)
     if obs.ndim != 2 or actions.ndim != 2:
         raise ValueError(
             "Expected obs/actions shape [N, D]; got "
@@ -103,11 +107,6 @@ def _load_obs_actions(
             f"obs/actions length mismatch in {dataset_dir}: "
             f"{obs.shape[0]} vs {actions.shape[0]}"
         )
-    metadata: dict[str, Any]
-    if metadata_path.exists():
-        metadata = json.loads(metadata_path.read_text())
-    else:
-        metadata = {}
     return obs, actions, metadata
 
 
@@ -226,6 +225,28 @@ def _gmm_mode_count(
     return max(1, n_effective)
 
 
+def _gmm_mode_count_or_fail(
+    actions_k: np.ndarray,
+    max_components: int,
+    n_init: int,
+    weight_floor: float,
+    rng_seed: int,
+) -> tuple[int, str | None]:
+    """Worker variant of :func:`_gmm_mode_count` for ``joblib.Parallel``.
+
+    Returns ``(mode_count, error_repr_or_None)``.  Failures (degenerate
+    covariance, cholesky breakdown) are downgraded to ``mode_count=1`` with
+    the type+message captured so the caller can surface a single warning.
+    """
+    try:
+        n = _gmm_mode_count(
+            actions_k, max_components, n_init, weight_floor, rng_seed
+        )
+        return n, None
+    except (ValueError, np.linalg.LinAlgError) as exc:
+        return 1, f"{type(exc).__name__}: {exc}"
+
+
 # ---------------------------------------------------------------------------
 # audit one dataset
 # ---------------------------------------------------------------------------
@@ -252,24 +273,38 @@ def _audit_dataset(
         nbrs, anchor_obs, actions, k=config.knn_k
     )
 
-    mode_counts = np.empty(len(anchor_idx), dtype=np.int32)
-    fail_count = 0
-    for i in range(len(anchor_idx)):
-        try:
-            mode_counts[i] = _gmm_mode_count(
-                neighbor_actions[i],
-                max_components=config.gmm_max_components,
-                n_init=config.gmm_n_init,
-                weight_floor=config.mode_weight_floor,
-                rng_seed=int(config.seed) + i,
-            )
-        except Exception:  # pragma: no cover - defensive
-            mode_counts[i] = 1
-            fail_count += 1
+    # 500 anchors × up to 9 GMM fits each → dominant dev-time cost.  joblib
+    # backend defaults to ``loky`` (process pool), which keeps each worker's
+    # numpy RNG deterministic per-anchor since we pass an explicit
+    # ``rng_seed`` derived from ``config.seed + i``.
+    results = Parallel(n_jobs=int(config.n_jobs))(
+        delayed(_gmm_mode_count_or_fail)(
+            neighbor_actions[i],
+            config.gmm_max_components,
+            config.gmm_n_init,
+            config.mode_weight_floor,
+            int(config.seed) + i,
+        )
+        for i in range(len(anchor_idx))
+    )
+    mode_counts = np.fromiter(
+        (mc for mc, _ in results), dtype=np.int32, count=len(results)
+    )
+    fail_reprs = [err for _, err in results if err is not None]
+    fail_count = len(fail_reprs)
+    first_fail_repr = fail_reprs[0] if fail_reprs else None
 
     if fail_count == len(anchor_idx):
         raise RuntimeError(
-            "All GMM fits failed — audit invalid; verify dataset integrity."
+            "All GMM fits failed — audit invalid; verify dataset integrity. "
+            f"First failure: {first_fail_repr}"
+        )
+    if first_fail_repr is not None:
+        print(
+            f"[audit] warning: {fail_count} / {len(anchor_idx)} anchors had "
+            f"GMM fit failures (first: {first_fail_repr}); those were "
+            "counted as mode_count=1.",
+            file=sys.stderr,
         )
 
     n_anchor = int(len(mode_counts))
@@ -309,12 +344,14 @@ def _paired_bootstrap_delta_p_ge_2(
             "Paired bootstrap requires matched anchor counts: "
             f"a={n_a} vs b={n_b}"
         )
-    deltas = np.empty(n_bootstrap, dtype=np.float64)
-    for i in range(n_bootstrap):
-        idx = rng.integers(0, n_a, size=n_a)
-        p_a = float(np.mean(mode_counts_a[idx] >= 2))
-        p_b = float(np.mean(mode_counts_b[idx] >= 2))
-        deltas[i] = p_b - p_a
+    # Vectorised: draw all bootstrap indices in one (B, N) integer matrix,
+    # broadcast-index the boolean ``>=2`` masks once, then average per row.
+    idx = rng.integers(0, n_a, size=(n_bootstrap, n_a))
+    mask_a = (mode_counts_a >= 2)[idx]   # [B, N] bool
+    mask_b = (mode_counts_b >= 2)[idx]   # [B, N] bool
+    p_a = mask_a.mean(axis=1)            # [B] float
+    p_b = mask_b.mean(axis=1)            # [B] float
+    deltas = p_b - p_a
     return {
         "delta_mean": float(np.mean(deltas)),
         "delta_ci_2p5": float(np.percentile(deltas, 2.5)),
@@ -423,6 +460,50 @@ def _save_per_anchor_csv(
     out_path.write_text("\n".join(lines) + "\n")
 
 
+_COLOR_A = "#1f77b4"
+_COLOR_B = "#d62728"
+
+
+def _plot_mode_count_histogram(
+    ax,
+    audit_a: dict[str, Any],
+    audit_b: dict[str, Any],
+    label_a: str,
+    label_b: str,
+    max_components: int,
+) -> None:
+    counts_a = np.asarray(audit_a["mode_counts"], dtype=np.int32)
+    counts_b = np.asarray(audit_b["mode_counts"], dtype=np.int32)
+    bins = np.arange(0.5, max_components + 1.5, 1.0)
+    ax.hist(counts_a, bins=bins, alpha=0.55, label=label_a, color=_COLOR_A)
+    ax.hist(counts_b, bins=bins, alpha=0.55, label=label_b, color=_COLOR_B)
+    ax.set_xlabel("per-anchor GMM mode count")
+    ax.set_ylabel("# anchors")
+    ax.set_xticks(range(1, max_components + 1))
+    ax.legend(loc="best")
+
+
+def _plot_p_distribution_bars(
+    ax,
+    audit_a: dict[str, Any],
+    audit_b: dict[str, Any],
+    label_a: str,
+    label_b: str,
+    max_components: int,
+) -> None:
+    width = 0.35
+    x = np.arange(1, max_components + 1)
+    pa = [audit_a["p_distribution"][f"p_{j}"] for j in x]
+    pb = [audit_b["p_distribution"][f"p_{j}"] for j in x]
+    ax.bar(x - width / 2, pa, width=width, color=_COLOR_A, label=label_a)
+    ax.bar(x + width / 2, pb, width=width, color=_COLOR_B, label=label_b)
+    ax.set_xlabel("mode count")
+    ax.set_ylabel("fraction of anchors")
+    ax.set_xticks(x)
+    ax.set_ylim(0.0, 1.0)
+    ax.legend(loc="best")
+
+
 def _plot_mode_count_distribution(
     audit_a: dict[str, Any],
     audit_b: dict[str, Any],
@@ -434,7 +515,7 @@ def _plot_mode_count_distribution(
     max_components: int,
     out_path: Path,
 ) -> None:
-    """Two-panel matplotlib summary figure."""
+    """Two-panel matplotlib summary figure (histogram + p-distribution bars)."""
     try:
         import matplotlib
 
@@ -448,31 +529,12 @@ def _plot_mode_count_distribution(
         return
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 4), dpi=120)
-
-    # Left panel: histogram of per-anchor mode counts.
-    counts_a = np.asarray(audit_a["mode_counts"], dtype=np.int32)
-    counts_b = np.asarray(audit_b["mode_counts"], dtype=np.int32)
-    bins = np.arange(0.5, max_components + 1.5, 1.0)
-    axes[0].hist(counts_a, bins=bins, alpha=0.55, label=label_a, color="#1f77b4")
-    axes[0].hist(counts_b, bins=bins, alpha=0.55, label=label_b, color="#d62728")
-    axes[0].set_xlabel("per-anchor GMM mode count")
-    axes[0].set_ylabel("# anchors")
-    axes[0].set_xticks(range(1, max_components + 1))
-    axes[0].legend(loc="best")
-
-    # Right panel: bar chart of p_distribution.
-    width = 0.35
-    x = np.arange(1, max_components + 1)
-    pa = [audit_a["p_distribution"][f"p_{j}"] for j in x]
-    pb = [audit_b["p_distribution"][f"p_{j}"] for j in x]
-    axes[1].bar(x - width / 2, pa, width=width, color="#1f77b4", label=label_a)
-    axes[1].bar(x + width / 2, pb, width=width, color="#d62728", label=label_b)
-    axes[1].set_xlabel("mode count")
-    axes[1].set_ylabel("fraction of anchors")
-    axes[1].set_xticks(x)
-    axes[1].set_ylim(0.0, 1.0)
-    axes[1].legend(loc="best")
-
+    _plot_mode_count_histogram(
+        axes[0], audit_a, audit_b, label_a, label_b, max_components
+    )
+    _plot_p_distribution_bars(
+        axes[1], audit_a, audit_b, label_a, label_b, max_components
+    )
     fig.suptitle(f"Multimodality audit — {label_a} vs {label_b}")
     fig.text(
         0.5,
@@ -511,6 +573,7 @@ def _config_from_args(args: argparse.Namespace) -> AuditConfig:
         seed=int(args.seed),
         label_a=str(args.label_a),
         label_b=str(args.label_b),
+        n_jobs=int(args.n_jobs),
     )
 
 
@@ -631,6 +694,15 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--label-a", type=str, default="A")
     parser.add_argument("--label-b", type=str, default="B")
+    parser.add_argument(
+        "--n-jobs",
+        type=int,
+        default=-1,
+        help=(
+            "joblib worker count for GMM fits. -1 uses all cores; "
+            "1 forces sequential (useful for debugging or deterministic tests)."
+        ),
+    )
     return parser
 
 

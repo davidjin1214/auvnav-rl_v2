@@ -23,6 +23,27 @@ def require_torch() -> None:
         ) from _TORCH_IMPORT_ERROR
 
 
+def polyak_update(
+    source_module: "nn.Module",
+    target_module: "nn.Module",
+    tau: float,
+) -> None:
+    """In-place Polyak averaging: ``θ_target ← (1-τ)·θ_target + τ·θ_source``.
+
+    Used by every TD3-style critic and target-actor soft update across the
+    offline agents (TD3BC, ReBRAC, FQL) and online SAC.  Lifted here so each
+    agent's ``_soft_update_targets`` shrinks to a couple of one-liners.
+    """
+    require_torch()
+    with torch.no_grad():
+        for src, tgt in zip(
+            source_module.parameters(),
+            target_module.parameters(),
+            strict=True,
+        ):
+            tgt.data.mul_(1.0 - tau).add_(tau * src.data)
+
+
 def build_hidden_layers(
     in_dim: int,
     hidden_dim: int,

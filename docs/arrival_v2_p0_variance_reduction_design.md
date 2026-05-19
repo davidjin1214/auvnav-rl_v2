@@ -1,27 +1,50 @@
 # arrival_v2 §8 P0 — SAC Variance Reduction Design
 
-**Status**: DRAFT (2026-05-19). Awaiting k=12 seed=0 sister回流 to finalize P0 entry condition.
+**Status**: **DEMOTED-TO-FUTURE-WORK / POLISH-ONLY** (2026-05-19, post §7.9.2 closure).
 **Branch**: `codex-arrival-v2-prototype`
-**Predecessor**: §7.8 multi-seed (3 anchors) + §8 P1#2 k=12 monotonicity (seed=42 single-anchor).
-**Successor**: P0 closure → either continued history extension (k=16) or pivot to architectural variance reduction.
+**Predecessor**: §7.8 multi-seed (3 anchors) + §8 P1#2 k=12 monotonicity (seed=42 anchor).
+**Outcome of pending step (k=12 seed=0 sister)**: **CROSS-SEED-RESCUE 5/5 PASS** — final 0.500 → 0.900, OOB 0.133 → 0.100, peak @ 525k vs 925k. See [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §7.9.2 / §7.9.3.
+**Successor**: ~~either continued history extension (k=16) or pivot to architectural variance reduction~~ — **no immediate successor**. k=16 is decided not to expand (user judgment 2026-05-19); P0 is parked as future polish work.
 
 > **Naming note**: "§8 P0" here is the **first sub-phase of §8** in the arrival_v2 line, **not** the closed §5 P0 profiling work in `online_rl_thesis_plan.md` (which characterized num_envs / IPC bottleneck). The two share the "P0" letter but live in disjoint document namespaces.
 
+> **⚠ 2026-05-19 STATUS UPDATE — empirical resolution of §1.3 hypothesis pair**:
+>
+> When this doc was drafted (2026-05-19 morning), it took §7.9.1 k=8 cross-seed σ_final = 0.181 + seed=0 stall (final=0.500) as the entry condition for P0 — the assumption being that variance reduction (DroQ / N-Step / REDQ) was needed to either rescue seed=0 or shrink σ_final. The pending step was k=12 seed=0 sister (§8 P1#2'), framed as a **prerequisite** to decide between H_info-bottleneck (k=12 fixes seed=0 → no P0 needed) and H_optimization-noise (k=12 still stalls seed=0 → P0 mandatory).
+>
+> **k=12 seed=0 came back as STRICT-PASS 5/5 with CROSS-SEED-RESCUE verdict**: final 0.500 → 0.900 (+40pp), OOB 0.133 → 0.100, peak @ 525k vs §7.9.1' @ 925k. Combined with §7.9.2 k=12 seed=42 (PASS-PLATEAU), the k=12 cross-seed picture is 2/2 strict 5/5 PASS + mean39 σ砍半 (0.157 → 0.064).
+>
+> **Hypothesis resolution**: H_information-bottleneck wins; H_optimization-noise falsified. The decisive evidence is the seed=0 cross-history trajectory k=4: 0.400 → k=8: 0.500 → k=12: 0.900 — a **phase transition between k=8 and k=12** that random-init bad-basin (H_seed-stall) or SAC dynamics noise (H_optimization-noise) cannot produce. Physical match: control_step × k=12 ≈ 6 s ≈ vortex shedding period × 30–60% (Nyquist + half-period for phase reconstruction).
+>
+> **P0 motivation reframe**:
+> - Original: "rescue seed=0 stall + bring σ_final from 0.181 to thesis-acceptable ≤0.10"
+> - Now: **"k=12 alone has done both — final=0.900 on both seeds, σ_final=0.064 already < 0.10 target"**
+> - Residual: mean39 still shows a 0.652 vs 0.525 seed gap, and OOB cross-seed alignment at 0.100 has 1 ep slack on k=8 seed=0/7 (0.133); P0 would only "crisp out remaining cross-seed noise," not rescue anything.
+>
+> **What this doc is now**: a **design reference** retained for:
+> 1. Future thesis revision / paper rebuttal if a reviewer asks "why didn't you try DroQ?"
+> 2. Reuse for the offline RL line (`ReBRAC` / `AUVHamNODE` variance reduction problems share the same techniques)
+> 3. Should §8 thesis chapter ever need P0 polish on top of k=12 (low priority)
+>
+> Most below-section ratings (priorities, schedule, "P0 closes when…" conditions) are now **superseded** by §7.9.2 RESCUE; concrete sections are marked inline.
+
 ---
 
-## 1. Motivation — Why P0 is now thesis-relevant
+## 1. Motivation — Why P0 was thesis-relevant (now resolved by §7.9.2')
 
-### 1.1 Six-anchor evidence base on `single_u15_cross_tgt15` × `s0` × vanilla SAC × 1M
+> **Note 2026-05-19**: This section was authored when k=12 seed=0 was pending and §1.3 H_optimization-noise vs H_info-bottleneck was unresolved. §7.9.2' RESCUE has since resolved §1.3 in favor of H_info-bottleneck, so the motivation argument below has been **answered empirically without running P0**. Retained for archival continuity.
+
+### 1.1 Seven-anchor evidence base on `single_u15_cross_tgt15` × `s0` × vanilla SAC × 1M (updated 2026-05-19)
 
 | run                            | seed | k    | final  | peak@step    | mean39 | OOB    | n_succ | Gate         |
 |---                             |---:  |---:  |---:    |---           |---:    |---:    |---:    |---           |
 | §7.6.4                         | 42   | 4    | 0.100  | 0.367 @ 975k | 0.221  | 0.667  | 35/39  | FAIL floor   |
 | §7.7.1 sister                  | 0    | 4    | 0.400  | 0.533 @ 625k | 0.218  | 0.200  | 34/39  | FAIL         |
 | §7.8 anchor                    | 42   | 8    | **0.900** | 0.900 @ 475k | **0.636** | **0.100** | 37/39 | **PASS 5/5** |
-| §7.8'                          | 0    | 8    | 0.500  | 0.500 @ 925k | 0.260  | 0.133  | 32/39  | PARTIAL 2/5  |
-| §7.8''                         | 7    | 8    | 0.867  | 0.900 @ 550k | 0.518  | 0.133  | 31/39  | BORDER 4/5   |
-| §8P1#2 anchor                  | 42   | 12   | **0.900** | 0.900 @ 375k | 0.652 | **0.100** | 35/39 | **PASS PLATEAU** |
-| §8P1#2 sister (pending回流)    | 0    | 12   | ?      | ?            | ?      | ?      | ?      | ?            |
+| §7.9.1' (formerly §7.8')       | 0    | 8    | 0.500  | 0.500 @ 925k | 0.260  | 0.133  | 32/39  | PARTIAL 2/5  |
+| §7.9.1'' (formerly §7.8'')     | 7    | 8    | 0.867  | 0.900 @ 550k | 0.518  | 0.133  | 31/39  | BORDER 4/5   |
+| §7.9.2 anchor                  | 42   | 12   | **0.900** | 0.900 @ 375k | 0.652 | **0.100** | 35/39 | **PASS PLATEAU 5/5** |
+| **§7.9.2' sister**             | 0    | 12   | **0.900** | 0.900 @ 525k | 0.525 | **0.100** | 32/39 | **STRICT-PASS — CROSS-SEED-RESCUE 5/5 ⭐** |
 
 ### 1.2 Variance budget on k=8 (3 seeds)
 
@@ -39,14 +62,17 @@
 3. **n_succ 维度 33.3/39 ± 2.6** — 整个训练轨迹有 31-37 个 eval 命中过 success，但最后 final 端 seed=0 collapse 到 0.500.
 4. **物理解读**：信息 capacity 充足（OOB 已 robust 压低），但 SAC 学习动力学在不同 random init 上发散出不同的 final policy.
 
-### 1.3 Two competing hypotheses for the seed=0 stall
+### 1.3 Two competing hypotheses for the seed=0 stall — **RESOLVED 2026-05-19 by §7.9.2'**
 
-| Hypothesis | Evidence for | Evidence against |
+| Hypothesis | Evidence (as of 2026-05-19 morning) | Post-§7.9.2' verdict |
 |---|---|---|
-| **H_info-bottleneck**: k=8 仍不够长 (seed=0 需要 k=12) | k=12 s42 mean +1.6pp vs k=8 s42, peak step 100k earlier | OOB 已 cross-seed robust 表明 information capacity sufficient |
-| **H_optimization-noise**: SAC 学习动力学在 seed=0 落入 bad basin | seed=0 trajectory 全程在 0.4-0.5 高原 (last100k_mean=0.475 ≈ peak=0.500)，无 catastrophic but 持续 sub-optimal | k=12 seed=0 sister 未回流，无法直接对照 |
+| **H_info-bottleneck**: k=8 仍不够长 (seed=0 需要 k=12) | k=12 s42 mean +1.6pp vs k=8 s42, peak step 100k earlier | ✅ **CONFIRMED** — §7.9.2' k=12 s0 final 0.500→0.900 (+40pp) STRICT-PASS, OOB 0.133→0.100, peak @ 525k vs 925k; seed=0 cross-history trajectory k=4: 0.4 → k=8: 0.5 → k=12: 0.9 是 phase transition 直接证据 |
+| **H_optimization-noise**: SAC 学习动力学在 seed=0 落入 bad basin | seed=0 trajectory 全程在 0.4-0.5 高原 (last100k_mean=0.475 ≈ peak=0.500)，无 catastrophic but 持续 sub-optimal | ❌ **FALSIFIED** — random init bad-basin / SAC dynamics noise 不会在唯一变量从 k=8 改到 k=12 时被"解锁"出 +40pp final 单调跃迁；regularization 也不能产生 +40pp 任务级跃迁 |
+| **H_seed-stall**（init-dep local min, 额外列出来对照）| seed=0 trajectory 在 k=4 + k=8 都偏低 | ❌ **FALSIFIED** — 同上：init random seed 不会因 k 增加而改变 |
 
-**P0 design 优先考虑 H_optimization-noise 路径**：即使 k=12 seed=0 (待回流) 也无法解 seed=0 stall，也仍需 variance reduction 手段把 σ_final 从 0.18 降到 thesis 可接受水平 (≤0.08-0.10).
+**Resolution**：H_information-bottleneck wins. **物理对应**：control_step ≈ 0.5 s × k=12 history = ~6 s 时序窗 ≈ 涡街周期 (10–20 s) × 30–60%；这已显著超过 Nyquist + 半周期阈值，足以让 actor 从单点 DVL 时序节拍中**鲁棒**反演主导脉动相位（即 critic 通过 privileged hull-integral 看到的同一物理量）。**k=8 (~4s) ≈ 涡街周期 20–40% 是 phase transition 临界点 — lucky seed (=42, =7) 上够，unlucky seed (=0) 上不够**。
+
+**P0 design implication**：原 ~~"P0 design 优先考虑 H_optimization-noise 路径...仍需 variance reduction 手段把 σ_final 从 0.18 降到 thesis 可接受水平"~~ 被 §7.9.2' 实测**直接 short-circuit**：k=12 alone 已把 σ_final 砍半到 0.064（< thesis target 0.10）+ rescue seed=0 + 任务级 final 0.900/0.900 cross-seed strict alignment。**P0 variance reduction 不再是 rescue 必要轴，只是 polish 选项**（详见 §2.2 / §4.4 / §8 closure 重审）。
 
 ---
 
@@ -64,33 +90,28 @@
 | **CrossQ BatchNorm** | Critic BN, 取消 target net, UTD=1 仍稳 | heavy (BN handling + target net 改动) | 1.0x | TBD |
 | **TQC** (Truncated Quantile Critics) | 分位 critic + truncation | very heavy (distributional) | 1.5x | moderate |
 
-### 2.2 Recommended subset for arrival_v2 §8 P0
+### 2.2 Recommended subset for arrival_v2 §8 P0 — priorities **downgraded 2026-05-19**
 
-**P0a — DroQ-lite (zero impl cost)**:
+> **Priority context update**: §7.9.2' RESCUE has resolved §1.3 in favor of H_info-bottleneck; **all P0 priorities below have been demoted from "thesis-critical" to "future polish / paper revision"**. Recommended subset retained for design-reference completeness; no immediate execution recommended.
+
+**P0a — DroQ-lite (zero impl cost)**: ~~HIGH priority~~ → **LOW priority (polish only)**
 - Flags only: `--use-layernorm --dropout-rate 0.01 --updates-per-step 1`
 - Run on `s0_k8 × seed ∈ {42, 0, 7}` (3 anchors, **identical to §7.8 multi-seed**).
-- Direct paired contrast vs §7.8 / §7.8' / §7.8'' (single-flag-flip discipline).
+  - **Note 2026-05-19**: 既然 k=12 cross-seed alone 已经把 σ_final 砍半到 0.064、rescue seed=0、达到 strict 5/5 PASS 2/2，**P0a on k=8 baseline 的 motivation 从"rescue seed=0"变成"看 DroQ-lite 能否在 k=8 上用 regularization 走捷径，不必走 k=12"**。这是相对 k=12 axis 的"orthogonal axis 探索"，已不是 thesis main line。
+  - 若仍想跑：建议把 baseline pin 到 **k=12 而不是 k=8**（k=12 已 thesis-grade），观察 DroQ-lite 在已 thesis-grade baseline 上能否进一步 crisp out OOB 1-ep slack（k=8 seed=0/7 OOB 0.133 vs k=12 0.100）。
 
-**P0b — DroQ + UTD=4 (zero impl cost)**:
-- `--use-layernorm --dropout-rate 0.01 --updates-per-step 4`
-- Run on `s0_k8 × seed=0` only first (focus on the unlucky seed)
-- If seed=0 rescued (final ≥ 0.85) → expand to seed ∈ {42, 7}
-- Note: UTD=4 means 4x critic gradient compute per env step → ~3-4h L4 per run instead of 2.5h
+**P0b — DroQ + UTD=4 (zero impl cost)**: ~~HIGH priority for seed=0 rescue~~ → **DROPPED**
+- 原 motivation 是把 UTD=4 当 seed=0 rescue 工具；§7.9.2' 实测 k=12 alone 已 rescue → P0b 失去任务级 motivation
+- 仅保留为 mechanism-curiosity 选项（"UTD=4 on k=12 baseline 是否 crisp out 剩余 cross-seed mean39 gap 0.652 vs 0.525？"），但 10h L4 wallclock 性价比低
 
-**P0c — N-Step Returns (mild impl cost)**:
-- Add `--n-step-returns N` flag (default N=1 = current behavior)
-- Replay buffer modification: sample n-step transitions
-- Train loop: compute n-step TD target
-- Run on `s0_k8 × seed=0 × N ∈ {3, 5}` first
-- Defer until P0a/b 完成评估
+**P0c — N-Step Returns (mild impl cost)**: ~~MEDIUM priority~~ → **DROPPED (defer to offline line if ever needed)**
+- 80-150 LOC impl effort + N-step TD target rewrite, motivation 已消失
+- 该技术对 `ReBRAC` / offline RL line 有自身 motivation（offline TD bootstrap noise），更适合在那条线评估
 
-**P0d — REDQ ensemble (moderate impl, optional)**:
-- Add `--num-critics M --critic-subset K` flags
-- Model: AsymmetricQNetwork → list[QNetwork]
-- Train: random-K subset for target, mean for actor
-- Defer until P0a/b 不足才考虑
+**P0d — REDQ ensemble (moderate impl)**: ~~LOW priority (last resort)~~ → **DROPPED**
+- 200-400 LOC impl effort; 既然 k=12 alone 已解，REDQ ensemble 的边际 thesis 贡献度 ≈ 0
 
-**Out of scope for P0**: SimBa / CrossQ / TQC — implementation cost太高，留给 future thesis chapter if P0a-c 不足.
+**Out of scope for P0**: SimBa / CrossQ / TQC — implementation cost太高，留给 future thesis chapter if 需要进一步压 cross-seed variance. **2026-05-19 status**: 与 P0c/d 同样降级，offline 线复用价值高于 online 线.
 
 ---
 
@@ -142,15 +163,18 @@ BORDERLINE-PASS (从 §7.8'' seed=7 教训 codified):
 | **PARTIAL** | seed=0 final ∈ [0.5, 0.85), Δ vs §7.8' ≥ +0.10 | 部分 buy 到，但未通过 gate；考虑组合 (P0a + P0b) |
 | **NO-RESCUE** | seed=0 final < 0.5 + 0.10 = 0.60 | 该技术不解；试下一个 |
 
-### 4.4 §8 thesis claim 走向
+### 4.4 §8 thesis claim 走向 — **SUPERSEDED by §7.9 cross-seed picture**
 
-| P0a result | P0b/c needed? | §8 thesis claim |
+> **2026-05-19 actual outcome (not in original table)**: k=12 history-length alone resolved both σ_final (0.181 → 0.064) and seed=0 stall (final 0.500 → 0.900) **without invoking any P0 axis**. §8 thesis claim is now written from §7.9 directly: "**k=12 (~6s ≈ 涡街周期 30–60%) is the cross-seed sweet spot; actor-side temporal information access, not critic-side variance, is the dominant bottleneck on `single_cross_s0`**". The P0a → P0b/c/d branching table below is retained for archival.
+
+| P0a result | P0b/c needed? | §8 thesis claim (HYPOTHETICAL — not the actual closure path) |
 |---|---|---|
 | CONFIRMED-VARIANCE-REDUCTION + seed=0 rescued | No | "DroQ-lite is orthogonal stabilizer on top of k=8" — clean thesis chapter |
 | CONFIRMED but seed=0 still stalls | Yes (P0b/c) | "DroQ reduces variance generally; seed=0 needs higher UTD or n-step" |
 | NO-EFFECT | Yes (P0b/c then P0d) | "Simple regularization insufficient; ensemble methods are required" |
 | MIXED | Re-tune | "Need careful regularization tuning" |
 | WORSENED | Skip to P0d | "Architectural variance reduction is the right axis" |
+| **(ACTUAL outcome 2026-05-19)** k=12 alone resolves it | **No P0 needed** | "**Information bottleneck (k=8 actor temporal window ≈ vortex period 20–40%) underlies seed=0 stall; k=12 (~6s ≈ 30–60%) clears it cross-seed; variance reduction not required**" |
 
 ---
 
@@ -276,13 +300,25 @@ Model changes: QNetwork → `ModuleList[QNetwork]`. Train loop: sample K indices
 
 ## 8. Decision: When Does P0 Close?
 
-P0 closes (and §8 main writing starts) when **any one** of:
+> **2026-05-19 STATUS — P0 has effectively pre-closed via §7.9.2' (k=12 seed=0 CROSS-SEED-RESCUE)**.
+>
+> The §7.9.2' result satisfies the conditions originally written for P0 closure **without running any P0 axis**:
+> - σ_final on cross-seed sample: **0.064 ≤ 0.10 target** ✓
+> - seed=0 RESCUED (final 0.500 → 0.900) ✓
+> - Both seeds STRICT 5/5 PASS ✓
+>
+> The "P0 closes when…" conditions below were authored when k=12 seed=0 was pending. Now that the pending step came back as RESCUE, **P0 closure is satisfied by `k=12 history-length alone` — no DroQ / UTD / N-Step / REDQ axis needed**.
+
+**Effective closure condition met (no P0 axis run)**: **"k=12 alone may already satisfy thesis σ_final target"** — confirmed empirically. §8 main writing starts directly from §7.9 cross-seed picture; P0 design retained as future polish reference, not gating.
+
+**Original closure menu (2026-05-19 morning draft, retained for archival)** — P0 would have closed when **any one** of:
 
 1. P0a CONFIRMED-VARIANCE-REDUCTION + seed=0 RESCUED → write "DroQ-lite is the answer"
 2. P0a + P0b combination achieves σ_final ≤ 0.10 + seed=0 RESCUED → write "DroQ-lite + UTD=4"
 3. P0a + P0c achieves σ_final ≤ 0.10 + seed=0 RESCUED → write "DroQ + N-Step"
 4. P0d (REDQ) achieves σ_final ≤ 0.10 + seed=0 RESCUED → write "Ensemble methods"
 5. All P0a-d fail → write "Vanilla SAC on cross_stream s0 has irreducible σ_final ≈ 0.18; thesis 主线 should target a different reward / sensor combination or report range-statistics instead of strict gates"
+6. **(post-§7.9.2', ACTUAL outcome)** k=12 history-length alone resolves σ_final + seed=0 → write **"Information capacity, not optimization variance, was the bottleneck; k=12 (~6s ≈ vortex period 30–60%) is the cross-seed sweet spot — see §7.9"**
 
 ---
 

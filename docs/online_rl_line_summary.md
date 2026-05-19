@@ -219,6 +219,8 @@
 | [`online_rl_line_summary.md`](online_rl_line_summary.md) | **active（本文件）** | online 线收口报告 | 最先读 |
 | [`online_rl_thesis_plan.md`](online_rl_thesis_plan.md) | **deprecated 2026-05-06**（本次更新落字） | 47-run thesis 矩阵；§2 priv_obs 语义定义、§10 preflight 决策仍 active | 找 priv_obs 精确定义 / preflight 数据 |
 | [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md) | **搁置（v4，2026-04-27）** | `arrival_v2` reward 8 参数设计 + 不变量测试 spec | 未来想恢复 reward 设计时 |
+| [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) | **active archive（2026-05-19，§7.9 闭环）** | arrival_v2 prototype 实测档（18 组 experiments，§7 / §7.6 / §7.7 / §7.8 / §7.9 cross-seed closure） | paper revision / rebuttal cite arrival_v2 实测结果时 |
+| [`arrival_v2_p0_variance_reduction_design.md`](arrival_v2_p0_variance_reduction_design.md) | **active design reference (DEMOTED-TO-FUTURE-WORK / POLISH-ONLY，2026-05-19)** | SAC variance reduction (DroQ / N-Step / REDQ) 候选矩阵 + 5-tier verdict schema | offline 线 variance reduction 复用 / 未来 paper revision 需 DroQ 类轴时 |
 | [`systematic_improved_sac_experiment_plan.md`](systematic_improved_sac_experiment_plan.md) | DEPRECATED 2026-04-26 | 旧版主计划 | 仅历史回溯 |
 | [`systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md) | DEPRECATED 2026-04-26 | A0 阶段实测记录（数据本身仍有效） | A0 数据来源（也可以直接看 ablation_summary.md） |
 | [`SAC_improvements_survey.md`](SAC_improvements_survey.md) | active reference | 2020-2026 SAC 改进算法综述 | 写论文 related work / 算法选型 |
@@ -234,6 +236,7 @@
 | 目录 | 体量 | 状态 | 角色 |
 |---|---:|---|---|
 | [`experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/`](../experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/) | 18 run | **完整可用** | A0 sensor screen，唯一 thesis-grade 多 seed 结果 |
+| `experiments/arrival_v2_prototype/` (gitignored)              | 18 run | **prototype 实测档（2026-05-07 → 2026-05-19）** | §7 strict control / §7.6 s0 envelope / §7.7 AsymCritic / §7.8 k=8 / §7.9 multi-seed × k=12；gate JSONs 在 `s0_cross_k{8,12}_seed{0,7,42}_summary/` 下 |
 | [`experiments/objective_ablation_v1/`](../experiments/objective_ablation_v1/) | 6 run | preset 选择依据（archived 报告分析） | u15_upstream + 200k arrival vs efficiency_v1 否决 |
 | [`experiments/efficiency_gain_sweep_v1/`](../experiments/efficiency_gain_sweep_v1/) | 21 run | preset 选择依据（archived 报告分析） | u15_upstream + 200k 7-gain sweep，导出 efficiency_v2 |
 | [`experiments/online_thesis_v1/preflight/`](../experiments/online_thesis_v1/preflight/) | 5 run | 协议级 smoke，不可作性能引用 | P0 profiling、num_envs benchmark、P1 budget calibration（v1 INVALID / v2 reveal hacking）、P2 AsymCritic smoke |
@@ -333,13 +336,30 @@ Memory 提到 "D4RL-style SAC collector 拟定为 broad validation 平行第四�
 
 **触发条件**：等 offline 线 broad validation S2 P1 跑完、确认 SAC 数据源是否真的需要再启动。如果 ReBRAC 在 worldcomp/crosscomp 上的结果已经稳，这一项也可以**完全砍掉**。
 
-### 4.4 关于 `arrival_v2` reward 的最终处置
+### 4.4 关于 `arrival_v2` reward 的最终处置（2026-05-19 update — prototype 闭环）
 
-reward_redesign doc 里 v4 已收敛但未实施。建议处置：
+**Status update vs 2026-05-06 撤销决定**：本节原写 "v4 已收敛但未实施"，**事实上 arrival_v2 v4 (8 参数完整版) 已在 prototype 分支 `codex-arrival-v2-prototype` commit `813096e`（2026-05-07）落地进 `auv_nav/reward.py`**，并在该分支跑了 18 组实验，2026-05-19 收口在 §7.9 cross-seed thesis-grade closure。`auv_nav/reward.py` 里因此**同时存在两套 arrival_v2 preset**（与 §3.5 的 `arrival_v2_simple` 注解一致，仍为同一文件中两个并存 preset）：
 
-- **不要在 online 线恢复实施**——thesis 矩阵已撤销，没有下游消费者。
-- **doc 保留作为设计档案**（已搁置 banner + 指向本文件），未来若 online 线重启或 offline 线需要新 reward preset，可直接参考。
-- **是否值得移植到 offline 线**：offline 线主要消费 `efficiency_v2`（worldcomp/crosscomp 收数据时用），如果 offline reward ablation 需要 arrival-first preset，可考虑把 `arrival_v2_simple` 升级到 doc 里 v4 的完整版。**这是 offline 线该决定的事，不是 online 线**。
+- `arrival_v2_simple`（commit `bd37412`）— offline reward ablation 用，本节原始关注对象
+- `arrival_v2`（commit `813096e`）— v4 8 参数完整版 + dominance unit test + early-failure penalty + final-distance penalty + no-fast 默认，**prototype 分支实测产出 thesis-grade finding（详见 [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md)）**
+
+**Prototype 实测主线（不更改 thesis 矩阵撤销决定）**：
+
+- **§7 4-way strict-control × s1_k4**（topology × geometry，2026-05-09）：4/4 cell 全 5/5 gate PASS
+- **§7.6 s0 sensor envelope**（2026-05-13）：上游 3 cell（tandem / sbs / single_upstream）s0 全 PASS（与 s1 等价）；`single_cross_s0` catastrophic FAIL（final=0.100, OOB=0.667）— 80pp s0–s1 gap 在 production-difficulty regime 显化
+- **§7.7 AsymCritic 单变量 ablation**（pure B 路径，2-seed × 2-algo paired hardened negative finding）：critic-side info upgrade 不闭合 80pp gap；瓶颈从 critic estimation 重定位到 actor-side information access
+- **§7.8 history k=4→8 actor-side ablation**（seed=42 anchor）：单变量 actor-side temporal info upgrade 一次性闭合 80pp gap，与 s1_k4 上界等价且 sample-efficiency 更好
+- **§7.9 multi-seed × k-monotonicity closure**（2026-05-18 / 2026-05-19）：k=8 cross-seed 不鲁棒（1/3 strict PASS, σ_final=0.181）；**k=12 是 cross-seed sweet spot**（2/2 strict 5/5 PASS, σ_final=0.064，含 seed=0 CROSS-SEED-RESCUE — final 0.500→0.900）。**seed=0 跨 history 单调相位跃迁** k=4: 0.4 → k=8: 0.5 → k=12: 0.9 **直接证伪 H_seed-stall + H_optimization-noise，确立 H_information-bottleneck wins**
+
+**Narrative shift**：deployment-realistic 路径从原 thesis plan 的「升级 sensor 到 s1（多一个空间探头）」改写为「**保持 s0 + 升级 actor 时序访问到 k=12（~6 s ≈ 涡街周期 30–60%）**」。这是 prototype 工作产出的**实质方法学发现**，独立于 thesis 矩阵撤销决定。
+
+**§8 P0 SAC variance reduction**：原 2026-05-19 morning draft 是为压 §7.9.1 k=8 seed=0 stall 设计的 DroQ / N-Step / REDQ 候选矩阵；§7.9.2' k=12 seed=0 CROSS-SEED-RESCUE 直接 short-circuit 该 motivation — k=12 alone 已把 σ_final 砍到 0.064（< thesis target 0.10），P0 **降级为 future work / polish only**。design doc 保留作为 paper revision 或 offline 线 variance reduction 复用参考；详见 [`arrival_v2_p0_variance_reduction_design.md`](arrival_v2_p0_variance_reduction_design.md)。
+
+**处置建议（更新版）**：
+
+- **不要因 prototype 实测 PASS 而重启 47-run thesis 矩阵**——撤销决定基于产品判断（offline 线优先 + 海试数据未到），实测结果**不改变这个判断**；只补完了"假设我们重启会发生什么"的方法学证据。
+- **doc 保留作为完整设计 + 实测档案**：[`online_sac_reward_redesign.md`](online_sac_reward_redesign.md) (设计，已搁置 banner) + [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) (实测，18 组 prototype experiments + §7.9 closure) + [`arrival_v2_p0_variance_reduction_design.md`](arrival_v2_p0_variance_reduction_design.md) (variance reduction 设计参考)。三份互相 cross-link，未来 paper revision / rebuttal / offline 线 reward ablation 直接 cite。
+- **是否值得移植到 offline 线**：与原结论一致，由 offline 线决定。**新增**：若 offline 线确实启动 arrival-first reward ablation，建议**直接复用 prototype 的 commit `813096e` 完整版**（已有 dominance unit test + early-failure penalty + 18 组 prototype 跑过的 gate-stable 实测保证），而非把 `arrival_v2_simple` 重新升级。
 
 ### 4.5 论文写作中的 online 线落字位置
 
@@ -367,4 +387,4 @@ reward_redesign doc 里 v4 已收敛但未实施。建议处置：
 
 ## 5. 一句话总结
 
-Online 线在 2026-04-14 → 2026-05-06 累计产出 **27 个 preset 选择 sweep run（archived）+ 18 个 A0 多 seed run + 5 个 preflight 协议 smoke run**；唯一可作论文性能基线的是 A0；其余结果作为 reward preset 选择和工程协议的方法学依据。Thesis-grade 47-run 矩阵已撤销，`arrival_v2` reward 已搁置；本线下一步只剩**复用 A0 ckpt 给 offline 线做 SAC collector**这一可选项，且其触发条件取决于 offline 线 broad validation 是否真的需要 RL-trained behavior policy。
+Online 线在 2026-04-14 → 2026-05-06 累计产出 **27 个 preset 选择 sweep run（archived）+ 18 个 A0 多 seed run + 5 个 preflight 协议 smoke run**；2026-05-07 → 2026-05-19 在 prototype 分支 `codex-arrival-v2-prototype` 增加 **18 组 arrival_v2 prototype experiments**（4 组 §7 strict control + 4 组 §7.6 s0 envelope + 3 组 §7.7 AsymCritic ablation + 1 组 §7.8 k=8 anchor + 2 组 §7.9.1 k=8 multi-seed + 2 组 §7.9.2 k=12 monotonicity + 2 组 reference baselines），收口在 **§7.9 cross-seed thesis-grade closure**（k=12 是 cross-seed sweet spot, 2/2 strict 5/5 PASS）。唯一可作论文性能基线的仍是 A0；**arrival_v2 prototype 产出方法学发现**（deployment-realistic 路径从 "s0→s1" 改写为 "s0+k=12"，§7.9 H_information-bottleneck 实证）作为 paper revision / rebuttal / offline 线 reward ablation 的可 cite 档案。Thesis-grade 47-run 矩阵 **撤销决定不变**（实测结果不改变产品判断）；本线下一步仍只剩 **复用 A0 ckpt 给 offline 线做 SAC collector** 这一可选项，触发条件取决于 offline 线 broad validation 是否真需 RL-trained behavior policy。

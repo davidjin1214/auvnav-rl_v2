@@ -1,13 +1,14 @@
 # FQL Succession Plan v1 — Offline RL on Data Quality × Modality Spectrum (Lean MVP)
 
-> **文档版本**：v1.2（2026-05-20，P0+P1 closed → P2 spec drafting）
+> **文档版本**：v1.3（2026-05-21，P2 spec v1.2 wallclock-budget + storage-layout 重设)
 > **作用**：把"重启 FQL 作 ReBRAC 后续"的 framing、scope、phase plan 与 gate 条件落地为可执行计划。**v1 相对 v0 砍掉约 50% validation insurance**（6 tier → 3 cell；4 audit 指标 → 1；4 ablation → 1；anchor 5-seed → 1-seed smoke），保留全部 core paper claim 支撑实验。
 > **状态**：**Plan v1.2** — P0+P1 closed（Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 audit dry-run + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL seed-driven, progress with caveat）；P2 main comparison spec drafting (Session A 2026-05-20)。
 >
 > **版本历史**:
 > - v1.0 (2026-05-18, Lean MVP) — 初稿,6 tier → 3 cell + 4 audit → 1 metric + 5-seed anchor → 1-seed smoke
 > - v1.1 (skipped) — 按"Gate A 通过升 v1.1"原计划应在 audit dryrun 后落,sprint 节奏未做; v1.2 一并补
-> - **v1.2 (2026-05-20)** — Gate A.2 PASS + Gate B 3/4 PASS + c4 marginal caveat; D17/D18/D19 加入 §6 决策记录
+> - v1.2 (2026-05-20) — Gate A.2 PASS + Gate B 3/4 PASS + c4 marginal caveat; D17/D18/D19 加入 §6 决策记录
+> - **v1.3 (2026-05-21)** — P2 spec v1.2 wallclock-budget + storage-layout 重设 (D20 n_seeds 5→2 primary, D21 results/ mirror tree)
 > **前置阅读**：
 > - [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) — Offline 线整体状态
 > - [`docs/arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) — `arrival_v2` reward 在 vanilla SAC 上的 4-cell 5/5 gate 验证报告（**本计划 reward 选型依据**）
@@ -342,12 +343,14 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | **D17** | **Gate B 3/4 PASS + c4 marginal-FAIL (seed-driven) → progress to P2 with caveat,不 trigger Option D (FQL stability ablation)** | **2026-05-20** | Gate B Option B 2-seed 闭环显示 c4 FAIL 是 seed=42 driven 而非 FQL-driven (seed=0 上 FQL slope 正);interim 的 Option D 触发条件 "c4 FAIL on both seeds" 未满足;按 spec §5.3 mitigation matrix "mixed → caveat + 3-seed extension" 路径,P2 用 n_seeds≥3 retire-or-confirm 此 marginal finding |
 | **D18** | **Bug 2 修复采用方案 (a) 大 manifest**:生成 `single_u10_cross_tgt15_ep100.json` (100 ep,前 30 byte-identical to 30-ep),不动 `train_utils.py` 优先级逻辑 | **2026-05-20** | 不影响 30+ 现存 manifest 调用方 (paper 1 / broad val v2 / td3bc / online sac);(b/b') CLI honor `--episodes` 留 follow-up cleanup;ep100 manifest 同时 serve P2 default + P3 mix ratio ablation;**P2 spec 引用 ep100,不回写 P0+P1 spec §5.1/§5.2** (Gate B 历史事实保持) 详见 [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) |
 | **D19** | **c4 阈值采用 Option α**:`slope ≥ −2 × SE_aggregated`,SE 按 √(p(1−p)/n_eval)/√17.5/√n_seeds 自动 scale | **2026-05-20** | retroactive 在 Gate B 数据上 4 种 (n_seeds × manifest) 配置全 PASS;P2 default (n=5, 100-ep) 下阈值 ≈ −0.0098;数学最干净 (95% 单侧 CI 下界);实现成本 5 行 numpy;与 D18 Bug 2 fix 自然配合 (noise 减半 → 阈值自动收紧);β/γ 不选,γ 可作 supplementary visualization 详见 [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) |
+| **D20** | **P2 n_seeds 从 5 降至 2 primary [42, 0]**,conditional 扩 3 [42, 0, 7];verdict 改 **effect-size + 方向一致性** primary,Welch p / Bonferroni 留 sensitivity | **2026-05-21** | wallclock budget(L4 ~10h/session)+ effect-size primary 让 large-n 统计 power 不再是 paper claim 瓶颈;n=2 节省 60% wallclock (19h → 8h),让出余量给 revision 阶段扩 seed;Gate B 已用 [42, 0] 有 4-run 历史可 cross-reference;gray band [3pp, 5pp] 自动触发扩 n=3;n=2 下 c4 Option α 阈值自动 scale 到 −0.0155(比 n=5 −0.0098 宽容 1.6×,Gate B FQL slope −0.0038 仍 PASS) 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §4.1 + §10.3 |
+| **D21** | **P2 storage layout 拆 `checkpoints/` (大文件 .pt) + `results/` (绘图包) 两棵树**;train 输出 mirror 到 `results/training_curves/{algo}_seed{S}/`,final test eval 通过 `evaluate_offline --output-json` 单独写入 `results/test/`;Colab 跑完仅回收 `results/` 树即可本地绘图 + 重建 verdict | **2026-05-21** | 早期 ReBRAC c1 ablation 等 notebook 已用此约定(`CHECKPOINT_ROOT` + `RESULTS_ROOT` 单独命名)但近期 fql_succession Gate B notebook 把所有产物混在 `--save-dir` 下,违反约定;mirror 4 small file (`train_log.jsonl` + `eval_log.csv` + `trainer_state.json` + `train_config.txt`) 总大小 ~几十 KB/seed,廉价;`results/test/<algo>_seed<S>.json` self-contained final eval 与 train 解耦;train 加 `--skip-final-eval`,final eval 由独立 step 完成 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §4.2 + §9.3.1 |
 
 ---
 
 ## 7. 一句话总结
 
-**本计划重启 FQL 作为 ReBRAC paper 1 的 sub-optimal-data 后续工作，paper claim 设计为条件式 iff（FQL 优势仅在 sub-optimal AND multi-modal 数据上 trigger），使用 vanilla SAC × 4 cell 5/5 gate 已验证的 `arrival_v2` reward + 解耦的 two-paper sequence framing，3-cell × 2-algorithm × 5-seed × 主对照（30 runs）+ 1 个 mix ratio mechanism ablation（18 runs），total 48 runs / 72h L4 / ~7-8 周 wallclock；任一 gate fail 立即 abort，最大化 decision-robust。**
+**本计划重启 FQL 作为 ReBRAC paper 1 的 sub-optimal-data 后续工作，paper claim 设计为条件式 iff（FQL 优势仅在 sub-optimal AND multi-modal 数据上 trigger），使用 vanilla SAC × 4 cell 5/5 gate 已验证的 `arrival_v2` reward + 解耦的 two-paper sequence framing。**P2 v1.2 重设**:**3-cell × 2-algorithm × 2-seed primary [42, 0] × 主对照(12 runs,可扩 18 runs)+ 1 个 mix ratio mechanism ablation(P3 sweep,~18 runs),total ≤ 36 runs / ~20h L4 / ~5-7 周 wallclock**(D20 wallclock-budget rebalance);任一 gate fail 立即 abort,最大化 decision-robust。verdict 用 effect-size + 方向一致性 primary,Welch p / Bonferroni 留 sensitivity。**
 
 ---
 
@@ -373,8 +376,8 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | [`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) | **Task E / Gate B final report**:Option B 2-seed 3/4 PASS + c4 marginal-FAIL (seed-driven) (2026-05-20) |
 | [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) | **P2 pre-requisite 1/2**:Bug 2 fix design memo (D18, 方案 a 大 manifest) |
 | [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) | **P2 pre-requisite 2/2**:c4 阈值 design memo (D19, Option α slope ≥ −2 × SE_agg) |
-| `fql_succession_p2_main_spec.md` | **P2 main comparison spec (drafting, Session A 2026-05-20)** |
+| [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) | **P2 main comparison spec v1.2 (Session A 2026-05-21,n=2 primary + checkpoints/results 拆分)** |
 
 ---
 
-*Document version: v1.2 (2026-05-20, P0+P1 closed → P2 spec drafting). v0 → v1 砍掉约 50% validation insurance,保留全部 core paper claim 支撑实验。维护策略:本计划在 Gate A 通过后升级到 v1.1;Gate B 通过后升级到 v1.2 (本次, v1.1 跳过原因见版本历史);P2 落地后升级到 v2.0。每次 phase gate 通过/失败后修订对应 section 与 §6 决策记录。*
+*Document version: v1.3 (2026-05-21, P2 spec v1.2 wallclock-budget + storage-layout 重设). v0 → v1 砍掉约 50% validation insurance,保留全部 core paper claim 支撑实验。维护策略:本计划在 Gate A 通过后升级到 v1.1;Gate B 通过后升级到 v1.2 (v1.1 跳过原因见版本历史);P2 spec drafting 期间 storage-layout 重设升级到 v1.3 (本次);P2 落地后升级到 v2.0。每次 phase gate 通过/失败后修订对应 section 与 §6 决策记录。*

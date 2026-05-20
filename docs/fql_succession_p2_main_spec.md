@@ -1,12 +1,13 @@
 # FQL Succession — P2 Main Comparison Spec
 
-> **文档版本**：v1.1（2026-05-20，Session A 起草 + 4-decision patches）
-> **作用**：把 [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §4.2 P2 main comparison（3-cell × 2-algo × 5-seed = 30 runs）拆成可执行的 collection / audit / run / verdict 协议。
+> **文档版本**：v1.2（2026-05-21，wallclock-budget + storage-layout 重设)
+> **作用**：把 [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §4.2 P2 main comparison（3-cell × 2-algo × 2-seed primary = **12 runs**, 可扩 3-seed = 18 runs）拆成可执行的 collection / audit / run / verdict 协议。
 > **状态**：**Active spec**，pre-requisites 全部落地，等待 P2 sprint 0 (collection) 启动信号。
 >
 > **版本历史**:
 > - v1.0 (2026-05-20 起草) — 10 节初稿:scope + collection + audit + run matrix + statistics + Gate C + risks + budget + notebooks + caveats
-> - **v1.1 (2026-05-20 patches)** — Session A 4-decision refinements:(a) §2.3 M-uni-noise success 4-band contingency; (b) §2.4 M-multi-mix 2-way → 3-way conditional upgrade rule + P3 implication; (c) §5.5 Bonferroni primary + BH/uncorrected sensitivity table; (d) §9.3 `run_one()` helper 模板 + idempotent `summarize`/`verdict_preview` guards
+> - v1.1 (2026-05-20 patches) — Session A 4-decision refinements:(a) §2.3 M-uni-noise success 4-band contingency; (b) §2.4 M-multi-mix 2-way → 3-way conditional upgrade rule + P3 implication; (c) §5.5 Bonferroni primary + BH/uncorrected sensitivity table; (d) §9.3 `run_one()` helper 模板 + idempotent `summarize`/`verdict_preview` guards
+> - **v1.2 (2026-05-21 patches)** — Session A wallclock-budget + storage-layout 重设 per user feedback:(a) §4.1 n_seeds 5 → 2 primary [42, 0],可扩 3 [42, 0, 7](L4 wallclock 从 19h → 8h,12 run vs 30 run);(b) §4.2/§9.3 helper 拆 `checkpoints/` (大文件) + `results/` (绘图包) 两棵树,加 `results/training_curves/` mirror 4 个 small file (train_log.jsonl + eval_log.csv + trainer_state.json + train_config.txt;final test 由独立 `evaluate_offline --output-json` 写入 `results/test/`),Colab 跑完仅回收 `results/` 即可本地绘图;(c) §5.4/§5.5 effect-size + 方向一致性 primary verdict(n=2 下 Welch p / Bonferroni 信息量低,移到 sensitivity);(d) §9 collection 改本机非 notebook 执行,删 collection notebook,run notebook 减为 3 个 cell(per algo × seed = 4 个 run cell)
 > **范围**：仅覆盖 P2（约 1.5-2 周）。P3 mix ratio ablation 与 P4 writing 的 spec 在 P2 闭环后另写。
 > **前置阅读**：
 > - [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) v1.2 — plan 总览 + §3 spectrum + §6 D17/D18/D19
@@ -39,7 +40,7 @@
 
 ### 1.1 一句话目标
 
-> 在 3-cell spectrum (E-uni / M-uni-noise / M-multi-mix) × 2 algorithm (FQL, ReBRAC) × 5 seeds = **30 runs** 上系统对比，量化 paper 2 的核心 conditional iff claim："FQL 的 expressive behavior prior translates to policy improvement over ReBRAC **iff** data is **both** sub-optimal **and** multi-modal"。
+> 在 3-cell spectrum (E-uni / M-uni-noise / M-multi-mix) × 2 algorithm (FQL, ReBRAC) × 2 seeds primary [42, 0]（可扩 3 [42, 0, 7]）= **12 runs** 上系统对比，量化 paper 2 的核心 conditional iff claim："FQL 的 expressive behavior prior translates to policy improvement over ReBRAC **iff** data is **both** sub-optimal **and** multi-modal"。Verdict 以 **effect-size + 两 seed 方向一致性** 为 primary 判据,Welch p / Bonferroni 留作 sensitivity。
 
 ### 1.2 与 P0+P1 的关系
 
@@ -62,12 +63,12 @@ Gate B Option B (2-seed) 闭环 verdict: **3/4 PASS + c4 marginal-FAIL (seed-dri
 
 - **c1/c2/c3 PASS**:FQL implementation healthy (loss_flow 0.026, actor_loss ratio 1.011, last-3 mean only −4.4pp vs ReBRAC)
 - **c4 marginal-FAIL**:aggregated slope −0.0038 is **statistically indistinguishable from 0** (z=−0.27 against 30-ep manifest noise floor); **seed-driven**(both algos positive on seed=0, negative on seed=42); **not** FQL-driven
-- **Mitigation activated (D17)**:按 P0+P1 spec §5.3 "mixed → caveat + 3-seed extension" 路径,P2 用 n_seeds=5 retire-or-confirm 此 marginal finding;**不** trigger Option D (FQL stability ablation)
+- **Mitigation activated (D17, scaled in v1.2)**:按 P0+P1 spec §5.3 "mixed → caveat + 3-seed extension" 路径,P2 用 n_seeds=2 primary [42, 0] retire-or-confirm 此 marginal finding;若 verdict 边缘扩 n_seeds=3 [42, 0, 7];**不** trigger Option D (FQL stability ablation)
 
 P2 spec 在以下章节明确承接此 caveat:
-- §4.1 n_seeds=5 (vs Gate B 的 2-seed)
+- §4.1 n_seeds=2 primary [42, 0]、可扩 3 [42, 0, 7](vs Gate B 的 2-seed [42, 0])
 - §4.2 manifest 切到 ep100 (D18)
-- §5.6 c4 阈值用 Option α (D19), threshold ≈ −0.0098 at P2 default config
+- §5.6 c4 阈值用 Option α (D19), threshold ≈ −0.0155 at P2 default config (n=2 + ep100)
 - §10.1 paper 写作 caveat 段
 
 ### 1.4 P2 出口三选一 verdict (preview, 详见 §6)
@@ -301,37 +302,68 @@ python -m scripts.audit_multimodality \
 
 ## 4. Run matrix
 
-### 4.1 主对照 30-run 设计
+### 4.1 主对照 12-run 设计 (可扩 18-run)
 
-**矩阵**:3 cell × 2 algo × 5 seed = **30 run**
+**Primary 矩阵**:3 cell × 2 algo × 2 seed = **12 run**
 
 | Cell | FQL seeds | ReBRAC seeds | 子小计 |
 |---|---|---|---:|
-| E-uni | [42, 43, 44, 45, 46] | [42, 43, 44, 45, 46] | 10 |
-| M-uni-noise | [42, 43, 44, 45, 46] | [42, 43, 44, 45, 46] | 10 |
-| M-multi-mix | [42, 43, 44, 45, 46] | [42, 43, 44, 45, 46] | 10 |
-| **Total** | | | **30** |
+| E-uni | [42, 0] | [42, 0] | 4 |
+| M-uni-noise | [42, 0] | [42, 0] | 4 |
+| M-multi-mix | [42, 0] | [42, 0] | 4 |
+| **Total (primary)** | | | **12** |
 
-**为什么 n_seeds=5** (vs Gate B 的 2 / plan 原值 5 / 候选 7):
-1. **Gate B 暴露的 seed spread 已被 plan §4.2 n_seeds=5 default 覆盖** — 5 seed × paired bootstrap CI 在 SE_agg ≈ 0.005 level 已足够区分 ≥5pp effect size
-2. **Bonferroni 多重比较 over 3 cells 在 n=5 下 critical p ≈ 0.017,仍可达**
-3. **L4 wallclock budget** — 30 run × ~50min FQL or ~25min ReBRAC ≈ 1100 min ≈ 18-20h wallclock vs n=7 的 28h (+40% 边际收益不大)
-4. **Paper-typical n_seeds 标准** — D4RL benchmark + ReBRAC paper 1 都用 5,reviewer 接受度高
-5. **若 P2 marginal,revision 阶段补 2 seed** (升到 7) 仍是 follow-up option
+**Conditional extension** (在 primary 12 跑完后触发):
 
-**Seed pool** [42, 43, 44, 45, 46] 与 broad val v2 + ReBRAC paper 1 main spec 一致 (P0+P1 spec §0.2)。
+| Verdict 边缘条件 | Action | 增量 |
+|---|---|---:|
+| 任一 cell 两 seed paired diff 方向不一致(一正一负) | 加 seed 7 → 18 run | +6 run |
+| 任一 cell Δ ∈ [+3pp, +5pp](positive 但未达 effect-size threshold) | 加 seed 7 | +6 run |
+| 12 run 全部 verdict 明确(Δ ≥ 5pp 同向 / |Δ| < 3pp 双 cell)→ 不扩 | — | 0 |
+
+**为什么 n_seeds=2 primary** (vs plan v1.2 §4.2 原值 5 / Gate B 已用 2 / 上限 7):
+
+1. **L4 wallclock budget** — 12 run × (FQL ~50min + ReBRAC ~25min)/2 ≈ 7.5 h vs n=5 的 19h (n=2 −60% wallclock)。Colab session 单次 ~10h 内可一次跑完两个 cell
+2. **Effect-size primary verdict 不依赖 large-n power** — paper claim 用 Δ ≥ 5pp 且两 seed 同方向作为 binary signal,n=2 即可判定 signal vs null;Welch p / Bonferroni 在 n=2 下信息量低(自由度 1,p<0.0167 几乎不达),改为 sensitivity 报告(§5.5)
+3. **Gate B 已用 [42, 0]** — same seed pool,有 4-run 历史数据可直接 cross-reference;新 8 run + 历史 4 run = 12 row evidence
+4. **Conditional extension preserves rigor** — n=2 verdict 边缘 → 自动扩 n=3,paper revision 仍可补到 n=5;不一次性 commit 28h wallclock
+5. **Paper-defensible by effect size**:reviewer 关心 "is the effect real and large enough to matter",n=2 同方向 + |Δ| ≥ 5pp 是 strong indicative signal,而 n=5 + p<0.0167 是 corroborative refinement(revision 路径,非主声明)
+
+**Seed pool** primary [42, 0] = Gate B Option B;extension [42, 0, 7] 加 seed 7(不重叠 broad val v2 + ReBRAC paper 1 的 [42-46])。
 
 ### 4.2 Per-run CLI templates
 
-**ReBRAC template** (Cell {C} × Seed {S}):
+每 run = **两步**:(1) `train_offline`(写 checkpoints/) → (2) `evaluate_offline`(写 results/test/)。训练过程产物 (small files) **mirror** 到 `results/training_curves/`,Colab 跑完 _只回收 `results/` 树就能本地绘图_。
+
+**Storage layout** (per cell × algo × seed):
+
+```
+checkpoints/fql_succession/p2/{cell_id}/{algo}_seed{S}/   ← train_offline --save-dir
+  ├── agent_final.pt           ← 大,留 Drive
+  ├── agent_best.pt / agent_latest.pt (optional)
+  ├── trainer_state.json
+  ├── train_log.jsonl          ← per-step loss
+  ├── eval_log.csv             ← in-training eval curve (n_pts=20)
+  └── train_config.txt
+
+results/fql_succession/p2/{cell_id}/
+  ├── test/
+  │   └── {algo}_seed{S}.json  ← evaluate_offline --output-json (100-ep test)
+  └── training_curves/{algo}_seed{S}/
+      ├── train_log.jsonl      ← mirror copy
+      ├── eval_log.csv         ← mirror copy
+      ├── trainer_state.json   ← mirror copy
+      └── train_config.txt     ← mirror copy
+```
+
+**ReBRAC training step** (Cell {C} × Seed {S}, `--skip-final-eval` 让 final eval 由独立 evaluate_offline 步骤负责):
 
 ```bash
-PATH="/opt/homebrew/Caskroom/miniforge/base/envs/mytorch1/bin:$PATH" \
 python -m scripts.train_offline \
     --algo rebrac \
-    --offline-data offline_data/fql_succession/{cell_dataset_path} \
-    --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
-    --manifest benchmarks/single_u10_cross_tgt15_ep100.json \
+    --offline-data 'offline_data/fql_succession/{cell_dataset_path}' \
+    --flow 'wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy' \
+    --manifest 'benchmarks/single_u10_cross_tgt15_ep100.json' \
     --probe-layout s0 \
     --history-length 4 \
     --target-speed 1.5 \
@@ -345,20 +377,20 @@ python -m scripts.train_offline \
     --critic-penalty-coef 2.0 \
     --critic-layernorm \
     --no-actor-layernorm \
+    --skip-final-eval \
     --seed {S} \
-    --save-dir checkpoints/fql_succession/p2/{cell_id}/rebrac_seed{S} \
+    --save-dir 'checkpoints/fql_succession/p2/{cell_id}/rebrac_seed{S}' \
     --device cuda
 ```
 
-**FQL template** (Cell {C} × Seed {S}):
+**FQL training step** (Cell {C} × Seed {S}):
 
 ```bash
-PATH="/opt/homebrew/Caskroom/miniforge/base/envs/mytorch1/bin:$PATH" \
 python -m scripts.train_offline \
     --algo fql \
-    --offline-data offline_data/fql_succession/{cell_dataset_path} \
-    --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
-    --manifest benchmarks/single_u10_cross_tgt15_ep100.json \
+    --offline-data 'offline_data/fql_succession/{cell_dataset_path}' \
+    --flow 'wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy' \
+    --manifest 'benchmarks/single_u10_cross_tgt15_ep100.json' \
     --probe-layout s0 \
     --history-length 4 \
     --target-speed 1.5 \
@@ -372,51 +404,56 @@ python -m scripts.train_offline \
     --distill-alpha-bc 1.0 \
     --teacher-lr 3e-4 \
     --flow-time-embed-dim 32 \
+    --skip-final-eval \
     --seed {S} \
-    --save-dir checkpoints/fql_succession/p2/{cell_id}/fql_seed{S} \
+    --save-dir 'checkpoints/fql_succession/p2/{cell_id}/fql_seed{S}' \
     --device cuda
+```
+
+**Final test eval step** (per algo × seed):
+
+```bash
+python -m scripts.evaluate_offline \
+    --checkpoint 'checkpoints/fql_succession/p2/{cell_id}/{algo}_seed{S}' \
+    --manifest 'benchmarks/single_u10_cross_tgt15_ep100.json' \
+    --episodes 100 \
+    --device cuda \
+    --output-json 'results/fql_succession/p2/{cell_id}/test/{algo}_seed{S}.json'
 ```
 
 **关键差异 vs Gate B Option B CLI**:
 - `--manifest`:**`single_u10_cross_tgt15_ep100.json`** (D18, 取代 30-ep)
-- `--seed`:5 个 seed [42-46] 而非 2 个 [0, 42]
+- `--seed`:2 个 seed [42, 0] primary(可扩 3 [42, 0, 7])
 - `--save-dir`:`checkpoints/fql_succession/p2/{cell_id}/...` (per-cell namespace)
+- `--skip-final-eval`:final eval 由独立 `evaluate_offline --output-json` 步骤写入 `results/test/`(分离 checkpoints / results 关注点)
 - 其余 hyperparam 全部继承 Gate B Option B (per §1.2 表)
 
 ### 4.3 Skip-resume 协议
 
 Gate B Option B 经验:rev.3.1 Colab session 经常被 idle timeout 杀掉,必须**显式 skip-resume**。
 
-**Resume 检测条件** (per run):
-- `trainer_state.json` 存在 + `train_step ≥ total_steps` → skip (run 已 done)
-- `trainer_state.json` 存在 + `train_step < total_steps` → resume from checkpoint (notebook cell `--resume <save-dir>` flag)
-- 都不存在 → fresh run
+**Skip 判定 (per run = train + eval 两步)**:
+
+| Stage | Skip 判定文件 | 含义 |
+|---|---|---|
+| **Train 已 done** | `checkpoints/.../{algo}_seed{S}/agent_final.pt` 存在 | 跳过 train step,直接做 mirror + evaluate |
+| **整 run 已 done** | `results/.../test/{algo}_seed{S}.json` 存在 | 跳过 train + evaluate(整个 run) |
+| **都不存在** | — | fresh run(train → mirror → evaluate) |
+
+**Resume mid-training**:`trainer_state.json` 存在 + `train_step < total_steps` → `--resume <save-dir>`(train_offline 内部自动检测)。
 
 **Per-run state files** (per Gate B observation):
-- `trainer_state.json` (resume metadata)
-- `agent_final.pt` (final weights)
-- `train_log.jsonl` (loss metrics per log-step)
-- `eval_log.csv` (in-training eval, dedup-by-train_step in verdict aggregation)
-- `test_result.json` (final canonical 100-ep eval, written at end)
 
-**Notebook cell 模板** (Bug 5 path-quote 防护):
+| File | 位置 | 用途 |
+|---|---|---|
+| `agent_final.pt` | `checkpoints/.../<algo>_seed<S>/` | final weights(大,留 Drive) |
+| `trainer_state.json` | `checkpoints/.../` + mirror to `results/training_curves/` | resume metadata + 绘图 config |
+| `train_log.jsonl` | 同上 mirror | per-step loss(绘 loss curve) |
+| `eval_log.csv` | 同上 mirror | in-training eval (dedup-by-train_step in verdict aggregation,**§5.1 primary scalar 来源**) |
+| `train_config.txt` | 同上 mirror | human-readable config record |
+| `{algo}_seed{S}.json` | `results/.../test/` | final canonical 100-ep test eval(`evaluate_offline --output-json` 写入) |
 
-```python
-# 每个 (algo, cell, seed) 一个 cell
-save_dir = f"checkpoints/fql_succession/p2/{cell_id}/{algo}_seed{S}"
-test_json = f"{save_dir}/test_result.json"
-if os.path.exists(test_json):
-    print(f"[skip] {save_dir} already done")
-else:
-    # Bug 5: single-quote path with potential spaces ("Colab Notebooks" Drive path)
-    cmd = f"""!python -m scripts.train_offline \\
-        --algo {algo} \\
-        ... \\
-        --save-dir '{save_dir}'"""
-    exec(cmd)  # via Jupyter magic, not os.system (Bug 4 mitigation)
-```
-
-详见 §9 notebook scaffold 设计。
+**Notebook cell 模板** (helper `run_one()` 见 §9.3.1)。详见 §9 notebook scaffold 设计。
 
 ### 4.4 Run 不做的事
 
@@ -438,8 +475,8 @@ else:
 
 ```python
 def paired_bootstrap_delta(
-    fql_per_seed: np.ndarray,        # [n_seeds] (5)
-    rebrac_per_seed: np.ndarray,     # [n_seeds] (5)
+    fql_per_seed: np.ndarray,        # [n_seeds] (2 primary, 可扩 3)
+    rebrac_per_seed: np.ndarray,     # [n_seeds] (2 primary, 可扩 3)
     n_boot: int = 10000,
     rng_seed: int = 0,
 ) -> dict:
@@ -481,38 +518,26 @@ def cohens_d(a, b):
 
 Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 
-### 5.4 iff verdict
+### 5.4 iff verdict (effect-size + 方向一致性 primary)
 
-**δ_null = 0.05** (5pp threshold for "no effect"):
-- **E-uni**: `|Δ_E-uni| < δ_null` AND Welch p > 0.10 → ¬A no-effect 确认
-- **M-uni-noise**: `|Δ_M-uni-noise| < δ_null` AND Welch p > 0.10 → ¬B no-effect 确认
-- **M-multi-mix**: `Δ_M-multi-mix > 0` AND Welch p < 0.05 (after Bonferroni) AND `Δ_M-multi-mix CI lower > 0` → A∧B effect 确认
+**v1.2 决策**:n=2 primary 下 Welch p / Bonferroni 自由度过低(df=1),改为 **effect-size + 方向一致性** 作 primary 判据;Welch p / Bonferroni 留作 sensitivity (§5.5)。
 
-**完整 iff** = 三条全成立 → plan v1.2 → v2.0 upgrade,进 P3。
+**Effect-size threshold**:
+- `δ_null = 0.03`(3pp,定义 null band:|Δ| < 0.03 视作 no effect)
+- `δ_signal = 0.05`(5pp,定义 signal threshold:Δ ≥ 0.05 + 方向一致视作 effect 确认)
+- **gray band [3pp, 5pp]** 或方向不一致 → **加 seed 7**(扩 n_seeds=3)再判
 
-### 5.5 Multiple comparison (Bonferroni primary + BH/uncorrected sensitivity)
+**Per-cell primary verdict**(n=2 [42, 0]):
 
-3 cell × 1 algo gap test = **3 tests**。本 spec **primary verdict 用 Bonferroni**:critical p = `0.05 / 3 = 0.0167`。
+| Cell | Null 条件 (paper claim 想要的) | Positive 条件 | Gray (加 seed 7) |
+|---|---|---|---|
+| **E-uni** | `\|Δ_E-uni\| < 0.03` AND 两 seed paired diff 同号或都接近 0 (\|diff_seed\| < 0.04 both) | `Δ_E-uni ≥ 0.05` 同方向 (FQL > ReBRAC,意外 positive) | 中间 |
+| **M-uni-noise** | `\|Δ_M-uni-noise\| < 0.03` AND 两 seed 方向相容 | `Δ_M-uni-noise ≥ 0.05` 同方向 (意外 positive) | 中间 |
+| **M-multi-mix** | `Δ_M-multi-mix < 0.03` 或两 seed 方向反 → null | `Δ_M-multi-mix ≥ 0.05` AND 两 seed paired diff 均 > 0 (方向一致) | 中间 |
 
-**理由 (Bonferroni vs BH)**:
-- iff claim 是 **3-way conjunction** (E-uni null AND M-uni-noise null AND M-multi-mix positive)。一个 cell 错就破坏 iff → Type I error 控制 (FWER) 比 FDR 更对应 paper claim 逻辑
-- Paper-typical 多 cell 对照采 Bonferroni 更 defensible (reviewer 接受度高)
-- BH FDR @ q=0.05 在 3-test 下 critical p 阶梯式 {0.0167, 0.033, 0.05},仅在 marginal case 与 Bonferroni 给不同 verdict
+**完整 iff 主判**:E-uni null ∧ M-uni-noise null ∧ M-multi-mix positive → 进 P3。
 
-**Sensitivity table** (must report in verdict report appendix per §6.4):
-
-| Test | Welch t | Welch p (one-sided) | Bonferroni p<0.0167 verdict | BH FDR @ q=0.05 verdict | Uncorrected p<0.05 verdict |
-|---|---:|---:|:---:|:---:|:---:|
-| E-uni null (¬A) | (fill) | (fill) | (fill) | (fill) | (fill) |
-| M-uni-noise null (¬B) | (fill) | (fill) | (fill) | (fill) | (fill) |
-| M-multi-mix positive (A∧B) | (fill) | (fill) | (fill) | (fill) | (fill) |
-
-**Verdict 判定规则**:
-- **Bonferroni-primary** (paper main claim binary verdict):per §5.4 iff verdict 三选一
-- **BH sensitivity** (paper §discussion robustness check):若 BH 与 Bonferroni verdict 不同,paper 写 hedge "under more permissive FDR correction at q=0.05, our M-multi-mix finding would have been retained with uncorrected p={X}; we report the more conservative Bonferroni verdict for primary claim defensibility"
-- **Uncorrected** (transparency only):仅作为完整披露,**不**作为 verdict 输入
-
-**Null verdict 校正策略**:E-uni null + M-uni-noise null 的 "null" claim 不需要 multiple-comparison 校正 (single test per cell, H1 = positive, fail to reject ≠ wrong)。仅 positive effect 判定需 Bonferroni。
+**Welch p / Bonferroni 作 sensitivity 报告**(§5.5),不作 primary binary input。
 
 ### 5.6 c4 monitoring (Option α gate, P2 default config)
 
@@ -520,26 +545,26 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 
 **c4 定义** (per algo × cell):
 - per-seed slope = last-30% linear regression slope of in-training eval success rate (n_pts = 6 per seed,因为 200k steps + eval-every 10000 = 20 eval pts,last 30% = 6 pts)
-- aggregated slope = mean over 5 seeds
-- threshold = `−2 × SE(slope_aggregated_5_seeds)`
+- aggregated slope = mean over n_seeds
+- threshold = `−2 × SE(slope_aggregated_n_seeds)`
 - SE_per_seed = √(p(1−p)/n_eval) / √17.5 (n_eval = 100 from ep100 manifest, n_pts=6 → denom=17.5)
-- SE_aggregated = SE_per_seed / √5
+- SE_aggregated = SE_per_seed / √n_seeds
 
-**P2 default 数值** (per c4 revision doc §3 retroactive table):
+**P2 default 数值** (n=2 primary, per c4 revision doc §3 retroactive table):
 
-| Quantity | Value |
-|---|---:|
-| n_eval (manifest size) | 100 |
-| n_seeds | 5 |
-| p (typical in-training mean success) | ≈ 0.7 |
-| SE_eval @ p=0.7 | 0.0458 |
-| SE_per_seed (n_pts=6) | 0.0110 |
-| SE_aggregated (5 seeds) | **0.00490** |
-| **c4 threshold** | **−0.00980** |
+| Quantity | n=2 primary | n=3 conditional ext. |
+|---|---:|---:|
+| n_eval (manifest size) | 100 | 100 |
+| p (typical in-training mean success) | ≈ 0.7 | ≈ 0.7 |
+| SE_eval @ p=0.7 | 0.0458 | 0.0458 |
+| SE_per_seed (n_pts=6) | 0.0110 | 0.0110 |
+| SE_aggregated | **0.00775** | **0.00633** |
+| **c4 threshold** | **−0.01549** | **−0.01267** |
 
 **c4 verdict (per algo × cell)**:
-- aggregated slope ≥ −0.0098 → c4 PASS
-- aggregated slope < −0.0098 → c4 FAIL (真有 late-training collapse)
+- aggregated slope ≥ threshold → c4 PASS
+- aggregated slope < threshold → c4 FAIL (真有 late-training collapse)
+- **n=2 阈值 −0.0155 比 n=5 −0.0098 更宽容 1.6×**:n=2 下 noise floor 大,Option α 自动 scale,Gate B FQL aggregated slope −0.0038 仍远高于 n=2 阈值 → retroactive PASS confirmed
 
 **c4 在 P2 是 gate 还是 monitor**:
 - **Gate** (per Session B Option α design): c4 阈值是 statistical-meaningful (95% 单侧 CI 下界);不会被噪声触发 (Gate B 验证)
@@ -549,17 +574,17 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 
 ### 5.7 Per-run metric set (reference)
 
-每 run 落地的可计算指标 (从 `eval_log.csv` + `test_result.json` 提取):
+每 run 落地的可计算指标(从 `results/.../training_curves/<algo>_seed<S>/{eval_log.csv, train_log.jsonl}` + `results/.../test/<algo>_seed<S>.json` 提取):
 
 | Metric | Source | Role |
 |---|---|---|
-| `last_3_mean` | eval_log.csv last 3 train_step rows (dedup) | **§5.1-5.4 primary scalar** |
-| `final_test_success` | test_result.json `test_success` | Secondary (Gate B 经验:more noise) |
-| `last_30pct_slope` | linregress(last 6 eval pts) | **§5.6 c4 monitoring** |
-| `final_test_return` / `safety` / `progress` / `path_eff` | test_result.json | Reported in §results table appendix |
-| `loss_flow_tail` | train_log.jsonl last 5% | FQL teacher health (per Gate B c2) |
-| `loss_actor_tail` | train_log.jsonl last 5% | Per-algo comparison parity check |
-| `q_mean_tail` | train_log.jsonl last 5% | Q stability monitor |
+| `last_3_mean` | `eval_log.csv` last 3 train_step rows (dedup) | **§5.1-5.4 primary scalar** |
+| `final_test_success` | `results/.../test/<algo>_seed<S>.json` `eval_success_rate` | Secondary (Gate B 经验:more noise) |
+| `last_30pct_slope` | linregress(last 6 eval pts in `eval_log.csv`) | **§5.6 c4 monitoring** |
+| `final_test_return` / `safety` / `progress` / `path_eff` | `results/.../test/<algo>_seed<S>.json` | Reported in §results table appendix |
+| `loss_flow_tail` | `train_log.jsonl` last 5% | FQL teacher health (per Gate B c2) |
+| `loss_actor_tail` | `train_log.jsonl` last 5% | Per-algo comparison parity check |
+| `q_mean_tail` | `train_log.jsonl` last 5% | Q stability monitor |
 
 ---
 
@@ -567,8 +592,11 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 
 ### 6.1 Gate C.1 — Completeness
 
-30-run 全部完成且无系统性 error:
-- 每 run 有 `trainer_state.json` + `agent_final.pt` + `test_result.json` + `eval_log.csv` (≥18 unique-step rows post-dedup,允许 ≤2 rows 缺失 from rare eval failures)
+12-run primary(或 18-run 扩展)全部完成且无系统性 error:
+- 每 run 同时落地两棵树:
+  - **`checkpoints/.../{cell}/{algo}_seed{S}/`**:`agent_final.pt` + `trainer_state.json` + `train_log.jsonl` + `eval_log.csv` + `train_config.txt`
+  - **`results/.../{cell}/`**:`test/{algo}_seed{S}.json` (final 100-ep test) + `training_curves/{algo}_seed{S}/` (前述 4 small files 的 mirror copy)
+- `eval_log.csv` ≥18 unique-step rows post-dedup(允许 ≤2 rows 缺失 from rare eval failures)
 - 0 run NaN / Inf loss in `train_log.jsonl` 末段
 - 0 run 因 OOM / shape mismatch / argparse error crashed
 
@@ -583,17 +611,18 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 
 ### 6.3 Gate C.3 — iff verdict 三选一
 
-按 §5.4 + §5.5 Bonferroni p<0.0167 / §5.6 c4 + §6.1/§6.2 同时 satisfied,以下三选一:
+按 §5.4 effect-size primary + §5.6 c4 + §6.1/§6.2 同时 satisfied,以下三选一(`§5.5` sensitivity 表必须同时报告,但 verdict primary 不依赖 Welch p):
 
-| Verdict | Condition | Paper claim | P3 trigger |
+| Verdict | Condition (effect-size primary, n=2 [42, 0] or extended n=3) | Paper claim | P3 trigger |
 |---|---|---|---|
-| **完整 iff hold** | E-uni null (Δ<0.05, p>0.10) ∧ M-uni-noise null ∧ M-multi-mix positive (Δ>0, p<0.0167, CI lower>0) | 主路径 conditional iff (plan §1.2) | ✓ 进 P3 mix ratio sweep (验证 modality 强度单调性) |
-| **Partial iff** | E-uni null ∧ M-multi-mix positive ∧ **M-uni-noise also positive** | 降级:"FQL > ReBRAC on sub-optimal data regardless of modality" (drop iff,只 keep quality 条件) | ✓ 进 P3,但 modality intensity 单调性变 secondary evidence |
-| **Null iff** | M-multi-mix not positive (Δ≤0 or p≥0.0167 or CI lower≤0) | 重写为 scoped negative finding:"expressive prior 在本 AUV navigation task 无 leverage" (R3 mitigation) | P3 决策点:(a) 仍跑 P3 验证 negative finding robustness; (b) skip P3 + 直接进 P4 negative paper writing |
+| **完整 iff hold** | E-uni null (\|Δ\|<0.03, 两 seed 方向相容) ∧ M-uni-noise null (\|Δ\|<0.03, 方向相容) ∧ M-multi-mix positive (Δ≥0.05 AND 两 seed paired diff > 0 同号) | 主路径 conditional iff (plan §1.2) | ✓ 进 P3 mix ratio sweep |
+| **Partial iff** | E-uni null ∧ M-multi-mix positive ∧ **M-uni-noise also positive (Δ≥0.05 同号)** | 降级:"FQL > ReBRAC on sub-optimal data regardless of modality" | ✓ 进 P3,但 modality intensity 单调性变 secondary evidence |
+| **Null iff** | M-multi-mix not positive (Δ<0.05 或 两 seed 方向反) | 重写为 scoped negative finding:"expressive prior 在本 AUV navigation task 无 leverage" (R3 mitigation) | P3 决策点:(a) 仍跑 P3 验证 negative finding robustness; (b) skip P3 + 直接进 P4 negative paper writing |
+| **Gray (扩 seed 7)** | 任一 cell 落 gray band [3pp, 5pp] 或方向不一致 | — | 先扩 n_seeds=3 跑 +6 run,然后重 evaluate |
 
-**E-uni 上 FQL 倒挂 (Δ_E-uni < −0.05 AND p < 0.10)** 是 catastrophic case:
+**E-uni 上 FQL 倒挂 (Δ_E-uni < −0.05 AND 两 seed 同方向 < 0)** 是 catastrophic case:
 - 与 Gate B finding (FQL on E-uni Δ=−4.4pp) 一致,marginal — 不一定 catastrophic
-- 但若 P2 实测 |Δ_E-uni| > 0.08 (超出 Gate B 阈值),触发 R4 mitigation:debug FQL hyperparam,debug 3 iter 仍倒挂则 STOP
+- 但若 P2 实测 \|Δ_E-uni\| > 0.08 (超出 Gate B 阈值),触发 R4 mitigation:debug FQL hyperparam,debug 3 iter 仍倒挂则 STOP
 
 ### 6.4 Gate C.3 verdict report 产出
 
@@ -616,10 +645,10 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 |---|---|---|---|---|
 | **P2.R1** | M-uni-noise (ε=0.5) audit fail (p_≥2 > 0.20, 已分裂为多峰) | 中 | 中 | 降 ε 到 0.3 重 collect;若仍 fail,M-uni-noise cell 整体重设计 (e.g. add gaussian only to heading dim instead of full action) — 最多 +1 周 |
 | **P2.R2** | M-multi-mix 2-way audit fail (p_≥2 < 0.30) | 中 | 中 | 升级 3-way mix (privileged + goalseek + worldcomp/crosscomp per dryrun config) — concat 重组,~10 min;成本归零 |
-| **P2.R3** | n_seeds=5 仍欠 power,Δ_M-multi-mix CI lower ≈ 0 | 低-中 | 中 | revision 阶段补 2 seed (升到 7),CI 收紧 ~15% (1/√7 vs 1/√5);本 sprint 不 preemptive |
+| **P2.R3** | n_seeds=2 primary 下 verdict 落 gray band (Δ ∈ [3pp, 5pp] 或方向不一致) | 中 | 中 | conditional extension 加 seed 7 → n=3 (+6 run,~3-4h L4);若仍 gray 才进 revision 补到 n=5;**本 sprint 不 preemptive 跑 n=3** |
 | **P2.R4** | FQL 在 E-uni 上 Δ > −0.08 但 < −0.05 (marginal underperform) | 中 (Gate B 实测 −4.4pp 已逼近) | 中 | 不阻塞 iff null verdict (|Δ|<0.05 严格,−0.044 已逼近边界);P4 写 hedge "FQL marginally underperforms ReBRAC on expert-uni regime" |
 | **P2.R5** | c4 在 P2 multi-cell ramp 后又出现 seed-driven 不一致 | 中 | 低 | Option α 阈值已 statistical-meaningful;若仍 cell-level 不一致 (e.g. FQL c4 PASS in M-multi-mix 但 FAIL in E-uni),记入 verdict report,**不**影响 iff binary verdict |
-| **P2.R6** | Bonferroni p<0.0167 严格,M-multi-mix marginal 显著 (p=0.03) 但 fail 阈值 | 中 | 中 | 报告 sensitivity:Bonferroni-corrected vs BH FDR vs uncorrected per-cell,paper §method 显式选 Bonferroni 但 appendix 报 sensitivity |
+| **P2.R6** | Effect-size primary verdict 在 n=2 下与 Welch p / Bonferroni sensitivity 给出不同方向(e.g. Δ=4.5pp 同号 = gray,但 Welch p=0.04 = signal) | 中 | 中 | primary 用 effect-size + 方向 (§5.4) 决定 binary verdict;Welch / Bonferroni sensitivity 报告在 §6.4 verdict report appendix;paper §method 显式声明 effect-size + 方向是 primary,p 值是 sensitivity 检验 |
 | **P2.R7** | M-uni-noise collection success rate 太低 (<0.50),数据集 dominate by failure traj | 低 | 中 | ε=0.5 noise → 60-70% success expected;若实测 <0.50,降 ε 重 collect |
 | **P2.R8** | Skip-resume 协议 在多 cell × seed runs 下出现 trainer_state corruption | 低 | 高 | Per Gate B Bug 1 经验,dedup_by_train_step 已 frozen;每 run 独立 save-dir 避免 cross-contamination |
 | **P2.R9** | L4 wallclock 超预算 (Colab session 限制 ~12h) | 低 | 中 | per-cell notebook 设计支持 skip-resume,跨 session 接续;最坏需要 3-4 个 Colab session × 12h split (§8 算力预算) |
@@ -642,27 +671,27 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 
 ### 8.2 Training (Colab L4)
 
-| Item | Per run | Total |
-|---|---:|---:|
-| ReBRAC 200k step (Gate B observed) | ~25 min | 5 seed × 3 cell = 15 run → ~6.25 h |
-| FQL 200k step (Gate B observed) | ~50 min | 5 seed × 3 cell = 15 run → ~12.5 h |
-| Verdict aggregation + audit per cell run | trivial (~10 min) | local |
-| **Total training wallclock** | | **~19 h L4 sequential** |
+| Item | Per run | Primary 12 run total | Extended 18 run total |
+|---|---:|---:|---:|
+| ReBRAC 200k step (Gate B observed) | ~25 min | 2 seed × 3 cell = 6 run → ~2.5 h | 3 seed × 3 cell = 9 run → ~3.75 h |
+| FQL 200k step (Gate B observed) | ~50 min | 2 seed × 3 cell = 6 run → ~5 h | 3 seed × 3 cell = 9 run → ~7.5 h |
+| evaluate_offline 100-ep (per run) | ~2 min | 12 × 2 min = ~24 min | 18 × 2 min = ~36 min |
+| Verdict aggregation + audit per cell run | trivial (~10 min) | local | local |
+| **Total training wallclock** | | **~8 h L4 sequential** | **~12 h L4 sequential** |
 
-Parallel notebook strategy: per-cell notebook (3 notebooks) × 2-3 concurrent Colab sessions (different Google accounts or sequential) → ~7-10 h actual elapsed if 2 concurrent sessions。
+Parallel notebook strategy: per-cell notebook (3 notebooks) → 单 Colab session ~10h 可一次跑完 2 个 cell;3 个 cell 分 2 个 session 即可(不需要 multi-account)。
 
 ### 8.3 Sprint plan (estimated, 2026-05-21 起算)
 
 | Day | Task |
 |---|---|
-| Day 1 (本机) | M-uni-noise + M-multi-mix Source A/B collection + concat + 3 audit + dataset cards 起草 |
-| Day 2 (本机) | Per-cell dataset cards finalize;commit collection + audit results;notebook scaffold finalize |
-| Day 3-4 (Colab) | E-uni cell × FQL + ReBRAC × 5 seeds = 10 run (1 notebook) |
-| Day 5-6 (Colab) | M-uni-noise cell × 10 run |
-| Day 7-8 (Colab) | M-multi-mix cell × 10 run |
-| Day 9 (本机) | Verdict report (§5 + §6) + paper-2 outline finalize |
+| Day 1 (本机) | M-uni-noise + M-multi-mix Source A/B collection + concat + 3 audit + dataset cards 起草(non-notebook, sprint 0) |
+| Day 2 (本机) | Commit collection + audit log;3 run notebook scaffold finalize |
+| Day 3 (Colab) | E-uni + M-uni-noise cells × 2 algo × 2 seed = 8 run (~6h, 1 session) |
+| Day 4 (Colab) | M-multi-mix cell × 4 run + 若任一 cell gray band 触发 → 加 seed 7 扩 18-run (+~4h) |
+| Day 5 (本机) | Verdict report (§5 + §6) + paper-2 outline finalize |
 
-**Total wallclock**:~1.5 周 (vs plan §4.2 estimate 1.5 周) ✓ on-budget。
+**Total wallclock**:~5 天(vs plan §4.2 estimate 1.5 周)— **-50%** ahead of plan,n=2 节省 wallclock 让出余量给 revision 阶段扩 seed。
 
 ### 8.4 算力 contingency
 
@@ -678,44 +707,54 @@ Parallel notebook strategy: per-cell notebook (3 notebooks) × 2-3 concurrent Co
 
 ### 9.1 Notebook 划分原则
 
-**Per-cell notebook** (而非 all-cells single notebook):
-- 优势:skip-resume 粒度更细,某 cell 失败不影响其他 cell;Colab session 12h limit 可 per-cell session;debugging 路径清晰
-- 劣势:notebook 文件多 (collection 1 + run 3 + verdict 1 = 5 notebooks)
-- 决定:**per-cell** (Session A decision per task prompt)
+**Per-cell run notebook**(3 个 ipynb)+ **本机 collection 非 notebook**(v1.2 决策):
+- Collection 一次性脚本工作流(`collect_offline_data` + `concat_offline_datasets` + 3 个 audit script call)→ 本机 bash + python 直接做,不写 notebook;产物含 dataset card + collection log
+- Per-cell run notebook 优势:skip-resume 粒度细,某 cell 失败不影响其他 cell;Colab session 12h limit 可 per-cell session;debugging 路径清晰
+- Notebook 风格仿 `notebooks/rebrac_c1_asym_critic_ablation.ipynb`(8-section:前传 + verdict 表 + 隔离表 / sanity / config / pre-flight / train + mirror / eval / 对比 / verdict / 报告写入),**不**仿近期 fql_succession gate b rev.3.x(反复修改不干净)
 
 ### 9.2 Notebook 清单
 
 | Notebook | 在哪跑 | 内容 | 状态 |
 |---|---|---|---|
-| `notebooks/fql_succession_p2_collection.ipynb` | **本机** (mytorch1) | M-uni-noise + privileged-500 + goalseek-500 collect + concat M-multi-mix-1000 + 3 audit (A1/A2/A3) | 本 spec 起 scaffold (任务 4) |
-| `notebooks/fql_succession_p2_run_cell_e_uni.ipynb` | **Colab L4** | E-uni cell × FQL + ReBRAC × 5 seeds = 10 run | 本 spec 起 scaffold (任务 4) |
-| `notebooks/fql_succession_p2_run_cell_m_uni_noise.ipynb` | **Colab L4** | M-uni-noise × 10 run | 本 spec 起 scaffold (任务 4) |
-| `notebooks/fql_succession_p2_run_cell_m_multi_mix.ipynb` | **Colab L4** | M-multi-mix × 10 run | 本 spec 起 scaffold (任务 4) |
-| `notebooks/fql_succession_p2_verdict.ipynb` | 本机 | aggregate 30-run summaries + paired bootstrap + Welch + Cohen d + iff verdict | 待 P2 闭环时另起 |
+| **本机 collection**(非 notebook) | **本机** (mytorch1 conda env) | M-uni-noise + privileged-500 + goalseek-500 collect + concat M-multi-mix-1000 + 3 audit (A1/A2/A3) + dataset card + `docs/fql_succession_p2_collection_log.md` | 本 spec sprint 0 任务 4b 执行 |
+| `notebooks/fql_succession_p2_run_cell_e_uni.ipynb` | **Colab L4** | E-uni cell × FQL + ReBRAC × 2 seeds [42, 0] = 4 run | 任务 4c |
+| `notebooks/fql_succession_p2_run_cell_m_uni_noise.ipynb` | **Colab L4** | M-uni-noise × 4 run | 任务 4c |
+| `notebooks/fql_succession_p2_run_cell_m_multi_mix.ipynb` | **Colab L4** | M-multi-mix × 4 run | 任务 4c |
+| `notebooks/fql_succession_p2_verdict.ipynb` | 本机 | aggregate 12-run results 树 + paired diff + effect-size verdict + Welch / Bonferroni sensitivity | 待 P2 闭环时另起 |
 
-### 9.3 Per-cell run notebook 必须 cell
+### 9.3 Per-cell run notebook 必须 cell (仿 rebrac_c1_asym_critic_ablation 8-section 风格)
 
-仿 `notebooks/fql_succession_gate_b.ipynb` rev.3.1 风格 (real-time streaming via Jupyter `!python ...` magic;path-quote 防 Bug 5;skip-resume via `test_result.json` 存在检测)。**每 cell 都是 idempotent**:Colab session restart 后整本 re-run 不会因 partial state 出错。
+每 notebook 8 节,每节 1 段 markdown + 1-2 code cell。`!python` magic 实时 stream(Bug 4 mitigation);所有路径单引号(Bug 5)。
 
-| Cell ID | 内容 | Idempotent? |
+| § | 内容 | Idempotent? |
 |---|---|---|
-| `header` | Drive mount + cd into project + Bug 5 path-quote 防护 disclaimer + CLI rename mapping 表 (cite p0p1 spec v1.1 patch) | ✓ |
-| `setup` | env vars + paths + 定义 `run_one(algo, seed)` helper (见 §9.3.1) + run matrix list | ✓ |
-| `rebrac_seed_42` ... `rebrac_seed_46` | **5 cell**,每 cell 一行调用:`run_one('rebrac', 42)` ... `run_one('rebrac', 46)` | ✓ (helper 内 skip-resume check) |
-| `fql_seed_42` ... `fql_seed_46` | **5 cell**,每 cell 一行调用:`run_one('fql', 42)` ... `run_one('fql', 46)` | ✓ |
-| `summarize` | 收集 10 run 的 metrics → CSV per cell;**guard:if not all_done(): raise** | ✓ |
-| `verdict_preview` | per cell paired bootstrap CI + Welch p + Cohen d + c4 verdict;**guard:CSV 存在 + 10 row 完整再 compute** | ✓ |
+| **§0 前传 + verdict 规则**(markdown) | Gate B 已知事实(2-seed Δ_E-uni=-4.4pp marginal)+ 本 notebook 假设 + 隔离表(vs 另两 cell)+ verdict 规则表(effect-size primary,从 §5.4 拷贝) | — |
+| **§1 环境 sanity**(code) | `!nvidia-smi` + torch CUDA check + `from google.colab import drive; drive.mount(...)` + `%cd /content/drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5` | ✓ |
+| **§2 通用配置**(code) | 定义 `CELL_ID` / `DATASET` / `FLOW` / `MANIFEST` / `CHECKPOINT_ROOT` / `RESULTS_ROOT` / `REBRAC_FLAGS` / `FQL_FLAGS` / `TRAIN_SEEDS=[42, 0]` | ✓ |
+| **§3 Pre-flight**(code) | `assert (DATASET_DIR / 'transitions.npz').exists()` + npz keys + privileged_obs dim check(本 spec 用 vanilla critic 不需要 priv,但 audit 时验证 dataset 完整性) | ✓ |
+| **§4 训练**(code) | `for algo in ['rebrac', 'fql']: for seed in TRAIN_SEEDS: run_one(algo, seed)` ← 内含 train + mirror + evaluate 三步(§9.3.1) | ✓ (helper 内 skip-resume check) |
+| **§5 三向对比**(code) | 读取 `results/.../test/{algo}_seed{S}.json` × 4 → DataFrame:per-seed test success + termination 分布 + last-3 mean(从 `results/.../training_curves/.../eval_log.csv`) | ✓ |
+| **§6 自动 verdict**(code) | per-cell `delta` + 两 seed paired diff + effect-size verdict (null/positive/gray) + c4 slope check | ✓ |
+| **§7 报告写入清单**(markdown) | per-verdict 的下一步(更新 plan / spec / verdict report 哪些段;若 gray → 触发扩 seed 7 的 notebook 入口) | — |
 
-### 9.3.1 `run_one()` helper 模板 (定义在 `setup` cell)
+### 9.3.1 `run_one()` helper 模板 (定义在 §2 通用配置 + §4 训练 cell)
 
 ```python
-import os, json
+import os, shutil
+from pathlib import Path
 
-CELL_ID = "e_uni"   # or "m_uni_noise" / "m_multi_mix"
-DATASET = "offline_data/privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000"  # per-notebook
-FLOW = "wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy"
+# ---- per-notebook 改这 3 个 ----
+CELL_ID  = "e_uni"   # or "m_uni_noise" / "m_multi_mix"
+DATASET  = "offline_data/privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000"
+# ↑ m_uni_noise:  "offline_data/fql_succession/m_uni_noise_eps0p5_1000"
+# ↑ m_multi_mix:  "offline_data/fql_succession/m_multi_mix_50priv_50goal_1000"
+
+# ---- 共享(3 个 notebook 一致)----
+FLOW     = "wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy"
 MANIFEST = "benchmarks/single_u10_cross_tgt15_ep100.json"
-SAVE_ROOT = f"checkpoints/fql_succession/p2/{CELL_ID}"
+
+CHECKPOINT_ROOT = Path(f"checkpoints/fql_succession/p2/{CELL_ID}")
+RESULTS_ROOT    = Path(f"results/fql_succession/p2/{CELL_ID}")
 
 REBRAC_FLAGS = (
     "--actor-penalty-coef 4.0 --critic-penalty-coef 2.0 "
@@ -726,79 +765,117 @@ FQL_FLAGS = (
     "--teacher-lr 3e-4 --flow-time-embed-dim 32"
 )
 
+# Small files to mirror checkpoints/ → results/training_curves/
+MIRROR_FILES = ("train_log.jsonl", "eval_log.csv", "trainer_state.json", "train_config.txt")
+
+TRAIN_SEEDS = [42, 0]   # primary;扩 [42, 0, 7] 时改这里
+
+def _save_dir(algo, seed):
+    return CHECKPOINT_ROOT / f"{algo}_seed{seed}"
+
+def _test_json(algo, seed):
+    return RESULTS_ROOT / "test" / f"{algo}_seed{seed}.json"
+
+def _mirror_dir(algo, seed):
+    return RESULTS_ROOT / "training_curves" / f"{algo}_seed{seed}"
+
+def _mirror_curves(algo, seed):
+    src_dir = _save_dir(algo, seed)
+    dst_dir = _mirror_dir(algo, seed)
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    n_copied = 0
+    for fname in MIRROR_FILES:
+        src = src_dir / fname
+        if src.exists():
+            shutil.copy2(src, dst_dir / fname)
+            n_copied += 1
+    print(f"[mirror] {algo} seed={seed}: {n_copied}/{len(MIRROR_FILES)} files → {dst_dir}")
+
 def run_one(algo: str, seed: int) -> None:
-    save_dir = f"{SAVE_ROOT}/{algo}_seed{seed}"
-    test_json = f"{save_dir}/test_result.json"
-    if os.path.exists(test_json):
-        print(f"[skip] {save_dir} (test_result.json exists)")
+    """Train + mirror small files + final evaluate. Three-stage skip-resume."""
+    save_dir = _save_dir(algo, seed)
+    test_json = _test_json(algo, seed)
+
+    # Stage 0 — 整 run 已 done(results 测试 json 存在)
+    if test_json.exists():
+        print(f"[skip-full] {algo} seed={seed} (test json exists: {test_json})")
         return
+
+    save_dir.mkdir(parents=True, exist_ok=True)
     algo_flags = REBRAC_FLAGS if algo == "rebrac" else FQL_FLAGS
-    # Bug 5: single-quote save_dir (potential spaces in Colab Drive path)
-    cmd = (
-        f"python -m scripts.train_offline "
-        f"--algo {algo} "
-        f"--offline-data '{DATASET}' "
-        f"--flow '{FLOW}' "
+
+    # Stage 1 — train (skip if agent_final.pt exists)
+    if not (save_dir / "agent_final.pt").exists():
+        print(f"\n========== train {algo} seed={seed} → {save_dir} ==========")
+        train_cmd = (
+            f"python -m scripts.train_offline "
+            f"--algo {algo} "
+            f"--offline-data '{DATASET}' "
+            f"--flow '{FLOW}' "
+            f"--manifest '{MANIFEST}' "
+            f"--probe-layout s0 --history-length 4 --target-speed 1.5 "
+            f"--task-geometry cross_stream --objective arrival_v2 "
+            f"--total-steps 200000 --batch-size 256 "
+            f"--eval-every 10000 --eval-episodes 100 "
+            f"{algo_flags} "
+            f"--skip-final-eval "
+            f"--seed {seed} "
+            f"--save-dir '{save_dir}' "
+            f"--device cuda"
+        )
+        get_ipython().system(train_cmd)
+    else:
+        print(f"[skip-train] {algo} seed={seed} (agent_final.pt exists)")
+
+    # Stage 2 — mirror training curves (overwrite OK, idempotent copy)
+    _mirror_curves(algo, seed)
+
+    # Stage 3 — final test eval → results/test/<algo>_seed<seed>.json
+    test_json.parent.mkdir(parents=True, exist_ok=True)
+    print(f"\n========== eval {algo} seed={seed} → {test_json} ==========")
+    eval_cmd = (
+        f"python -m scripts.evaluate_offline "
+        f"--checkpoint '{save_dir}' "
         f"--manifest '{MANIFEST}' "
-        f"--probe-layout s0 --history-length 4 --target-speed 1.5 "
-        f"--task-geometry cross_stream --objective arrival_v2 "
-        f"--total-steps 200000 --batch-size 256 "
-        f"--eval-every 10000 --eval-episodes 100 "
-        f"{algo_flags} "
-        f"--seed {seed} "
-        f"--save-dir '{save_dir}' "
-        f"--device cuda"
+        f"--episodes 100 "
+        f"--device cuda "
+        f"--output-json '{test_json}'"
     )
-    print(f"[run] {save_dir}")
-    print(f"      cmd: {cmd[:120]}...")
-    # Use IPython.get_ipython().system() for real-time stream (Bug 4 mitigation)
-    get_ipython().system(cmd)
+    get_ipython().system(eval_cmd)
 ```
 
-### 9.3.2 Idempotent `summarize` cell
+### 9.3.2 §5 三向对比 + §6 verdict cell guard
+
+§5/§6 cell 应 guard 在 `_test_json()` × 4 全部存在后再 compute(prevent partial data):
 
 ```python
 ALGOS = ["rebrac", "fql"]
-SEEDS = [42, 43, 44, 45, 46]
 
 def all_done() -> bool:
-    return all(
-        os.path.exists(f"{SAVE_ROOT}/{a}_seed{s}/test_result.json")
-        for a in ALGOS for s in SEEDS
-    )
+    return all(_test_json(a, s).exists() for a in ALGOS for s in TRAIN_SEEDS)
 
 if not all_done():
     pending = [
-        f"{a}_seed{s}" for a in ALGOS for s in SEEDS
-        if not os.path.exists(f"{SAVE_ROOT}/{a}_seed{s}/test_result.json")
+        f"{a}_seed{s}" for a in ALGOS for s in TRAIN_SEEDS
+        if not _test_json(a, s).exists()
     ]
     raise RuntimeError(f"[not ready] {len(pending)} runs pending: {pending}")
 
-# ... collect last_3_mean / slope / loss_flow_tail / actor_loss_tail per run → CSV
+# ... §5 读取 results/.../test/*.json + results/.../training_curves/*/eval_log.csv
+#     → DataFrame → §6 effect-size verdict
 ```
 
-`verdict_preview` cell 同样 guard:`if not os.path.exists(csv_path): raise`。
+### 9.4 状态契约(collection + run + verdict)
 
-### 9.4 Collection notebook 必须 cell
-
-| Cell ID | 内容 |
-|---|---|
-| `header` | local env (mytorch1 PATH) + cd into project |
-| `m_uni_noise_collect` | privileged + ε=0.5 + 1000 ep collection (~4 min) |
-| `m_multi_mix_source_a` | privileged-500 (~1.5 min) |
-| `m_multi_mix_source_b` | goalseek-500 (~2.5 min) |
-| `m_multi_mix_concat` | concat_offline_datasets call (<1 min) |
-| `audit_a1_e_uni_self` | self-audit E-uni → sanity p_≥2 < 0.20 |
-| `audit_a2_m_uni_noise_vs_e_uni` | A2 |
-| `audit_a3_m_multi_mix_vs_e_uni` | A3 |
-| `summary` | 三 audit JSON 汇总 + Gate C.2 preview verdict |
-| `dataset_cards_template` | M-uni-noise + M-multi-mix dataset card 模板填写 reminder (手动 finalize) |
-
-### 9.5 Notebook 间状态契约
-
-- Collection notebook 产出 `offline_data/fql_succession/{m_uni_noise,m_multi_mix_50priv_50goal}_1000/` + audit results 在 `results/fql_succession/p2/audit/`
-- Run notebook 消费 dataset path,产出 `checkpoints/fql_succession/p2/{cell_id}/{algo}_seed{S}/` (Drive-mounted)
-- Verdict notebook 消费 checkpoints + audit results,产出 `docs/fql_succession_p2_main_report.md`
+- **本机 collection**(sprint 0)产出:
+  - `offline_data/fql_succession/m_uni_noise_eps0p5_1000/{transitions.npz, metadata.json}`
+  - `offline_data/fql_succession/m_multi_mix_50priv_50goal_1000/{transitions.npz, metadata.json}`
+  - Audit results 写到 `results/fql_succession/p2/audit/{A1, A2, A3}_*.json` + 文本 log 到 `docs/fql_succession_p2_collection_log.md`
+  - Dataset card md 草稿(non-blocking)
+- **Run notebook**(任务 4c)消费 dataset path,产出:
+  - `checkpoints/fql_succession/p2/{cell_id}/{algo}_seed{S}/` (Drive-mounted, 大文件)
+  - `results/fql_succession/p2/{cell_id}/{test, training_curves}/` (Drive-mounted, 小文件, 本机绘图用)
+- **Verdict notebook**(P2 闭环时另起)消费 `results/` 全树,产出 `docs/fql_succession_p2_main_report.md`
 
 ---
 
@@ -806,11 +883,11 @@ if not all_done():
 
 ### 10.1 c4 marginal-FAIL carryforward (from Gate B)
 
-Gate B Option B 实测 c4 marginal-FAIL (aggregated slope −0.0038,30-ep manifest noise floor 内)。原因 seed-driven (seed=0 slope 正,seed=42 slope 负,两 algo 同方向)。P2 用 Option α 阈值 (D19) + ep100 manifest (D18) + n_seeds=5,redo c4 verdict per cell × algo。
+Gate B Option B 实测 c4 marginal-FAIL (aggregated slope −0.0038,30-ep manifest noise floor 内)。原因 seed-driven (seed=0 slope 正,seed=42 slope 负,两 algo 同方向)。P2 用 Option α 阈值 (D19) + ep100 manifest (D18) + n_seeds=2 primary,redo c4 verdict per cell × algo。
 
-**预期**:在 ep100 manifest 下 SE_agg ≈ 0.005,Option α threshold ≈ −0.0098;Gate B FQL aggregated slope −0.0038 远高于阈值。retroactive PASS 已在 c4 revision doc §3 验证。P2 mainline 配置下 c4 应稳定 PASS。
+**预期**:在 ep100 manifest + n=2 下 SE_agg ≈ 0.00775,Option α threshold ≈ −0.0155;Gate B FQL aggregated slope −0.0038 远高于阈值。retroactive PASS 已在 c4 revision doc §3 验证 (n=2, 100-ep 配置下 threshold = −0.0155,FQL slope PASS)。P2 mainline 配置下 c4 应稳定 PASS。
 
-**Paper writing implication**:§experiments 段 footnote 提及 "Gate B 2-seed validation found marginal c4 fail (slope −0.0038), statistically indistinguishable from 0 under 30-episode evaluation noise. P2 5-seed evaluation with 100-episode manifest tightens the noise floor by 1.8×, restoring c4 statistical power."
+**Paper writing implication**:§experiments 段 footnote 提及 "Gate B 2-seed validation found marginal c4 fail (slope −0.0038), statistically indistinguishable from 0 under 30-episode evaluation noise. P2 evaluation upgrades to 100-episode manifest tightening the noise floor 1.8×; the auto-scaled Option α threshold restores c4 PASS verdict."
 
 ### 10.2 Noise floor 更新 (Bug 2 fix 后)
 
@@ -820,14 +897,18 @@ Gate B Option B 实测 c4 marginal-FAIL (aggregated slope −0.0038,30-ep manife
 |---|---:|---:|---:|
 | per-eval SE @ p=0.7 | 0.0837 | 0.0458 | 1.83× |
 | slope SE per-seed (n_pts=6) | 0.0200 | 0.0110 | 1.83× |
-| slope SE aggregated n_seeds=5 | 0.00894 | 0.00490 | 1.83× |
-| c4 threshold (Option α) | −0.0179 | −0.0098 | (auto-scale) |
+| slope SE aggregated n_seeds=2 | 0.01414 | 0.00775 | 1.83× |
+| c4 threshold (Option α) at n=2 | −0.02828 | −0.01549 | (auto-scale) |
+| slope SE aggregated n_seeds=3 (扩展) | 0.01155 | 0.00633 | 1.83× |
+| c4 threshold (Option α) at n=3 | −0.02309 | −0.01267 | (auto-scale) |
 
 **Per-cell × algo c4 slope 预期范围** (under healthy training):
 - |aggregated slope| ≤ 2 × SE_agg ≈ 0.01 (in noise band)
 - 出格意味着 真有 trend (positive = late improvement; negative = collapse)
 
-### 10.3 n_seeds 决策 (5 vs 7) 详细 power 分析
+### 10.3 n_seeds 决策 (2 primary vs 3 conditional ext.) — v1.2 重定
+
+**v1.2 重定理由**:wallclock budget(L4 ~10h/session)+ effect-size primary verdict 让 large-n statistical power 不再是 paper claim 的瓶颈。
 
 Gate B 暴露的 effect-size benchmark:
 
@@ -835,15 +916,24 @@ Gate B 暴露的 effect-size benchmark:
 |---|---:|
 | FQL vs ReBRAC last-3 gap @ seed=0 | −14.4pp |
 | FQL vs ReBRAC last-3 gap @ seed=42 | +5.6pp |
-| Pooled std (2-seed estimate, gross under-estimate) | ~14pp |
+| 两 seed 方向 | **不一致**(catastrophic spread Gate B 已揭示) |
+| Pooled std (2-seed estimate) | ~14pp |
 
-在 plan claim 想 detect 的 effect size (Δ_M-multi-mix ≈ 0.05-0.10) 下:
-- **n=5,σ_pooled=0.10**: SE_paired = 0.10/√5 ≈ 0.045 → 50%-power threshold ≈ 0.058
-- **n=7,σ_pooled=0.10**: SE_paired = 0.10/√7 ≈ 0.038 → 50%-power threshold ≈ 0.049
+在 plan claim 想 detect 的 effect size (Δ_M-multi-mix ≥ 0.05) 下,**v1.2 effect-size + 方向一致性 primary**:
 
-**n=5 power ≈ 70-80%** to detect 0.10 effect at α=0.0167 (Bonferroni);**n=7 power ≈ 80-90%**。差距 ~10%。
+| n_seeds | wallclock (L4) | Effect-size detectability | Welch p detectability @ α=0.05 | Bonferroni p<0.0167 detectability |
+|---:|---:|---|---|---|
+| **n=2 primary** | ~8h | Δ≥5pp + 两 seed 同方向 = strong indicative signal | df=1, p<0.05 需 Δ ≥ 0.07 in same direction | df=1, p<0.0167 需 Δ ≥ 0.10 in same direction (rare) |
+| **n=3 (扩 seed 7)** | ~12h | Δ≥5pp + 三 seed paired diff > 0 majority | df=2, p<0.05 需 Δ ≥ 0.05 + 3 seed 同向 | df=2, p<0.0167 仍困难 |
+| n=5 (revision 阶段) | ~19h | — | df=4, p<0.0167 可达 70-80% power | full coverage |
 
-**判断**:n=5 already in "paper-defensible" power range; n=7 +40% wallclock 带 ~10% power 增益,边际收益不足。**采用 n=5**。若 P2 marginal,revision 阶段补 2 seed (升到 7) 成本 ~8h Colab。
+**判断**:
+1. **Paper claim 的 binary verdict 不依赖 Bonferroni p**:reviewer 关心 "effect 是否 real and large enough",effect-size + 方向一致性已 strong evidence
+2. **Welch p / Bonferroni 留 sensitivity** (§5.5),paper §method 显式声明
+3. **n=2 verdict 边缘 → 扩 n=3** (+~4h L4),仍是单次 Colab session 可完成
+4. **若 P2 + n=3 仍 marginal**,revision 阶段补到 n=5 (+~7h Colab)
+
+**采用 n=2 primary [42, 0]**(Gate B seed pool),conditional extension `[42, 0, 7]`,revision-stage option `[42, 0, 7, X, Y]` 待 P2 闭环再定。
 
 ### 10.4 Per-cell algo hyperparam frozen at Gate B Option B
 
@@ -861,4 +951,4 @@ P2 不重新 tune ReBRAC β1/β2 (frozen at 4/2 per broad val v2),不重新 tune
 
 ---
 
-*Document version: v1.0 (2026-05-20, Session A 起草). 维护策略:Sprint 0 (collection) 完成后升级 v1.1 + dataset card 填写;每 cell run notebook 闭环后升级 v1.x;30-run 全闭环 + verdict report 完成后升级 v2.0 并 trigger plan v1.2 → v2.0。*
+*Document version: v1.2 (2026-05-21, wallclock-budget + storage-layout 重设). 维护策略:Sprint 0 (collection) 完成后升级 v1.3 + dataset card 填写;每 cell run notebook 闭环后升级 v1.x;12-run primary 全闭环 + verdict report 完成后升级 v2.0(若进 n=3 扩展则先 v1.4)并 trigger plan v1.3 → v2.0。*

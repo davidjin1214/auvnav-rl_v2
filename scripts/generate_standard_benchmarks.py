@@ -18,6 +18,7 @@ def _build_manifest_for_benchmark(
     episodes: int,
     output_dir: Path,
     notes: str | None,
+    output_name: str | None = None,
 ) -> Path:
     spec = BENCHMARK_SPECS[benchmark_key]
     env = make_planar_env(spec.flow_path, history_length=1, probe_layout="s0")
@@ -55,7 +56,10 @@ def _build_manifest_for_benchmark(
         factor_values=spec.factor_values,
         notes=notes or spec.description,
     )
-    output_path = output_dir / Path(default_manifest_path(spec, manifest_dir=".")).name
+    if output_name is not None:
+        output_path = output_dir / f"{output_name}.json"
+    else:
+        output_path = output_dir / Path(default_manifest_path(spec, manifest_dir=".")).name
     save_benchmark_manifest(output_path, manifest)
     return output_path
 
@@ -80,11 +84,28 @@ def main() -> None:
     parser.add_argument("--episodes", type=int, default=30)
     parser.add_argument("--output-dir", type=Path, default=Path("benchmarks"))
     parser.add_argument("--notes", type=str, default=None)
+    parser.add_argument(
+        "--output-name",
+        type=str,
+        default=None,
+        help=(
+            "Optional custom basename (without .json) for the output manifest. "
+            "Defaults to '{benchmark_key}.json'. Use to generate variant manifests "
+            "(e.g. '--output-name single_u10_cross_tgt15_ep100'). "
+            "Only valid when generating a single benchmark."
+        ),
+    )
     args = parser.parse_args()
 
     specs = resolve_benchmark_specs(args.benchmarks, args.benchmark_group)
     if not specs:
         specs = list(BENCHMARK_SPECS.values())
+
+    if args.output_name is not None and len(specs) != 1:
+        raise SystemExit(
+            "--output-name is only valid when generating exactly one benchmark; "
+            f"got {len(specs)} benchmark specs."
+        )
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for spec in specs:
@@ -93,6 +114,7 @@ def main() -> None:
             episodes=args.episodes,
             output_dir=args.output_dir,
             notes=args.notes,
+            output_name=args.output_name,
         )
         print(f"[done] {spec.key} -> {output_path}")
 

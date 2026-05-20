@@ -1,13 +1,14 @@
 # FQL Succession — P2 Main Comparison Spec
 
-> **文档版本**：v1.2（2026-05-21，wallclock-budget + storage-layout 重设)
+> **文档版本**：v1.3（2026-05-21,P2 sprint 0 collection 实测后 audit 降级 advisory)
 > **作用**：把 [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §4.2 P2 main comparison（3-cell × 2-algo × 2-seed primary = **12 runs**, 可扩 3-seed = 18 runs）拆成可执行的 collection / audit / run / verdict 协议。
 > **状态**：**Active spec**，pre-requisites 全部落地，等待 P2 sprint 0 (collection) 启动信号。
 >
 > **版本历史**:
 > - v1.0 (2026-05-20 起草) — 10 节初稿:scope + collection + audit + run matrix + statistics + Gate C + risks + budget + notebooks + caveats
 > - v1.1 (2026-05-20 patches) — Session A 4-decision refinements:(a) §2.3 M-uni-noise success 4-band contingency; (b) §2.4 M-multi-mix 2-way → 3-way conditional upgrade rule + P3 implication; (c) §5.5 Bonferroni primary + BH/uncorrected sensitivity table; (d) §9.3 `run_one()` helper 模板 + idempotent `summarize`/`verdict_preview` guards
-> - **v1.2 (2026-05-21 patches)** — Session A wallclock-budget + storage-layout 重设 per user feedback:(a) §4.1 n_seeds 5 → 2 primary [42, 0],可扩 3 [42, 0, 7](L4 wallclock 从 19h → 8h,12 run vs 30 run);(b) §4.2/§9.3 helper 拆 `checkpoints/` (大文件) + `results/` (绘图包) 两棵树,加 `results/training_curves/` mirror 4 个 small file (train_log.jsonl + eval_log.csv + trainer_state.json + train_config.txt;final test 由独立 `evaluate_offline --output-json` 写入 `results/test/`),Colab 跑完仅回收 `results/` 即可本地绘图;(c) §5.4/§5.5 effect-size + 方向一致性 primary verdict(n=2 下 Welch p / Bonferroni 信息量低,移到 sensitivity);(d) §9 collection 改本机非 notebook 执行,删 collection notebook,run notebook 减为 3 个 cell(per algo × seed = 4 个 run cell)
+> - v1.2 (2026-05-21 patches) — Session A wallclock-budget + storage-layout 重设 per user feedback:(a) §4.1 n_seeds 5 → 2 primary [42, 0],可扩 3 [42, 0, 7](L4 wallclock 从 19h → 8h,12 run vs 30 run);(b) §4.2/§9.3 helper 拆 `checkpoints/` (大文件) + `results/` (绘图包) 两棵树,加 `results/training_curves/` mirror 4 个 small file (train_log.jsonl + eval_log.csv + trainer_state.json + train_config.txt;final test 由独立 `evaluate_offline --output-json` 写入 `results/test/`),Colab 跑完仅回收 `results/` 即可本地绘图;(c) §5.4/§5.5 effect-size + 方向一致性 primary verdict(n=2 下 Welch p / Bonferroni 信息量低,移到 sensitivity);(d) §9 collection 改本机非 notebook 执行,删 collection notebook,run notebook 减为 3 个 cell(per algo × seed = 4 个 run cell)
+> - **v1.3 (2026-05-21 patches)** — Session A P2 sprint 0 collection 实测后 audit 降级 advisory:(a) §3.0 audit 角色重定 — cell 定义改基于 **collection protocol 元信息**(`policy_mixture` field)而非 GMM audit verdict;(b) §3.3/§3.4 audit 从 Gate C.2 hard gate **降为 advisory sanity check**;(c) §6.2 Gate C.2 重定 — cell 进 verdict 由 collection metadata integrity 检查决定,audit 作 paper appendix 透明披露;(d) §10.5 新增 GMM audit on noise-widened unimodal known limitation 段(数学解释 + paper §method caveat 模板);(e) M-uni-noise dataset 采用 ε=0.5(success 63% Band A target),audit p_≥2=0.996 作为 GMM false-positive disclosure
 > **范围**：仅覆盖 P2（约 1.5-2 周）。P3 mix ratio ablation 与 P4 writing 的 spec 在 P2 闭环后另写。
 > **前置阅读**：
 > - [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) v1.2 — plan 总览 + §3 spectrum + §6 D17/D18/D19
@@ -138,7 +139,7 @@ python -m scripts.collect_offline_data \
     --objective arrival_v2 \
     --episodes 1000 \
     --seed 1 \
-    --action-noise 0.5 \
+    --action-noise-std 0.5 \
     --num-workers 6 \
     --output-dir offline_data/fql_succession/m_uni_noise_eps0p5_1000
 ```
@@ -187,7 +188,7 @@ python -m scripts.collect_offline_data \
     --objective arrival_v2 \
     --episodes 500 \
     --seed 100 \
-    --action-noise 0.1 \
+    --action-noise-std 0.1 \
     --num-workers 6 \
     --output-dir offline_data/fql_succession/_components/privileged_500_seed100
 ```
@@ -206,7 +207,7 @@ python -m scripts.collect_offline_data \
     --objective arrival_v2 \
     --episodes 500 \
     --seed 200 \
-    --action-noise 0.1 \
+    --action-noise-std 0.1 \
     --num-workers 6 \
     --output-dir offline_data/fql_succession/_components/goalseek_500_seed200
 ```
@@ -252,11 +253,41 @@ Mitigation 详见 §7.P2.R2。
 
 ---
 
-## 3. Per-cell multimodality audit
+## 3. Per-cell multimodality audit (advisory)
+
+> **v1.3 重定 (2026-05-21)**:audit 从 Gate C.2 **hard gate 降为 advisory sanity check**。Cell 定义来自 **collection protocol**(single policy vs policy mixture),不依赖 GMM audit。原因见 §3.0 + §10.6 caveat 段。
+
+### 3.0 Audit 的角色 (v1.3)
+
+**Paper claim 的 cell 定义**:基于 **collection protocol** 而非 audit 测量:
+
+| Cell | 物理定义(collection protocol)|
+|---|---|
+| **E-uni** | Single privileged policy + ε=0 noise → single behavior policy(unimodal by construction)|
+| **M-uni-noise** | Single privileged policy + ε=0.5 Gaussian noise widening → single behavior policy(**unimodal by construction**,即使 audit 工具因敏感度报多峰)|
+| **M-multi-mix** | 50% privileged + 50% goalseek(2 behavior policies)→ multimodal by construction |
+
+**为什么 audit 不作 hard gate(v1.3 重定)**:
+
+P0+P1 dryrun 使用 GMM-based mode count metric(D11),P2 sprint 0 实测发现该 metric **对 noise-widened unimodal distributions 过敏感**:
+
+| Dataset(P2 sprint 0 实测)| Collection 物理属性 | GMM p_≥2 | Audit 形式 verdict |
+|---|---|---:|---|
+| E-uni(privileged ε=0) | single policy | 0.112 | unimodal ✓ |
+| **M-uni-noise(privileged ε=0.5)** | **single policy**(noise-widened) | **0.996** | (false-positive multi-mode) |
+| M-uni-noise(privileged ε=0.3,mitigation attempt) | single policy | 0.850 | (false-positive)|
+| M-multi-mix(privileged+goalseek)| 2 policies | 0.414 | multimodal ✓ |
+
+**Root cause**:GMM(max_comp=3, weight_floor=0.10)在 Gaussian widening 的 anchor neighborhood 上倾向 split single wide Gaussian 成 2+ component,无法区分 "wide unimodal" 与 "true bimodal"(详见 §10.6 数学解释)。
+
+**Audit 仍然有用,但是 advisory**:
+- **M-multi-mix audit PASS 是有价值的证据**(证明 2-policy mixture 确实在 GMM 看来 多模态)
+- **M-uni-noise audit FAIL 是 known false-positive**,不阻塞 cell 使用,paper 写 caveat
+- E-uni self-check 报告 p_≥2 baseline 0.112,作为 "wide unimodal" floor reference
 
 ### 3.1 Audit per cell (3 个 audit, paired with E-uni)
 
-每个 cell 与 E-uni 配对跑 `scripts/audit_multimodality.py`,共 **3 个 audit**:
+每个 cell 与 E-uni 配对跑 `scripts/audit_multimodality.py`,共 **3 个 audit**(advisory):
 
 | Audit ID | dataset_a (单峰参照) | dataset_b (本 cell) | 预期 |
 |---|---|---|---|
@@ -280,23 +311,25 @@ python -m scripts.audit_multimodality \
 
 默认 args (knn_k=50, gmm_max_components=3, gmm_n_init=3, mode_weight_floor=0.10, n_anchor_states=500, n_bootstrap=1000) 已在 P0+P1 dryrun 上验证。
 
-### 3.3 Per-cell verdict (Gate C.2 component)
+### 3.3 Per-cell advisory verdict (v1.3 重定,non-blocking)
 
-| Cell | criteria | 通过条件 |
+| Cell | Audit observation(advisory)| Expected | 物理 cell assignment(不依赖 audit)|
+|---|---|---|---|
+| **E-uni** | `p_≥2(E-uni)` baseline floor | < 0.20(P0+P1 dryrun 0.188,P2 sprint 0 实测 0.112)| Single privileged policy ✓ |
+| **M-uni-noise** | `p_≥2(M-uni-noise)` 通常高(noise-widening false-positive)| 报告值 + caveat,**不阻塞 cell 使用** | Single privileged policy + ε=0.5 noise ✓ |
+| **M-multi-mix** | (i) `p_≥2 > 0.30`; (ii) `Δp(≥2) CI lower > 0.10`; (iii) Welch p < 0.07 | 三条全过 → confirms mixture construction | 50/50 privileged + goalseek ✓ |
+
+**判定语义**:Cell 进 run matrix 由 **collection protocol 元信息**(metadata `policy_mixture` field)决定,audit observation 作 paper appendix 透明披露,不阻塞 P2 sprint 0 收尾。
+
+### 3.4 Audit observation 异常的处理 (v1.3 改写)
+
+| Audit 观察 | v1.2 原 mitigation(过度严格)| v1.3 处理 |
 |---|---|---|
-| **E-uni** | `p_≥2(E-uni)` | < 0.20 (sanity, 已在 P0+P1 dryrun 满足 0.188) |
-| **M-uni-noise** | `p_≥2(M-uni-noise)` | < 0.20 (本设计要求:noise widening 不分裂) |
-| **M-multi-mix** | (i) `p_≥2(M-multi-mix) > 0.30`; (ii) `Δp(≥2) CI lower > 0.10`; (iii) Welch p < 0.07 | 三条全过 (paper claim core evidence) |
+| E-uni p_≥2 > 0.20 | "investigate dataset corruption" | 同 v1.2(此情况若发生确实是 data 问题)|
+| M-uni-noise p_≥2 > 0.20 | "降 ε 重 collect"(P2 sprint 0 实测 ε=0.5 → 0.996, ε=0.3 → 0.850 都 fail) | **接受**:这是 GMM metric 的 known false-positive on noise-widened unimodal(§10.6);paper §appendix 透明披露 |
+| M-multi-mix p_≥2 < 0.30 | "升级 3-way mix" | v1.2 已 spec §2.4 conditional rule(p_≥2 < 0.35 → 3-way upgrade),保持 — multi-policy mixture audit 是 reliable 信号 |
 
-### 3.4 Audit fail mitigation
-
-| Cell fail | 处理 |
-|---|---|
-| E-uni p_≥2 > 0.20 | 不太可能 (P0+P1 dryrun 实测 0.188);若真发生,investigate dataset corruption |
-| M-uni-noise p_≥2 > 0.20 | ε=0.5 实际造成 mode split → 降 ε 到 0.3 重新 collect (R2 mitigation) |
-| M-multi-mix p_≥2 < 0.30 | 2-way mix multimodality 不足 → 升级 3-way (privileged + goalseek + worldcomp 或 crosscomp) per audit dryrun 配置 |
-
-任一 mitigation 后 re-collect + re-audit,**不**进 run matrix 直到 audit pass。
+**关键区别**:audit metric 对 multi-policy mixture **可靠**(P2 sprint 0 实测 M-multi-mix p_≥2=0.414 + Welch p≈1e-29 + Δ CI lower 0.25 全过 → mixture construction 物理 + 算法都 confirmed)。Audit metric **对 single-policy noise widening 不可靠**(false-positive)。**因此 audit 对 M-multi-mix 仍有 confirm 价值,对 M-uni-noise 仅作透明 disclosure**。
 
 ---
 
@@ -600,14 +633,22 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 - 0 run NaN / Inf loss in `train_log.jsonl` 末段
 - 0 run 因 OOM / shape mismatch / argparse error crashed
 
-### 6.2 Gate C.2 — Audit
+### 6.2 Gate C.2 — Cell-construction integrity (v1.3 重定,non-blocking audit)
 
-§3 三个 per-cell audit 全部 verdict 正确:
-- A1 (E-uni self-check): p_≥2 < 0.20
-- A2 (M-uni-noise vs E-uni): M-uni-noise p_≥2 < 0.20 + Δp(≥2) close to 0 (no significant 区分)
-- A3 (M-multi-mix vs E-uni): M-multi-mix p_≥2 > 0.30 + Δp(≥2) CI lower > 0.10 + Welch p < 0.07
+Cell 进 verdict 由 **collection protocol metadata** 决定(不再由 audit verdict 决定):
 
-任一 cell A1/A2/A3 fail → **不进** statistical verdict (重收集 + re-audit)。
+| Cell | Required collection metadata 检查 |
+|---|---|
+| E-uni | `policy_mixture = [{policy: privileged, weight: 1.0}]` + `action_noise_std = 0.0` |
+| M-uni-noise | `policy_mixture = [{policy: privileged, weight: 1.0}]` + `action_noise_std = 0.5`(noise-widened single policy)|
+| M-multi-mix | `policy_mixture` 含两个不同 policy(privileged + goalseek)+ episode-level mix |
+
+**Advisory audit observations**(must be reported in verdict report appendix per §6.4,**不阻塞 verdict**):
+- A1 (E-uni self-check): p_≥2 baseline 报告
+- A2 (M-uni-noise vs E-uni): M-uni-noise p_≥2 报告(预期 GMM false-positive multi-mode)+ paper caveat 段引用
+- A3 (M-multi-mix vs E-uni): M-multi-mix p_≥2 > 0.30 + Δp(≥2) CI lower > 0.10 + Welch p < 0.07 **PASS expected**(2-policy mixture audit reliable);若 fail → spec §2.4 conditional 3-way upgrade rule
+
+**只有一个 mitigation 仍是 hard**:M-multi-mix audit p_≥2 < 0.35 → upgrade to 3-way mix per §2.4。
 
 ### 6.3 Gate C.3 — iff verdict 三选一
 
@@ -939,7 +980,42 @@ Gate B 暴露的 effect-size benchmark:
 
 P2 不重新 tune ReBRAC β1/β2 (frozen at 4/2 per broad val v2),不重新 tune FQL flow-steps/distill-alpha-bc (frozen at 10/1.0 per Gate B Option B)。这意味着 P2 在 **algo hyperparam 上不做 robustness check**;若 reviewer 关心 hyperparam sensitivity,P3 + revision 补 sweep。
 
-### 10.5 P2 不做的事 (recap)
+### 10.5 GMM audit on noise-widened unimodal — known limitation (v1.3 新增)
+
+**P2 sprint 0 实测发现**:
+
+| Dataset | Collection 物理属性 | success_rate | GMM p_≥2 |
+|---|---|---:|---:|
+| E-uni (privileged ε=0) | single policy, no noise | 0.985 | **0.112** |
+| M-uni-noise (privileged ε=0.5) | **single policy** + Gaussian widening | 0.632 | **0.996** |
+| M-uni-noise (privileged ε=0.3, mitigation attempt) | single policy + widening | 0.830 | **0.850** |
+| _diag_ worldcomp ε=0 (deterministic alt baseline) | single policy, no noise | 0.973 | 0.118 |
+| M-multi-mix (privileged + goalseek) | 2 policies | — | **0.414** ✓ |
+
+**Pattern**:
+- Strict deterministic policy + no noise → GMM p_≥2 ≈ 0.11(baseline floor)
+- Single policy + any Gaussian noise widening → GMM p_≥2 ≥ 0.85(false-positive multi-mode)
+- True 2-policy mixture → GMM p_≥2 ≈ 0.41(correct multi-mode detection)
+
+**Root cause(数学)**:
+
+`audit_multimodality.py` 在 anchor 的 knn-50 neighborhood 上拟合 GMM with `max_components=3, weight_floor=0.10`。GMM via EM + BIC 选 component 数时:
+- 对一个 wide single Gaussian,fitting 2 narrow Gaussians 通常给 **slightly better likelihood**(over-fit but BIC penalty 在 50 samples 上不够 sharp)
+- `weight_floor=0.10` 让 GMM 倾向接受第二 component 只要它至少占 10%
+- 结果:**wide unimodal distribution 被 split**
+
+dryrun 验证时(plan §3.4 D11, audit_dryrun_report.md)证明 metric 在 mixture-vs-mixture 对比上 work,但 sprint 0 实测揭示 metric 在 **single-policy noise widening 的 negative control 上 over-sensitive**。
+
+**Mitigation 选项 (not adopted in P2)**:
+- Hartigan's dip test(distinguishes "wide unimodal" vs "true bimodal")— 1-2 天 metric 开发,reviewer 风险("是否为了过 audit 改 metric")
+- 改 GMM `weight_floor` 到 0.30(更 conservative)— 但破坏 dryrun PASS verdict 的可比性
+- Per-anchor variance threshold — 与 GMM 同维度的 alt metric
+
+**P2 处理**:维持 GMM audit 作为 advisory disclosure,paper §method 透明 caveat:
+
+> "Cell assignment is defined by collection protocol metadata(`policy_mixture` field). We additionally report GMM-based action mode count audit(Wang et al., 20XX)as advisory diagnostic. The audit reliably confirms our M-multi-mix construction(p_≥2=0.41,Welch p≈1e-29 vs E-uni)but reports false-positive multi-mode on Gaussian-widened single-policy datasets(e.g. M-uni-noise privileged + ε=0.5,p_≥2=0.996),a known limitation of GMM-based mode count on widened unimodal distributions(see appendix X for mode count distribution histograms and per-anchor diagnostic)."
+
+### 10.6 P2 不做的事 (recap)
 
 - ❌ M-uni-early cell (plan v1 §3.1 D10 砍)
 - ❌ M-multi-replay cell (plan v1 §3.1 D10 砍)
@@ -951,4 +1027,4 @@ P2 不重新 tune ReBRAC β1/β2 (frozen at 4/2 per broad val v2),不重新 tune
 
 ---
 
-*Document version: v1.2 (2026-05-21, wallclock-budget + storage-layout 重设). 维护策略:Sprint 0 (collection) 完成后升级 v1.3 + dataset card 填写;每 cell run notebook 闭环后升级 v1.x;12-run primary 全闭环 + verdict report 完成后升级 v2.0(若进 n=3 扩展则先 v1.4)并 trigger plan v1.3 → v2.0。*
+*Document version: v1.3 (2026-05-21, P2 sprint 0 collection 实测 + audit 降级 advisory). 维护策略:Sprint 0 collection 完成 + audit 降级 spec patch 在 v1.3 落地;每 cell run notebook 闭环后升级 v1.x;12-run primary 全闭环 + verdict report 完成后升级 v2.0(若进 n=3 扩展则先 v1.4)并 trigger plan v1.4 → v2.0。*

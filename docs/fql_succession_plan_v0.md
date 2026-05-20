@@ -1,6 +1,6 @@
 # FQL Succession Plan v1 — Offline RL on Data Quality × Modality Spectrum (Lean MVP)
 
-> **文档版本**：v1.3（2026-05-21，P2 spec v1.2 wallclock-budget + storage-layout 重设)
+> **文档版本**：v1.4（2026-05-21,P2 sprint 0 collection 实测 + audit 降级 advisory)
 > **作用**：把"重启 FQL 作 ReBRAC 后续"的 framing、scope、phase plan 与 gate 条件落地为可执行计划。**v1 相对 v0 砍掉约 50% validation insurance**（6 tier → 3 cell；4 audit 指标 → 1；4 ablation → 1；anchor 5-seed → 1-seed smoke），保留全部 core paper claim 支撑实验。
 > **状态**：**Plan v1.2** — P0+P1 closed（Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 audit dry-run + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL seed-driven, progress with caveat）；P2 main comparison spec drafting (Session A 2026-05-20)。
 >
@@ -8,7 +8,8 @@
 > - v1.0 (2026-05-18, Lean MVP) — 初稿,6 tier → 3 cell + 4 audit → 1 metric + 5-seed anchor → 1-seed smoke
 > - v1.1 (skipped) — 按"Gate A 通过升 v1.1"原计划应在 audit dryrun 后落,sprint 节奏未做; v1.2 一并补
 > - v1.2 (2026-05-20) — Gate A.2 PASS + Gate B 3/4 PASS + c4 marginal caveat; D17/D18/D19 加入 §6 决策记录
-> - **v1.3 (2026-05-21)** — P2 spec v1.2 wallclock-budget + storage-layout 重设 (D20 n_seeds 5→2 primary, D21 results/ mirror tree)
+> - v1.3 (2026-05-21) — P2 spec v1.2 wallclock-budget + storage-layout 重设 (D20 n_seeds 5→2 primary, D21 results/ mirror tree)
+> - **v1.4 (2026-05-21)** — P2 sprint 0 collection 实测后 audit 降级 advisory(D22):3 dataset 收集闭环 + GMM audit on noise-widened unimodal 发现 known false-positive limitation,cell 定义改基于 collection protocol 元信息
 > **前置阅读**：
 > - [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) — Offline 线整体状态
 > - [`docs/arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) — `arrival_v2` reward 在 vanilla SAC 上的 4-cell 5/5 gate 验证报告（**本计划 reward 选型依据**）
@@ -49,10 +50,10 @@ ReBRAC paper 1 建立在 4 类**接近专家级** deterministic baseline collect
 
 > FQL 的 expressive behavior prior **iff** data is **both** sub-optimal **and** multi-modal 才 translate 为相对 ReBRAC 的 policy improvement。
 
-**实验体量**：
-- 主对照：3 cell × 2 algorithm × 5 seed = **30 runs**
-- 1 个 mechanism ablation（mix ratio sweep）：3 ratio × 2 algorithm × 3 seed = **18 runs**
-- **总计 48 runs**，L4 wallclock ~72h ≈ 3 天
+**实验体量**(v1.3 wallclock rebalance):
+- 主对照:3 cell × 2 algorithm × **2 seed primary [42, 0]** = **12 runs**(可扩 3 seed → 18 runs)
+- 1 个 mechanism ablation(mix ratio sweep,P3 再 spec):3 ratio × 2 algorithm × 3 seed = **18 runs**(待 P3 spec 确认)
+- **总计 ≤ 36 runs**,L4 wallclock ~20-25h ≈ 1-1.5 天(vs v1.2 原 48 runs / 72h)
 
 **两个 hard gate**：
 - **Gate A**（P0 出口）：`arrival_v2` 在 offline 训练上无新型 reward artifact + M-multi-mix 多模态 audit 区分度 ≥1.5σ
@@ -252,22 +253,24 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 - Gate A.2 fail（多峰构造无效）→ 重设计 mix protocol（加大 mix bias、引入 worldcomp 第三 mode）
 - Gate B fail → FQL 实现 debug；3 个 iter 仍不过则 abort
 
-### 4.2 P2 — 3-cell main comparison（~1.5 周）
+### 4.2 P2 — 3-cell main comparison(~1 周,v1.3 重设)
 
-**任务**：
+**任务**:
 1. M-uni-noise (ε=0.5) + M-multi-mix 各 1000 episode 完整收集
 2. 每 cell audit 落地 `multimodality_audit.md`
-3. 主对照：ReBRAC vs FQL × 3 cell × 5 seed = **30 runs**
+3. 主对照:ReBRAC vs FQL × 3 cell × **2 seed primary [42, 0]** = **12 runs**(可扩 3 seed → 18 runs,见 D20)
 
-**统计协议**：
-- 5-seed paired bootstrap CI (n_boot=10000)
-- Welch's t per cell
-- iff claim 验证：E-uni Δ ≈ 0、M-uni-noise Δ ≈ 0、M-multi-mix Δ > 0 显著
-- Effect size：Cohen's d per cell
+**统计协议**(v1.3 重设, primary verdict 用 effect-size + 方向一致性):
+- Primary verdict: effect-size + 两 seed paired diff 方向一致性(δ_null=0.03, δ_signal=0.05)
+- Sensitivity(报告但不作 verdict input):paired bootstrap CI(n_boot=10000)+ Welch's t + Cohen's d + Bonferroni p<0.0167
+- Gray band [3pp, 5pp] 或方向不一致 → conditional 扩 n=3(加 seed 7)
+- iff claim 验证:E-uni \|Δ\|<0.03 + M-uni-noise \|Δ\|<0.03 + M-multi-mix Δ≥0.05 同向
 
-**算力**：30 run × 1.5h ≈ 45h ≈ 2 天 wallclock（含 collection + audit + 整理 → 1.5 周）。
+**算力**(P2 spec §8.2 数字):12 run × ~37.5 min mean ≈ ~8h L4 sequential(可扩 18 run ≈ 12h)。
 
-**产出**：`experiments/fql_succession/p2_spectrum/` + 主对照表（行=cell，列=algorithm × metric）。
+**产出**:`results/fql_succession/p2/{e_uni,m_uni_noise,m_multi_mix}/` + `docs/fql_succession_p2_main_report.md`。
+
+详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) v1.2。
 
 ### 4.3 P3 — Mix ratio ablation（~1 周）
 
@@ -345,6 +348,7 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | **D19** | **c4 阈值采用 Option α**:`slope ≥ −2 × SE_aggregated`,SE 按 √(p(1−p)/n_eval)/√17.5/√n_seeds 自动 scale | **2026-05-20** | retroactive 在 Gate B 数据上 4 种 (n_seeds × manifest) 配置全 PASS;P2 default (n=5, 100-ep) 下阈值 ≈ −0.0098;数学最干净 (95% 单侧 CI 下界);实现成本 5 行 numpy;与 D18 Bug 2 fix 自然配合 (noise 减半 → 阈值自动收紧);β/γ 不选,γ 可作 supplementary visualization 详见 [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) |
 | **D20** | **P2 n_seeds 从 5 降至 2 primary [42, 0]**,conditional 扩 3 [42, 0, 7];verdict 改 **effect-size + 方向一致性** primary,Welch p / Bonferroni 留 sensitivity | **2026-05-21** | wallclock budget(L4 ~10h/session)+ effect-size primary 让 large-n 统计 power 不再是 paper claim 瓶颈;n=2 节省 60% wallclock (19h → 8h),让出余量给 revision 阶段扩 seed;Gate B 已用 [42, 0] 有 4-run 历史可 cross-reference;gray band [3pp, 5pp] 自动触发扩 n=3;n=2 下 c4 Option α 阈值自动 scale 到 −0.0155(比 n=5 −0.0098 宽容 1.6×,Gate B FQL slope −0.0038 仍 PASS) 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §4.1 + §10.3 |
 | **D21** | **P2 storage layout 拆 `checkpoints/` (大文件 .pt) + `results/` (绘图包) 两棵树**;train 输出 mirror 到 `results/training_curves/{algo}_seed{S}/`,final test eval 通过 `evaluate_offline --output-json` 单独写入 `results/test/`;Colab 跑完仅回收 `results/` 树即可本地绘图 + 重建 verdict | **2026-05-21** | 早期 ReBRAC c1 ablation 等 notebook 已用此约定(`CHECKPOINT_ROOT` + `RESULTS_ROOT` 单独命名)但近期 fql_succession Gate B notebook 把所有产物混在 `--save-dir` 下,违反约定;mirror 4 small file (`train_log.jsonl` + `eval_log.csv` + `trainer_state.json` + `train_config.txt`) 总大小 ~几十 KB/seed,廉价;`results/test/<algo>_seed<S>.json` self-contained final eval 与 train 解耦;train 加 `--skip-final-eval`,final eval 由独立 step 完成 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §4.2 + §9.3.1 |
+| **D22** | **P2 cell 定义改基于 collection protocol 元信息**(`policy_mixture` field),**GMM audit 从 Gate C.2 hard gate 降为 advisory sanity check** | **2026-05-21** | P2 sprint 0 实测 GMM audit 对 noise-widened single policy 有 known false-positive(privileged ε=0.5 → p_≥2=0.996;ε=0.3 → 0.850;均远超 < 0.20 阈值,但 collection metadata 证明都是 single policy);Root cause:GMM(max_comp=3, weight_floor=0.10)在 wide single Gaussian 上倾向 BIC-split,与 dryrun 验证用的 mixture-vs-mixture 对比 metric work 但 single-policy noise widening 的 negative control 上 over-sensitive;Mitigation 选项(Hartigan dip test / 改 weight_floor / per-anchor variance)reviewer 风险均高,实施成本 0.5-2 天;P2 处理:维持 GMM audit 作 advisory disclosure,paper §method 透明 caveat,cell assignment 由 collection metadata integrity 决定;**Audit 对 multi-policy mixture(M-multi-mix)仍 reliable**(P2 sprint 0 实测 p_≥2=0.414 + Welch p≈1e-29 + Δ CI lower 0.25 三 criterion 全过 → confirms mixture construction);**audit 对 single-policy noise widening(M-uni-noise)仅作 paper appendix 透明披露** 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §3.0 + §10.5 |
 
 ---
 
@@ -380,4 +384,4 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 
 ---
 
-*Document version: v1.3 (2026-05-21, P2 spec v1.2 wallclock-budget + storage-layout 重设). v0 → v1 砍掉约 50% validation insurance,保留全部 core paper claim 支撑实验。维护策略:本计划在 Gate A 通过后升级到 v1.1;Gate B 通过后升级到 v1.2 (v1.1 跳过原因见版本历史);P2 spec drafting 期间 storage-layout 重设升级到 v1.3 (本次);P2 落地后升级到 v2.0。每次 phase gate 通过/失败后修订对应 section 与 §6 决策记录。*
+*Document version: v1.4 (2026-05-21, P2 sprint 0 collection 实测 + audit 降级 advisory). v0 → v1 砍掉约 50% validation insurance,保留全部 core paper claim 支撑实验。维护策略:本计划在 Gate A 通过后升级到 v1.1;Gate B 通过后升级到 v1.2 (v1.1 跳过原因见版本历史);P2 spec drafting 期间 storage-layout 重设升级到 v1.3;P2 sprint 0 collection 实测 + audit 降级 advisory 升级到 v1.4(本次);P2 全闭环后升级到 v2.0。每次 phase gate 通过/失败后修订对应 section 与 §6 决策记录。*

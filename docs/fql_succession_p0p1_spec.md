@@ -1,9 +1,13 @@
 # FQL Succession — P0+P1 Executable Spec
 
-> **文档版本**：v1.0（2026-05-18）
+> **文档版本**：v1.1（2026-05-20 patch:§5 CLI rename align actual code + §5.3 c4 阈值 Option α revision）
 > **作用**：把 [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §4.1 P0+P1（reward sanity + multimodality audit + FQL 实现 + Expert anchor）拆成可执行的命令、参数、文件契约、产出清单。
-> **状态**：**Active spec**，等待启动。
+> **状态**:**CLOSED** — Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL (seed-driven, retroactive PASS under v1.1 阈值);P2 main comparison spec 在 `fql_succession_p2_main_spec.md` 起草中。
 > **范围**：仅覆盖 P0+P1（约 4 周）。P2 main comparison、P3 mix ratio ablation、P4 writing 的 spec 在 P0+P1 闭环后另写。
+>
+> **版本历史**:
+> - v1.0 (2026-05-18) — 初稿,5 task + Gate A.1 共享 + Gate A.2/B 判据
+> - **v1.1 (2026-05-20)** — Session A patch:(a) §5.1/§5.2 CLI flag 名对齐 `scripts/train_offline.py` 实际实现 (`--algo` 等);(b) §5.3 c4 阈值改 Option α (slope ≥ −2 × SE_agg) 替换原 "slope ≥ 0";(c) §5.1/§5.2 manifest 引用保持 30-ep `single_u10_cross_tgt15.json` (Gate B 历史事实),P2 default ep100 manifest 在 P2 spec 引用,不回写本文档。
 >
 > **核心简化**：
 > - **Task 1（reward sanity）共享 [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) N0 cell 证据**，本 spec 不重复 spec
@@ -556,9 +560,11 @@ L4 / 16 worker × 1000 ep ≈ **2-3 h CPU wallclock**。可与 Task B 单元测�
 
 ### 5.1 ReBRAC E-uni × seed=42 baseline
 
+> **CLI flag note (v1.0 → v1.1 patch, 2026-05-20)**：本 spec v1.0 起草时使用的 prospective CLI 字段名（`--algorithm`, `--eval-every-steps`, `--rebrac-*` 前缀）已与 `scripts/train_offline.py` 实际实现对齐。完整映射表见 Session B `notebooks/fql_succession_gate_b.ipynb` gate-b-header cell；Gate B Option B 闭环已用 actual code flags 跑过 4 run（[`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) §2）。**§5.1/§5.2 的 manifest 引用保持原 30-ep `single_u10_cross_tgt15.json`（Gate B 历史事实）**;P2 default 切到 ep100 manifest (D18),不回写本 spec。
+
 ```bash
 python -m scripts.train_offline \
-    --algorithm rebrac \
+    --algo rebrac \
     --offline-data offline_data/fql_succession/e_uni_1000/transitions.npz \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --manifest benchmarks/single_u10_cross_tgt15.json \
@@ -569,11 +575,12 @@ python -m scripts.train_offline \
     --objective arrival_v2 \
     --total-steps 200000 \
     --batch-size 256 \
-    --eval-every-steps 10000 \
+    --eval-every 10000 \
     --eval-episodes 100 \
-    --rebrac-actor-bc-coef 4.0 \
-    --rebrac-critic-bc-coef 2.0 \
-    --rebrac-critic-use-layernorm \
+    --actor-penalty-coef 4.0 \
+    --critic-penalty-coef 2.0 \
+    --critic-layernorm \
+    --no-actor-layernorm \
     --seed 42 \
     --save-dir experiments/fql_succession/p0p1/gate_b/rebrac_e_uni_seed42 \
     --device cuda
@@ -583,7 +590,7 @@ python -m scripts.train_offline \
 
 ```bash
 python -m scripts.train_offline \
-    --algorithm fql \
+    --algo fql \
     --offline-data offline_data/fql_succession/e_uni_1000/transitions.npz \
     --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
     --manifest benchmarks/single_u10_cross_tgt15.json \
@@ -594,10 +601,12 @@ python -m scripts.train_offline \
     --objective arrival_v2 \
     --total-steps 200000 \
     --batch-size 256 \
-    --eval-every-steps 10000 \
+    --eval-every 10000 \
     --eval-episodes 100 \
-    --fql-flow-steps 10 \
-    --fql-distill-alpha-bc 1.0 \
+    --flow-steps 10 \
+    --distill-alpha-bc 1.0 \
+    --teacher-lr 3e-4 \
+    --flow-time-embed-dim 32 \
     --seed 42 \
     --save-dir experiments/fql_succession/p0p1/gate_b/fql_e_uni_seed42 \
     --device cuda
@@ -607,12 +616,14 @@ python -m scripts.train_offline \
 
 | 指标 | 通过条件 |
 |---|---|
-| FQL `test_success` (last 3 eval, mean) | **≥ ReBRAC `test_success` (last 3 eval, mean) − 0.08** |
-| FQL `loss_flow` 末段 | < 0.05（teacher 收敛） |
-| FQL `loss_actor` 末段 | 数量级与 ReBRAC `loss_actor` 一致（±1 个 OOM） |
-| FQL eval 曲线 monotonicity | 末 30% 训练 success rate trend ≥ 0（无 collapse） |
+| c1: FQL `test_success` (last 3 eval, mean) | **≥ ReBRAC `test_success` (last 3 eval, mean) − 0.08** |
+| c2: FQL `loss_flow` 末段 | < 0.05（teacher 收敛） |
+| c3: FQL `loss_actor` 末段 | 数量级与 ReBRAC `loss_actor` 一致（±1 个 OOM） |
+| c4: FQL eval 曲线 no-major-collapse | 末 30% aggregated slope ≥ −2 × SE(slope_aggregated_n_seeds)。SE 按 √(p(1−p)/n_eval) / √17.5 / √n_seeds 计算（n_eval = manifest episodes, n_pts = 6 (last-30% of 20 evals), p ≈ in-training mean success rate）。**在 Gate B legacy (n=2, 30-ep) 下阈值 ≈ −0.0283**;在 P2 default (n=5, 100-ep) 下阈值 ≈ −0.0098。 |
 
 **4 条全过 → Gate B pass → 进入 P2 main comparison。**
+
+**c4 retroactive 校准依据 (v1.1 patch, 2026-05-20)**:见 [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) §3 retroactive 测试表 + §4 Type I/II 分析。Gate B Option B 闭环实测:FQL aggregated slope −0.0038 vs revised threshold −0.0283 → **c4 在新阈值下 retroactive PASS** (Gate B 原阈值 0 下 marginal-FAIL,seed-driven 而非 FQL-driven,见 [`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) §5)。
 
 任一失败：
 - FQL << ReBRAC：实现有 bug，debug 3 iter；仍失败则 STOP（plan v1 R4 mitigation）

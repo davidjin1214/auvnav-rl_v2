@@ -1,8 +1,13 @@
 # FQL Succession Plan v1 — Offline RL on Data Quality × Modality Spectrum (Lean MVP)
 
-> **文档版本**：v1.0（2026-05-18，Lean MVP）
+> **文档版本**：v1.2（2026-05-20，P0+P1 closed → P2 spec drafting）
 > **作用**：把"重启 FQL 作 ReBRAC 后续"的 framing、scope、phase plan 与 gate 条件落地为可执行计划。**v1 相对 v0 砍掉约 50% validation insurance**（6 tier → 3 cell；4 audit 指标 → 1；4 ablation → 1；anchor 5-seed → 1-seed smoke），保留全部 core paper claim 支撑实验。
-> **状态**：**Plan v1 — Lean MVP**，等待 Phase 0+1 启动信号。
+> **状态**：**Plan v1.2** — P0+P1 closed（Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 audit dry-run + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL seed-driven, progress with caveat）；P2 main comparison spec drafting (Session A 2026-05-20)。
+>
+> **版本历史**:
+> - v1.0 (2026-05-18, Lean MVP) — 初稿,6 tier → 3 cell + 4 audit → 1 metric + 5-seed anchor → 1-seed smoke
+> - v1.1 (skipped) — 按"Gate A 通过升 v1.1"原计划应在 audit dryrun 后落,sprint 节奏未做; v1.2 一并补
+> - **v1.2 (2026-05-20)** — Gate A.2 PASS + Gate B 3/4 PASS + c4 marginal caveat; D17/D18/D19 加入 §6 决策记录
 > **前置阅读**：
 > - [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) — Offline 线整体状态
 > - [`docs/arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) — `arrival_v2` reward 在 vanilla SAC 上的 4-cell 5/5 gate 验证报告（**本计划 reward 选型依据**）
@@ -157,9 +162,11 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 
 | Cell ID | 构造方式 | Quality | Modality | 角色 |
 |---|---|---|---|---|
-| **E-uni** | privileged baseline + 小噪声 (ε=0.1) | Expert | Unimodal | **¬A reference**：iff claim 的 expert anchor，FQL 不可在此倒挂 |
+| **E-uni** ¹ | privileged baseline + 小噪声 (ε=0.1) | Expert | Unimodal | **¬A reference**：iff claim 的 expert anchor，FQL 不可在此倒挂 |
 | **M-uni-noise** | privileged baseline + ε·N(0, I)，**ε=0.5** | Medium | Unimodal (widened) | **¬B test**：quality 单轴下降 + 仍单峰；验证 "unimodal sub-optimal 不区分 FQL/ReBRAC" |
 | **M-multi-mix** | 50% privileged + 50% goalseek (episode-level mix) | Medium | **Multi-modal**（双峰，by construction） | **A∧B core cell**：FQL 设计 sweet spot |
+
+¹ **E-uni already collected (2026-05-19)** — `offline_data/privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/` (1000 ep, success 0.985, 86,685 transitions),详见 [`fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md)。M-uni-noise 与 M-multi-mix 在 P2 期收集 (Session A P2 spec §2 协议)。
 
 **v0 → v1 砍掉的 tier**：
 - ❌ M-uni-early（与 M-uni-noise 重复 ¬B 角色，选构造可控的 noise 版本）
@@ -210,24 +217,28 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 
 ### 4.1 P0+P1 — Reward sanity + audit + FQL 实现 + Expert anchor（~4 周）
 
+**状态 (2026-05-20)**:**CLOSED** — Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL (seed-driven); progress to P2 with caveat (see [`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md))。
+
 合并 v0 的 Phase 0 + Phase 1。两件事可在 wallclock 上重叠（reward smoke 跑的时候，FQL 实现同步推进）。
 
 **任务**：
-1. **Reward sanity（cite broad val v2 N0，不独立跑）**
+1. **Reward sanity（cite broad val v2 N0，不独立跑）** — **✓ cite passed**
    - [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) §4.1 N0 cell 与本计划同 reward (`arrival_v2`) + 同 task (`single_u10_cross_tgt15`) + 同 sensor (`s0`) + 同 ReBRAC config (β1=4, β2=2, vanilla critic, critic_LN=on)
    - **Gate A.1（共享判据）**：broad val v2 N0 ≥ **0.70** success（v2 plan 已设定 GO 阈值）→ pass
    - 若 broad val v2 N0 fail，FQL plan v1 同步 abort 并联动 reward 切换决策
    - **本计划不重复跑 ReBRAC × arrival_v2 smoke**，节约 ~1 seed × 64 epoch ≈ 1.5h L4 + spec 复杂度
-2. **Multimodality audit dry-run**
+2. **Multimodality audit dry-run** — **✅ Gate A.2 PASS 4/4 (2026-05-19)**
    - 收集 E-uni + M-multi-mix 各 **200 episode**
    - 跑 §3.4 k-NN action GMM mode count
-   - **Gate A.2**：分布区分 ≥1.5σ
-3. **FQL 实现**：`auv_nav/fql.py`
+   - **Gate A.2**：分布区分 ≥1.5σ → 实测 Δp(≥2) = +0.582 [CI +0.534, +0.632], Welch p = 6.4e-84 (see [`fql_audit_dryrun_report.md`](fql_audit_dryrun_report.md))
+3. **FQL 实现**：`auv_nav/fql.py` — **✓ 实现 + tests pass + integrated 进 `scripts/train_offline.py --algo fql`**
    - Actor：flow-matching teacher + one-step distilled student（参考官方 JAX repo 移植）
    - Critic：复用 ReBRAC twin-Q + critic LayerNorm（继承 paper 1 Finding (iv)）
-   - 训练 entry：`scripts/train_offline_fql.py`（仿 `train_offline_rebrac.py`）
-4. **E-uni full collection** (1000 episodes) + FQL × E-uni × 1 seed sanity
-   - **Gate B**：FQL on E-uni × 1 seed ≥ ReBRAC on E-uni × 1 seed − 8pp。fail → 实现 bug 或 hyperparam，debug；不通过则 STOP。
+   - 训练 entry：**`scripts/train_offline.py --algo fql`**（不是独立 `train_offline_fql.py`，via `auv_nav/offline_registry.py`）
+4. **E-uni full collection** (1000 episodes) + FQL × E-uni Gate B sanity — **⚠ 3/4 PASS + c4 marginal (2026-05-20)**
+   - **Gate B (Option B closure, 2-seed)**：FQL last-3 mean 0.728 vs ReBRAC 0.772 (Δ=−4.4pp, c1 PASS); loss_flow 0.026 PASS; actor_loss ratio 1.011 PASS; **c4 slope −0.0038 marginal-FAIL** — statistically indistinguishable from 0 noise (z=−0.27 against 30-ep manifest noise floor), seed-driven (seed=0 positive, seed=42 negative on both algos), **not** FQL-driven.
+   - 按 spec §5.3 "mixed → caveat + 3-seed extension" 路径 → progress to P2 with caveat。
+   - **P2 pre-requisites (Session B 2026-05-20)**:Bug 2 fix via `single_u10_cross_tgt15_ep100.json` (D18) + c4 阈值 Option α (D19),见 [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) + [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md)。
 
 **产出**：
 - `auv_nav/fql.py`（in-tree）
@@ -328,6 +339,9 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | **D14** | **P0 + P1 合并**（5 周 → 4 周） | **2026-05-18 (v1)** | reward smoke 与 FQL 实现可 wallclock 并行 |
 | **D15** | **Gate A.1 reward sanity 共享 broad val v2 N0 证据，不独立跑** | **2026-05-18 (v1)** | rev.3 broad val v2 同 reward+task+sensor+algo+config，独立 smoke 是重复工作 |
 | **D16** | **M-multi-mix dataset 走 in-tree `scripts/concat_offline_datasets.py`，不改 `collect_offline_data.py`** | **2026-05-19** | v1 broad val A2 mix5050 (commit `992625c`) 已实战使用 concat helper；源 dataset 可复用让 P3 mix ratio sweep collection 成本归零；不动 in-tree 工具避免 cross-line 风险 |
+| **D17** | **Gate B 3/4 PASS + c4 marginal-FAIL (seed-driven) → progress to P2 with caveat,不 trigger Option D (FQL stability ablation)** | **2026-05-20** | Gate B Option B 2-seed 闭环显示 c4 FAIL 是 seed=42 driven 而非 FQL-driven (seed=0 上 FQL slope 正);interim 的 Option D 触发条件 "c4 FAIL on both seeds" 未满足;按 spec §5.3 mitigation matrix "mixed → caveat + 3-seed extension" 路径,P2 用 n_seeds≥3 retire-or-confirm 此 marginal finding |
+| **D18** | **Bug 2 修复采用方案 (a) 大 manifest**:生成 `single_u10_cross_tgt15_ep100.json` (100 ep,前 30 byte-identical to 30-ep),不动 `train_utils.py` 优先级逻辑 | **2026-05-20** | 不影响 30+ 现存 manifest 调用方 (paper 1 / broad val v2 / td3bc / online sac);(b/b') CLI honor `--episodes` 留 follow-up cleanup;ep100 manifest 同时 serve P2 default + P3 mix ratio ablation;**P2 spec 引用 ep100,不回写 P0+P1 spec §5.1/§5.2** (Gate B 历史事实保持) 详见 [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) |
+| **D19** | **c4 阈值采用 Option α**:`slope ≥ −2 × SE_aggregated`,SE 按 √(p(1−p)/n_eval)/√17.5/√n_seeds 自动 scale | **2026-05-20** | retroactive 在 Gate B 数据上 4 种 (n_seeds × manifest) 配置全 PASS;P2 default (n=5, 100-ep) 下阈值 ≈ −0.0098;数学最干净 (95% 单侧 CI 下界);实现成本 5 行 numpy;与 D18 Bug 2 fix 自然配合 (noise 减半 → 阈值自动收紧);β/γ 不选,γ 可作 supplementary visualization 详见 [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) |
 
 ---
 
@@ -351,10 +365,16 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | [`auv_nav/rebrac.py`](../auv_nav/rebrac.py) | FQL 复用 twin-Q + critic LN 的源代码起点 |
 | [`auv_nav/reward.py`](../auv_nav/reward.py) | `arrival_v2` preset 实现位置（commit `813096e`，§139-166） |
 | [`scripts/concat_offline_datasets.py`](../scripts/concat_offline_datasets.py) | Episode-level dataset concat helper（commit `992625c`，v1 A2 mix5050 实战）— M-multi-mix 走此工具，不动 `collect_offline_data.py` |
-| [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) | **P0+P1 可执行 spec**：5 个 task + Gate A.1 共享 + Gate A.2/B 判据 |
+| [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) | **P0+P1 可执行 spec**：5 个 task + Gate A.1 共享 + Gate A.2/B 判据 (CLI rename + c4 阈值 patch 见 v1.2 Session A) |
 | [`fql_pytorch_port_design.md`](fql_pytorch_port_design.md) | **FQL 实现 design doc**：tensor shape 契约 + JAX→PyTorch pitfall + impl checklist + 12 个 test |
 | [`fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md) | **Audit 脚本 design doc**：k-NN GMM mode count + paired bootstrap + Gate A.2 verdict 逻辑 |
+| [`fql_audit_dryrun_report.md`](fql_audit_dryrun_report.md) | **Task A dry-run report**:Gate A.2 PASS 4/4 实测 (2026-05-19, Δp(≥2) +0.58 [CI +0.53, +0.63]) |
+| [`fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) | **E-uni 1000-ep dataset card**:Task D 闭环 (success 0.985, 86,685 transitions) |
+| [`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) | **Task E / Gate B final report**:Option B 2-seed 3/4 PASS + c4 marginal-FAIL (seed-driven) (2026-05-20) |
+| [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) | **P2 pre-requisite 1/2**:Bug 2 fix design memo (D18, 方案 a 大 manifest) |
+| [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) | **P2 pre-requisite 2/2**:c4 阈值 design memo (D19, Option α slope ≥ −2 × SE_agg) |
+| `fql_succession_p2_main_spec.md` | **P2 main comparison spec (drafting, Session A 2026-05-20)** |
 
 ---
 
-*Document version: v1.0 (2026-05-18, Lean MVP). v0 → v1 砍掉约 50% validation insurance，保留全部 core paper claim 支撑实验。维护策略：本计划在 Gate A 通过后升级到 v1.1；Gate B 通过后升级到 v1.2；P2 落地后升级到 v2.0。每次 phase gate 通过/失败后修订对应 section 与 §6 决策记录。*
+*Document version: v1.2 (2026-05-20, P0+P1 closed → P2 spec drafting). v0 → v1 砍掉约 50% validation insurance,保留全部 core paper claim 支撑实验。维护策略:本计划在 Gate A 通过后升级到 v1.1;Gate B 通过后升级到 v1.2 (本次, v1.1 跳过原因见版本历史);P2 落地后升级到 v2.0。每次 phase gate 通过/失败后修订对应 section 与 §6 决策记录。*

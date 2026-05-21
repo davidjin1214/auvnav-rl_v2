@@ -180,7 +180,7 @@
 
 ---
 
-## 7. Sprint 1 — N1 E-multi collection plan (2026-05-22, post-diagnostic)
+## 7. Sprint 1 — N1 E-multi collection (2026-05-22, **EXECUTED** post-diagnostic)
 
 **Trigger**: `docs/fql_succession_p2_mechanism_diagnostic.md` §3/§7 N1 — paper iff
 revised from "multi-modal × sub-opt" to "**noise-corrupted BC anchor**". The 4th
@@ -189,6 +189,10 @@ matrix and provides the **null control** that separates *modality* from *noise*.
 
 Predicted verdict per the revised iff: **NULL** (no noise → no FQL/ReBRAC gap).
 If observed, the noise-axis story is confirmed in causal-isolation form.
+
+**Execution status (2026-05-22)**: All 3 collection steps + optional audit
+**completed on local Mac** (conda mytorch1, 6 workers). Datasets ready for Colab
+training via `notebooks/fql_succession_p2_run_cell_e_multi.ipynb`.
 
 ### 7.1 Component A — clean privileged (σ=0)
 
@@ -209,12 +213,14 @@ python -m scripts.collect_offline_data \
     --output-dir offline_data/fql_succession/_components/privileged_500_clean_seed100
 ```
 
-Expected metadata (post-collection sanity):
-- `policy = privileged`
-- `action_noise_std = 0.0`
-- `num_episodes = 500`
-- `success_rate ≈ 0.98` (matches the existing E-uni 1000-ep success 0.985)
-- `num_transitions ≈ 43,000-45,000`
+Actual metadata (2026-05-22):
+- `policy = privileged` ✓
+- `action_noise_std = 0.0` ✓
+- `num_episodes = 500` ✓
+- **`success_rate = 0.9760`** (vs E-uni 0.985; vs noisy priv_500_seed100 0.974)
+- **`num_transitions = 43,440`**
+- `mean_return = 128.94 ± 58.35`
+- Wallclock 1m 23s (Mac CPU, 6 workers)
 
 ### 7.2 Component B — clean goalseek (σ=0)
 
@@ -235,12 +241,15 @@ python -m scripts.collect_offline_data \
     --output-dir offline_data/fql_succession/_components/goalseek_500_clean_seed200
 ```
 
-Expected metadata:
-- `policy = goalseek`
-- `action_noise_std = 0.0`
-- `num_episodes = 500`
-- `success_rate ≈ 0.68` (matches existing noisy goalseek component, slightly higher with no noise)
-- `num_transitions ≈ 80,000-95,000`
+Actual metadata (2026-05-22):
+- `policy = goalseek` ✓
+- `action_noise_std = 0.0` ✓
+- `num_episodes = 500` ✓
+- **`success_rate = 0.7620`** (vs noisy goalseek_500_seed200 0.678 — clean ↑8.4 pp,
+  as expected: noise was hurting goalseek more than priv)
+- **`num_transitions = 87,958`**
+- `mean_return = 13.60 ± 141.11` (vs noisy −29.59 ± 146.21 — noise removed → return ↑43)
+- Wallclock 47.7 s (Mac CPU, 6 workers)
 
 ### 7.3 Concat A + B → E-multi (episode-level 50/50)
 
@@ -253,17 +262,21 @@ python -m scripts.concat_offline_datasets \
     --task-sampler anchor_distribution
 ```
 
-Expected metadata at `e_multi_50priv_50goal_clean_1000/metadata.json`:
-- `policy = privileged+goalseek`
-- `action_noise_std = 0.0` (both components σ=0)
-- `num_episodes = 1000`
-- `num_transitions ≈ 125,000-140,000`
-- `mix_components = [{priv 500 seed 100}, {goalseek 500 seed 200}]`
+Actual metadata at `e_multi_50priv_50goal_clean_1000/metadata.json` (2026-05-22):
+- `policy = privileged+goalseek` ✓
+- `action_noise_std = 0.0` ✓ (both components σ=0)
+- `num_episodes = 1000` ✓ (500 + 500)
+- **`num_transitions = 131,398`** ✓ (43,440 + 87,958 byte-additive — concat check passed)
+- `success_rate = 0.8690` (weighted avg)
+- `mean_return = 71.27` (weighted avg)
+- `mix_strategy = episode_level`, `task_sampler = anchor_distribution`
+- `mix_components`: priv 500 (success 0.976) + goalseek 500 (success 0.762)
+- Wallclock <1 s (concat is just numpy concatenate + meta merge)
 
 ### 7.4 (Optional) Audit E-multi vs E-uni
 
 ```bash
-python -m scripts.audit_modality_gap \
+python -m scripts.audit_multimodality \
     --dataset-a offline_data/privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000 \
     --dataset-b offline_data/fql_succession/e_multi_50priv_50goal_clean_1000 \
     --label-a E-uni \
@@ -271,21 +284,57 @@ python -m scripts.audit_modality_gap \
     --output-dir results/fql_succession/p2/audit/e_multi_clean_vs_e_uni
 ```
 
-Expected: `p_≥2(E-multi)` between 0.3-0.5 (similar to existing M-multi-mix 0.414)
-since the structural mixture is the same; only noise differs.
+**Surprising result (2026-05-22)** — `p_≥2(E-multi) = 0.182`, **NOT** the
+expected 0.3-0.5. Compare to M-multi-mix (sprint-0): `p_≥2 = 0.414`. Same
+structural mixture (priv 50% + goalseek 50%, 1000 ep). Only difference: noise.
 
-### 7.5 Total wallclock estimate
+| Cell | Structure | σ | p_≥2 | Δ vs E-uni | Welch p |
+|---|---|---:|---:|---:|---:|
+| E-uni | priv only | 0.0 | 0.112 | — | — |
+| **E-multi (this)** | **priv 50% + goalseek 50%** | **0.0** | **0.182** | **+0.070** | **0.003** |
+| M-multi-mix (sprint-0) | priv 50% + goalseek 50% | 0.1 | 0.414 | +0.302 | <1e-29 |
+| M-uni-noise (sprint-0) | priv only | 0.5 | 0.996 | +0.884 | <1e-299 |
 
-| Step | Expected (Mac CPU, 6 workers) |
-|---|---|
-| 7.1 priv-500-clean | ~1 min |
-| 7.2 goalseek-500-clean | ~1 min |
-| 7.3 concat | <1 min |
-| 7.4 audit (optional) | ~30 s |
-| **Total** | **~3 min** |
+**Implication for diagnostic §5**: GMM-based p_≥2 conflates noise-widening with
+true policy mixing. Holding mixture structure constant, removing σ=0.1 noise
+drops p_≥2 from 0.414 → 0.182 — most of M-multi-mix's "multi-modality" was
+**noise widening, not policy mixing**. The true structural lift from adding a
+2nd policy at σ=0 is only +0.070 (small but statistically detectable, Welch
+p=0.003). This is **direct, controlled evidence** for the diagnostic's claim
+that audit Gate A.2 is a poor proxy for the algorithmic stress that
+discriminates FQL from ReBRAC.
 
-### 7.6 Then notebook → Colab
+Audit dir: `results/fql_succession/p2/audit/e_multi_clean_vs_e_uni/`
+Wallclock: 6.6 s.
 
-After all 3 datasets exist, run `python -m scripts._build_fql_succession_p2_e_multi_notebook`
+### 7.5 Wallclock summary (actual, 2026-05-22)
+
+| Step | Predicted | Actual |
+|---|---|---|
+| 7.1 priv-500-clean | ~1 min | 1m 23s |
+| 7.2 goalseek-500-clean | ~1 min | 47.7 s |
+| 7.3 concat | <1 min | <1 s |
+| 7.4 audit | ~30 s | 6.6 s |
+| **Total** | ~3 min | **~2 min 17s** |
+
+### 7.6 Verified dataset paths (ready for Colab)
+
+| Artifact | Path | Status |
+|---|---|---|
+| Component A (priv-500-clean) | `offline_data/fql_succession/_components/privileged_500_clean_seed100/` | ✓ |
+| Component B (goalseek-500-clean) | `offline_data/fql_succession/_components/goalseek_500_clean_seed200/` | ✓ |
+| **E-multi merged** | `offline_data/fql_succession/e_multi_50priv_50goal_clean_1000/` | ✓ |
+| E-multi audit summary | `results/fql_succession/p2/audit/e_multi_clean_vs_e_uni/audit_summary.json` | ✓ |
+| E-multi run notebook | `notebooks/fql_succession_p2_run_cell_e_multi.ipynb` | ✓ (sprint 1 scaffold) |
+
+**Sync these to Drive** before opening the notebook in Colab. Train notebook
+will pre-flight assert (`§3`) that all of these are present + that
+`action_noise_std == 0.0` + that `mix_components == {priv, goalseek}`.
+
+### 7.7 Then notebook → Colab
+
+```bash
+python -m scripts._build_fql_succession_p2_e_multi_notebook
+```
 to (re)generate `notebooks/fql_succession_p2_run_cell_e_multi.ipynb` (4 run = 2 algo × 2 seed,
-~2 h Colab L4).
+~2 h Colab L4). skip-resume on `agent_final.pt` ready.

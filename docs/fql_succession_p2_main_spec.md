@@ -394,7 +394,7 @@ results/fql_succession/p2/{cell_id}/
 ```bash
 python -m scripts.train_offline \
     --algo rebrac \
-    --offline-data 'offline_data/fql_succession/{cell_dataset_path}' \
+    --offline-data 'offline_data/fql_succession/{cell_dataset_path}/transitions.npz' \
     --flow 'wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy' \
     --manifest 'benchmarks/single_u10_cross_tgt15_ep100.json' \
     --probe-layout s0 \
@@ -421,7 +421,7 @@ python -m scripts.train_offline \
 ```bash
 python -m scripts.train_offline \
     --algo fql \
-    --offline-data 'offline_data/fql_succession/{cell_dataset_path}' \
+    --offline-data 'offline_data/fql_succession/{cell_dataset_path}/transitions.npz' \
     --flow 'wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy' \
     --manifest 'benchmarks/single_u10_cross_tgt15_ep100.json' \
     --probe-layout s0 \
@@ -851,7 +851,7 @@ def run_one(algo: str, seed: int) -> None:
         train_cmd = (
             f"python -m scripts.train_offline "
             f"--algo {algo} "
-            f"--offline-data '{DATASET}' "
+            f"--offline-data '{DATASET}/transitions.npz' "
             f"--flow '{FLOW}' "
             f"--manifest '{MANIFEST}' "
             f"--probe-layout s0 --history-length 4 --target-speed 1.5 "

@@ -430,7 +430,7 @@ def section_4_md_and_code() -> list[dict]:
             "",
             "        !python -m scripts.train_offline \\",
             "            --algo {algo} \\",
-            "            --offline-data '{DATASET}' \\",
+            "            --offline-data '{DATASET}/transitions.npz' \\",
             "            --flow '{FLOW}' \\",
             "            --manifest '{MANIFEST}' \\",
             "            --probe-layout {PROBE_LAYOUT} \\",

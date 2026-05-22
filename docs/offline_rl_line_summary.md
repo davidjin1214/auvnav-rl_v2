@@ -25,10 +25,10 @@
 | **Phase 1 — TD3+BC baseline 收口** | 2026-Q1 → ~2026-04 | TD3+BC（D4RL 经典 single-BC 作算法基线） | ✅ 已收口（不再扩展） | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
 | **Phase 2 — ReBRAC 主线** | ~2026-04 → 2026-05-07 | ReBRAC（dual-BC + critic-side BC penalty） | ✅ 主线 paper-ready 4/4 closed (rev.8) | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) |
 | **Phase 2.5 v1 — Broad validation (efficiency_v2)** | 2026-05-04 → 2026-05-07 | ReBRAC 跨三轴 generality 广验 + C1 deep-dive | ⚠ **SUPERSEDED 2026-05-18** by v2 plan；v1 archive 保留，不重跑、不进 paper | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md)（archive） |
-| **Phase 2.5 v2 — Broad validation (arrival_v2 cross-only)** | 2026-05-18 → | cross-only spotlight + 2 flow regime + 精简 collector + conditional BC sweep | 🆕 **active plan, 未开跑**（5 cell core + 1 conditional sweep；~28–40h L4） | [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) ★ |
+| **Phase 2.5 v2 — Broad validation (arrival_v2 cross-only)** | 2026-05-18 → 2026-05-19 | cross-only spotlight + 2 flow regime + 精简 collector + conditional BC sweep | ✅ **2-seed 4-run 闭环 PASS 2026-05-19**（N0 HOLDS / N2' STRONG_NEGATIVE；M1 BC sweep 未触发） | [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ |
 | **Phase 3 — AUVHamNODE Offline RL(cross-domain transfer)** | 2026-05-06 → 2026-05-13 | frozen AUVHamNODE 1-step prior + ReBRAC augmentation | ⏸ **PAUSED 2026-05-13**(原状态 v2.1 locked → α 路径 Step 0-4 审计 → 4 项硬接口差异 + wake current 2-4× OOD 暴露;用户决定暂停) | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★ |
 
-**当前位置**：Phase 2 主线已 freeze；**Phase 2.5 v1 广验已 SUPERSEDED 2026-05-18**（reward 失配 + online §7.6 更强 finding），**v2 plan active 未开跑**（cross-only + arrival_v2，详见 [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)）；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)。
+**当前位置**：Phase 2 主线已 freeze；**Phase 2.5 v1 广验已 SUPERSEDED 2026-05-18**（reward 失配 + online §7.6 更强 finding）；**Phase 2.5 v2 已于 2026-05-19 PASS**（N0 HOLDS / N2' STRONG_NEGATIVE，4-run 2-seed 闭环；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)）；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)。
 
 ---
 
@@ -242,7 +242,8 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | [`rebrac_method_section_draft.md`](rebrac_method_section_draft.md) | active | 论文 Method 节草稿 |
 | [`rebrac_paper_writing_index.md`](rebrac_paper_writing_index.md) | active | 写论文期 reading map |
 | [`rebrac_statistical_test_followup.md`](rebrac_statistical_test_followup.md) | active | Welch's p / bootstrap CI 后续 |
-| [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) ★ | **active plan (2026-05-18 rev.1)** | v2 cross-only spotlight under arrival_v2；5 cell core + 1 conditional sweep；paper § appendix 角色明确 |
+| [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ | **active (2026-05-19 PASS)** | v2 数字 ground truth — N0 HOLDS / N2' STRONG_NEGATIVE；paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0 |
+| [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) | **closed plan (2026-05-19, rev.3)** | v2 cross-only spotlight under arrival_v2；5 cell core + 1 conditional sweep；rev.3 pivot N2→N2'；4-run 闭环已 PASS（详见 report）|
 | [`rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) (rev.2) | **SUPERSEDED 2026-05-18 (archive)** | v1 三轴 8 spoke 数据 archive；不重跑、不进 paper |
 | [`rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) | **SUPERSEDED 2026-05-18 (archive)** | v1 C1-s1 sensor upgrade follow-up archive |
 | [`superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`](superpowers/specs/2026-05-04-rebrac-broad-validation-design.md) | **SUPERSEDED 2026-05-18 (archive)** | v1 design spec archive |
@@ -332,4 +333,4 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 ## 7. 一句话总结
 
-Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 plan active 未开跑**(cross-only + arrival_v2 + 2 flow regime + 精简 collector，详见 [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md))。
+Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 broad validation 已于 2026-05-19 PASS**(arrival_v2 cross-only 2-seed 4-run 闭环 — N0 HOLDS / N2' STRONG_NEGATIVE，paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md))。

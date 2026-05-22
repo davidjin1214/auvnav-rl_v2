@@ -50,6 +50,16 @@ modality-based iff into a noise-based explanation (§3 below).
 
 ## 3. Why? — code-level cause
 
+> **⚠️ CORRECTION (2026-05-22, after Q1 ablation — see §9).** This section
+> originally argued the **critic BC penalty** (path b, rebrac.py:284) was the
+> *dominant* cause. The Q1 controlled ablation (`critic_penalty_coef=0`)
+> **falsified that**: removing the critic penalty raised `mean_q` (−150→−123,
+> confirming the coef took effect) but left test SR unchanged (+0.01). The
+> dominant cause is path (a) — the **actor BC regression to raw noisy actions**
+> (β1=4.0), not the critic-side penalty. The three paths below are all real
+> noise-exposed surfaces; the correction is only about *which one binds the final
+> policy*. Read §9 for the corrected attribution.
+
 ### 3.1 ReBRAC has THREE noise-exposed paths
 
 (`auv_nav/rebrac.py`)
@@ -242,11 +252,10 @@ whether E-multi confirms the noise hypothesis.
 
 ## 8. Open questions
 
-- **Q1**: Does ReBRAC's `critic_bc_coef` tuning recover its M-uni-noise gap? If
-  setting `critic_bc_coef = 0.1` (or 0) on M-uni-noise restores ReBRAC to FQL's
-  ~0.91, then we have *closed-form mechanism confirmation* — the noise inflation
-  in critic_penalty IS the bottleneck. This is a 2-run cheap ablation worth
-  considering before N1.
+- **Q1** (RESOLVED — see §9): Does ReBRAC's `critic_bc_coef` tuning recover its
+  M-uni-noise gap? **Answer: NO.** `critic_penalty_coef=0` gave +0.01 SR (no
+  recovery). The critic penalty is NOT the bottleneck. Corrected hypothesis: the
+  **actor BC anchor to raw noisy actions** (β1=4.0) is the dominant cause.
 - **Q2**: Why doesn't ReBRAC's normalize_q (Finding iii) save it? Because
   `lambda_coef = 1 / |Q|.abs().mean()` doesn't rescale the BC penalty term, only
   the Q-improvement term in actor_loss. The BC penalty still operates in absolute
@@ -259,4 +268,103 @@ whether E-multi confirms the noise hypothesis.
 
 ---
 
-**Status**: Diagnostic complete. Awaiting user decision on N1 / N2 / N3 sequence.
+## 9. Q1 ablation result — mechanism correction (2026-05-22)
+
+**Run**: ReBRAC × seeds [42, 0] on the existing M-uni-noise dataset with
+`--critic-penalty-coef 0.0` (actor β1=4.0 unchanged). Notebook:
+`notebooks/fql_succession_p2_q1_critic_penalty_ablation_completed.ipynb`.
+Results: `results/fql_succession/p2/m_uni_noise_q1_critic_pen0/test/`.
+
+### 9.1 Result table
+
+| variant | seed42 | seed0 | mean | vs baseline ReBRAC | vs FQL |
+|---|---:|---:|---:|---:|---:|
+| baseline ReBRAC (β2=2.0) | 0.680 | 0.730 | **0.705** | — | −0.205 |
+| baseline FQL | 0.910 | 0.910 | **0.910** | — | — |
+| **Q1 ReBRAC (β2=0.0)** | 0.750 | 0.680 | **0.715** | **+0.010** | **−0.195** |
+
+**VERDICT: H1 FAIL.** Setting `critic_penalty_coef=0` did not recover ReBRAC
+(gain +0.01, still −19.5 pp below FQL).
+
+### 9.2 The coefficient DID take effect (it's not a config bug)
+
+Late-training train_log means (last 50% steps):
+
+| run | bc_loss | critic_penalty* | mean_q | td_err |
+|---|---:|---:|---:|---:|
+| baseline β2=2.0 s42 | 0.1465 | 0.2097 | −144.6 | 6.04 |
+| baseline β2=2.0 s0 | 0.1348 | 0.1967 | −162.6 | 6.79 |
+| **Q1 β2=0.0 s42** | 0.1341 | 0.1976 | **−123.0** | 6.65 |
+| **Q1 β2=0.0 s0** | 0.1347 | 0.1966 | **−123.1** | 6.41 |
+
+\* `critic_penalty` logs the *raw* penalty value `(next_actions − a')²` **before**
+multiplying by the coefficient (rebrac.py:349), so it stays ~0.197 even when the
+coef is 0 — it's computed-and-logged but not used in the TD target.
+
+The proof the coef took effect: **`mean_q` rose from ≈ −150 to ≈ −123** (+27),
+exactly the expected effect of removing `−critic_bc_coef·critic_penalty` from
+`q_target`. The Q-surface became less pessimistic. **But the policy didn't
+improve** — and `bc_loss` stayed pinned at the noise floor (~0.134) because the
+actor BC coefficient (β1=4.0) was unchanged.
+
+### 9.3 Corrected mechanism attribution
+
+The original §3 over-attributed FQL's advantage to the critic BC penalty
+inflation. The controlled ablation reveals:
+
+- **Critic BC penalty (path b)** — affects Q *magnitude* (mean_q −150 vs −123)
+  but is **not** the binding constraint on final policy quality. Removing it does
+  nothing for SR.
+- **Actor BC regression (path a)** — `actor_loss = −λ·Q(s,π(s)) + β1·‖π(s) − a‖²`
+  with **β1 = 4.0** and `a = π*(s) + ε`. The BC term contributes ≈ 4.0 × 0.134 ≈
+  0.54 to the actor loss, comparable to or larger than the Q-improvement term
+  (which `normalize_q` rescales to order 1). The deterministic actor is **strongly
+  dragged toward the raw noisy targets**, and it cannot escape the noise floor.
+  **This is the dominant bottleneck.**
+- **FQL avoids this** not by having a weaker BC, but by regressing its student to
+  the **denoised** `a_teacher = integrate(s)` (flow marginalizes ε), so its BC
+  target is clean even at σ=0.5. The strength of the anchor is fine; the *target
+  quality* is what matters.
+
+**Revised one-line mechanism**:
+> FQL > ReBRAC on noisy data because ReBRAC's actor regresses to **raw noisy
+> behavior actions** while FQL's student regresses to a **flow-denoised
+> reconstruction**. The critic-side BC penalty is a secondary effect on Q
+> magnitude, not the cause of the policy-quality gap.
+
+The headline noise-axis iff (§1) is **unaffected** — M-uni-noise's +20.5 pp FQL
+win is real and large. Only the *within-ReBRAC attribution of why* is corrected:
+actor-side BC target quality, not critic-side penalty.
+
+### 9.4 Follow-up: Q1b (actor-side ablation) — proposed
+
+To close the corrected hypothesis, the decisive test is on the **actor** side:
+
+| Variant | actor β1 | critic β2 | Predicted M-uni-noise SR |
+|---|---:|---:|---|
+| baseline | 4.0 | 2.0 | 0.705 (observed) |
+| Q1 (done) | 4.0 | **0.0** | 0.715 (observed — no change) |
+| **Q1b-1** | **1.0** | 2.0 | should rise toward FQL if actor-BC strength binds |
+| **Q1b-2** | **0.0** | 0.0 | pure TD3 offline — risks extrapolation collapse; upper bound on BC removal |
+
+Caveat: lowering β1 weakens the BC anchor *and* keeps the noisy target — so if
+Q1b-1 recovers, it confirms "strong BC to a noisy target" is the bottleneck; if
+it doesn't (or collapses), it confirms the issue is *target quality*, which only
+FQL's denoising fixes. Either outcome sharpens the paper claim. 2–4 runs,
+~1–2 h Colab L4. Build a `_q1b` notebook analogous to the Q1 one when ready.
+
+### 9.5 Impact on N3/N4
+
+- **N3 verdict notebook**: unchanged — still aggregates the 2×2 cells. Add a
+  short "mechanism" subsection citing Q1 (critic penalty ruled out) + Q1b (if run).
+- **N4 spec rewrite**: §3 mechanism narrative must lead with **actor BC target
+  quality**, cite Q1 as the ablation that ruled out the critic-side story. Do not
+  repeat the original "critic penalty inflation is the smoking gun" framing.
+
+---
+
+**Status**: Sprint-0 diagnostic + Q1 ablation complete. Q1 corrected the
+within-ReBRAC mechanism attribution (actor-side, not critic-side). E-multi
+datasets collected (N1 step 1 done); E-multi training pending on Colab. Next:
+(a) optional Q1b actor-side ablation, (b) E-multi 4-run on Colab, then (c) N3
+verdict notebook + N4 spec rewrite once results land.

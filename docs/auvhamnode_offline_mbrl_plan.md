@@ -4,6 +4,8 @@
 >
 > Pause 期间影响:v2.1 §11.1 fire-condition 路径 A/B/C 已被 v3 pre-notes §3 的 4 项硬接口差异叠加暂停决策**取代**;v2.1 §4.2 A 阈值"normalized MSE < 0.1"在 wake U=1.5 上已被审计判定不可达。
 
+> **ℹ FQL Succession（Paper 2）NEGATIVE 闭环旁注（2026-05-23）** — 平行的 FQL vs ReBRAC 线已闭环为**诚实负面 + 机制发现**:"表达力更强的 flow-matching 先验在本 AUV 导航任务上无 leverage"（FQL 不系统性超过 ReBRAC;详见 [`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md)）。这对本线 §10.1 的 expressive-prior framing 是**相关上下文**,但**不改变 PAUSED 状态**,也**不是** §11.1 的 fire-condition discriminator —— 后者指 ReBRAC broad-val **C1 BC-penalty sweep**,与 FQL Succession 的 **C-1**(`distill_alpha_bc` 复赛)是两件不同的事,勿混淆。
+
 **版本**:v2.1(2026-05-10 amendment:§11.1.0 零号前置增补)
 **日期**:2026-05-09(原版)/ 2026-05-10(amendment)
 **状态**:**PAUSED 2026-05-13**(原状态:locked plan,待 §11.1.0 零号前置 + §11.1.1 fire-condition 路径满足后启动)

@@ -27,8 +27,9 @@
 | **Phase 2.5 v1 — Broad validation (efficiency_v2)** | 2026-05-04 → 2026-05-07 | ReBRAC 跨三轴 generality 广验 + C1 deep-dive | ⚠ **SUPERSEDED 2026-05-18** by v2 plan；v1 archive 保留，不重跑、不进 paper | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md)（archive） |
 | **Phase 2.5 v2 — Broad validation (arrival_v2 cross-only)** | 2026-05-18 → 2026-05-19 | cross-only spotlight + 2 flow regime + 精简 collector + conditional BC sweep | ✅ **2-seed 4-run 闭环 PASS 2026-05-19**（N0 HOLDS / N2' STRONG_NEGATIVE；M1 BC sweep 未触发） | [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ |
 | **Phase 3 — AUVHamNODE Offline RL(cross-domain transfer)** | 2026-05-06 → 2026-05-13 | frozen AUVHamNODE 1-step prior + ReBRAC augmentation | ⏸ **PAUSED 2026-05-13**(原状态 v2.1 locked → α 路径 Step 0-4 审计 → 4 项硬接口差异 + wake current 2-4× OOD 暴露;用户决定暂停) | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★ |
+| **FQL Succession — FQL vs ReBRAC（Paper 2 候选）** | 2026-05-19 → 2026-05-23 | FQL（flow-matching teacher + 1-step distill）vs ReBRAC（dual-BC） | ✅ **NEGATIVE 闭环 2026-05-23**（核心 conditional-iff 假设证伪 → 机制发现 + 诚实负面，B+A） | [`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md) ★ |
 
-**当前位置**：Phase 2 主线已 freeze；**Phase 2.5 v1 广验已 SUPERSEDED 2026-05-18**（reward 失配 + online §7.6 更强 finding）；**Phase 2.5 v2 已于 2026-05-19 PASS**（N0 HOLDS / N2' STRONG_NEGATIVE，4-run 2-seed 闭环；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)）；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)。
+**当前位置**：Phase 2 主线已 freeze；**Phase 2.5 v1 广验已 SUPERSEDED 2026-05-18**（reward 失配 + online §7.6 更强 finding）；**Phase 2.5 v2 已于 2026-05-19 PASS**（N0 HOLDS / N2' STRONG_NEGATIVE，4-run 2-seed 闭环；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)）；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)；**FQL Succession P2 已于 2026-05-23 NEGATIVE 闭环**（"FQL > ReBRAC iff sub-optimal AND multi-modal" 证伪；机制 = BC-anchor 目标质量决定噪声鲁棒性；详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md)）。
 
 ---
 
@@ -172,6 +173,29 @@
 
 ---
 
+### 3.5 FQL Succession — FQL vs ReBRAC（Paper 2 候选，✅ NEGATIVE 闭环 2026-05-23）
+
+**Anchor 入口**：[`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md) ★（主报告：机制 + 诚实负面）+ [`docs/fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9（权威 lab 记录）。
+
+**问题**：表达力更强的 flow-matching 先验（FQL）是否在 sub-optimal AND multi-modal 数据上系统性超过 ReBRAC（dual-BC）？
+
+**核心结论（假设证伪 → B+A：机制发现 + 诚实负面，NOT "FQL wins"）**：
+- **2×2 矩阵**（modality × noise）：discriminator 是**噪声**而非 modality —— clean-multi cell（E-multi）NULL，modality 被排除。
+- **机制三连**：Q1（critic 侧排除）→ Q1b（actor `--actor-penalty-coef` β1 4.0→1.0，+23.5pp 反超 FQL）→ Q1c（β1=1.0 在 clean 也更好）⇒ **单一固定 ReBRAC β1=1.0 在 clean+noisy 双轴 dominate FQL，worst-case-over-noise 0.910 > FQL 0.858**。原先看到的 "FQL 赢" 是 ReBRAC β1 mis-tuning 的 artifact。
+- **C-1 公平复赛**（FQL 自己的 `--distill-alpha-bc` log-spaced 扫描）**RESCUE-FAIL**（clean 最高 0.858，差杆 −5.2pp；最优锚强度方向与 ReBRAC 相反）。
+- **机制（可发表的 finding）**：offline-RL 对 action noise 的鲁棒性由 **BC anchor 目标质量**决定；最优锚强度随目标噪声翻转（ReBRAC 锚到 raw action，噪声下须减弱 β1；FQL 锚到 flow-denoised target，已干净但 clean 无额外 edge）。
+- **统计**：固定 100-scenario manifest（`single_u10_cross_tgt15_ep100`）⇒ 配对比较，σ_train ≈ 3.8pp，两大效应 n=2 即显著；头对头 NULL。
+
+**交付物**（commits `b1f1854` → `498d421` → `8bb9fab`）：
+- [`fql_succession_p2_results.md`](fql_succession_p2_results.md) — 主报告
+- [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9 — 权威 lab 记录
+- [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) v1.4 — CLOSED 历史设计记录（假设性章节已逐节标 SUPERSEDED/RESOLVED）
+- [`notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb)（纯分析，读 `results/` 现算所有表/图，已实跑）+ `docs/assets/fql_succession_p2/verdict_*.png`
+
+**下一步（minimal，待 spec）**：在更难的 `single_u15_cross`（U=1.5/Re250）上补一个**精简跨-benchmark confirmation**（仅 noise 轴 × {ReBRAC β1=4.0, β1=1.0, FQL} × 2 seed，不重复 P2 的全展开），硬化机制 claim 的泛化性。**不补 seed**（更多 seed 只会收紧 NULL，不会翻盘）。
+
+---
+
 ## 4. 当前活跃 backlog 与下一步
 
 ### 4.1 ReBRAC paper revision (active)
@@ -285,6 +309,18 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | [`offline_mbrl_plan/`](offline_mbrl_plan/) 下 6 份草案 | 已被 v2.0 批判性合并/选择性吸收;6 份均已加 deprecated banner |
 | [`offline_rl_implementation_plan.md`](offline_rl_implementation_plan.md)(rev.5, 2026-04-22) | 已 deprecated(XQL/FQL 主线撤销);TD3+BC / ReBRAC 段落仍可作论文引用源 |
 
+#### F. FQL Succession（Paper 2 候选，✅ NEGATIVE 闭环 2026-05-23）
+
+> 注:此处 FQL 是作为 **Paper 2 的 head-to-head 对手**复活（FQL vs ReBRAC 机制研究），与上面 §C/§E "XQL/FQL 主线撤销" 是两回事——后者指 2026-Q1 老 offline 框架的算法栈撤销。
+
+| 文件 | 状态 | 角色 |
+|---|---|---|
+| [`fql_succession_p2_results.md`](fql_succession_p2_results.md) ★ | **closed (2026-05-23)** | P2 主报告（机制 + 诚实负面） |
+| [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9 | closed | 权威 lab 记录（Q1/Q1b/E-multi/Q1c/power/C-1）——数字 ground truth |
+| [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md)(v1.4) | **CLOSED 历史设计记录** | 原 conditional-iff 假设性章节已逐节标 SUPERSEDED/RESOLVED |
+| [`fql_succession_p2_collection_log.md`](fql_succession_p2_collection_log.md) | closed | dataset 收集 + audit 记录 |
+| [`notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb) | 纯分析，已实跑 | 读 `results/` 现算所有表/图；builder `scripts/_build_fql_succession_p2_verdict_notebook.py` |
+
 ### 5.3 实验数据 / checkpoints / offline data
 
 | 路径 | 角色 |
@@ -333,4 +369,4 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 ## 7. 一句话总结
 
-Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 broad validation 已于 2026-05-19 PASS**(arrival_v2 cross-only 2-seed 4-run 闭环 — N0 HOLDS / N2' STRONG_NEGATIVE，paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md))。
+Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 broad validation 已于 2026-05-19 PASS**(arrival_v2 cross-only 2-seed 4-run 闭环 — N0 HOLDS / N2' STRONG_NEGATIVE，paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md));**FQL Succession（FQL vs ReBRAC，Paper 2 候选）已于 2026-05-23 NEGATIVE 闭环**("FQL > ReBRAC iff sub-optimal AND multi-modal" 证伪 → 机制发现 + 诚实负面:noise 是 discriminator、ReBRAC β1=1.0 双轴 dominate、BC-anchor 目标质量决定鲁棒性;详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md))。

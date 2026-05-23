@@ -1,14 +1,15 @@
 # FQL Succession — P2 Main Comparison Spec
 
-> **文档版本**：v1.3（2026-05-21,P2 sprint 0 collection 实测后 audit 降级 advisory)
+> **文档版本**：v1.4（2026-05-23,P2 全部实验闭环 → 核心 iff 假设证伪 → 机制发现 + 诚实负面）
 > **作用**：把 [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §4.2 P2 main comparison（3-cell × 2-algo × 2-seed primary = **12 runs**, 可扩 3-seed = 18 runs）拆成可执行的 collection / audit / run / verdict 协议。
-> **状态**：**Active spec**，pre-requisites 全部落地，等待 P2 sprint 0 (collection) 启动信号。
+> **状态**：**CLOSED (2026-05-23)** — 12-run 主矩阵 + Q1/Q1b/Q1c/E-multi/C-1 全部闭环。**核心 conditional iff 假设证伪**(§1.4 的 "Null iff" 分支命中,且机制三连进一步把它收紧为**全面证伪**);P2 的产出是**机制发现 + 诚实负面**(NOT "FQL wins")。主报告 → [`fql_succession_p2_results.md`](fql_succession_p2_results.md);完整 lab 记录 → [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9;verdict notebook → [`../notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb)。本 spec 以下章节为**历史设计记录**,假设性内容已逐节标注 SUPERSEDED/RESOLVED。
 >
 > **版本历史**:
 > - v1.0 (2026-05-20 起草) — 10 节初稿:scope + collection + audit + run matrix + statistics + Gate C + risks + budget + notebooks + caveats
 > - v1.1 (2026-05-20 patches) — Session A 4-decision refinements:(a) §2.3 M-uni-noise success 4-band contingency; (b) §2.4 M-multi-mix 2-way → 3-way conditional upgrade rule + P3 implication; (c) §5.5 Bonferroni primary + BH/uncorrected sensitivity table; (d) §9.3 `run_one()` helper 模板 + idempotent `summarize`/`verdict_preview` guards
 > - v1.2 (2026-05-21 patches) — Session A wallclock-budget + storage-layout 重设 per user feedback:(a) §4.1 n_seeds 5 → 2 primary [42, 0],可扩 3 [42, 0, 7](L4 wallclock 从 19h → 8h,12 run vs 30 run);(b) §4.2/§9.3 helper 拆 `checkpoints/` (大文件) + `results/` (绘图包) 两棵树,加 `results/training_curves/` mirror 4 个 small file (train_log.jsonl + eval_log.csv + trainer_state.json + train_config.txt;final test 由独立 `evaluate_offline --output-json` 写入 `results/test/`),Colab 跑完仅回收 `results/` 即可本地绘图;(c) §5.4/§5.5 effect-size + 方向一致性 primary verdict(n=2 下 Welch p / Bonferroni 信息量低,移到 sensitivity);(d) §9 collection 改本机非 notebook 执行,删 collection notebook,run notebook 减为 3 个 cell(per algo × seed = 4 个 run cell)
 > - **v1.3 (2026-05-21 patches)** — Session A P2 sprint 0 collection 实测后 audit 降级 advisory:(a) §3.0 audit 角色重定 — cell 定义改基于 **collection protocol 元信息**(`policy_mixture` field)而非 GMM audit verdict;(b) §3.3/§3.4 audit 从 Gate C.2 hard gate **降为 advisory sanity check**;(c) §6.2 Gate C.2 重定 — cell 进 verdict 由 collection metadata integrity 检查决定,audit 作 paper appendix 透明披露;(d) §10.5 新增 GMM audit on noise-widened unimodal known limitation 段(数学解释 + paper §method caveat 模板);(e) M-uni-noise dataset 采用 ε=0.5(success 63% Band A target),audit p_≥2=0.996 作为 GMM false-positive disclosure
+> - **v1.4 (2026-05-23 closure)** — P2 全部实验闭环后的 verdict 落地 + 假设证伪标注:(a) 顶部 STATUS banner + §1.1/§1.4 标 SUPERSEDED — 核心 conditional iff 假设**证伪**(实测命中 §1.4 "Null iff" 分支:M-multi-mix δ=−0.035 非 positive);(b) **机制三连**(Q1 critic 排除 → Q1b actor β1=4→1 是关键, +23.5pp → Q1c β1=1.0 在 clean+noisy 双轴 dominate FQL)进一步把 "Null iff" 收紧为**全面证伪**:连唯一的 positive cell(M-uni-noise +20.5pp)也是 ReBRAC mis-tuned β1=4.0 的 artifact;(c) **C-1 公平复赛 RESCUE-FAIL** — FQL 自己的 `distill_alpha_bc` 扫描在 clean 上最高 0.858,离 ReBRAC β1=1.0 的 0.910 杆差 −5.2pp,公平性 caveat 关闭;(d) §3/§5.4/§6.3 标 RESOLVED + 指向 results 主报告;(e) §3/§10.5 加注 **modality 轴本身不是 discriminator**,正确的 stress 变量是 conditional action variance `E_s[Var(a|s)]`(diagnostic §5);(f) §6.4 verdict report 文件名修正为实际产出 `fql_succession_p2_results.md`。**决策锁定 B+A(机制发现 + 诚实负面)。**
 > **范围**：仅覆盖 P2（约 1.5-2 周）。P3 mix ratio ablation 与 P4 writing 的 spec 在 P2 闭环后另写。
 > **前置阅读**：
 > - [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) v1.2 — plan 总览 + §3 spectrum + §6 D17/D18/D19
@@ -19,6 +20,29 @@
 > - [`fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) — E-uni 1000-ep dataset (Task D 闭环)
 > - [`fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md) — audit 工具 design
 > - [`fql_audit_dryrun_report.md`](fql_audit_dryrun_report.md) — audit dry-run Gate A.2 PASS 4/4
+
+---
+
+> ## ⚠️ v1.4 STATUS — 假设证伪,P2 CLOSED (2026-05-23)
+>
+> 本 spec 围绕的核心假设 — **"FQL > ReBRAC iff data is BOTH sub-optimal AND multi-modal"** —
+> 在 12-run 主矩阵 + 后续机制 ablation 后**被证伪**。简明结论链(完整见
+> [`fql_succession_p2_results.md`](fql_succession_p2_results.md) + 诊断 §9):
+>
+> 1. **2×2 矩阵**:唯一 positive cell 是高噪声的 **M-uni-noise (+20.5pp)**;clean-multi 的
+>    **E-multi 为 NULL** → **modality 不是 discriminator,噪声(conditional action variance)才是**。
+> 2. **机制三连**:Q1(critic-side BC penalty 排除)→ Q1b(actor β1 4.0→1.0 是关键, +23.5pp,
+>    反超 FQL)→ Q1c(β1=1.0 在 clean 也更好)⇒ **单一固定 ReBRAC β1=1.0 在每个 cell ≥ FQL,
+>    且 worst-case-over-noise 0.910 > FQL 0.858**。那个 +20.5pp 的 "FQL win" 是 Gate B 把
+>    ReBRAC β1 误设为 4.0 的 artifact。
+> 3. **C-1 公平复赛 RESCUE-FAIL**:给 FQL 自己的 BC-anchor 旋钮 `distill_alpha_bc` 做 log-spaced
+>    扫描,clean 最高 0.858,**始终差 0.910 杆 −5.2pp** → tuned-vs-tuned 下 FQL 仍输 → 公平性
+>    caveat 关闭。
+>
+> **机制发现(可发表的贡献)**:*offline-RL 对动作噪声的鲁棒性由 BC anchor 的**目标质量**决定,
+> 最优 anchor 强度随目标噪声而翻转* —— ReBRAC 锚到 raw 动作(噪声下须减小 β1),FQL 锚到
+> flow-去噪目标(本就干净,但 clean 上无额外优势)。**决策锁定:B + A(机制发现 + 诚实负面,
+> NOT "FQL wins")。** 以下 §1–§10 保留为历史设计记录。
 
 ---
 
@@ -40,6 +64,11 @@
 ## 1. Scope + 与 P0+P1 关系 + Gate B caveat
 
 ### 1.1 一句话目标
+
+> **⚠️ SUPERSEDED (v1.4)** — 下面的 conditional iff claim 是本 spec 的 *原始假设*,已被 P2 实验**证伪**。
+> 实际结论:modality 不是 discriminator(E-multi NULL),噪声才是;且唯一 positive cell 也是 ReBRAC
+> β1 mis-tuning artifact(机制三连)。P2 的真实组织性发现是**机制 + 诚实负面**(顶部 STATUS banner /
+> [`fql_succession_p2_results.md`](fql_succession_p2_results.md))。原文保留如下:
 
 > 在 3-cell spectrum (E-uni / M-uni-noise / M-multi-mix) × 2 algorithm (FQL, ReBRAC) × 2 seeds primary [42, 0]（可扩 3 [42, 0, 7]）= **12 runs** 上系统对比，量化 paper 2 的核心 conditional iff claim："FQL 的 expressive behavior prior translates to policy improvement over ReBRAC **iff** data is **both** sub-optimal **and** multi-modal"。Verdict 以 **effect-size + 两 seed 方向一致性** 为 primary 判据,Welch p / Bonferroni 留作 sensitivity。
 
@@ -74,11 +103,16 @@ P2 spec 在以下章节明确承接此 caveat:
 
 ### 1.4 P2 出口三选一 verdict (preview, 详见 §6)
 
+> **✅ RESOLVED (v1.4)** — 实测命中 **"Null iff"** 行(M-multi-mix δ=−0.035,两 seed 同向负 → not
+> positive)。但机制三连(§6.3 RESOLVED 注)进一步证明:连 M-uni-noise 的 positive 也是 ReBRAC β1=4.0
+> mis-tuning artifact,故最终 verdict **强于** "Null iff" —— 是**全面证伪 + 机制发现**(B+A),不是单纯
+> scoped negative。详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md)。原表保留如下:
+
 | Verdict | iff 状态 | Paper claim adjustment | P3 trigger |
 |---|---|---|---|
 | **完整 iff** | E-uni null + M-uni-noise null + M-multi-mix positive | Paper claim 主路径 (conditional iff hold) | 进 P3 mix ratio sweep |
 | **Partial iff** | E-uni null + **M-uni-noise also positive** + M-multi-mix positive | Paper claim 降级:"FQL > ReBRAC on sub-optimal data" (drop modality 条件) | 进 P3,但 modality intensity 单调性变 secondary evidence |
-| **Null iff** | M-multi-mix not positive | Paper claim 重写为 scoped negative finding ("expressive prior 在本任务无 leverage") | P3 决策点;按 R3 mitigation 写完 negative paper or pivot |
+| **Null iff** ← *命中* | M-multi-mix not positive | Paper claim 重写为 scoped negative finding ("expressive prior 在本任务无 leverage") | P3 决策点;按 R3 mitigation 写完 negative paper or pivot |
 
 ---
 
@@ -256,6 +290,11 @@ Mitigation 详见 §7.P2.R2。
 ## 3. Per-cell multimodality audit (advisory)
 
 > **v1.3 重定 (2026-05-21)**:audit 从 Gate C.2 **hard gate 降为 advisory sanity check**。Cell 定义来自 **collection protocol**(single policy vs policy mixture),不依赖 GMM audit。原因见 §3.0 + §10.6 caveat 段。
+>
+> **⚠️ v1.4 注**:本节的整个 **modality 轴**(以及它的 GMM `p_≥2` 代理)在实验后被证明**不是** FQL/ReBRAC
+> 的 discriminator —— clean-multi 的 E-multi 为 NULL,真正区分二者的是**噪声幅度 = conditional action
+> variance `E_s[Var(a|s)]`**(diagnostic §5)。GMM `p_≥2` 既是 modality 的差代理(§10.5 的 noise-widening
+> false-positive),modality 本身又是错的 stress 变量。本节保留为历史设计 + audit 透明披露记录。
 
 ### 3.0 Audit 的角色 (v1.3)
 
@@ -553,6 +592,12 @@ Per cell 报 `d = (mean(FQL) - mean(ReBRAC)) / pooled_std`。
 
 ### 5.4 iff verdict (effect-size + 方向一致性 primary)
 
+> **✅ RESOLVED (v1.4)** — 此判据已实跑(固定 ep100 manifest ⇒ 配对对比, σ_train≈3.8pp)。实测 per-cell:
+> E-uni δ=−0.027 NULL;**M-uni-noise δ=+0.205 POSITIVE**;E-multi δ=−0.020 NULL;M-multi-mix δ=−0.035 GRAY。
+> 唯一 POSITIVE 由机制三连(§6.3)证伪为 ReBRAC β1=4.0 artifact。两大效应(Q1b +23.5pp t=4.98、original
+> +20.5pp t=8.20)**n=2 即统计显著**,所有 FQL head-to-head 为 NULL 且点估计偏向 ReBRAC。详见
+> [`fql_succession_p2_results.md`](fql_succession_p2_results.md) §2/§5。原判据保留如下:
+
 **v1.2 决策**:n=2 primary 下 Welch p / Bonferroni 自由度过低(df=1),改为 **effect-size + 方向一致性** 作 primary 判据;Welch p / Bonferroni 留作 sensitivity (§5.5)。
 
 **Effect-size threshold**:
@@ -652,6 +697,13 @@ Cell 进 verdict 由 **collection protocol metadata** 决定(不再由 audit ver
 
 ### 6.3 Gate C.3 — iff verdict 三选一
 
+> **✅ RESOLVED (v1.4)** — 实测命中 **"Null iff"**(M-multi-mix δ=−0.035 < 0.05, 两 seed 同向负 →
+> not positive)。随后机制三连把它收紧:Q1(critic 排除)→ Q1b(actor β1 4.0→1.0 +23.5pp 反超 FQL)→
+> Q1c(β1=1.0 在 clean 也更好)⇒ **单一固定 ReBRAC β1=1.0 在 clean+noisy 双轴 dominate FQL,worst-case
+> 0.910 > FQL 0.858**;C-1 公平复赛(FQL 自己的 `distill_alpha_bc` 扫描)**RESCUE-FAIL**(clean 最高 0.858,
+> 差杆 −5.2pp)。故 **realized verdict 强于 "Null iff" 的 scoped negative —— 是全面证伪 + 机制发现(B+A)**:
+> "FQL > ReBRAC" 在所有轴上不成立,且唯一的 positive 是 baseline mis-tuning artifact。下表三选一保留为历史判据:
+
 按 §5.4 effect-size primary + §5.6 c4 + §6.1/§6.2 同时 satisfied,以下三选一(`§5.5` sensitivity 表必须同时报告,但 verdict primary 不依赖 Welch p):
 
 | Verdict | Condition (effect-size primary, n=2 [42, 0] or extended n=3) | Paper claim | P3 trigger |
@@ -667,7 +719,12 @@ Cell 进 verdict 由 **collection protocol metadata** 决定(不再由 audit ver
 
 ### 6.4 Gate C.3 verdict report 产出
 
-`docs/fql_succession_p2_main_report.md` 应包含:
+> **✅ RESOLVED (v1.4)** — 实际产出的主报告是 **[`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md)**
+> (非原计划文件名 `fql_succession_p2_main_report.md`),配套 **[`../notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb)**
+> (纯分析,读 `results/` 现算所有表/图)+ 完整 lab 记录 **[`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9**。
+> 因 verdict 已是 closure(B+A,非进 P3 superiority 主路径),报告结构按机制 + 诚实负面组织,而非下面的原计划骨架。原计划骨架保留如下:
+
+(原计划)`docs/fql_succession_p2_main_report.md` 应包含:
 - §1 Run matrix completeness summary (Gate C.1)
 - §2 Per-cell audit results table (Gate C.2)
 - §3 Per-cell statistical table:Δ + paired CI + Welch p + Cohen d + c4 slope (5 metric per cell, 3 cells = 15 cells in table)
@@ -982,6 +1039,11 @@ P2 不重新 tune ReBRAC β1/β2 (frozen at 4/2 per broad val v2),不重新 tune
 
 ### 10.5 GMM audit on noise-widened unimodal — known limitation (v1.3 新增)
 
+> **⚠️ v1.4 注**:本节记录的是 GMM 作为 **modality 代理**的测量局限(noise-widening false-positive)。
+> 实验闭环后还有一层更深的结论:**modality 轴本身就不是 FQL/ReBRAC 的 discriminator**(E-multi NULL)——
+> 正确的 stress 变量是**噪声幅度 = conditional action variance `E_s[Var(a|s)]`**(diagnostic §5)。
+> 所以即便有一个完美的 modality 度量,它也不会区分两个算法。本节仍作为 audit 工具透明披露保留。
+
 **P2 sprint 0 实测发现**:
 
 | Dataset | Collection 物理属性 | success_rate | GMM p_≥2 |
@@ -1027,4 +1089,4 @@ dryrun 验证时(plan §3.4 D11, audit_dryrun_report.md)证明 metric 在 mixtur
 
 ---
 
-*Document version: v1.3 (2026-05-21, P2 sprint 0 collection 实测 + audit 降级 advisory). 维护策略:Sprint 0 collection 完成 + audit 降级 spec patch 在 v1.3 落地;每 cell run notebook 闭环后升级 v1.x;12-run primary 全闭环 + verdict report 完成后升级 v2.0(若进 n=3 扩展则先 v1.4)并 trigger plan v1.4 → v2.0。*
+*Document version: v1.4 (2026-05-23, P2 全部实验闭环 → 核心 conditional iff 假设证伪 → 机制发现 + 诚实负面). 维护策略:本 spec 现为 **CLOSED 历史设计记录**;假设性章节(§1.1/§1.4/§3/§5.4/§6.3/§6.4/§10.5)已逐节标 SUPERSEDED/RESOLVED 并指向实际产出。权威 verdict 与数字以 [`fql_succession_p2_results.md`](fql_succession_p2_results.md) + [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9 为准。原 v1.3 计划的 v2.0 升级(进 P3 superiority 主路径)因 verdict 为 closure 而不触发;P3/P4 是否进行由 B+A 决策与 AUVHamNODE 主线统筹。*

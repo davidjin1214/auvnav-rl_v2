@@ -647,9 +647,16 @@ sides fairly tuned, and FQL still loses on worst-case → a **stronger** honest-
 the asymmetric-tuning version.
 
 **DECISION: direction C is exhausted → LOCK B + A** (mechanism pivot + honest negative).
-**N3/N4 are now UNFROZEN.** Next: N3 = `notebooks/fql_succession_p2_verdict.ipynb` +
-`docs/fql_succession_p2_results.md`, framed as a **mechanism finding + honest negative**
-(NOT "FQL wins"); N4 = spec v1.3 → v1.4 rewrite to match.
+**N3/N4 are now UNFROZEN.**
+
+**N3 DONE (2026-05-23):** the P2 main report
+[`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md) + the verdict notebook
+[`notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb)
+(builder `scripts/_build_fql_succession_p2_verdict_notebook.py`) are written and the notebook
+executes clean — it re-derives every table/figure here live from `results/` and auto-prints the
+verdict "**FQL > ReBRAC FALSIFIED on every front → B + A LOCKED**" (figures under
+`docs/assets/fql_succession_p2/verdict_*.png`). Both are framed as **mechanism finding + honest
+negative** (NOT "FQL wins"). **Next: N4** = spec v1.3 → v1.4 rewrite to match.
 
 ---
 
@@ -660,6 +667,8 @@ out the critic-side attribution; Q1b (H1 PASS) reframed the headline to a ReBRAC
 robustness fallback dies.** §9.9 confirmed the mechanism trilogy's two large effects are
 **statistically significant even at n=2** (fixed eval set → paired comparisons → σ_train
 ≈ 3.8 pp). **C-1 (§9.11) closed the fairness rematch: FQL's own `distill_alpha_bc` sweep
-never beats 0.858, −5.2 pp under the 0.910 bar → RESCUE-FAIL → B + A LOCKED, N3/N4
-UNFROZEN.** Next: N3 = verdict notebook + `docs/fql_succession_p2_results.md` (mechanism
-finding + honest negative); N4 = spec v1.3 → v1.4 rewrite.
+never beats 0.858, −5.2 pp under the 0.910 bar → RESCUE-FAIL → B + A LOCKED.** **N3 DONE
+(2026-05-23):** `docs/fql_succession_p2_results.md` (P2 main report) +
+`notebooks/fql_succession_p2_verdict.ipynb` (executes clean, auto-verdict "FQL > ReBRAC
+FALSIFIED → B+A LOCKED") written, both framed as mechanism finding + honest negative. **Next:
+N4** = spec v1.3 → v1.4 rewrite.

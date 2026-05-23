@@ -46,11 +46,12 @@ Revised claim (Option-C diagnostic, n=2 seeds):
 >
 > What survives: the **mechanism trilogy** (BC anchor strength to noisy targets is the
 > driver; flow-denoising and β1-reduction both soften it) — and §9.9 confirms its two
-> large effects are **statistically significant even at n=2**. **Decision taken
-> (2026-05-22): run a tuned-vs-tuned fairness rematch (C — sweep FQL `distill_alpha_bc`)
-> as one honest rescue attempt + a targeted seed top-up (FQL-clean is the only
-> under-determined cell), with B+A as the fallback. See §9.9 (power audit) and §9.10
-> (plan).** N3/N4 held until C resolves.
+> large effects are **statistically significant even at n=2**. **C ran and FAILED
+> (2026-05-23, §9.11): sweeping FQL's own `distill_alpha_bc` ∈ {0.3, 1, 3, 10} never
+> beats its frozen 0.858, staying −5.2 pp under the 0.910 bar — FQL got a fair tuned
+> shot and still does not win. The asymmetric-tuning caveat is now closed → B+A is
+> LOCKED (mechanism finding + honest negative), and N3/N4 are UNFROZEN.** See §9.9
+> (power audit), §9.10 (C plan), §9.11 (C result + decision).
 
 ## 2. Test-eval primary metric (`eval_success_rate`, 100 ep / seed)
 
@@ -601,16 +602,64 @@ and still doesn't win" is a *stronger* honest-negative than the asymmetric-tunin
 **Out of scope (unchanged):** no edits to Gate-B-frozen `auv_nav/{fql,rebrac}.py`; runs
 execute on Colab by the user; results/ and offline_data/ are gitignored.
 
+### 9.11 C-1 RESOLVED (2026-05-23): **RESCUE-FAIL** — C exhausted, B+A locked
+
+**Run**: 8 FQL train+eval runs — sweep `distill_alpha_bc ∈ {0.3, 3.0, 10.0}` × seeds
+[42, 0] on clean E-uni (6) + α=1.0 top-up × **new** seeds [1, 2] → n=4 (2). Notebook:
+`notebooks/fql_succession_p2_c1_fql_alpha_sweep_completed.ipynb`. Results:
+`results/fql_succession/p2/e_uni_c1_fql_alpha_sweep/test/` + `e_uni/test/fql_seed{1,2}.json`.
+
+**FQL clean success-rate vs `distill_alpha_bc`:**
+
+| `distill_alpha_bc` | per-seed | mean | n |
+|---|---|---:|:--:|
+| 0.3 | 0.75, 0.73 | 0.740 | 2 |
+| **1.0 (frozen)** | 0.80, 0.91, 0.91, 0.81 | **0.858** | **4** |
+| 3.0 | 0.86, 0.72 | 0.790 | 2 |
+| 10.0 | 0.86, 0.85 | 0.855 | 2 |
+| *ReBRAC β1=1.0 (bar)* | 0.88, 0.94 | *0.910* | 2 |
+
+**VERDICT: RESCUE-FAIL.** No α beats the frozen α=1.0 (0.858); FQL's best clean stays
+**−5.2 pp below the 0.910 bar**, so FQL's worst-case-over-noise (0.858) cannot exceed
+ReBRAC β1=1.0's (0.910). No candidate even reaches the bar → **Phase C-2 not built**.
+
+**What the sweep teaches (mechanism-consistent):**
+1. **α=1.0 n=4 (0.858) confirms the n=2 estimate (0.855)** — §9.9's "FQL-clean
+   under-determined" worry is RESOLVED: the mean is stable across 4 seeds. The 0.80↔0.91
+   per-seed swing persists (FQL clean is genuinely seed-noisy), but the centre is solid and
+   well below 0.910.
+2. **Direction is the OPPOSITE of ReBRAC's.** Weaker anchor (0.3 → 0.740) *hurts* clean
+   badly; stronger anchor (10.0 → 0.855) just plateaus at ≈ α=1.0. So `distill_alpha_bc=1.0`
+   was already near-optimal on clean. Reason: FQL's clean BC anchor points at a near-expert
+   *denoised* teacher, so loosening it discards a good target — whereas ReBRAC's β1=4.0
+   over-anchored to *noisy* raw actions. Same knob family, opposite optimum, set by **target
+   quality**. This *reinforces* the mechanism trilogy rather than rescuing FQL.
+3. α=3.0 is unstable (0.86/0.72, 14 pp swing); α=10.0 is stable (0.86/0.85) but only ties 1.0.
+
+**Statistics.** FQL clean 0.858 (n=4) vs bar 0.910 (n=2): δ = −0.052, not formally
+significant (t ≈ 1.2) — but FQL never *wins*; its point estimate is behind on both axes and
+cannot even tie. Exactly as §9.9 predicted: more seeds tighten a NULL, they do not resurrect
+FQL.
+
+**Fairness caveat (§9.7) — now CLOSED.** FQL got its own BC-anchor knob swept log-spaced on
+both sides and still does not clear the bar. The comparison is now tuned-vs-tuned with *both*
+sides fairly tuned, and FQL still loses on worst-case → a **stronger** honest-negative than
+the asymmetric-tuning version.
+
+**DECISION: direction C is exhausted → LOCK B + A** (mechanism pivot + honest negative).
+**N3/N4 are now UNFROZEN.** Next: N3 = `notebooks/fql_succession_p2_verdict.ipynb` +
+`docs/fql_succession_p2_results.md`, framed as a **mechanism finding + honest negative**
+(NOT "FQL wins"); N4 = spec v1.3 → v1.4 rewrite to match.
+
 ---
 
-**Status**: Sprint-0 diagnostic + Q1 + Q1b + E-multi + Q1c **all complete**. Q1 ruled
+**Status**: Sprint-0 diagnostic + Q1 + Q1b + E-multi + Q1c + **C-1 all complete**. Q1 ruled
 out the critic-side attribution; Q1b (H1 PASS) reframed the headline to a ReBRAC
 β1-tuning artifact; E-multi (NULL) exonerated modality; **Q1c (H_collapse) showed
 β1=1.0 dominates FQL on every cell — the "FQL wins" claim is dead, and even the
-robustness fallback dies.** The mechanism trilogy (anchor strength to noisy targets is
-the driver) is intact and publishable — and §9.9 confirms its two large effects are
-**statistically significant even at n=2** (eval set is fixed → comparisons are paired →
-σ_train ≈ 3.8 pp). **Decision taken (§9.10): run fairness rematch C (sweep FQL
-`distill_alpha_bc`) as one honest FQL rescue + targeted seed top-up (FQL-clean is the
-sole under-determined cell), B+A as fallback.** N3 verdict notebook + N4 spec rewrite
-held until C resolves.
+robustness fallback dies.** §9.9 confirmed the mechanism trilogy's two large effects are
+**statistically significant even at n=2** (fixed eval set → paired comparisons → σ_train
+≈ 3.8 pp). **C-1 (§9.11) closed the fairness rematch: FQL's own `distill_alpha_bc` sweep
+never beats 0.858, −5.2 pp under the 0.910 bar → RESCUE-FAIL → B + A LOCKED, N3/N4
+UNFROZEN.** Next: N3 = verdict notebook + `docs/fql_succession_p2_results.md` (mechanism
+finding + honest negative); N4 = spec v1.3 → v1.4 rewrite.

@@ -2,7 +2,7 @@
 
 > **文档版本**：2026-05-25（**rev.3，Plan A 4-tier finalized**）
 > **历史版本**：rev.2 (2026-05-24，主线协议对齐，cross_u15 path 1 + cross_u10 path 2 双轨)
-> **状态**：**active — Plan A audit GO，待 dataset 收集**（2026-05-25）。Adapter 落地 commit 97d394c；audit notebook commit be4b573 + 8667fbc + 9f8252e。
+> **状态**：**active — Plan A 4 tier dataset collection COMPLETED**（2026-05-25）。Adapter 落地 commit 97d394c；audit commits be4b573 + 8667fbc + 9f8252e；collection notebook 7a82308；collection completed run 032b527。**下一步**：FQL + ReBRAC β1∈{1.0, 4.0} head-to-head × 4 tier × 2 seed。
 > **作用**：盘点 `codex-arrival-v2-prototype` 分支产出的 SAC checkpoint，对比 SAC collector vs 现有 rule-based baseline collector，给出 D4RL 风格数据收集的推荐子集与实施要点。
 > **协议约束（rev.2 锁定，rev.3 沿用）**：与 offline 主线（broad val v2 + FQL P2）**严格对齐 = `s0` probe + `history-length 4` + `arrival_v2` reward**。现有 offline datasets 全部 `*_s0_h4_arrival_v2_*` 命名，本文档推荐的 SAC collector 数据集复用相同 schema。
 > **上下文**：[`docs/online_rl_line_summary.md`](online_rl_line_summary.md) §4.3；[`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) §4.3。
@@ -263,14 +263,11 @@ offline_data/sac_mexp_s0_h4_arrival_v2_re150_u10cross_seed46_step575k_ep1000/
 offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/
 ```
 
-**待下个 session 第一步决策**：
+**决策记录（2026-05-25 已选）**：
 
-1. **Collection mode**：
-   - **A. 全 stochastic**（推荐，与 D4RL medium/medium-replay 范式一致，`next_actions` 真随机）
-   - **B. 全 deterministic**（D4RL expert tier 经典定义，`next_actions` 几乎确定）
-   - **C. Tier-mixed**（random/medium/m-expert stochastic，expert deterministic — D4RL 严格做法，数据集异质）
-2. **`replay_latest.pkl` (412 MB) → npz 第 5 档 `medium-replay`**：同步做 / 4-tier 先闭环后做
-3. **Multi-seed 扩展**：单 seed (46) 够 paper 1 / FQL P2 主对照；若 reviewer push back，按 rev.2 §4.2 补 seed=47/50（各 1.5h L4 600k 训练）
+1. **Collection mode = A. 全 stochastic**（4 tier 都不加 `--sac-deterministic`）— 与 D4RL medium/medium-replay 范式一致，`next_actions` 真随机更适合 BC penalty 算法（FQL / ReBRAC β1 sweep），与 audit 阶段 stochastic eval 数字可直接对比。
+2. **`replay_latest.pkl` (412 MB) → npz 第 5 档 `medium-replay` = B. 4-tier 先闭环后做**（推迟到 FQL/ReBRAC head-to-head 之后再启动 Plan B，避免一次承担过多变量）。
+3. **Multi-seed 扩展**：单 seed (46) 够 paper 1 / FQL P2 主对照；若 reviewer push back，按 rev.2 §4.2 补 seed=47/50（各 1.5h L4 600k 训练）。
 
 #### 4.0.5 预算（rev.3 Plan A 实际成本）
 
@@ -278,9 +275,53 @@ offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/
 |---|---|---|
 | Audit notebook 写 + 跑 + 落 spec | ~30 min | ✅ 已完成 |
 | Adapter 落地（SACCheckpointPolicy + collector 扩展） | ~2.25h | ✅ 已完成 (commit 97d394c) |
-| Plan A 4 tier × 1000 ep × CPU pool 收集（`--num-workers 8`） | ~30 min Colab L4 | ⏳ 待开 |
-| FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed | ~4-6h L4 | ⏳ 待开 |
+| Plan A 4 tier × 1000 ep × CPU pool 收集（`--num-workers 8`） | ~60 min Colab L4（实测，medium tier 因 timeout 拉长 avg_len 跑慢） | ✅ 已完成 (commits 7a82308 + 032b527) |
+| FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed | ~4-6h L4 | ⏳ 下一步 |
 | **rev.3 总计（不含 multi-seed）** | **~5-7h L4** | （rev.2 估 ~13h，减半） |
+
+#### 4.0.7 Actual collection results（2026-05-25 completed）
+
+**实测数字**（Colab L4 CPU pool，`--num-workers 8`，stochastic，1000 ep × 4 tier）— 详 [`notebooks/sac_collector_plan_a_collect_4tiers_completed.ipynb`](../notebooks/sac_collector_plan_a_collect_4tiers_completed.ipynb)：
+
+| tier | step | success | mean_reward | n_transitions | runtime |
+|---|---:|---:|---:|---:|---:|
+| **random** | 25_002 | **0.20%** | **−1.83** | 180_067 | 910 s |
+| **medium** | 425_004 | **51.50%** | **+0.06** | 250_544 | 1245 s |
+| **mexp** | 575_004 | **75.10%** | **+0.47** | 171_394 | 871 s |
+| **expert** | 600_000 | **89.90%** | **+0.97** | 114_832 | 588 s |
+
+**Audit (det, 10 ep) vs actual (stoch, 1000 ep) success delta**：
+
+| tier | audit (det) | actual (stoch) | Δ |
+|---|---:|---:|---:|
+| random | 0% | 0.20% | +0.2pp |
+| medium | 50% | 51.50% | +1.5pp |
+| mexp | 80% | 75.10% | **−4.9pp** |
+| expert | 100% | 89.90% | **−10.1pp** |
+
+→ Stochastic action noise 主要打 high-success tier（expert/mexp 各掉 10pp/5pp），random/medium 几乎不变。**4 tier 仍清晰分离 15pp+**，D4RL 范式合格。
+
+**Avg episode length inversion**（D4RL random/medium-replay 经典特征）：
+
+| tier | avg_len/ep | 解释 |
+|---|---:|---|
+| random | 180 step | OOB-early-term 占主导 |
+| **medium** | **251 step** | timeout 占比 20% 拉长 — peak |
+| mexp | 171 step | success 主导，traj 较短 |
+| expert | 115 step | success 快达成，最短 |
+
+→ `medium > random > mexp > expert` 长度反转 = OOB-early-term ↔ timeout-long-tail ↔ success-short-clean 的三态混合证据，与 §4.0.2 "failure-mode tier drift" paper finding 候选一致。
+
+**Dataset 落地**（gitignored，不进 git；只本 notebook + spec 引用）：
+
+```
+offline_data/sac_random_s0_h4_arrival_v2_re150_u10cross_seed46_step25k_ep1000/   (21.4 MB)
+offline_data/sac_medium_s0_h4_arrival_v2_re150_u10cross_seed46_step425k_ep1000/  (29.9 MB)
+offline_data/sac_mexp_s0_h4_arrival_v2_re150_u10cross_seed46_step575k_ep1000/    (20.6 MB)
+offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/  (13.7 MB)
+```
+
+全 4 tier `obs.shape == (?, 48)` / `metadata.behavior_source == "sac_checkpoint"` / `metadata.sac_deterministic == False` / 含 `privileged_obs` 列（env-side `[u_eq, v_eq]`，vanilla SAC training 忽略，future AsymCritic ablation 可用）。
 
 #### 4.0.6 Plan B 备份（如 Plan A 收集出问题）
 

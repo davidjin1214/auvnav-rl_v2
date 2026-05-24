@@ -225,7 +225,7 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 **v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v1 finding 不进 paper。
 
-### 4.3 Online 线交付的 SAC collector（active — rev.3 Plan A audit GO 2026-05-25）
+### 4.3 Online 线交付的 SAC collector（active — rev.3 **Plan A 4 tier dataset COMPLETED** 2026-05-25）
 
 **Spec**：[`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) **rev.3** §4.0（rev.2 §4.1 路径 1 cross_u15 作废）。与本线协议严格对齐 = **s0 + k=4 + arrival_v2**。
 
@@ -248,13 +248,24 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 **Audit notebooks**: [`notebooks/sac_collector_d4rl_tier_audit.ipynb`](../notebooks/sac_collector_d4rl_tier_audit.ipynb) (self-discovering) + `_completed1.ipynb` (实验记录, commit 9f8252e)。
 
-**待下个 session 决策 + 开干**：
-- Collection mode (A stochastic / B deterministic / C tier-mixed) — A 推荐
-- `replay_latest.pkl` (412 MB) → npz 第 5 档 `medium-replay`（同步做 / 后做）
-- 4 个 dataset 收集（~30 min Colab L4 CPU pool） → 命名 `offline_data/sac_{tier}_s0_h4_arrival_v2_re150_u10cross_seed46_step{N}k_ep1000/`
-- FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed（~4-6h L4）
+**Collection 决策（已落地 2026-05-25）**：mode = **A 全 stochastic**；`replay_latest.pkl` 第 5 档 = **B 4-tier 闭环后做**。
 
-**总预算 rev.3**：~5-7h L4 = **1 个 Colab 周**（比 rev.2 13h 减半，因放弃 cross_u15 路径 + 不需要补 SAC seed=47/50 训练）。
+**Collection notebook**: [`notebooks/sac_collector_plan_a_collect_4tiers.ipynb`](../notebooks/sac_collector_plan_a_collect_4tiers.ipynb)（template, commit 7a82308）+ `_completed.ipynb`（实验记录, commit 032b527）。
+
+**Actual collection results**（Colab L4 CPU pool，1000 ep × 4 tier × `--num-workers 8`，stochastic）：
+
+| tier | step | success | mean_reward | n_trans | runtime |
+|---|---:|---:|---:|---:|---:|
+| random | 25_002 | 0.20% | −1.83 | 180_067 | 910 s |
+| medium | 425_004 | 51.50% | +0.06 | 250_544 | 1245 s |
+| mexp | 575_004 | 75.10% | +0.47 | 171_394 | 871 s |
+| expert | 600_000 | 89.90% | +0.97 | 114_832 | 588 s |
+
+→ 4 tier 清晰分离（success spread 15pp+，mean_reward 单调 -1.83→+0.97），medium tier 因 timeout 占比 20% avg_len 反转为最长（251 step > random 180 > mexp 171 > expert 115）— D4RL 范式 + failure-mode tier drift 双重证据。详 spec §4.0.7 / `_completed.ipynb`。
+
+**下一步**（spec §4.0.5 表格末行）：FQL + ReBRAC β1∈{1.0, 4.0} head-to-head × 4 tier × 2 seed = 16 run（~4-6h L4）— 落出 paper 1 / FQL P2 SAC-collector 第四轴主结论。
+
+**总预算 rev.3**：~5-7h L4 = **1 个 Colab 周**（adapter 2.25h + audit 0.5h + Plan A collection 1h 已完成；剩 head-to-head 4-6h）。
 
 **关键约束**：`s0_k4 + arrival_v2 + cross_u15` 上不存在 expert SAC ckpt（rev.2 §4.5）— sensor floor 实证，与本线 v2 N2' / FQL §6.5 同物理。Plan A 选 cross_u10 而不是 cross_u15，正是基于此约束。
 

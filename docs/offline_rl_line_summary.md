@@ -192,7 +192,9 @@
 - [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) v1.4 — CLOSED 历史设计记录（假设性章节已逐节标 SUPERSEDED/RESOLVED）
 - [`notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb)（纯分析，读 `results/` 现算所有表/图，已实跑）+ `docs/assets/fql_succession_p2/verdict_*.png`
 
-**下一步（minimal，待 spec）**：在更难的 `single_u15_cross`（U=1.5/Re250）上补一个**精简跨-benchmark confirmation**（仅 noise 轴 × {ReBRAC β1=4.0, β1=1.0, FQL} × 2 seed，不重复 P2 的全展开），硬化机制 claim 的泛化性。**不补 seed**（更多 seed 只会收紧 NULL，不会翻盘）。
+**跨-benchmark 泛化探测（2026-05-23，FLOOR-closed）**：在更难的 `single_u15_cross`（U=1.5/Re250）跑了精简探测（地板门先行）。**实测 FLOOR** —— clean privileged collector 0.719、noisy(σ=0.5) 0.098、offline ReBRAC β1=1.0 gate 0.14（out_of_bounds 主导，in-training 仍缓升）→ **s0 observability floor，比较在此 regime 未定义**（sensor-sufficiency 边界，非算法反例）。写入 results §6.5，不弱化 u10_cross 上的 Results 1–3。
+
+**P4 收尾（2026-05-24）**：实验线全闭环、无 pending；写作索引 [`fql_succession_paper_writing_index.md`](fql_succession_paper_writing_index.md) 已建（paper 章节→文档映射 + 复现 notebook 列表 + headline 数字 + 定位选项 + 投稿前 TODO）。剩余纯写作（Method prose / Related Work / Abstract / 定位决策）。
 
 ---
 
@@ -320,6 +322,8 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md)(v1.4) | **CLOSED 历史设计记录** | 原 conditional-iff 假设性章节已逐节标 SUPERSEDED/RESOLVED |
 | [`fql_succession_p2_collection_log.md`](fql_succession_p2_collection_log.md) | closed | dataset 收集 + audit 记录 |
 | [`notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb) | 纯分析，已实跑 | 读 `results/` 现算所有表/图；builder `scripts/_build_fql_succession_p2_verdict_notebook.py` |
+| [`fql_succession_p2_xbench_spec.md`](fql_succession_p2_xbench_spec.md) | **FLOOR-closed** | 跨-benchmark 泛化探测 spec + 实测 FLOOR（§6.5 依据） |
+| [`fql_succession_paper_writing_index.md`](fql_succession_paper_writing_index.md) ★ | **P4 写作索引 (rev.1)** | paper 章节→文档映射 + 复现 notebook + headline 数字 + 定位选项 + 投稿前 TODO |
 
 ### 5.3 实验数据 / checkpoints / offline data
 

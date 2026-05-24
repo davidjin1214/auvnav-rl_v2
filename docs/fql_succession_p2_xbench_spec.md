@@ -1,9 +1,11 @@
 # FQL Succession P2 — Cross-Benchmark Confirmation Spec (`single_u15_cross`)
 
-> **状态**:DRAFT(2026-05-23,待 collection + Colab 执行)
+> **状态**:**FLOOR-closed(2026-05-23)** —— §4 地板门实测命中 **FLOOR**,实验在 1 个 run 后停止。结论 = B(scope caveat),已写入 [`fql_succession_p2_results.md`](fql_succession_p2_results.md) §6.5。本 spec 现为历史设计记录。
 > **作者**:Claude Code session
-> **依据**:[`fql_succession_p2_results.md`](fql_succession_p2_results.md)(P2 主报告)+ [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9(权威 lab 记录)
+> **依据**:[`fql_succession_p2_results.md`](fql_succession_p2_results.md)(P2 主报告 §6.5 = 本探测结论)+ [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9(权威 lab 记录)
 > **目的**:在更难的 benchmark 上**精简复核** P2 的两条 load-bearing 结论,硬化机制 claim 的泛化性。**不是**重跑 P2 的全展开。
+>
+> **⚠ 实测结果(2026-05-23)**:`single_u15_cross` 对 offline-from-`s0` **地板化** —— clean privileged collector SR 0.719、noisy(σ=0.5)collector 塌到 0.098;地板门 run(ReBRAC β1=1.0 / clean)test SR **0.14**(in-training 仍缓升、out_of_bounds 78/100 主导)。判定:**genuine task-hardness / s0 observability floor**,非算法反例,非训练不稳定。比较在此 regime **未定义**。完整 builder 留存(`scripts/_build_fql_succession_p2_xbench_notebook.py`)以便将来若有 sensor-sufficient 的更难 benchmark 可复用。
 
 ---
 
@@ -90,9 +92,17 @@ u15_cross 更难(U=1.5,正是 AUVHamNODE 审计里 wake current 2-4× OOD 的速
    - **FLOOR**(≤ 0.50)→ benchmark 对 offline-from-privileged 太难,**STOP**,回报后再决定(换稍易配置 / 接受地板本身是 finding)。
    - **CEILING**(≥ 0.97)→ 无区分 headroom(u15 下不太可能),回报后再议。
 
+> **✅ 实测命中 FLOOR(2026-05-23)**:
+> - collection:clean privileged **0.719**、noisy(σ=0.5)**0.098**(vs P2 u10 的 0.985 / 0.632)。
+> - 地板门 run(`rebrac_b1p1` / `e_uni_clean` / seed 42):test SR **0.14** ≤ 0.50 → **FLOOR**,实验在此停止(剩余 11 run 未跑)。
+> - in-training 曲线(`checkpoints/.../rebrac_b1p1_seed42/eval_log.csv`):前 ~140k 贴地、缓升至 ~0.09@200k,**仍在上升**(非收敛天花板);失败模式 `out_of_bounds=78/100`。
+> - **诊断**:genuine task-hardness / s0 observability floor(collector 0.719 → offline 0.14 的 ~58pp 落差 = s0 单点传感器在强流下信息不足),非训练不稳定、非"加步数可救"。
+> - **A1(换 u10 几何)已排除**:online 线已验证 cross 比 upstream 更难,upstream 不是"更难 benchmark"。
+> - **结论 = B**:作为 sensor-sufficiency 边界写入 [`fql_succession_p2_results.md`](fql_succession_p2_results.md) §6.5;不弱化 u10_cross 上的 Results 1–3。**下面 §5–§8 的全矩阵流程未执行,保留作设计记录。**
+
 ---
 
-## 5. 预注册判据(verdict)
+## 5. 预注册判据(verdict)<未执行——FLOOR 提前关闭>
 
 对每个 config 取 **worst-case-over-noise = min(clean SR, noisy SR)**。
 

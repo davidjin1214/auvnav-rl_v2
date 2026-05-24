@@ -38,6 +38,11 @@ This is a publishable, falsification-grade result and a useful cautionary tale (
 defaults that are appropriate for clean data silently handicap a baseline on noisy data),
 but it is **not** a "FQL wins" paper.
 
+**Scope** — the mechanism is established on `single_u10_cross`. A cross-benchmark probe at
+the harder `single_u15_cross` (U=1.5 / Re250) **floored** (offline `s0` policy 0.14 SR,
+out-of-bounds-dominated), so the FQL-vs-ReBRAC comparison is *undefined* there — a deployable-
+sensor sufficiency boundary, not an algorithmic counter-result (see §6.5).
+
 ---
 
 ## 1. Setup
@@ -225,6 +230,39 @@ targets; on clean data neither helps and a canonical β1 ≈ 1 is already optima
 
 ---
 
+## 6.5 Cross-benchmark generalization probe — `single_u15_cross` (FLOOR)
+
+To test whether the mechanism generalizes beyond `single_u10_cross`, we ran a deliberately
+minimal probe on the harder **`single_u15_cross`** (U=1.5 / Re250 vs the main study's
+U=1.0 / Re150): the noise axis only (clean vs σ=0.5), three configs (FQL, ReBRAC β1=4.0,
+ReBRAC β1=1.0), gated by a single learnability check before committing the full 12-run matrix
+(spec [`fql_succession_p2_xbench_spec.md`](fql_succession_p2_xbench_spec.md)).
+
+The gate **floored** and the probe stopped after 1 run:
+
+| quantity | `single_u15_cross` | `single_u10_cross` (main) |
+|---|---|---|
+| clean privileged collector SR | 0.719 | 0.985 |
+| noisy (σ=0.5) collector SR | 0.098 | 0.632 |
+| offline ReBRAC β1=1.0 / clean / test SR | **0.14** | ~0.910 |
+
+The offline policy collapses far below its own data source (collector 0.719 → offline 0.14,
+a ~58 pp gap, vs a small gap at u10); the in-training curve climbs only to ~0.09 at the same
+200k budget that yields ~0.91 at u10 (still slowly rising, not a converged plateau); and the
+dominant failure is **out-of-bounds (78/100)** — the vehicle is swept out by the stronger
+flow. This is the signature of the **deployable single-point `s0` sensor being insufficient
+to control the AUV in the U=1.5 cross-flow regime, independent of the offline algorithm**; the
+σ=0.5 noisy dataset additionally degenerates to 0.098 collector success, leaving the noise
+axis itself undefined.
+
+**Reading**: a *sensor-sufficiency boundary*, not an algorithmic counter-result. The
+FQL-vs-ReBRAC noise-robustness comparison is only defined where offline-from-`s0` does not
+floor (e.g. `single_u10_cross`). The floor is consistent with the wider programme's `s0` theme
+(the online asymmetric-critic line; the AUVHamNODE audit's "wake current 2–4× OOD at U=1.5")
+and does **not** weaken Results 1–3, which stand on `single_u10_cross`.
+
+---
+
 ## 7. What we claim, and what we do not
 
 **Claim (defensible):**
@@ -272,6 +310,9 @@ does not displace the locked AUVHamNODE main line.
   Q1 `..._q1_critic_penalty_ablation`, Q1b `..._q1b_actor_penalty_ablation`,
   Q1c `..._q1c_actor_pen1_clean`, E-multi `..._run_cell_e_multi`,
   C-1 `..._c1_fql_alpha_sweep`.
+- **Cross-benchmark probe** (§6.5): `notebooks/fql_succession_p2_xbench_completed.ipynb`;
+  gate result `results/fql_succession/p2_xbench/e_uni_clean/test/rebrac_b1p1_seed42.json`
+  (FLOOR — SR 0.14). Spec [`fql_succession_p2_xbench_spec.md`](fql_succession_p2_xbench_spec.md).
 - **Full lab record**: [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md)
   §9 (§9.1 Q1, §9.4 Q1b, §9.6 E-multi, §9.7 Q1c, §9.9 power audit, §9.11 C-1) is authoritative
   for any discrepancy.

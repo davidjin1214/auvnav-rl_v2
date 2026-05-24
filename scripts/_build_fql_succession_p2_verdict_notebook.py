@@ -60,6 +60,7 @@ def section_0() -> dict:
         "3. §4 — the **C-1 fairness rematch** (FQL's own `distill_alpha_bc` sweep → RESCUE-FAIL).",
         "4. §5 — **statistical power** (fixed manifest ⇒ paired; σ_train ≈ 3.8 pp; t-tests).",
         "5. §6 — the **auto-computed final verdict**.",
+        "6. §7 — the **cross-benchmark generalization probe** (`single_u15_cross` → FLOOR).",
         "",
         "Authoritative source for any discrepancy: "
         "[`docs/fql_succession_p2_mechanism_diagnostic.md`](../docs/fql_succession_p2_mechanism_diagnostic.md) §9.",
@@ -418,6 +419,49 @@ def section_6() -> list[dict]:
     ]
 
 
+def section_7() -> list[dict]:
+    return [
+        md(
+            "## 7. Cross-benchmark generalization probe — `single_u15_cross` (FLOOR)",
+            "",
+            "A minimal probe on the harder `single_u15_cross` (U=1.5 / Re250) to test "
+            "generalization beyond the main `single_u10_cross`, gated by one learnability run "
+            "before the full 12-run matrix (spec "
+            "[`docs/fql_succession_p2_xbench_spec.md`](../docs/fql_succession_p2_xbench_spec.md)).",
+            "",
+            "**It FLOORED** — the gate run scored far below the (0.50, 0.97) window, so the matrix "
+            "was never run. The FQL-vs-ReBRAC comparison is *undefined* in this regime: a "
+            "deployable-`s0` sensor-sufficiency boundary, not an algorithmic counter-result. See "
+            "[`docs/fql_succession_p2_results.md`](../docs/fql_succession_p2_results.md) §6.5.",
+        ),
+        code(
+            "# Collector SRs come from collection metadata under offline_data/ (gitignored, not in",
+            "# the results tree); recorded from the completed run for context.",
+            "XB_CLEAN_COLLECTOR = 0.719   # privileged σ=0   (vs u10 0.985)",
+            "XB_NOISY_COLLECTOR = 0.098   # privileged σ=0.5 (vs u10 0.632)",
+            "",
+            "xb_gate = Path('results/fql_succession/p2_xbench/e_uni_clean/test/rebrac_b1p1_seed42.json')",
+            "xb_sr = float(json.loads(xb_gate.read_text())['eval_success_rate']) if xb_gate.exists() else None",
+            "",
+            "print('single_u15_cross (U=1.5/Re250) generalization probe')",
+            "print('-' * 58)",
+            "print(f'  clean privileged collector SR : {XB_CLEAN_COLLECTOR:.3f}   (u10: 0.985)')",
+            "print(f'  noisy privileged collector SR : {XB_NOISY_COLLECTOR:.3f}   (u10: 0.632)')",
+            "if xb_sr is None:",
+            "    print('  gate run (ReBRAC β1=1.0/clean) : [results not synced]')",
+            "else:",
+            "    print(f'  gate run ReBRAC β1=1.0 / clean : {xb_sr:.3f}   test SR  (u10: ~0.910)')",
+            "    if xb_sr <= 0.50:",
+            "        print('  VERDICT: FLOOR (SR ≤ 0.50, outside (0.50, 0.97)) — s0 observability floor at U=1.5.')",
+            "        print('           comparison undefined here; scope caveat, not a counter-result.')",
+            "    elif xb_sr >= 0.97:",
+            "        print('  VERDICT: CEILING — no discriminating headroom.')",
+            "    else:",
+            "        print('  VERDICT: PASS — (unexpected; the full matrix should have run).')",
+        ),
+    ]
+
+
 def build() -> dict:
     cells = [section_0()]
     cells.extend(section_1())
@@ -426,6 +470,7 @@ def build() -> dict:
     cells.extend(section_4())
     cells.extend(section_5())
     cells.extend(section_6())
+    cells.extend(section_7())
     return {
         "cells": cells,
         "metadata": {

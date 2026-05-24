@@ -225,9 +225,21 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 **v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v1 finding 不进 paper。
 
-### 4.3 Online 线交付的 SAC collector（待 spec）
+### 4.3 Online 线交付的 SAC collector（active — rev.2 启动 2026-05-24）
 
-[`docs/online_rl_line_summary.md`](online_rl_line_summary.md) §4.3 列了 D4RL-style SAC collector 作为 broad validation **平行第四轴**（不替代 A2 mix5050），spec 未定。本线消费方角度：等 §4.2 下游 sweep 收敛后再决定是否真的需要 RL-trained behavior policy 数据集。
+**Spec 已锁定**：[`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) rev.2。与本线协议严格对齐 = **s0 + k=4 + arrival_v2**（与现有 `*_s0_h4_arrival_v2_*` dataset schema 一致）。
+
+**启动动机**（用户 2026-05-24）：
+- **D4RL 范式对齐** — offline 论文 community 默认评测条件，paper revision 必备弹药
+- **FQL 再验证** — FQL P2 §8.1 "BC-anchor 最优强度随目标噪声翻转" 机制在 SAC stochastic behavior policy 数据上未被检验
+
+**Primary 双轨**：
+- **路径 1（cross_u15 cell × 4 ckpt）**：D4RL `random` / `medium-replay` tier；对话本线 v2 N2' STRONG_NEGATIVE + FQL §6.5 FLOOR；输出 dataset `offline_data/sac_{vanilla,asym}_s0_h4_arrival_v2_re250_u15cross_seed{0,42}_ep1000/`
+- **路径 2（cross_u10 cell × 1+2 seed）**：D4RL `expert` tier；与 v2 N0 平行第四轴 + FQL P2 主对照 head-to-head；需补 SAC seed=47/50 各 1 个 600k arrival_v2 训练；输出 `offline_data/sac_vanilla_s0_h4_arrival_v2_re150_u10cross_seed{46,47,50}_ep1000/`
+
+**关键约束**：`s0_k4 + arrival_v2 + cross_u15` 上不存在 expert SAC ckpt，是 sensor floor 实证（与本线 v2 N2' / FQL §6.5 同物理）；路径 1 数据自然落 medium-replay tier 不是 ckpt 缺陷，是 finding。
+
+**总预算**：~13h L4 = 1–2 个 Colab 周（adapter 1-2h + 路径 2 补 SAC 3h + 收集 1.5h + FQL/ReBRAC head-to-head 7h）。
 
 ### 4.4 AUVHamNODE Offline RL(⏸ PAUSED 2026-05-13)
 

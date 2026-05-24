@@ -34,9 +34,11 @@ from auv_nav.baselines import (
 )
 from auv_nav.env import ObservationHistoryWrapper
 from auv_nav.reward import ARRIVAL_V2_OBJECTIVES, REWARD_OBJECTIVE_PRESETS
+from auv_nav.sac_policy import SACCheckpointPolicy, resolve_trainer_state_path
 
 from .train_utils import (
     discover_flow_path,
+    load_trainer_state,
     make_env_config_overrides,
     make_planar_env,
     make_reset_options,
@@ -49,15 +51,23 @@ POLICY_MAP = {
     "privileged": PrivilegedCorridorPolicy,
 }
 
+SAC_BEHAVIOR_POLICY_NAME = "sac_checkpoint"
+
 TERMINATION_REASON_TO_CODE = {
     "running": 0,
     "goal": 1,
     "timeout": 2,
     "out_of_bounds": 3,
 }
+# Existing rule-based codes stay stable (sorted POLICY_MAP gives the same order
+# regardless of insertion); SAC mode is appended as the next free code so that
+# previously collected datasets stay byte-compatible.
 BEHAVIOR_POLICY_TO_CODE = {
     policy_name: index for index, policy_name in enumerate(sorted(POLICY_MAP.keys()))
 }
+BEHAVIOR_POLICY_TO_CODE[SAC_BEHAVIOR_POLICY_NAME] = (
+    max(BEHAVIOR_POLICY_TO_CODE.values()) + 1 if BEHAVIOR_POLICY_TO_CODE else 0
+)
 
 
 @dataclass(slots=True)
@@ -72,6 +82,11 @@ class CollectWorkerConfig:
     base_seed: int
     action_noise_std: float
     action_noise_clip: float
+    # SAC-collector mode. When sac_ckpt_path is set, the worker loads a
+    # SACCheckpointPolicy once and bypasses POLICY_MAP / policy_mixture.
+    sac_ckpt_path: str | None = None
+    sac_deterministic: bool = False
+    sac_device: str = "cpu"
 
 
 @dataclass(slots=True)
@@ -169,13 +184,17 @@ def _collect_episode(
     }
 
     while not done:
-        # Get single-step obs for policies that call decode_observation.
-        if isinstance(env, ObservationHistoryWrapper):
-            single_obs = np.asarray(env._history[-1], dtype=np.float32)
+        # Rule-based baselines call env.decode_observation and want the most
+        # recent frame; SAC actors were trained on the full stacked obs and
+        # opt in via the uses_stacked_obs marker.
+        if getattr(policy, "uses_stacked_obs", False):
+            policy_obs = np.asarray(obs, dtype=np.float32)
+        elif isinstance(env, ObservationHistoryWrapper):
+            policy_obs = np.asarray(env._history[-1], dtype=np.float32)
         else:
-            single_obs = np.asarray(obs, dtype=np.float32)
+            policy_obs = np.asarray(obs, dtype=np.float32)
 
-        action = np.asarray(policy.act(base_env, single_obs), dtype=np.float32)
+        action = np.asarray(policy.act(base_env, policy_obs), dtype=np.float32)
         if action_noise_std > 0.0:
             noise = episode_rng.normal(
                 loc=0.0,
@@ -252,9 +271,25 @@ def _collect_episode_range(
     )
     try:
         base_env = env.env if isinstance(env, ObservationHistoryWrapper) else env
-        policy_cache = {
-            name: _make_policy(name) for name, _ in worker_config.policy_mixture
-        }
+
+        if worker_config.sac_ckpt_path is not None:
+            sac_policy = SACCheckpointPolicy.from_checkpoint(
+                worker_config.sac_ckpt_path,
+                device=worker_config.sac_device,
+                deterministic=worker_config.sac_deterministic,
+            )
+
+            def _resolve_policy(_rng: np.random.Generator) -> tuple[str, Any]:
+                return (SAC_BEHAVIOR_POLICY_NAME, sac_policy)
+        else:
+            policy_cache = {
+                name: _make_policy(name) for name, _ in worker_config.policy_mixture
+            }
+
+            def _resolve_policy(rng: np.random.Generator) -> tuple[str, Any]:
+                name = _sample_policy_name(worker_config.policy_mixture, rng)
+                return (name, policy_cache[name])
+
         transitions: dict[str, list[Any]] = {
             "obs": [],
             "actions": [],
@@ -279,8 +314,7 @@ def _collect_episode_range(
         for ep in range(start_episode, end_episode):
             episode_seed = worker_config.base_seed + ep
             episode_rng = np.random.default_rng(episode_seed)
-            policy_name = _sample_policy_name(worker_config.policy_mixture, episode_rng)
-            policy = policy_cache[policy_name]
+            policy_name, policy = _resolve_policy(episode_rng)
             episode_transitions, success, ep_return, ep_length, ep_reason = _collect_episode(
                 env,
                 base_env,
@@ -423,6 +457,108 @@ def _collect_parallel(
     return [_collect_episode_range(worker_config, 0, num_episodes)]
 
 
+def _prepare_sac_mode(
+    *,
+    args: argparse.Namespace,
+    ckpt_path: str,
+    env_obs_dim: int,
+    probe_layout: str,
+    history_length: int,
+    env_config_overrides: dict[str, Any],
+) -> dict[str, Any]:
+    """Run SAC-mode preflight: Layer 1 obs_dim + Layer 2 trainer_state checks.
+
+    Returns a dict of SAC-specific metadata fields to merge into the dataset
+    metadata.json. Raises ``ValueError`` on protocol mismatch.
+    """
+    import torch  # local import: avoids cost in rule-based mode
+
+    if args.policy is not None:
+        raise ValueError(
+            "--policy and --sac-ckpt are mutually exclusive; pick one."
+        )
+    if args.policy_mixture:
+        raise ValueError(
+            "--policy-mixture is not supported with --sac-ckpt."
+        )
+
+    ckpt = Path(ckpt_path)
+    if not ckpt.exists():
+        raise FileNotFoundError(f"SAC checkpoint not found: {ckpt}")
+
+    payload = torch.load(str(ckpt), map_location="cpu", weights_only=False)
+    if "config" not in payload or "actor" not in payload:
+        raise ValueError(
+            f"Checkpoint {ckpt} is missing 'config'/'actor' keys; not a SAC ckpt."
+        )
+    ckpt_obs_dim = int(payload["config"].get("obs_dim", -1))
+    if ckpt_obs_dim != env_obs_dim:
+        raise ValueError(
+            f"SAC ckpt obs_dim={ckpt_obs_dim} does not match env obs_dim={env_obs_dim}. "
+            f"Check --probe-layout / --history-length / --objective matches the "
+            f"ckpt training config."
+        )
+
+    # Layer 2 — protocol cross-check via trainer_state.json.
+    trainer_state_path: Path | None
+    if args.sac_trainer_state:
+        trainer_state_path = Path(args.sac_trainer_state)
+        if not trainer_state_path.exists():
+            raise FileNotFoundError(
+                f"--sac-trainer-state path does not exist: {trainer_state_path}"
+            )
+    else:
+        trainer_state_path = resolve_trainer_state_path(ckpt)
+
+    sac_meta: dict[str, Any] = {
+        "sac_ckpt_path": str(ckpt),
+        "sac_deterministic": bool(args.sac_deterministic),
+        "sac_device": str(args.sac_device),
+        "sac_agent_config": dict(payload["config"]),
+        "sac_trainer_state_path": (
+            str(trainer_state_path) if trainer_state_path is not None else None
+        ),
+    }
+
+    if trainer_state_path is None:
+        if not args.sac_skip_trainer_state_check:
+            raise ValueError(
+                f"Could not autodetect trainer_state.json next to {ckpt} "
+                f"(expected via checkpoints/<X> ↔ experiments/<X> mirror). "
+                f"Pass --sac-trainer-state <path> or, only if you trust the CLI "
+                f"protocol args, --sac-skip-trainer-state-check."
+            )
+        print(
+            f"[collect][warning] trainer_state.json not found for {ckpt}; "
+            f"skipping Layer 2 protocol check at user's explicit request."
+        )
+        return sac_meta
+
+    trainer_state = load_trainer_state(str(trainer_state_path))
+    expected = {
+        "algorithm": "sac",
+        "probe_layout": probe_layout,
+        "history_length": history_length,
+        "reward_objective": env_config_overrides.get("reward_objective"),
+    }
+    mismatches: list[str] = []
+    for key, expected_value in expected.items():
+        actual = trainer_state.get(key)
+        if actual != expected_value:
+            mismatches.append(f"{key}: ckpt={actual!r} cli={expected_value!r}")
+    if mismatches:
+        raise ValueError(
+            "SAC ckpt trainer_state.json protocol mismatch:\n  "
+            + "\n  ".join(mismatches)
+            + f"\n  (trainer_state path: {trainer_state_path})"
+        )
+
+    sac_meta["sac_trainer_state_snapshot"] = {
+        key: trainer_state.get(key) for key in expected
+    }
+    return sac_meta
+
+
 def collect(args: argparse.Namespace) -> None:
     flow_path = args.flow or discover_flow_path()
     env_config_overrides = make_env_config_overrides(args)
@@ -442,9 +578,39 @@ def collect(args: argparse.Namespace) -> None:
     finally:
         env.close()
 
+    sac_ckpt_path = getattr(args, "sac_ckpt", None)
+    sac_metadata: dict[str, Any] = {}
+    if sac_ckpt_path is not None:
+        sac_metadata = _prepare_sac_mode(
+            args=args,
+            ckpt_path=sac_ckpt_path,
+            env_obs_dim=obs_dim,
+            probe_layout=probe_layout,
+            history_length=history_length,
+            env_config_overrides=env_config_overrides,
+        )
+
+    num_workers = int(args.num_workers)
+    sac_device = str(getattr(args, "sac_device", "cpu"))
+    if sac_ckpt_path is not None and sac_device == "cuda" and num_workers > 1:
+        print(
+            "[collect] --sac-device cuda with --num-workers > 1 is unsafe under "
+            "spawn; forcing --num-workers=1."
+        )
+        num_workers = 1
+
+    if sac_ckpt_path is not None:
+        policy_name_for_meta = SAC_BEHAVIOR_POLICY_NAME
+        policy_mixture: tuple[tuple[str, float], ...] = ()
+    else:
+        if args.policy is None:
+            raise ValueError("Either --policy or --sac-ckpt must be provided.")
+        policy_name_for_meta = args.policy
+        policy_mixture = _parse_policy_mixture(args.policy, args.policy_mixture)
+
     worker_config = CollectWorkerConfig(
-        policy_name=args.policy,
-        policy_mixture=_parse_policy_mixture(args.policy, args.policy_mixture),
+        policy_name=policy_name_for_meta,
+        policy_mixture=policy_mixture,
         flow_path=str(flow_path),
         history_length=history_length,
         probe_layout=probe_layout,
@@ -453,14 +619,17 @@ def collect(args: argparse.Namespace) -> None:
         base_seed=int(args.seed),
         action_noise_std=float(args.action_noise_std),
         action_noise_clip=float(args.action_noise_clip),
+        sac_ckpt_path=sac_ckpt_path,
+        sac_deterministic=bool(getattr(args, "sac_deterministic", False)),
+        sac_device=sac_device,
     )
 
     t0 = time.time()
-    if args.num_workers > 1:
+    if num_workers > 1:
         results = _collect_parallel(
             worker_config,
             num_episodes=int(args.episodes),
-            num_workers=int(args.num_workers),
+            num_workers=num_workers,
         )
     else:
         result = _collect_episode_range(worker_config, 0, int(args.episodes))
@@ -509,11 +678,13 @@ def collect(args: argparse.Namespace) -> None:
 
     # Save metadata.
     n_transitions = int(payload["obs"].shape[0])
+    behavior_source = "sac_checkpoint" if sac_ckpt_path is not None else "rule_based"
     metadata = {
-        "policy": args.policy,
+        "policy": worker_config.policy_name,
         "policy_mixture": [
             {"policy": name, "weight": weight} for name, weight in worker_config.policy_mixture
         ],
+        "behavior_source": behavior_source,
         "action_noise_std": float(args.action_noise_std),
         "action_noise_clip": float(args.action_noise_clip),
         "flow_path": str(flow_path),
@@ -553,13 +724,15 @@ def collect(args: argparse.Namespace) -> None:
         "std_return": float(np.std(episode_returns)),
         "mean_episode_length": float(np.mean(episode_lengths)),
     }
+    if sac_metadata:
+        metadata.update(sac_metadata)
     meta_path = output_dir / "metadata.json"
     with meta_path.open("w", encoding="utf-8") as fp:
         json.dump(metadata, fp, indent=2)
 
     print(
         f"\n[done] Saved {n_transitions} transitions to {npz_path}\n"
-        f"  policy={args.policy}  obs_dim={obs_dim}  action_dim={action_dim}\n"
+        f"  policy={worker_config.policy_name}  obs_dim={obs_dim}  action_dim={action_dim}\n"
         f"  episodes={args.episodes}  success_rate={successes / max(1, args.episodes):.2%}\n"
         f"  mean_return={np.mean(episode_returns):.2f} +/- {np.std(episode_returns):.2f}"
     )
@@ -572,8 +745,8 @@ def main() -> None:
     parser.add_argument(
         "--policy",
         choices=sorted(POLICY_MAP.keys()),
-        required=True,
-        help="Baseline policy to run.",
+        default=None,
+        help="Baseline policy to run. Required unless --sac-ckpt is set.",
     )
     parser.add_argument("--flow", type=Path, default=None, help="Path to wake ROI .npy file.")
     parser.add_argument(
@@ -637,7 +810,55 @@ def main() -> None:
         required=True,
         help="Directory to save transitions.npz and metadata.json.",
     )
+    # SAC-collector mode (mutually exclusive with --policy/--policy-mixture).
+    parser.add_argument(
+        "--sac-ckpt",
+        type=str,
+        default=None,
+        help=(
+            "Path to a SAC checkpoint .pt to use as the behavior policy. "
+            "Mutually exclusive with --policy / --policy-mixture."
+        ),
+    )
+    parser.add_argument(
+        "--sac-deterministic",
+        action="store_true",
+        help=(
+            "Sample the mean action (D4RL expert standard). Without the flag "
+            "the actor samples from its Gaussian — the D4RL medium/replay style."
+        ),
+    )
+    parser.add_argument(
+        "--sac-device",
+        choices=["cpu", "cuda"],
+        default="cpu",
+        help="Torch device for SAC actor inference (default: cpu).",
+    )
+    parser.add_argument(
+        "--sac-trainer-state",
+        type=str,
+        default=None,
+        help=(
+            "Explicit path to trainer_state.json for Layer-2 protocol sanity. "
+            "If omitted, autodetected via the checkpoints/<X> ↔ experiments/<X> "
+            "directory mirror."
+        ),
+    )
+    parser.add_argument(
+        "--sac-skip-trainer-state-check",
+        action="store_true",
+        help=(
+            "Skip the Layer-2 trainer_state.json protocol check when it cannot "
+            "be located (use only when you trust the CLI protocol args)."
+        ),
+    )
     args = parser.parse_args()
+    if args.sac_ckpt is None and args.policy is None:
+        parser.error("Either --policy or --sac-ckpt is required.")
+    if args.sac_ckpt is not None and args.policy is not None:
+        parser.error("--policy and --sac-ckpt are mutually exclusive.")
+    if args.sac_ckpt is not None and args.policy_mixture:
+        parser.error("--policy-mixture is not supported with --sac-ckpt.")
     collect(args)
 
 

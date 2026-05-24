@@ -1,11 +1,12 @@
 # ReBRAC 线总览（贯通 TD3+BC 前置 ↔ ReBRAC 主线 ↔ FQL succession）
 
-> 文档版本：2026-05-24 rev.1
+> 文档版本：2026-05-24 rev.2
 > 作用：以 **ReBRAC 为中心**，把三段彼此独立成文的工作串成一条线——(0) 前置 baseline **TD3+BC**、(1) 主线 **ReBRAC**（paper 1）、(2) head-to-head 支线 **FQL succession**（paper 2，ReBRAC 在其中作对照对象）。
 > 与姊妹文档的分工：
 > - [`offline_rl_line_summary.md`](offline_rl_line_summary.md)：整条 offline 线（含 AUVHamNODE 等）的全景入口，**纯链接、不持数字**。
 > - 本文：只聚焦 ReBRAC 这一条算法脉络，**自包含关键 headline 数字**，每个数字标注 ground-truth 出处（`文件 §节`）。任何冲突以源文档为准。
 > - 数字 ground truth：[`rebrac_experiment_report.md`](rebrac_experiment_report.md)（paper 1）、[`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9 + [`fql_succession_p2_results.md`](fql_succession_p2_results.md)（paper 2）、[`td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md)（baseline）。
+> - rev.2（2026-05-24）：新增 **§5 数据集与状态空间速查（SAC collector 设计参考基线）**；其后各节顺延（β1 跨线 reconciliation → §6，文件索引 → §7，一句话总结 → §8）。state-space / dataset 真值出处：[`auv_nav/env.py`](../auv_nav/env.py) `PlanarRemusEnv._build_observation` + dataset `metadata.json` / `transitions.npz`。
 
 ---
 
@@ -107,7 +108,62 @@ report §6.4 明确：在 crosscomp-1000 上，winner `(β1=4.0, β2=2.0)` 的 *
 
 ---
 
-## 5. ⭐ 跨线关键问题：为什么最优 β1 从 4.0 变成 1.0？原 ReBRAC 实验错了吗？
+## 5. 数据集与状态空间速查（SAC collector 设计参考基线）
+
+> 本节是给后续 **SAC collector**（用 arrival_v2 SAC checkpoint 收 D4RL 风格数据）的 schema 基线：任何新 collector 产出的 dataset 必须与下表 obs / action / privileged schema 对齐，才能 drop-in 进现有 offline pipeline（ReBRAC / FQL / AsymCritic）。SAC checkpoint 盘点与实施要点见 [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md)。
+> 真值出处：dataset `metadata.json` + `transitions.npz`（`offline_data/` gitignored，完整集在 Drive）；状态空间 = [`auv_nav/env.py`](../auv_nav/env.py) `PlanarRemusEnv._build_observation` + [`environment_design.md`](environment_design.md)。
+
+### 5.1 数据集命名约定与当前主用集
+
+命名约定：`<collector>_<sensor>_<history>_<reward>_<flow_regime>_<geometry>_fixdone_ep<N>`。collector = [`auv_nav/baselines.py`](../auv_nav/baselines.py) 的 4 类非学习 baseline：**goalseek / crosscomp（CrossCurrentCompensation）/ worldcomp（WorldFrameCurrentCompensation）/ privileged（PrivilegedCorridor）**。
+
+⚠ **reward 已从 `efficiency_v2` 迁到 `arrival_v2`** —— 当前主用 = arrival_v2 那批；efficiency_v2 属已收口的 paper 1 / TD3+BC 历史（两者 obs 维度也不同，见 §5.2）。
+
+| 用途 / 阶段 | dataset | collector | reward | flow regime | obs_dim | 关键统计 |
+|---|---|---|---|---|---:|---|
+| paper 1 / TD3+BC（历史） | `crosscomp_s0_h4_efficiency_v2_re150_u10cross_ep1000`/`_ep2000`；`worldcomp-1000` | crosscomp / worldcomp | efficiency_v2 | Re150 / u10 cross | **40** | finalist 数据源 |
+| 广验 v2 · N0（sub-critical） | `crosscomp_s0_h4_arrival_v2_re150_u10cross_ep1000` | crosscomp | arrival_v2 | Re150 / u10 | **48** | HOLDS 0.85 |
+| 广验 v2 · N2'（critical） | `privileged_s0_h4_arrival_v2_re250_u15cross_ep1000` | privileged | arrival_v2 | Re250 / u15 | **48** | STRONG_NEGATIVE |
+| FQL · E-uni（clean anchor） | `privileged_s0_h4_arrival_v2_re150_u10cross_ep1000` | privileged | arrival_v2 | Re150 / u10 | 48 | σ=0；succ 0.985；86,685 trans |
+| FQL · M-uni-noise | `fql_succession/m_uni_noise_eps0p5_1000` | privileged | arrival_v2 | Re150 / u10 | 48 | **σ=0.5**；succ 0.632（unimodal+噪声）|
+| FQL · E-multi | `fql_succession/e_multi_50priv_50goal_clean_1000` | 50% priv + 50% goalseek | arrival_v2 | Re150 / u10 | 48 | clean 多模态 |
+| FQL · M-multi-mix | `fql_succession/m_multi_mix_50priv_50goal_1000` | mix + 噪声 | arrival_v2 | Re150 / u10 | 48 | 噪声多模态 |
+
+共性轴（全部一致）：`s0`（部署主轴，DVL water-track 单点）、`h4`、`cross_stream`、`target_speed=1.5`、`ep=1000`。差异只在 collector（数据质量）、action noise σ、flow regime（Re150/u10 sub-critical ↔ Re250/u15 critical）。
+
+### 5.2 状态空间定义
+
+**actor 观测（单步）—— `env.py` `_build_observation`，归一化后每通道 O(1)**：
+
+| 切片 | 通道 | 内容 |
+|---|---|---|
+| own `[0:5]` | [0] u/speed_scale；[1] v/speed_scale；[2] r/yaw_rate_scale；[3] cos ψ；[4] sin ψ | 本体速度 + 艏向 |
+| goal `[5:8]` | [5] goal_body_x/goal_scale；[6] goal_body_y/goal_scale；[7] distance/dist_scale | 目标 body-frame 位置 + 距离 |
+| probe `[8:8+2n]` | 每 probe `(u,v)` body-frame（velocity 模式） | s0=1 / s1=2 / s2=4 probe |
+| context `[..+2]` | elapsed_frac（已耗时间占比）+ 归一化初始距离 | **仅 arrival_v2**（`env.py:377`：reward ∈ ARRIVAL_V2_OBJECTIVES 时自动开启）|
+
+- 8 base（5 own + 3 goal）+ probe：s0=**10-D** / s1=12-D / s2=16-D（不含 context）。
+- **arrival_v2 多 2 个 episode-context 通道** → s0 单步 = 12-D。
+- 历史堆叠 `h4`（`ObservationHistoryWrapper`）= 单步 × 4：
+  - efficiency_v2 s0/h4 = (8+2)×4 = **40-D**
+  - arrival_v2 s0/h4 = (8+2+2)×4 = **48-D**（已实测确认）
+- **action**：2-D 连续（heading command, speed command）。
+- **privileged_obs**（dim=2，**不堆叠**）：body-frame `[u_eq, v_eq]`——`EquivalentCurrentModel` 的 hull-integral 等效流（真正驱动动力学的有效流，区别于单点 probe 采样）。只供 `AsymmetricQNetwork` critic / ReBRAC privileged 轨道；npz 以 `privileged_obs / next_privileged_obs` 存。
+
+**npz 存储列**：`obs, next_obs`（堆叠 actor obs）、`actions, next_actions`（next_action 供 TD3-style target）、`rewards, costs`、`dones / terminateds / truncateds`、`terminal_reason_codes, behavior_policy_codes`、`privileged_obs, next_privileged_obs`。
+
+### 5.3 对 SAC collector 设计的含义
+
+要让 arrival_v2 SAC checkpoint 收的数据 drop-in 兼容现有 ReBRAC / FQL / AsymCritic pipeline：
+
+1. **obs schema 必须 = arrival_v2 / s0 / h4 → 48-D**（含 2 个 episode-context 通道 + h4 堆叠），否则 obs_normalizer 与网络输入维度不匹配；
+2. **必须同时记录 `privileged_obs`（2-D，从 env `info` 取）**，否则 AsymCritic / privileged 轨道无法复用；
+3. 应覆盖与现有 baseline collector 同样的 **(数据质量 × noise σ × flow regime)** 轴，才能与 crosscomp / privileged 数据做同口径对照。SAC 提供的是 **D4RL 通行做法里的 RL-trained behavior policy** 第四类数据源（区别于 4 类 rule-based baseline）；
+4. checkpoint 盘点、推荐子集、trigger 条件见 [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md)（当前定位为 revision / future-work tier 的 pre-implementation spec，trigger 满足前不写 adapter 代码）。
+
+---
+
+## 6. ⭐ 跨线关键问题：为什么最优 β1 从 4.0 变成 1.0？原 ReBRAC 实验错了吗？
 
 **结论先行：没有矛盾，原实验没有错。** 原线选 β1=4.0 是其自身协议下合理的 **std-driven 局部最优**；FQL 线在**四个轴同时不同**、且**排除了驱动 β1=4.0 选择的那颗 seed（44）**的条件下得到 β1=1.0 更优。两边都对，paper 1 finding (i)–(iv) 全部不受影响。
 
@@ -148,15 +204,18 @@ BC-anchor 强度在 (collector × reward × noise) 空间里**没有单一全局
 
 ---
 
-## 6. 文件索引（想找 X 看 Y）
+## 7. 文件索引（想找 X 看 Y）
 
 | 想找... | 看这里 |
 |---|---|
 | 整条 offline 线全景（含其他算法线） | [`offline_rl_line_summary.md`](offline_rl_line_summary.md) |
+| 当前主用数据集 + 状态空间 schema（SAC collector 基线） | 本文 §5 + [`environment_design.md`](environment_design.md) + [`auv_nav/env.py`](../auv_nav/env.py) |
+| SAC collector 设计 / checkpoint 盘点 / trigger | [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) |
+| baseline collector 策略类 / offline 数据收集脚本 | [`auv_nav/baselines.py`](../auv_nav/baselines.py) + [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) |
 | ReBRAC One Page + 4 finding spine | [`rebrac_mainline_review.md`](rebrac_mainline_review.md) §0 + §1.5 |
 | ReBRAC 任何具体数字 / per-seed | [`rebrac_experiment_report.md`](rebrac_experiment_report.md)（按 stage 索引） |
 | β1=4.0 winner 的选择逻辑（seed 44 robustness） | [`rebrac_experiment_report.md`](rebrac_experiment_report.md) §6.3 + §6.4 |
-| β1 跨线 reconciliation（本文段 5 的源） | [`rebrac_mainline_review.md`](rebrac_mainline_review.md) §2.2.6 + [`fql_succession_p2_results.md`](fql_succession_p2_results.md) §8.1 |
+| β1 跨线 reconciliation（本文段 6 的源） | [`rebrac_mainline_review.md`](rebrac_mainline_review.md) §2.2.6 + [`fql_succession_p2_results.md`](fql_succession_p2_results.md) §8.1 |
 | TD3+BC baseline 详细收口 | [`td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
 | 广验 v2（s0 partial-obs ceiling） | [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) |
 | FQL succession 机制 ground truth（Q1/Q1b/Q1c/C-1） | [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9 |
@@ -165,6 +224,6 @@ BC-anchor 强度在 (collector × reward × noise) 空间里**没有单一全局
 
 ---
 
-## 7. 一句话总结
+## 8. 一句话总结
 
 ReBRAC 线由 **TD3+BC 拆瓶颈 → ReBRAC 在两瓶颈上拿四条 finding（核心：deployable 追平 privileged、优于 TD3+BC 23–32pp，finalist β1=4.0）→ 广验 v2 给出 s0 partial-obs ceiling 边界 → FQL succession 诚实负面回头确证 ReBRAC（β1=1.0 双轴 dominate FQL）** 四段构成；FQL 线与原线最优 β1 不同源于 **reward / collector / 动作噪声 / seed pool 四轴差异 + 原线 β1=4.0 本是 seed-44-robustness 的 std-driven 选择**，两边不矛盾，paper 1 finding 全部站立。

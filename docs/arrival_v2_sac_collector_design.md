@@ -325,53 +325,78 @@ offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/ 
 
 全 4 tier `obs.shape == (?, 48)` / `metadata.behavior_source == "sac_checkpoint"` / `metadata.sac_deterministic == False` / 含 `privileged_obs` 列（env-side `[u_eq, v_eq]`，vanilla SAC training 忽略，future AsymCritic ablation 可用）。
 
-#### 4.0.8 Head-to-head sweep design（2026-05-25 finalized）
+#### 4.0.8 Head-to-head sweep design（2026-05-25 finalized — **FQL P2 sister paired**）
+
+**Paired baseline 选择 rationale（2026-05-25 reframing）**：
+
+用户 challenge："为何 paired with N0 而不是 recent FQL?" 切中要害。检查 spec §6.0 触发条件 E (FQL 再验证) + 3 个 pre-registered finding 候选后，**finding 1 (β1 翻转) + finding 2 (FQL ≈ ReBRAC β1=1)** 都直接是 FQL P2 v1.4 (closed 2026-05-23) 已实证机制的 SAC-stochastic regime universality 验证。**与 FQL P2 sister 协议同跑**才能 head-to-head 验证机制 universality across noise sources。N0 paired 只能补 finding 3 (collector-axis)，但 finding 3 不是 paper finding 主轴。
+
+**FQL P2 已实证（v1.4 §6.3 RESOLVED）**：
+- Q1b actor β1=4→1 +23.5pp on M-uni-noise（β2=2.0 保持）
+- Q1c β1=1 在 clean+noisy 双轴 dominate FQL
+- C-1 RESCUE-FAIL（FQL distill_alpha_bc 0.858 vs ReBRAC β1=1.0 0.910 on E-uni）
+- "**单一固定 ReBRAC β1=1.0 在 clean+noisy 双轴 dominate FQL**"
+
+我们 4 tier SAC dataset 与 FQL P2 3 cell 天然对位：
+
+| FQL P2 cell | noise origin (privileged) | 我们 SAC tier | noise origin (SAC) |
+|---|---|---|---|
+| E-uni | clean privileged (success 98.5%) | **expert** (89.9%) | π actor σ_act + near-max success |
+| M-uni-noise | privileged + σ=0.5 action noise | **mexp** (75.1%) | π actor 训练中 + 准 expert |
+| M-multi-mix | privileged-500 + goalseek-500 mixture | **medium** (51.5%) | π actor 中段训练 + 三态混合 |
+| (无对应) | — | **random** (0.2%) | π actor 早期训练 — 我们的独立贡献 |
+
+→ 3 个直接 paired + 1 个 random tier 扩展 noise spectrum。
 
 **3 个 algorithm configs**（用户 2026-05-25 决策选 3-config 路线）：
 
-| config | 关键 hyperparameters | rationale |
-|---|---|---|
-| **ReBRAC β1=1.0** | β1=1, β2=1, hidden=256×3 layer, critic_LN=on, vanilla critic, γ=0.99 | FQL P2 §6.3 主对照值 — "FQL ≈ ReBRAC β1=1 on clean expert" finding 候选必备对比组 |
-| **ReBRAC β1=4.0** | β1=4, β2=2, hidden=256×3 layer, critic_LN=on, vanilla critic, γ=0.99 | broad val v2 N0 anchor 值 — 与 sister dataset `crosscomp_*` paired control 直接 head-to-head |
-| **FQL** (default) | flow_steps=10, hidden=256, FQL P2 spec line 444 default | algorithm-axis 主轴（flow-matching teacher vs Gaussian deterministic) |
+| config | actor β1 | critic β2 | 其他 | rationale |
+|---|---:|---:|---|---|
+| **ReBRAC β1=1.0** | 1.0 | **2.0** | hidden=256×3, critic_LN=on, vanilla critic, γ=0.99 | FQL P2 Q1b/Q1c fix 值 — 已实证 dominate FQL on both clean + noisy |
+| **ReBRAC β1=4.0** | 4.0 | **2.0** | 同上 | FQL P2 primary baseline + broad val v2 N0 anchor — 已实证 mis-tuned in noisy regime (β1=4 is the artifact) |
+| **FQL** (default) | — | — | flow_steps=10, distill_alpha_bc=1.0, teacher_lr=3e-4 | FQL P2 §6.2 default config — algorithm-axis 主轴 (sprint 2) |
 
-**3 seeds**：[42, 43, 44] — 与 broad val v2 N0 严格 paired，bootstrap CI 直接可比，且满足 reviewer ≥ 2 seed 要求。
+**关键**：只 sweep actor penalty coef（β1）；critic penalty coef（β2）锁 2.0 = FQL P2 Q1b sweep mode（per spec line 35 + 702）。不像 broad val v2 N0 那样 β1↔β2 同向 scale。
 
-**协议详细**（与 broad val v2 N0 + FQL P2 sister 严格对齐）：
-- **ReBRAC**: `--sampling-mode shuffle_no_replacement --num-epochs 64 --batch-size 256 --hidden-dim 256 --num-hidden-layers 3 --actor-lr 3e-4 --critic-lr 3e-4 --gamma 0.99 --tau 0.005 --critic-layernorm --no-actor-layernorm --policy-noise 0.2 --noise-clip 0.5 --policy-freq 2 --grad-clip-norm 10.0 --normalizer-eps 1e-3 --eval-every 0 --skip-final-eval --log-every 1000`
-- **FQL**: `--algo fql --total-steps 200000 --batch-size 256 --hidden-dim 256 --flow-steps 10`（FQL P2 §6.2 default config）
-- **Eval (separate step)**: `scripts.evaluate_offline --manifest benchmarks/single_u10_cross_tgt15.json --episodes 100 --seed 456`（test_seed=456 与 N0 paired）
+**3 seeds**：[42, 0, 7] — 与 FQL P2 extended 3-seed (v1.2 §4.1) 严格 paired，bootstrap CI 直接可比。
 
-**Per-run wallclock 来源** — FQL P2 spec §8.2 实测数（commit 历史 land）：
+**协议详细**（FQL P2 sister, step-based 不是 epoch-based）：
+- **ReBRAC**: `--algo rebrac --total-steps 200000 --sampling-mode uniform --batch-size 256 --hidden-dim 256 --num-hidden-layers 3 --actor-lr 3e-4 --critic-lr 3e-4 --gamma 0.99 --tau 0.005 --actor-penalty-coef {1.0|4.0} --critic-penalty-coef 2.0 --policy-noise 0.2 --noise-clip 0.5 --policy-freq 2 --grad-clip-norm 10.0 --normalizer-eps 1e-3 --critic-layernorm --no-actor-layernorm --eval-every 0 --skip-final-eval --log-every 1000`
+- **FQL** (sprint 2): `--algo fql --total-steps 200000 --batch-size 256 --hidden-dim 256 --flow-steps 10 --distill-alpha-bc 1.0 --teacher-lr 3e-4`
+- **Eval (separate step)**: `scripts.evaluate_offline --checkpoint <save-dir> --manifest benchmarks/single_u10_cross_tgt15.json --episodes 100 --seed 456 --output-json <save-dir>/test_result.json`
 
-| algo | 200k step / 64 epoch | L4 per-run |
+**Finding 3 (SAC vs crosscomp collector paired) 状态**：spec §4.0.8 v1 设计的 N0 paired 改为 **deferred follow-up**（如 reviewer push back 或 sprint 1 + sprint 2 闭环后判定值得，再补 sprint 1b 用 N0 协议跑 ~5h L4）。本 sprint 1 不 cover。
+
+**Per-run wallclock 来源** — FQL P2 spec §8.2 实测数（同协议直接对位，no extrapolation）：
+
+| algo | 协议 | L4 per-run |
 |---|---|---:|
-| ReBRAC | 200k step OR 64 epoch（180k transitions × 64 / 256 ≈ 45k step） | ~25 min |
-| FQL | 200k step | ~50 min |
+| ReBRAC | 200k step uniform | ~25 min |
+| FQL | 200k step uniform | ~50 min |
 | evaluate_offline 100-ep | per-run separate | ~2 min |
 
 **Sprint 拆分**（Colab Pro L4 单 session ≤ 12h 限制）：
 
 | Sprint | 内容 | run 数 | wallclock | 顺序 |
 |---|---|---:|---:|---|
-| **Sprint 1** | ReBRAC β1∈{1, 4} × 4 tier × 3 seed | 24 | ~10-11h L4 | **下一步立刻开干** |
-| **Sprint 2** | FQL × 4 tier × 3 seed | 12 | ~10h L4 | sprint 1 完成 + paired analysis OK 后启动 |
+| **Sprint 1** | ReBRAC β1∈{1, 4} / β2=2 × 4 tier × 3 seed [42, 0, 7] | 24 | ~10-11h L4 | **下一步立刻开干** |
+| **Sprint 2** | FQL × 4 tier × 3 seed [42, 0, 7] | 12 | ~10h L4 | sprint 1 完成 + paired analysis OK 后启动 |
 
-**预期 paper finding 候选**（pre-registered before training）：
+**预期 paper finding 候选**（pre-registered before training, FQL P2 sister paired）：
 
-1. **β1 翻转点**（cross-tier）— random / medium tier 上 β1=4 ≥ β1=1（noisy behavior needs strong BC anchor）；expert tier 上 β1=1 ≥ β1=4（clean behavior, low β1 better）。如果观察到 monotone β1 优势随 tier quality 翻转 → 直接落 FQL P2 §8.1 "BC-anchor 最优强度随目标噪声翻转" finding 的 SAC-stochastic regime 版本。
-2. **FQL ≈ ReBRAC β1=1 on clean expert**（per FQL P2 §6.3 主对照）— sprint 2 完成后才能 verify。
-3. **SAC vs rule-based collector paired**：sprint 1 expert tier ReBRAC β1=4 vs N0 anchor (`crosscomp_*` ReBRAC β1=4 seed [42,43,44])，paired bootstrap CI — broad val v2 §6.3 follow-up "SAC collector 平行第四轴" 直接落地。
+1. **β1 翻转点 cross-noise-source universality**（cross-tier）— random/medium tier 上 β1=4 ≥ β1=1（noisy behavior needs strong BC anchor）；expert tier 上 β1=1 ≥ β1=4（clean behavior, low β1 better）。如果观察到 monotone β1 优势随 tier quality 翻转 → **直接复现 FQL P2 v1.4 §6.3 Q1b/Q1c 机制 in SAC-stochastic regime**，证明机制 universality across noise sources（privileged σ=0.5 injection ↔ SAC actor implicit stochasticity）。**Direct head-to-head**：mexp tier ↔ M-uni-noise；medium tier ↔ M-multi-mix；expert tier ↔ E-uni。
+2. **FQL ≈ ReBRAC β1=1 on clean expert**（sprint 2 完成后才能 verify）— FQL P2 v1.4 已在 E-uni privileged regime 实证 (RESCUE-FAIL: FQL 0.858 vs ReBRAC β1=1 0.910)；sprint 2 在 SAC expert tier verify universality。
+3. **(Deferred follow-up)** **SAC vs rule-based collector paired**：本 sprint 1 不 cover。如 reviewer push back，sprint 1b 用 broad val v2 N0 协议 (64 epoch shuffle_no_replacement, seeds [42, 43, 44]) 跑 12 run × ~25 min ≈ 5h L4。
 
 **输出落地**：
 
 ```
-checkpoints/offline/sac_collector_h2h/rebrac_b1{1,4}/{tier}/seed_{42,43,44}/  # 24 dir
-checkpoints/offline/sac_collector_h2h/fql/{tier}/seed_{42,43,44}/             # 12 dir
-results/offline/sac_collector_h2h/{algo}/{tier}/seed_{n}/test_result.json     # 36 file
+checkpoints/offline/sac_collector_h2h/rebrac_b1{1p0,4p0}/{tier}/seed_{42,0,7}/  # 24 dir
+checkpoints/offline/sac_collector_h2h/fql/{tier}/seed_{42,0,7}/                  # 12 dir (sprint 2)
+results/offline/sac_collector_h2h/{algo}/{tier}/seed_{n}/test_result.json        # 36 file
 ```
 
-Notebooks（per sprint, 仿 broad val v2 + FQL P2 模式）：
+Notebooks（per sprint, 仿 FQL P2 multi-run notebook 模式）：
 - `notebooks/sac_collector_h2h_rebrac_sweep.ipynb`（sprint 1, 24 run）
 - `notebooks/sac_collector_h2h_fql_sweep.ipynb`（sprint 2, 12 run, 待 sprint 1 完成后写）
 

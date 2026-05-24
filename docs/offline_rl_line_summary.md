@@ -263,14 +263,18 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 → 4 tier 清晰分离（success spread 15pp+，mean_reward 单调 -1.83→+0.97），medium tier 因 timeout 占比 20% avg_len 反转为最长（251 step > random 180 > mexp 171 > expert 115）— D4RL 范式 + failure-mode tier drift 双重证据。详 spec §4.0.7 / `_completed.ipynb`。
 
-**下一步**（spec §4.0.8 finalized 2026-05-25）：head-to-head sweep 拆 2 sprint，共 36 run = 3 configs (FQL + ReBRAC β1=1 + ReBRAC β1=4) × 4 tier × 3 seed [42, 43, 44]（与 N0 anchor paired）：
-- **Sprint 1**：ReBRAC β1∈{1, 4} × 4 tier × 3 seed = 24 run（~10-11h L4，1 Colab session）— 立刻开干
+**下一步**（spec §4.0.8 finalized 2026-05-25 — **FQL P2 sister paired**）：head-to-head sweep 拆 2 sprint，共 36 run = 3 configs (FQL + ReBRAC β1=1/β2=2 + ReBRAC β1=4/β2=2) × 4 tier × 3 seed [42, 0, 7]（与 **FQL P2 v1.4 extended 3-seed** 严格 paired，**非 broad val v2 N0**）：
+- **Sprint 1**：ReBRAC β1∈{1, 4} / β2=2 × 4 tier × 3 seed = 24 run（~10-11h L4，1 Colab session）— 立刻开干
 - **Sprint 2**：FQL × 4 tier × 3 seed = 12 run（~10h L4，1 Colab session）— sprint 1 完成 + paired analysis OK 后启动
 
-**3 个 paper finding 候选**（pre-registered，详 spec §4.0.8）：
-1. β1 翻转点（random/medium 偏 β1=4，expert 偏 β1=1）— FQL P2 §8.1 "BC-anchor 最优强度随目标噪声翻转" SAC-stochastic regime 版本
-2. FQL ≈ ReBRAC β1=1 on clean expert（FQL P2 §6.3 主对照复现）
-3. SAC vs rule-based collector paired（sprint 1 expert tier vs N0 crosscomp anchor，broad val v2 §6.3 follow-up）
+**Paired baseline reframing**（2026-05-25 spec §4.0.8 v2 update）：原 spec v1 设计 broad val v2 N0 paired (64 epoch shuffle, [42, 43, 44])，但 finding 1/2 是 FQL P2 v1.4 已实证机制的 SAC-stochastic regime universality 验证 → FQL P2 sister 协议 (200k step uniform, [42, 0, 7]) 直接 head-to-head 才对齐触发条件 E。N0 paired finding 3 (collector axis) 改为 deferred follow-up。
+
+**4 tier ↔ FQL P2 3 cell 天然对位**：expert↔E-uni clean / mexp↔M-uni-noise σ=0.5 / medium↔M-multi-mix / random=独立贡献（noise spectrum 扩展）。
+
+**2 个 paper finding 候选**（pre-registered，详 spec §4.0.8 v2）：
+1. β1 翻转点 cross-noise-source universality — FQL P2 v1.4 §6.3 Q1b/Q1c 机制 (privileged σ=0.5 injection) 在 SAC stochasticity regime 下复现
+2. FQL ≈ ReBRAC β1=1 on clean expert — FQL P2 v1.4 C-1 RESCUE-FAIL (E-uni: FQL 0.858 vs ReBRAC β1=1 0.910) 在 SAC expert tier verify
+3. (Deferred follow-up) SAC vs rule-based collector — 如 reviewer push back，sprint 1b 用 N0 协议补 12 run ≈ 5h L4
 
 **总预算 rev.3 修订**：~21h L4 = **2 个 Colab session**（原 estimate ~4-6h 严重 underestimate，FQL P2 §8.2 权威实测：ReBRAC 200k step ≈ 25 min/run，FQL 200k step ≈ 50 min/run）。Adapter + audit + collection ~3.75h 已完成；剩 head-to-head 2 sprint ~21h。
 

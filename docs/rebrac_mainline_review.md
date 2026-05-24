@@ -1,7 +1,8 @@
 # ReBRAC 主线总结、专家分析与下一步建议
 
-> 文档版本：2026-05-07 rev.3
+> 文档版本：2026-05-24 rev.4
 > 文档定位：ReBRAC 离线主线 rev.8 收口后的独立 review，作为 paper drafting 与战略决策的输入。
+> rev.4 修订（2026-05-24）：新增 §2.2.6 — FQL succession P2（[`fql_succession_p2_results.md`](./fql_succession_p2_results.md)，2026-05-23 NEGATIVE 闭环）的 mechanism trilogy 反向暴露 paper 1 finalist β1=4.0 的 scope caveat。Paper 1 finding (i)–(iv) **不受影响**；revision 期需准备 implementation note + 可选 5-seed 防御实验。
 > rev.2 修订（2026-05-01）：rev.1 §2.2 + §3.1 列出的 4 项 paper-readiness 必做 (A/B/C/D) **全部完成**。本文 §2.2.1~§2.2.4 的 "建议处理" 段已改写为 "已完成 → docs/..."；§3.1 表格已 strikethrough；§4 caveats item 3 已升级；§5.1 主对照表 Phase 2 行升 5-seed。详见 [notebooks/rebrac_paper_followup_completed.ipynb](../notebooks/rebrac_paper_followup_completed.ipynb)、[docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md)、[docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md)。
 > rev.3 修订（2026-05-07）：在 paper-readiness 4/4 之后做了一轮**有限算力广验**（三轴 8 spoke × 5 seed parity + C1 deep-dive 5 ablations，~30h L4）。本文新增 §3.5 broad validation 结论回写、§4 caveat (8) broad validation underpowered seed budgets。Paper claim 不需要修订，但 §experiments 应增加 broad validation 一节（A2 mid-gap collapse boundary + C1 task-fundamental floor）。详见 [docs/rebrac_broad_validation_report.md](./rebrac_broad_validation_report.md)、[docs/rebrac_c1_s1_followup_report.md](./rebrac_c1_s1_followup_report.md)。
 > **⚠ 2026-05-18 update**：v1 广验全套（含 §3.5 引用的 broad_validation_report + c1_s1_followup）已 **SUPERSEDED by v2 plan** [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)。取代原因：(1) v1 在 `efficiency_v2` 下做，与 online 线已转向 `arrival_v2` 不一致；(2) online §7.6 已独立产出更强 sensor envelope finding。v2 plan 在 `arrival_v2` 下做 cross-only spotlight (5 cell + 1 conditional sweep)，作为 paper §experiments 的 reward-bridge appendix。**本文 §3.5 / §4 caveat (8) / §5 反推内容保留作 v1 论文化摘要 archive，不重写；paper drafting 时 §experiments 应直接引用 v2 plan，不引用 v1 finding（除 B1 sensor envelope，但已被 online §7.6 取代）**。
@@ -207,6 +208,33 @@ Phase 2 的 std=0.025 数字非常漂亮，但有两个结构性问题：
 - 计算每条 episode 的 `path_efficiency / progress_ratio / time` 分布；
 - 用配对 t-test 比较 ReBRAC vs teacher 在同一 episode 起点上的 return。
 - 这一组分析半天可以做完，可能撑起论文的一个独立 subsection。
+
+#### 2.2.6 FQL succession P2 反向暴露的 β1 scope caveat `【rev.4 新增 2026-05-24】`
+
+FQL succession P2（[`docs/fql_succession_p2_results.md`](./fql_succession_p2_results.md)，2026-05-23 NEGATIVE 闭环）的 mechanism trilogy（Q1 / Q1b / Q1c）反向暴露 paper 1 finalist β1=4.0 的 scope：在 **(privileged collector × `arrival_v2` reward × σ=0.5 noisy injection)** 这一组与 paper 1 完全不同的 cell 下，**β1=1.0 打 β1=4.0 +23.5pp（n=2, t=4.98 SIG）**；同等 clean 配置（E-uni σ=0）下 β1=1.0 仍高 +2.5pp（NULL, t=0.82）。
+
+**两边数据点对照**：
+
+| 实验 | dataset | reward | noise | seeds | β1=4.0/β2=2.0 | β1=1.0/β2=2.0 |
+|---|---|---|---|---|---:|---:|
+| paper 1 Stage B (n=3, test=40) | crosscomp-1000 | efficiency_v2 | deterministic + 小噪 | 42/43/44 | **0.883 ± 0.031** ← winner | 0.742 ± 0.198 |
+| paper 1 Stage C (n=5, test=100) | crosscomp-1000 | efficiency_v2 | deterministic + 小噪 | 42–46 | **0.902 ± 0.021** (finalist) | — (未升级) |
+| FQL P2 E-uni clean (n=2/4, test=100) | privileged-1000 | arrival_v2 | σ=0 | 42/0 | 0.885 | **0.910** |
+| FQL P2 M-uni-noise (n=2, test=100) | privileged-1000 | arrival_v2 | σ=0.5 clip ±0.5 | 42/0 | 0.705 | **0.940** |
+
+**为什么两边不矛盾 — 四轴同时变**：(i) reward `efficiency_v2 → arrival_v2`（前者 online §7.6 已证 hacking）；(ii) collector `crosscomp → privileged`（hand-designed cross-stream-compensation → oracle 读 `[u_eq, v_eq]`）；(iii) `E_s[Var(a|s)]` **低 → 高**（M-uni-noise 是 deliberate σ=0.5 noise injection）；(iv) seed pool **含 → 不含 seed 44**（paper 1 的"难 seed"，在 β1≤2.0 时 std 崩盘是选 β1=4.0 的核心驱动力，见 [`rebrac_experiment_plan.md`](./rebrac_experiment_plan.md) §6.3 第 4 条 + [`rebrac_experiment_report.md`](./rebrac_experiment_report.md) §6.3 结论段）。
+
+**paper 1 自身的 evidence gap**：Stage B β1=1.0 grid 是 n=3 × test=40（noise floor 高），14pp gap 在 n=3 paired SE 下约 1.2σ → **实际 NULL 不显著**；Stage C 没把 β1=1.0 升级 5-seed test=100（合理：Stage B 上 mean+std 都比 winner 弱，no point upgrading）。**paper 1 决策合理但 β1=1.0 一格的 evidence 强度不如 finalist**。
+
+**对 paper 1 finding (i)–(iv) 的影响 — 无**：4 finding 都不依赖 "β1=4.0 globally optimal"，只依赖 "β1=4.0 在 paper 1 cells 上 ≥ TD3+BC + dual penalty 必要 + critic LN 独立必要"。FQL succession 没有推翻任何一条。
+
+**真正的机制 take-away**（来自 FQL succession P2 §6）：offline-RL 噪声鲁棒性由 **BC anchor target 的质量**决定，与算法族无关。ReBRAC 锚定到 *raw* dataset action（含噪），所以 noisy data 上必须把 β1 调低；FQL 锚定到 *flow-denoised* teacher 重建（target 已 clean），不需要调。**同样的旋钮族，相反的最优点，全由 anchor target 是否带噪决定**。这一 mechanism 直接解释了为什么 β1 在 paper 1 与 FQL succession 上"最优值"不同。
+
+**Revision 期防御选项**（按审稿人 push 强度递增）：
+
+1. **不触发（默认建议）**：paper §method implementation note 加一句 _"β1=4.0 finalist is selected under a seed-44-sensitive std criterion on `(efficiency_v2 × crosscomp × privileged-1000)`; under noisy raw-action data the optimum shifts downward — see companion paper [FQL succession P2](./fql_succession_p2_results.md) §3 noise-axis grid"_
+2. **轻触发**：limitations / scope 段落加一段，引用 FQL succession P2 §3–§6
+3. **重触发**：补 crosscomp-1000 + (β1=1.0, β2=2.0) × 5 seed (42–46) × test=100，~半天 L4；预期 mean 略升但 std 仍 > β1=4.0（seed 44 仍崩盘），paper 1 决策维持；即便 mean 反超，仍可论证 "winner 选择是 std-aware not mean-only"
 
 ### 2.3 容易被忽略但值得放进 discussion 的 insight
 

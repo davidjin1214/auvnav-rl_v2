@@ -196,6 +196,8 @@
 
 **P4 收尾（2026-05-24）**：实验线全闭环、无 pending；写作索引 [`fql_succession_paper_writing_index.md`](fql_succession_paper_writing_index.md) 已建（paper 章节→文档映射 + 复现 notebook 列表 + headline 数字 + 定位选项 + 投稿前 TODO）。剩余纯写作（Method prose / Related Work / Abstract / 定位决策）。
 
+**对 paper 1（ReBRAC 主线）的 cross-talk caveat（2026-05-24 落地）**：FQL succession P2 Q1b/Q1c mechanism 反向暴露 paper 1 finalist β1=4.0 的 scope —— 在 (privileged × `arrival_v2` × σ=0.5 noisy) 下 **β1=1.0 反而 +23.5pp 打 β1=4.0（n=2 SIG）**。**两边不矛盾**（reward / collector / 条件动作方差 / seed pool 四轴同时变；paper 1 选 β1=4.0 是 seed 44 std-driven），但 paper 1 revision 期需准备 implementation note + 可选 5-seed 防御实验。完整论证落在 [`rebrac_mainline_review.md`](rebrac_mainline_review.md) §2.2.6（paper 1 侧）+ [`fql_succession_p2_results.md`](fql_succession_p2_results.md) §8.1（paper 2 侧）。**paper 1 finding (i)–(iv) 不受影响。**
+
 ---
 
 ## 4. 当前活跃 backlog 与下一步
@@ -255,6 +257,7 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | World model + offline RL 综述 | [`docs/world_model_and_offline_rl_survey.md`](world_model_and_offline_rl_survey.md) |
 | RLPD 设计（offline-to-online，跨线复用） | [`docs/rlpd_design.md`](rlpd_design.md) |
 | 论文写作期"读哪份、抄哪段" | [`docs/rebrac_paper_writing_index.md`](rebrac_paper_writing_index.md) |
+| Paper 1 β1=4.0 vs paper 2 β1=1.0 为何不矛盾（cross-talk caveat）| [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §2.2.6（paper 1 侧）+ [`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md) §8.1（paper 2 侧）|
 
 ### 5.2 文档（docs/）
 

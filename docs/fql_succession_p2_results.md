@@ -299,6 +299,41 @@ For the broader programme, P2 was the **mechanism discriminator** for the AUVHam
 offline-RL line; it fired **negative**, which is a clean closure — the FQL Succession track
 does not displace the locked AUVHamNODE main line.
 
+### 8.1 Cross-talk to ReBRAC paper 1 — β1 scope caveat `【新增 2026-05-24】`
+
+The mechanism trilogy (§3) demonstrated that **ReBRAC β1 = 1.0 dominates β1 = 4.0** on
+(privileged × `arrival_v2` × σ = 0.5 noisy) by +23.5 pp (SIG) and on the matching clean cell
+by +2.5 pp (NULL). Read against ReBRAC paper 1, where the canonical finalist is
+**β1 = 4.0** on (crosscomp × `efficiency_v2` × deterministic-near-expert) — this is **not a
+contradiction** but a scope qualification:
+
+- Paper 1's β1 = 4.0 was selected as the Stage B winner on `crosscomp-1000` (3 seed = 42/43/44,
+  test = 40) primarily because **β1 ≤ 2.0 caused seed 44 to systematically collapse the std**
+  (β1 = 1.0 / β2 = 2.0 → 0.742 ± 0.198 vs β1 = 4.0 / β2 = 2.0 → 0.883 ± 0.031; see
+  [`rebrac_experiment_plan.md`](rebrac_experiment_plan.md) §6.3 row 4 and
+  [`rebrac_experiment_report.md`](rebrac_experiment_report.md) §6.3 closing). The decision
+  was **std-driven**, not mean-driven.
+- Our P2 evidence base uses seed pool **{42, 0}** which **does not include seed 44**, so
+  there is no within-experiment evidence whether β1 = 1.0 would still suffer the seed-44
+  collapse on `crosscomp` data.
+- The four axes that change between paper 1 finalist and our Q1b/Q1c configurations are:
+  **(i) reward** (`efficiency_v2` → `arrival_v2`); **(ii) collector** (hand-designed
+  cross-stream-compensation → privileged oracle on hull-integral flow);
+  **(iii) `E_s[Var(a|s)]`** (low → high, especially in M-uni-noise's deliberate σ = 0.5
+  injection); **(iv) seed pool** (includes seed 44 → does not).
+- Paper 1 findings (i)–(iv) **stand**: they do not rely on β1 = 4.0 being globally optimal,
+  only on β1 = 4.0 being ≥ TD3+BC on paper 1 cells. P2 does not falsify any of them.
+
+The defensible synthesis for both papers: the BC-anchor strength has **no single optimum**
+across the (collector × reward × noise) space; the paper-1 finalist is the local optimum
+under its own protocol, and the P2 mechanism gives a principled explanation for why it
+moves under noisier raw-action targets. Paper 1 revision should add a brief implementation
+note and cross-reference here; a 5-seed `(β1 = 1.0, β2 = 2.0)` defense run on
+`crosscomp-1000` (~½ day L4) remains available as a fallback if a reviewer presses.
+
+See [`rebrac_mainline_review.md`](rebrac_mainline_review.md) §2.2.6 (rev.4) for the
+paper-1-side write-up of the same caveat.
+
 ---
 
 ## 9. Provenance

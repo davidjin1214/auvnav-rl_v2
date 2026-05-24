@@ -1,12 +1,14 @@
 # `arrival_v2` SAC Collector — Design & Checkpoint Inventory
 
-> **文档版本**：2026-05-24（rev.2，主线协议对齐）
-> **状态**：**active — 用户已声明启动**（2026-05-24）
+> **文档版本**：2026-05-25（**rev.3，Plan A 4-tier finalized**）
+> **历史版本**：rev.2 (2026-05-24，主线协议对齐，cross_u15 path 1 + cross_u10 path 2 双轨)
+> **状态**：**active — Plan A audit GO，待 dataset 收集**（2026-05-25）。Adapter 落地 commit 97d394c；audit notebook commit be4b573 + 8667fbc + 9f8252e。
 > **作用**：盘点 `codex-arrival-v2-prototype` 分支产出的 SAC checkpoint，对比 SAC collector vs 现有 rule-based baseline collector，给出 D4RL 风格数据收集的推荐子集与实施要点。
-> **协议约束（rev.2 锁定）**：与 offline 主线（broad val v2 + FQL P2）**严格对齐 = `s0` probe + `history-length 4` + `arrival_v2` reward**。现有 offline datasets 全部 `*_s0_h4_arrival_v2_*` 命名，本文档推荐的 SAC collector 数据集复用相同 schema。
+> **协议约束（rev.2 锁定，rev.3 沿用）**：与 offline 主线（broad val v2 + FQL P2）**严格对齐 = `s0` probe + `history-length 4` + `arrival_v2` reward**。现有 offline datasets 全部 `*_s0_h4_arrival_v2_*` 命名，本文档推荐的 SAC collector 数据集复用相同 schema。
 > **上下文**：[`docs/online_rl_line_summary.md`](online_rl_line_summary.md) §4.3；[`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) §4.3。
 > **实验依据**：[`docs/arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §7 / §7.6 / §7.7 / §7.8 / §7.9 / §7.9.7。
-> **驱动动机（rev.2 锁定）**：(D) D4RL 范式对齐（paper revision 必备弹药）+ (E) FQL 在 s0_k4 SAC-trained behavior policy 数据上再验证（FQL P2 没回答过的开放问题）。详 §6.0。
+> **驱动动机（rev.2 锁定，rev.3 沿用）**：(D) D4RL 范式对齐（paper revision 必备弹药）+ (E) FQL 在 s0_k4 SAC-trained behavior policy 数据上再验证（FQL P2 没回答过的开放问题）。详 §6.0。
+> **rev.3 关键变更**：放弃 rev.2 路径 1（cross_u15 cell sensor-floored ckpt × 4 dataset），改用 **cross_u10/sac_vanilla/s0_k4/seed_46 同 seed 训练过程切片**构造真 D4RL 4-tier（random/medium/medium_expert/expert）。详 §4.0。原 §4.1（路径 1）已 SUPERSEDED 但保留作历史 reference。
 
 ---
 
@@ -194,11 +196,101 @@ D4RL benchmark 的 `medium` / `medium-expert` / `expert` 数据集**几乎全部
 
 ---
 
-## 4. 推荐数据收集双路径（rev.2 主推）
+## 4. 推荐数据收集 — Plan A 4-tier（rev.3 主推）
 
-按用户两个驱动动机精确化：(D) D4RL 范式对齐 + (E) FQL 在 SAC-trained behavior policy 数据上再验证。两条路径并行：
+**rev.3 路线**：单一路径 = cross_u10/sac_vanilla/s0_k4/seed_46 的训练过程切片构造 4 tier D4RL dataset。原 rev.2 路径 1 (cross_u15) 已 SUPERSEDED；原 rev.2 路径 2 (cross_u10 expert tier) 的 seed_46 expert ckpt **已被 Plan A 第 4 档覆盖**；原 rev.2 路径 3 (upstream cell) 保留为 topology diversity 可选扩展。
 
-### 4.1 路径 1（PRIMARY） — cross_u15 cell × 4 ckpt：对话 broad val v2 N2' / FQL §6.5 FLOOR
+---
+
+### 4.0 Plan A — cross_u10 seed_46 training-stage 4-tier（rev.3 finalized 2026-05-25）
+
+**Audit notebook**：[`notebooks/sac_collector_d4rl_tier_audit.ipynb`](../notebooks/sac_collector_d4rl_tier_audit.ipynb)（self-discovering）+ `_completed1.ipynb`（实验记录，commit 9f8252e）
+
+**Audit 流程**：auto-discover 全 39 个 `agent_step_<NNNNNNNN>.pt` + dense deterministic eval（10 ep × 39 ckpt × Colab L4 CPU ≈ 12 min）+ auto-pick closest to {0%, 50%, 85%, 100%} target success。
+
+#### 4.0.1 4 picked ckpt（Plan A 锁定，已 audit GO）
+
+全部位于 Drive `checkpoints/arrival_v2_prototype/cross_u10_regression/arrival_v2/sac_vanilla/s0_k4/seed_46/`：
+
+| tier | step | success | OOB | timeout | path |
+|---|---:|---:|---:|---:|---|
+| **random** | 25_002 | **0%** | 100% | 0% | `agent_step_00025002.pt` |
+| **medium** | 425_004 | **50%** | 30% | 20% | `agent_step_00425004.pt` |
+| **medium_expert** | 575_004 | **80%** | 10% | 10% | `agent_step_00575004.pt` |
+| **expert** | 600_000 | **100%** | 0% | 0% | `agent_step_00600000.pt` |
+
+**Verdict**: `✅ GO — 4 tiers cleanly separated (span=100%, medium |Δ|=0% from D4RL target)`。schema 一致性：全 39 step ckpt `obs_dim=48, action_dim=2, privileged_obs_dim=0, hidden_dim=256, use_layernorm=False` — 全 pass。
+
+#### 4.0.2 学习曲线 4 阶段 finding（paper material）
+
+来自 dense sweep（39 ckpt × 10 ep deterministic eval）的完整 training curve：
+
+| 阶段 | env_step 区间 | success 变化 | 学习速率（pp / 100k step）| 失败模式特征 |
+|---|---|---|---:|---|
+| 1. flat-zero | 0 → 25k | 0% → 0% | 0 | 100% OOB（撞墙策略）|
+| 2. gradual | 25k → 425k | 0% → 50% | ~12.5 | OOB 缓慢↓，timeout 开始 |
+| 3. accelerated | 425k → 575k | 50% → 80% | ~20（**3.6×**）| OOB / timeout 均衡 |
+| 4. **cliff fine-tuning** | 575k → 600k | 80% → 100% | ~80（**16×**）| OOB → 0%，timeout → 0% |
+
+**两个独立 paper finding 候选**：
+
+1. **Failure-mode tier drift**：random tier 100% OOB pure → medium tier OOB/timeout mixed → expert tier clean。"Behavior policy quality 不是单一维度，OOB→timeout 转换是 SAC 学习的内在指标。"
+2. **Cliff zone 575k-600k**：SAC under sparse-sensor arrival_v2 reward exhibits a final fine-tuning cliff (16× learning rate vs the preceding accelerated phase)，与 dense ckpt cadence (25k env_step) 才能解析。
+
+#### 4.0.3 协议（与 ckpt 训练 reset_options 严格一致 — 来自 audit notebook cell 9 读出的 trainer_state.json）
+
+| 项 | 值 |
+|---|---|
+| Cell | `single_u10_cross_tgt15` (U=1.0, Re=150) |
+| Flow file | `wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy` |
+| Sensor | `s0`（DVL water-track only，单点 probe） |
+| History length | `4` |
+| Task geometry | `cross_stream` |
+| Target speed | `1.5 m/s` |
+| Reward objective | `arrival_v2` |
+| Train: num_envs | `6` |
+| Train: random_steps / update_after | `5000` / `5000` |
+| Train: total_env_steps | `1_000_000` |
+
+#### 4.0.4 Dataset 命名约定 + 待决策事项
+
+**命名**（沿用现有 `*_s0_h4_arrival_v2_*` schema + tier label + step 号）：
+
+```
+offline_data/sac_random_s0_h4_arrival_v2_re150_u10cross_seed46_step25k_ep1000/
+offline_data/sac_medium_s0_h4_arrival_v2_re150_u10cross_seed46_step425k_ep1000/
+offline_data/sac_mexp_s0_h4_arrival_v2_re150_u10cross_seed46_step575k_ep1000/
+offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/
+```
+
+**待下个 session 第一步决策**：
+
+1. **Collection mode**：
+   - **A. 全 stochastic**（推荐，与 D4RL medium/medium-replay 范式一致，`next_actions` 真随机）
+   - **B. 全 deterministic**（D4RL expert tier 经典定义，`next_actions` 几乎确定）
+   - **C. Tier-mixed**（random/medium/m-expert stochastic，expert deterministic — D4RL 严格做法，数据集异质）
+2. **`replay_latest.pkl` (412 MB) → npz 第 5 档 `medium-replay`**：同步做 / 4-tier 先闭环后做
+3. **Multi-seed 扩展**：单 seed (46) 够 paper 1 / FQL P2 主对照；若 reviewer push back，按 rev.2 §4.2 补 seed=47/50（各 1.5h L4 600k 训练）
+
+#### 4.0.5 预算（rev.3 Plan A 实际成本）
+
+| 阶段 | 工作量 | 状态 |
+|---|---|---|
+| Audit notebook 写 + 跑 + 落 spec | ~30 min | ✅ 已完成 |
+| Adapter 落地（SACCheckpointPolicy + collector 扩展） | ~2.25h | ✅ 已完成 (commit 97d394c) |
+| Plan A 4 tier × 1000 ep × CPU pool 收集（`--num-workers 8`） | ~30 min Colab L4 | ⏳ 待开 |
+| FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed | ~4-6h L4 | ⏳ 待开 |
+| **rev.3 总计（不含 multi-seed）** | **~5-7h L4** | （rev.2 估 ~13h，减半） |
+
+#### 4.0.6 Plan B 备份（如 Plan A 收集出问题）
+
+`replay_latest.pkl` 412 MB 在 Drive 上（audit cell 17 已确认）→ 写 `scripts/replay_to_offline.py` (~1-2h) 转 npz 做 D4RL 第 5 档 `medium-replay`。详 §5.3。
+
+---
+
+> **以下 §4.1–§4.6 是 rev.2 原方案，保留作历史 reference**。rev.3 启动 Plan A 后只 §4.5 sensor floor 论证仍然有效（与 Plan A 选 cross_u10 不选 cross_u15 同根）。
+
+### 4.1 路径 1（rev.2 SUPERSEDED） — cross_u15 cell × 4 ckpt：对话 broad val v2 N2' / FQL §6.5 FLOOR
 
 **目标**：给 offline 线补一个全新数据 regime — "在 sensor floor 下挣扎的 RL agent"。当前 offline 线只有 rule-based（crosscomp/privileged）和 oracle teacher（v2 N2'）两类数据；SAC-trained-but-floored behavior policy 是第三类。
 
@@ -224,7 +316,7 @@ offline_data/sac_asym_s0_h4_arrival_v2_re250_u15cross_seed{0,42}_ep1000/
 
 ---
 
-### 4.2 路径 2（PRIMARY） — cross_u10 cell × 1 ckpt + 补 2 seed：D4RL `expert` tier
+### 4.2 路径 2（rev.2，rev.3 expert tier 已被 Plan A 覆盖；保留作 multi-seed 扩展模板） — cross_u10 cell × 1 ckpt + 补 2 seed：D4RL `expert` tier
 
 **目标**：D4RL 范式对齐需要 expert tier。cross_u10 是 ReBRAC paper 1 / FQL P2 主对照 cell。
 
@@ -293,7 +385,7 @@ offline_data/sac_vanilla_s0_h4_arrival_v2_re150_u10cross_seed{46,47,50}_ep1000/
 
 ---
 
-### 4.6 Best vs Final ckpt 的选择规则
+### 4.6 Best vs Final ckpt 的选择规则（rev.2；rev.3 Plan A 改用具体 step ckpt — 见 §4.0.1）
 
 路径 1 全部用 **`agent_best.pt`**：4 个 ckpt 都是 final < peak（训练 collapse），用 final 会拿到 collapse 后策略。
 
@@ -460,6 +552,12 @@ assert trainer_state["history_length"] == args.history_length
 
 ---
 
-## 7. 一句话总结（rev.2）
+## 7. 一句话总结（rev.3）
+
+`arrival_v2` prototype 分支沉淀了 19 个 SAC ckpt + 每个 run 的 `agent_step_*.pt` 训练过程切片（cross_u10 seed_46 有 39 个 step ckpt，25k env_step cadence）。**rev.3 锁定 Plan A 单一路径**：从 cross_u10/sac_vanilla/s0_k4/seed_46 的训练过程切片里 auto-pick 4 个 step ckpt（25_002 / 425_004 / 575_004 / 600_000），构成真 D4RL 4-tier `random/medium/medium_expert/expert`（success 0% / 50% / 80% / 100%，medium tier |Δ|=0%）。audit GO 2026-05-25 by [`notebooks/sac_collector_d4rl_tier_audit_completed1.ipynb`](../notebooks/sac_collector_d4rl_tier_audit_completed1.ipynb)。**两个新 finding 候选**：(1) **Failure-mode tier drift** OOB-pure→mixed→clean，(2) **Cliff fine-tuning zone** 575k-600k 16× learning rate。**rev.3 总预算 ~5-7h L4**（adapter ✅ + audit ✅ + 4 tier 收集 30 min + algorithm head-to-head 4-6h）— 比 rev.2 13h 减半。rev.2 路径 1 (cross_u15 sensor-floored) **作废**；rev.2 §4.5 sensor floor 论证（与 Plan A 选 cross_u10 同根）仍是 paper material。
+
+---
+
+## 7-rev.2. 一句话总结（rev.2，历史）
 
 `arrival_v2` prototype 分支沉淀了 19 个 SAC ckpt；按用户决定与 offline 主线协议严格对齐（`s0 + k=4 + arrival_v2`），实际可采用 **8 个 ckpt**，按 D4RL tier 分为 **4 个 expert（u10_cross + 3 upstream cell）+ 1 medium + 3 failure（全在 u15_cross cell）**。**rev.2 主推双路径**：(路径 1) cross_u15 cell × 4 ckpt 收 D4RL `random/medium-replay` 数据，对话 broad val v2 N2' STRONG_NEGATIVE 与 FQL P2 §6.5 FLOOR；(路径 2) cross_u10 cell × seed=46 expert + 补 seed=47/50 训练，收 D4RL `expert` 数据，作 broad val v2 N0 平行第四轴 + FQL P2 主对照 head-to-head。**触发条件升格为 D（D4RL 范式对齐）+ E（FQL 再验证）双 active**（旧路径 B asym-critic 顺势作废）；总预算 **~13h L4 = 1–2 个 Colab 周**（含 adapter 1-2h + 路径 2 补 SAC 训练 3h + 数据收集 1.5h + algorithm head-to-head 7h）。**关键方法学发现可作 paper material**：`s0_k4 + arrival_v2 + cross_u15` 上 expert SAC ckpt 不存在 = sensor floor 的直接实证，与 §7.9.7 manifest universal floor 同源。

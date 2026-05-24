@@ -225,21 +225,38 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 **v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v1 finding 不进 paper。
 
-### 4.3 Online 线交付的 SAC collector（active — rev.2 启动 2026-05-24）
+### 4.3 Online 线交付的 SAC collector（active — rev.3 Plan A audit GO 2026-05-25）
 
-**Spec 已锁定**：[`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) rev.2。与本线协议严格对齐 = **s0 + k=4 + arrival_v2**（与现有 `*_s0_h4_arrival_v2_*` dataset schema 一致）。
+**Spec**：[`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) **rev.3** §4.0（rev.2 §4.1 路径 1 cross_u15 作废）。与本线协议严格对齐 = **s0 + k=4 + arrival_v2**。
 
-**启动动机**（用户 2026-05-24）：
-- **D4RL 范式对齐** — offline 论文 community 默认评测条件，paper revision 必备弹药
-- **FQL 再验证** — FQL P2 §8.1 "BC-anchor 最优强度随目标噪声翻转" 机制在 SAC stochastic behavior policy 数据上未被检验
+**rev.3 单一路径 = Plan A**：从 `checkpoints/arrival_v2_prototype/cross_u10_regression/arrival_v2/sac_vanilla/s0_k4/seed_46/` 的训练过程切片（39 个 `agent_step_*.pt`，25k env_step cadence）里 audit pick 4 个 ckpt 构成真 D4RL 4-tier — 与 D4RL 经典 paper (CQL/IQL/FQL/ReBRAC) 一致的 tier 构造方式：
 
-**Primary 双轨**：
-- **路径 1（cross_u15 cell × 4 ckpt）**：D4RL `random` / `medium-replay` tier；对话本线 v2 N2' STRONG_NEGATIVE + FQL §6.5 FLOOR；输出 dataset `offline_data/sac_{vanilla,asym}_s0_h4_arrival_v2_re250_u15cross_seed{0,42}_ep1000/`
-- **路径 2（cross_u10 cell × 1+2 seed）**：D4RL `expert` tier；与 v2 N0 平行第四轴 + FQL P2 主对照 head-to-head；需补 SAC seed=47/50 各 1 个 600k arrival_v2 训练；输出 `offline_data/sac_vanilla_s0_h4_arrival_v2_re150_u10cross_seed{46,47,50}_ep1000/`
+| tier | step | success | ckpt 文件名 |
+|---|---:|---:|---|
+| random | 25_002 | 0% | `agent_step_00025002.pt` |
+| medium | 425_004 | 50% | `agent_step_00425004.pt` |
+| medium_expert | 575_004 | 80% | `agent_step_00575004.pt` |
+| expert | 600_000 | 100% | `agent_step_00600000.pt` |
 
-**关键约束**：`s0_k4 + arrival_v2 + cross_u15` 上不存在 expert SAC ckpt，是 sensor floor 实证（与本线 v2 N2' / FQL §6.5 同物理）；路径 1 数据自然落 medium-replay tier 不是 ckpt 缺陷，是 finding。
+**Audit verdict**: ✅ GO — 4 tiers cleanly separated, medium tier |Δ|=0% from D4RL target。schema 跨全 39 ckpt 一致 (obs_dim=48, priv=0)。
 
-**总预算**：~13h L4 = 1–2 个 Colab 周（adapter 1-2h + 路径 2 补 SAC 3h + 收集 1.5h + FQL/ReBRAC head-to-head 7h）。
+**两个新 finding 候选**（来自 dense sweep training curve）：
+1. **Failure-mode tier drift** — random=100% OOB pure → medium=OOB/timeout mixed → expert=clean
+2. **Cliff fine-tuning zone 575k→600k** — 16× learning rate vs preceding 425k→575k accelerated phase
+
+**Adapter status**: ✅ landed（`auv_nav/sac_policy.py` + `scripts/collect_offline_data.py` 扩展，5 tests pass，commit 97d394c）。`SACCheckpointPolicy.from_checkpoint` + Layer-1/2 sanity check + once-per-worker load + metadata schema 扩展。
+
+**Audit notebooks**: [`notebooks/sac_collector_d4rl_tier_audit.ipynb`](../notebooks/sac_collector_d4rl_tier_audit.ipynb) (self-discovering) + `_completed1.ipynb` (实验记录, commit 9f8252e)。
+
+**待下个 session 决策 + 开干**：
+- Collection mode (A stochastic / B deterministic / C tier-mixed) — A 推荐
+- `replay_latest.pkl` (412 MB) → npz 第 5 档 `medium-replay`（同步做 / 后做）
+- 4 个 dataset 收集（~30 min Colab L4 CPU pool） → 命名 `offline_data/sac_{tier}_s0_h4_arrival_v2_re150_u10cross_seed46_step{N}k_ep1000/`
+- FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed（~4-6h L4）
+
+**总预算 rev.3**：~5-7h L4 = **1 个 Colab 周**（比 rev.2 13h 减半，因放弃 cross_u15 路径 + 不需要补 SAC seed=47/50 训练）。
+
+**关键约束**：`s0_k4 + arrival_v2 + cross_u15` 上不存在 expert SAC ckpt（rev.2 §4.5）— sensor floor 实证，与本线 v2 N2' / FQL §6.5 同物理。Plan A 选 cross_u10 而不是 cross_u15，正是基于此约束。
 
 ### 4.4 AUVHamNODE Offline RL(⏸ PAUSED 2026-05-13)
 

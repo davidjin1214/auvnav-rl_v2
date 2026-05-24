@@ -130,7 +130,7 @@ The core library. Components are loosely coupled; non-ML parts work without PyTo
 |--------|------|
 | `train_sac.py` | Main online training entry point; supports vanilla SAC, LayerNorm/Dropout/UTD, asymmetric critic, and RLPD via `--offline-data` |
 | `train_utils.py` | Shared helpers: env creation, checkpointing, evaluation loop, CSV/JSONL logging |
-| `train_offline_rebrac.py` | Offline ReBRAC training entry point |
+| `train_offline.py` | Offline training entry point (`--algo {rebrac,td3bc,fql}`) |
 | `run_suite.py` | Coordinates multi-seed experiment sweeps; defines `METHOD_SPECS` and `SUITE_PRESETS` |
 | `collect_offline_data.py` | Collects transition data from baseline policies (records `privileged_obs` for AsymCritic) |
 | `evaluate.py` | Loads a checkpoint and runs deterministic evaluation against a manifest |

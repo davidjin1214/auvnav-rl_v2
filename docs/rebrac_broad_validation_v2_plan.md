@@ -494,7 +494,7 @@ only 0.10 in critical regime), we conduct two experiments:
 | `auv_nav/rebrac.py` | ReBRAC agent；与 reward 解耦 |
 | `auv_nav/reward.py` | `arrival_v2` reward preset (commit `813096e`) |
 | `auv_nav/baselines.py` | crosscomp + privileged policy classes |
-| `scripts/train_offline_rebrac.py` | ReBRAC 训练入口 |
+| `scripts/train_offline.py --algo rebrac` | ReBRAC 训练入口 |
 | `scripts/evaluate_baseline_on_manifest.py` | baseline policy rollout (S sanity 用过) |
 | `scripts/evaluate_offline.py` | manifest 评估 |
 | `scripts/collect_offline_data.py` | offline data collection |

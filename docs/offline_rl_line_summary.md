@@ -246,6 +246,7 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | 想找... | 看这里 |
 |---|---|
 | Offline 线整体状态、时间轴、下一步 | **本文件**（[`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md)） |
+| ReBRAC 这一条线串线总览（TD3+BC→ReBRAC→FQL，含 β1 跨线 reconciliation） | [`docs/rebrac_line_overview.md`](rebrac_line_overview.md) |
 | ReBRAC One Page 摘要 + 4 finding spine | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §0 + §1.5 |
 | ReBRAC 任何具体数字 / per-seed | [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §1–§10（按 stage 索引） |
 | Broad validation 三轴 8 spoke 全表 | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3 |
@@ -347,7 +348,7 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | [`auv_nav/replay.py`](../auv_nav/replay.py) `TransitionReplay.from_npz()` | 加载 offline 数据集 |
 | [`auv_nav/baselines.py`](../auv_nav/baselines.py) | 4 类 baseline collector：goalseek / crosscomp / worldcomp / privileged |
 | [`auv_nav/offline_registry.py`](../auv_nav/offline_registry.py) | offline dataset 配置 registry |
-| [`scripts/train_offline_rebrac.py`](../scripts/train_offline_rebrac.py) | ReBRAC 训练 entry point |
+| [`scripts/train_offline.py`](../scripts/train_offline.py) `--algo rebrac` | ReBRAC 训练 entry point（同脚本兼跑 td3bc / fql） |
 | [`scripts/collect_offline_data.py`](../scripts/collect_offline_data.py) | offline 数据收集 |
 | [`scripts/run_offline_rebrac_broad.sh`](../scripts/run_offline_rebrac_broad.sh) | 广验 sweep launcher |
 

@@ -298,7 +298,7 @@ Phase 2B(可选,仅 2A margin 小时):NODE-feature Critic (3-4 周)
 - [`tests/test_vehicle_oracle_phase0.py`](../tests/test_vehicle_oracle_phase0.py) — Phase 0 B 的 vehicle.py oracle 单测,固定 wake snapshot 协议(见 §4.2 B v2.1 注)
 
 **复用现有**:
-- [`scripts/train_offline_rebrac.py`](../scripts/train_offline_rebrac.py) 加 `--model-data` flag,复用 RLPD 的双 buffer 路径([`auv_nav/replay.py`](../auv_nav/replay.py) `DualBufferSampler`)
+- [`scripts/train_offline.py`](../scripts/train_offline.py)（`--algo rebrac`）加 `--model-data` flag,复用 RLPD 的双 buffer 路径([`auv_nav/replay.py`](../auv_nav/replay.py) `DualBufferSampler`)
 - `RewardModel` 直接用,**不要改 reward**;按 §5.2 步骤 5 的"分项重算 + dataset done 复用"协议调用
 - evaluation pipeline([`scripts/evaluate.py`](../scripts/evaluate.py) + benchmark manifests)不动
 
@@ -549,7 +549,7 @@ v2.0 原文 fire-condition "ReBRAC paper revision 收尾 + broad validation 至�
 |---|---|
 | `wake_data/` | ✓ 5 组 wake field(dummy / sbs Re150 + Re250 / tandem Re150 + Re250),含 `_meta.json` 与 `_phase.npy` |
 | `offline_data/` | ✓ broad_validation 多个 cell 的 dataset(crosscomp / worldcomp 等)已生成 |
-| `auv_nav/rebrac.py` + `scripts/train_offline_rebrac.py` | ✓ ReBRAC mainline 已 paper-readiness 4/4 闭环(rev.8) |
+| `auv_nav/rebrac.py` + `scripts/train_offline.py --algo rebrac` | ✓ ReBRAC mainline 已 paper-readiness 4/4 闭环(rev.8) |
 | `auv_nav/replay.py` `DualBufferSampler` | ✓ RLPD 双 buffer 路径已实现 |
 | `auv_nav/autopilot.py` `EquivalentCurrentModel` | ✓ Path B privileged_obs 重生成所需 |
 

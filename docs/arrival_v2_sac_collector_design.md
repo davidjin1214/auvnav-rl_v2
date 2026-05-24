@@ -276,8 +276,10 @@ offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/
 | Audit notebook 写 + 跑 + 落 spec | ~30 min | ✅ 已完成 |
 | Adapter 落地（SACCheckpointPolicy + collector 扩展） | ~2.25h | ✅ 已完成 (commit 97d394c) |
 | Plan A 4 tier × 1000 ep × CPU pool 收集（`--num-workers 8`） | ~60 min Colab L4（实测，medium tier 因 timeout 拉长 avg_len 跑慢） | ✅ 已完成 (commits 7a82308 + 032b527) |
-| FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed | ~4-6h L4 | ⏳ 下一步 |
-| **rev.3 总计（不含 multi-seed）** | **~5-7h L4** | （rev.2 估 ~13h，减半） |
+| ~~FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed~~ | ~~~4-6h L4~~ | ❌ **estimate 错误**：spec line 356 / 558 写 "2 algo × 2 seed = 16 run × 15 min" 与 paper finding 候选 + paired-control 需求不一致，且 per-run wallclock 用 FQL P2 §8.2 权威实测后大幅 underestimate |
+| **Sprint 1**：ReBRAC β1∈{1, 4} × 4 tier × 3 seed = 24 run（per FQL P2 §8.2 ReBRAC 200k step ≈ 25 min/run L4） | ~10-11h L4（1 Colab session） | ⏳ 下一步 |
+| **Sprint 2**：FQL × 4 tier × 3 seed = 12 run（per FQL P2 §8.2 FQL 200k step ≈ 50 min/run L4） | ~10h L4（1 Colab session，sprint 1 完成后启动） | ⏳ 之后 |
+| **rev.3 总计修订（36 run, 3 seeds, 3 configs）** | **~21h L4 = 2 个 Colab session** | （原 rev.3 estimate ~5-7h 错估约 4×，修正） |
 
 #### 4.0.7 Actual collection results（2026-05-25 completed）
 
@@ -322,6 +324,56 @@ offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/ 
 ```
 
 全 4 tier `obs.shape == (?, 48)` / `metadata.behavior_source == "sac_checkpoint"` / `metadata.sac_deterministic == False` / 含 `privileged_obs` 列（env-side `[u_eq, v_eq]`，vanilla SAC training 忽略，future AsymCritic ablation 可用）。
+
+#### 4.0.8 Head-to-head sweep design（2026-05-25 finalized）
+
+**3 个 algorithm configs**（用户 2026-05-25 决策选 3-config 路线）：
+
+| config | 关键 hyperparameters | rationale |
+|---|---|---|
+| **ReBRAC β1=1.0** | β1=1, β2=1, hidden=256×3 layer, critic_LN=on, vanilla critic, γ=0.99 | FQL P2 §6.3 主对照值 — "FQL ≈ ReBRAC β1=1 on clean expert" finding 候选必备对比组 |
+| **ReBRAC β1=4.0** | β1=4, β2=2, hidden=256×3 layer, critic_LN=on, vanilla critic, γ=0.99 | broad val v2 N0 anchor 值 — 与 sister dataset `crosscomp_*` paired control 直接 head-to-head |
+| **FQL** (default) | flow_steps=10, hidden=256, FQL P2 spec line 444 default | algorithm-axis 主轴（flow-matching teacher vs Gaussian deterministic) |
+
+**3 seeds**：[42, 43, 44] — 与 broad val v2 N0 严格 paired，bootstrap CI 直接可比，且满足 reviewer ≥ 2 seed 要求。
+
+**协议详细**（与 broad val v2 N0 + FQL P2 sister 严格对齐）：
+- **ReBRAC**: `--sampling-mode shuffle_no_replacement --num-epochs 64 --batch-size 256 --hidden-dim 256 --num-hidden-layers 3 --actor-lr 3e-4 --critic-lr 3e-4 --gamma 0.99 --tau 0.005 --critic-layernorm --no-actor-layernorm --policy-noise 0.2 --noise-clip 0.5 --policy-freq 2 --grad-clip-norm 10.0 --normalizer-eps 1e-3 --eval-every 0 --skip-final-eval --log-every 1000`
+- **FQL**: `--algo fql --total-steps 200000 --batch-size 256 --hidden-dim 256 --flow-steps 10`（FQL P2 §6.2 default config）
+- **Eval (separate step)**: `scripts.evaluate_offline --manifest benchmarks/single_u10_cross_tgt15.json --episodes 100 --seed 456`（test_seed=456 与 N0 paired）
+
+**Per-run wallclock 来源** — FQL P2 spec §8.2 实测数（commit 历史 land）：
+
+| algo | 200k step / 64 epoch | L4 per-run |
+|---|---|---:|
+| ReBRAC | 200k step OR 64 epoch（180k transitions × 64 / 256 ≈ 45k step） | ~25 min |
+| FQL | 200k step | ~50 min |
+| evaluate_offline 100-ep | per-run separate | ~2 min |
+
+**Sprint 拆分**（Colab Pro L4 单 session ≤ 12h 限制）：
+
+| Sprint | 内容 | run 数 | wallclock | 顺序 |
+|---|---|---:|---:|---|
+| **Sprint 1** | ReBRAC β1∈{1, 4} × 4 tier × 3 seed | 24 | ~10-11h L4 | **下一步立刻开干** |
+| **Sprint 2** | FQL × 4 tier × 3 seed | 12 | ~10h L4 | sprint 1 完成 + paired analysis OK 后启动 |
+
+**预期 paper finding 候选**（pre-registered before training）：
+
+1. **β1 翻转点**（cross-tier）— random / medium tier 上 β1=4 ≥ β1=1（noisy behavior needs strong BC anchor）；expert tier 上 β1=1 ≥ β1=4（clean behavior, low β1 better）。如果观察到 monotone β1 优势随 tier quality 翻转 → 直接落 FQL P2 §8.1 "BC-anchor 最优强度随目标噪声翻转" finding 的 SAC-stochastic regime 版本。
+2. **FQL ≈ ReBRAC β1=1 on clean expert**（per FQL P2 §6.3 主对照）— sprint 2 完成后才能 verify。
+3. **SAC vs rule-based collector paired**：sprint 1 expert tier ReBRAC β1=4 vs N0 anchor (`crosscomp_*` ReBRAC β1=4 seed [42,43,44])，paired bootstrap CI — broad val v2 §6.3 follow-up "SAC collector 平行第四轴" 直接落地。
+
+**输出落地**：
+
+```
+checkpoints/offline/sac_collector_h2h/rebrac_b1{1,4}/{tier}/seed_{42,43,44}/  # 24 dir
+checkpoints/offline/sac_collector_h2h/fql/{tier}/seed_{42,43,44}/             # 12 dir
+results/offline/sac_collector_h2h/{algo}/{tier}/seed_{n}/test_result.json     # 36 file
+```
+
+Notebooks（per sprint, 仿 broad val v2 + FQL P2 模式）：
+- `notebooks/sac_collector_h2h_rebrac_sweep.ipynb`（sprint 1, 24 run）
+- `notebooks/sac_collector_h2h_fql_sweep.ipynb`（sprint 2, 12 run, 待 sprint 1 完成后写）
 
 #### 4.0.6 Plan B 备份（如 Plan A 收集出问题）
 

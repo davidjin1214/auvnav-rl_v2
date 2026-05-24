@@ -263,9 +263,16 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 → 4 tier 清晰分离（success spread 15pp+，mean_reward 单调 -1.83→+0.97），medium tier 因 timeout 占比 20% avg_len 反转为最长（251 step > random 180 > mexp 171 > expert 115）— D4RL 范式 + failure-mode tier drift 双重证据。详 spec §4.0.7 / `_completed.ipynb`。
 
-**下一步**（spec §4.0.5 表格末行）：FQL + ReBRAC β1∈{1.0, 4.0} head-to-head × 4 tier × 2 seed = 16 run（~4-6h L4）— 落出 paper 1 / FQL P2 SAC-collector 第四轴主结论。
+**下一步**（spec §4.0.8 finalized 2026-05-25）：head-to-head sweep 拆 2 sprint，共 36 run = 3 configs (FQL + ReBRAC β1=1 + ReBRAC β1=4) × 4 tier × 3 seed [42, 43, 44]（与 N0 anchor paired）：
+- **Sprint 1**：ReBRAC β1∈{1, 4} × 4 tier × 3 seed = 24 run（~10-11h L4，1 Colab session）— 立刻开干
+- **Sprint 2**：FQL × 4 tier × 3 seed = 12 run（~10h L4，1 Colab session）— sprint 1 完成 + paired analysis OK 后启动
 
-**总预算 rev.3**：~5-7h L4 = **1 个 Colab 周**（adapter 2.25h + audit 0.5h + Plan A collection 1h 已完成；剩 head-to-head 4-6h）。
+**3 个 paper finding 候选**（pre-registered，详 spec §4.0.8）：
+1. β1 翻转点（random/medium 偏 β1=4，expert 偏 β1=1）— FQL P2 §8.1 "BC-anchor 最优强度随目标噪声翻转" SAC-stochastic regime 版本
+2. FQL ≈ ReBRAC β1=1 on clean expert（FQL P2 §6.3 主对照复现）
+3. SAC vs rule-based collector paired（sprint 1 expert tier vs N0 crosscomp anchor，broad val v2 §6.3 follow-up）
+
+**总预算 rev.3 修订**：~21h L4 = **2 个 Colab session**（原 estimate ~4-6h 严重 underestimate，FQL P2 §8.2 权威实测：ReBRAC 200k step ≈ 25 min/run，FQL 200k step ≈ 50 min/run）。Adapter + audit + collection ~3.75h 已完成；剩 head-to-head 2 sprint ~21h。
 
 **关键约束**：`s0_k4 + arrival_v2 + cross_u15` 上不存在 expert SAC ckpt（rev.2 §4.5）— sensor floor 实证，与本线 v2 N2' / FQL §6.5 同物理。Plan A 选 cross_u10 而不是 cross_u15，正是基于此约束。
 

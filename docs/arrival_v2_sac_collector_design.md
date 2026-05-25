@@ -384,7 +384,7 @@ offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/ 
 
 **预期 paper finding 候选**（pre-registered before training, FQL P2 sister paired）：
 
-1. **β1 翻转点 cross-noise-source universality**（cross-tier）— random/medium tier 上 β1=4 ≥ β1=1（noisy behavior needs strong BC anchor）；expert tier 上 β1=1 ≥ β1=4（clean behavior, low β1 better）。如果观察到 monotone β1 优势随 tier quality 翻转 → **直接复现 FQL P2 v1.4 §6.3 Q1b/Q1c 机制 in SAC-stochastic regime**，证明机制 universality across noise sources（privileged σ=0.5 injection ↔ SAC actor implicit stochasticity）。**Direct head-to-head**：mexp tier ↔ M-uni-noise；medium tier ↔ M-multi-mix；expert tier ↔ E-uni。
+1. ~~**β1 翻转点 cross-noise-source universality**（cross-tier）— random/medium tier 上 β1=4 ≥ β1=1（noisy behavior needs strong BC anchor）；expert tier 上 β1=1 ≥ β1=4（clean behavior, low β1 better）。如果观察到 monotone β1 优势随 tier quality 翻转 → **直接复现 FQL P2 v1.4 §6.3 Q1b/Q1c 机制 in SAC-stochastic regime**~~ **[FALSIFIED + DESCRIPTION ERROR — see §4.0.9 below]**. 本 pre-registered hypothesis 描述错误：与 line 338 引用的 FQL P2 v1.4 真实结论（"β1=1 dominate FQL on both clean + noisy 双轴"）矛盾。FQL P2 v1.4 实际数据是 β1=1 universally weak dominance（不是翻转）。Sprint 1 结果 + reframed finding 在 §4.0.9。
 2. **FQL ≈ ReBRAC β1=1 on clean expert**（sprint 2 完成后才能 verify）— FQL P2 v1.4 已在 E-uni privileged regime 实证 (RESCUE-FAIL: FQL 0.858 vs ReBRAC β1=1 0.910)；sprint 2 在 SAC expert tier verify universality。
 3. **(Deferred follow-up)** **SAC vs rule-based collector paired**：本 sprint 1 不 cover。如 reviewer push back，sprint 1b 用 broad val v2 N0 协议 (64 epoch shuffle_no_replacement, seeds [42, 43, 44]) 跑 12 run × ~25 min ≈ 5h L4。
 
@@ -399,6 +399,51 @@ results/offline/sac_collector_h2h/{algo}/{tier}/seed_{n}/test_result.json       
 Notebooks（per sprint, 仿 FQL P2 multi-run notebook 模式）：
 - `notebooks/sac_collector_h2h_rebrac_sweep.ipynb`（sprint 1, 24 run）
 - `notebooks/sac_collector_h2h_fql_sweep.ipynb`（sprint 2, 12 run, 待 sprint 1 完成后写）
+
+#### 4.0.9 Sprint 1 actual results + reframed finding 1（2026-05-25 completed）
+
+**Sprint 1 执行**：24 run = ReBRAC β1∈{1.0, 4.0} × 4 tier × 3 seed [42, 0, 7]，按 seed 拆 3 个 notebook (`_seed42 / _seed0 / _seed7`) 3-session Colab Pro L4 并发，实测 wall ~3.3h（vs 串行 10-11h，3× 加速）。完成 commits: `5070862` / `8ed3aeb` / `104c14c`。
+
+**Mean ± std table** (24 cell, eval manifest `single_u10_cross_tgt15.json` 实际 30 ep/run，test_seed=456)：
+
+| tier | SAC src SR | β1=1.0 cells (s42\|s0\|s7) → μ ± σ | β1=4.0 cells (s42\|s0\|s7) → μ ± σ | Δ_β1 (β1=4 − β1=1) |
+|---|---:|---|---|---:|
+| random | 0.002 | 0.000\|0.000\|0.000 → 0.000 ± 0.000 | 0.000\|0.000\|0.000 → 0.000 ± 0.000 | +0.000 |
+| medium | 0.515 | 0.733\|0.633\|0.600 → 0.656 ± 0.069 | 0.700\|0.567\|0.633 → 0.633 ± 0.067 | −0.022 |
+| mexp | 0.751 | 0.800\|0.833\|0.767 → 0.800 ± 0.033 | 0.667\|0.733\|0.733 → 0.711 ± 0.038 | **−0.089** |
+| expert | 0.899 | 0.900\|0.867\|0.900 → 0.889 ± 0.019 | 0.900\|0.867\|0.900 → 0.889 ± 0.019 | +0.000 |
+
+**Paired bootstrap 95% CI for Δ_β1** (paired unit = seed×episode, n=90 pairs, N_boot=10000)：
+
+| tier | Δ_β1 point | 95% CI | P(Δ<0) | verdict |
+|---|---:|---|---:|---|
+| random | +0.000 | [+0.000, +0.000] | 0.000 | null (both 0%) |
+| medium | −0.022 | [−0.111, +0.067] | 0.641 | null (CI crosses 0) |
+| mexp | **−0.089** | **[−0.156, −0.022]** | 0.996 | **β1=1 > β1=4 (CI<0)** |
+| expert | +0.000 | [−0.033, +0.033] | 0.350 | null |
+
+**唯一统计显著 effect**：mexp tier 上 β1=1 比 β1=4 高 +0.089（CI 不跨 0）。其他 3 tier 都 null。
+
+**Cross-noise-source paired analysis** (SAC tier ↔ FQL P2 v1.4 sister cells，same algo ReBRAC，diff data source)：
+
+| pair | SAC Δ_β1 | FQL P2 Δ_β1 | direction |
+|---|---:|---:|---|
+| expert ↔ e_uni (clean) | +0.000 | −0.025 | both ≈ 0 / β1=1 weak |
+| mexp ↔ m_uni_noise (σ=0.5) | **−0.089** | **−0.235** | ✅ **SAME sign**, SAC magnitude 衰减 ~2.6× |
+| medium ↔ m_multi_mix | −0.022 | (N/A: 仓库无 β1=1 Q1b sweep on m_multi_mix) | — |
+
+**M_multi_mix paired 局限**：m_multi_mix dataset (privileged-500 + goalseek-500，SR ~0.99) 与 SAC medium (SAC step 425k stochastic，SR 0.515) 底层数据质量差距大，name 上 "medium tier" paired 实际不真 paired（spec mapping oversight）。
+
+**Verdict — Pre-registered finding 1 (β1 翻转点)**：
+- ❌ **REFUTED + DESCRIPTION ERROR**: random/medium/expert 三个预测点的 95% CI 都不包含 pre-registered 预测值（±0.10）
+- pre-registered hypothesis 表述本身就错（与同 spec line 338 矛盾）— FQL P2 v1.4 真实结论是 "β1=1 dominate"，不是翻转
+
+**Reframed finding (post-hoc, data-supported)**：
+> **β1=1 weakly dominates β1=4 universally across (1) algorithm context (FQL P2 + SAC head-to-head ReBRAC), (2) data source (privileged-baseline vs SAC stochastic ckpt). Effect attenuated on SAC stochastic regime (mexp tier −0.089 vs FQL P2 m_uni_noise −0.235, ~2.6× magnitude reduction), suggesting SAC actor entropy provides "soft BC" that partially substitutes for explicit β1 anchor.**
+
+**Independent observation — Dataset-bound regime on SAC clean expert**: ReBRAC β1∈{1, 4} 都达到 0.889 ± 0.019（CI 极窄），表明 SAC expert tier (collector SR 0.899) 是 dataset-bound regime — algorithm choice 几乎不影响 final SR ceiling。这是直接 motivate sprint 2 finding 2（FQL is bounded by its inherent mechanism, not by dataset quality）的强证据。
+
+**Sprint 2 启动决策**：见 §4.0.8 v2 "sprint 2 trigger" 部分。Pre-registered trigger（finding 1 strong）已失效；新 value proposition = complete head-to-head algorithm-axis matrix + verify FQL RESCUE-FAIL on SAC clean expert ceiling (0.889) + 加强 SAC vs privileged dataset cross-domain narrative。
 
 #### 4.0.6 Plan B 备份（如 Plan A 收集出问题）
 

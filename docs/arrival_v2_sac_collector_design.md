@@ -468,6 +468,95 @@ Notebooks（per sprint, 仿 FQL P2 multi-run notebook 模式）：
 2. Complete head-to-head algorithm-axis matrix (FQL × 4 tier 缺数据)
 3. Strengthen cross-source narrative (SAC stochastic vs privileged baseline) with FQL on both data sources
 
+#### 4.0.10 Sprint 2 + m_multi_mix supplement actual results — cross-source algorithm × data-quality interaction（2026-05-26 completed）
+
+**Sprint 2 执行**：12 run = FQL × 4 tier × 3 seed [42, 0, 7]，3 个 seed shard 在 Colab Pro L4 并发 ~3.5h wall，commit `f5608cc` / `fc5cbce`。**M_multi_mix β1=1 supplement** 单 session ~1.7h L4，3 run（seed [42, 0, 7]），commit `f716a5d` / `cd56c8b`。两者一同闭环 36+3 = 39 个 test_result.json。
+
+**36-cell joint matrix mean ± std table** (sprint 1 + 2，30 ep manifest `single_u10_cross_tgt15.json`，test_seed=456)：
+
+| tier | SAC src SR | ReBRAC β1=1 μ ± σ | ReBRAC β1=4 μ ± σ | FQL μ ± σ | Δ_FQL−R1 | Δ_R1−R4 |
+|---|---:|---|---|---|---:|---:|
+| random | 0.002 | 0.000 ± 0.000 | 0.000 ± 0.000 | 0.000 ± 0.000 | +0.000 | +0.000 |
+| medium | 0.515 | 0.656 ± 0.069 | 0.633 ± 0.067 | 0.733 ± 0.100 | +0.078 | +0.022 |
+| mexp | 0.751 | 0.800 ± 0.033 | 0.711 ± 0.038 | **0.922 ± 0.038** | **+0.122** | +0.089 |
+| expert | 0.899 | 0.889 ± 0.019 | 0.889 ± 0.019 | 0.911 ± 0.019 | +0.022 | +0.000 |
+
+**Stratified paired bootstrap 95% CI** (resample seeds + episodes, N_boot=10000，via `scripts/analyze_sac_collector_h2h_joint.py`)：
+
+| contrast | tier | Δ mean | CI 95% | verdict |
+|---|---|---:|---|---|
+| FQL − ReBRAC β1=1 | mexp | +0.123 | **[+0.022, +0.233]** | **FQL > β1=1** (CI strictly above 0) |
+| FQL − ReBRAC β1=1 | expert | +0.022 | [−0.022, +0.078] | inconclusive (saturated) |
+| FQL − ReBRAC β1=1 | medium | +0.077 | [−0.056, +0.233] | inconclusive |
+| FQL − ReBRAC β1=4 | mexp | +0.212 | **[+0.122, +0.311]** | **FQL > β1=4** |
+| ReBRAC β1=1 − β1=4 | mexp | +0.089 | **[+0.011, +0.178]** | **β1=1 > β1=4** (sprint 1 finding holds) |
+| FQL − ReBRAC β1=1 | **aggregate (med+mexp+exp)** | **+0.074** | **[+0.015, +0.137]** | **FQL > β1=1** |
+
+**M_multi_mix supplement** (100 ep manifest `single_u10_cross_tgt15_ep100.json`，test_seed=456，3 seed)：
+
+| seed | SR | term |
+|---|---:|---|
+| 42 | 0.990 | {goal:99, oob:1} |
+| 0 | 0.990 | {goal:99, oob:1} |
+| 7 | 0.980 | {goal:98, oob:2} |
+| μ ± σ | **0.987 ± 0.006** | — |
+
+**Cross-source paired bootstrap** (100 ep × 2 paired seeds [42, 0], N_boot=10000，via `scripts/analyze_sac_collector_h2h_xsource.py`)：
+
+| contrast | Δ mean | CI 95% | verdict |
+|---|---:|---|---|
+| β1=1 supp − β1=4 FQL P2 (m_multi_mix) | −0.000 | [−0.020, +0.025] | inconclusive — saturated regime, no power to test sprint 1 mexp β1 finding |
+| **β1=1 supp − FQL FQL P2 (m_multi_mix)** | **+0.035** | **[+0.010, +0.065]** | **ReBRAC β1=1 > FQL** (CI strictly above 0) |
+| β1=4 FQL P2 − FQL FQL P2 (m_multi_mix) | +0.035 | [+0.005, +0.070] | β1=4 > FQL (refines FQL P2 v1.4 GRAY verdict to detectable in paired BS) |
+
+**Algorithm × data-quality interaction — paper-grade finding**：
+
+| dataset quality regime | finding | CI |
+|---|---|---|
+| **SAC mexp (collector SR 0.751, non-saturated)** | **FQL > ReBRAC β1=1** by +12.3pp | [+0.022, +0.233] ✓ |
+| **m_multi_mix (collector SR 0.826 mix, saturated 0.95-0.99)** | **ReBRAC β1=1 > FQL** by +3.5pp | [+0.010, +0.065] ✓ |
+
+→ **DIRECTION FLIPS across regimes, BOTH CIs strictly nonzero** — 不是 noise，是 algorithm-data-quality interaction：
+- 高质量 saturated regime: ReBRAC's actor BC penalty (β1=1) better exploits clean modes at ceiling
+- 中质量 non-saturated regime: FQL's flow-matching teacher better extracts policy from noisy data
+
+**Cross-source replication of sprint 1 β1 finding** (β1=1 dominate β1=4):
+- ✅ SAC mexp: β1=1 > β1=4 Δ +0.089 CI [+0.011, +0.178] (sprint 1)
+- ⚠️ m_multi_mix (saturated): Δ ≈ 0, CI [−0.020, +0.025] inconclusive — **NOT falsifying**, no power in saturated regime
+- ✅ FQL P2 m_uni_noise: β1=1 > β1=4 Δ +0.235 (FQL P2 v1.4 §6.3 Q1b/Q1c) — already established
+
+→ β1=1 ≥ β1=4 universal weak dominance is supported on non-saturated cells across both data sources; saturated cells provide no power but no contradiction.
+
+**Independent observation — SAC expert dataset-bound regime confirmed**: ReBRAC β1∈{1,4} 都 0.889; FQL 0.911 (Δ +0.022 CI [−0.022, +0.078] inconclusive but ≥ 0). All three algorithms saturate near SAC collector ceiling 0.899 → **algorithm-agnostic dataset-bound regime** on SAC expert (sprint 1 prediction holds).
+
+**FQL P2 v1.4 finding 2 ("RESCUE-FAIL on clean") cross-source verdict**:
+- On SAC clean tier (expert): inconclusive (saturated, all ≈ 0.89-0.91)
+- On SAC mid-quality (mexp): **FQL outperforms** ReBRAC β1=1 → NOT replicate RESCUE-FAIL
+- On FQL P2 m_multi_mix (high quality saturated): ReBRAC β1=1 > FQL by 3.5pp → consistent with RESCUE-FAIL **only** in saturated regime
+- **Verdict**: FQL P2 v1.4 finding 2 is **regime-dependent, not universal**. RESCUE-FAIL holds in saturated/clean regime but reverses in mid-quality regime.
+
+**Paper closure direction (final)**: cross-source contradiction → **algorithm × data-quality interaction** as main paper chapter:
+1. Sprint 1+2+supplement 39-run matrix reveals data-quality-dependent algorithm preference
+2. FQL P2 v1.4 finding 2 ("β1=1 universal dominance over FQL") is **refined**: holds in saturated/high-quality regime, REVERSES in mid-quality regime
+3. SAC collector serves as a controlled mid-quality stress-test that exposes regime-dependent ranking, distinguishing it from privileged-collector tests
+4. Practical implication: algorithm selection must condition on dataset SR regime (collector SR + ceiling proximity)
+
+**Paper §results 主表 candidate (39 run cross-source matrix)**:
+
+| dataset | collector SR | regime | ReBRAC β1=1 | ReBRAC β1=4 | FQL | winning algo |
+|---|---:|---|---:|---:|---:|---|
+| SAC random | 0.002 | degenerate | 0.000 | 0.000 | 0.000 | — |
+| SAC medium | 0.515 | mid (informative) | 0.656 | 0.633 | 0.733 | FQL (n.s.) |
+| SAC mexp | 0.751 | mid (informative) | 0.800 | 0.711 | **0.922** | **FQL** ✓ |
+| SAC expert | 0.899 | saturated | 0.889 | 0.889 | 0.911 | saturated |
+| FQL P2 e_uni | 0.985 | saturated | — | 0.885 | 0.855 | (saturated) |
+| FQL P2 m_uni_noise | 0.632 | mid (sub-opt noisy) | — | 0.705 | **0.910** | **FQL** ✓ (only β1=4 baseline) |
+| **FQL P2 m_multi_mix** | 0.826 mix | saturated (0.95-0.99) | **0.987** | 0.990 | 0.955 | **ReBRAC β1=1** ✓ |
+
+→ FQL wins informative non-saturated cells; ReBRAC β1=1 ties or wins saturated cells.
+
+**Status**: SAC collector head-to-head sprint chain (rev.3 §4.0) **CLOSED**. 39 run cross-source matrix is paper-ready. Summary §4.4 records paper-writing entry point.
+
 #### 4.0.6 Plan B 备份（如 Plan A 收集出问题）
 
 `replay_latest.pkl` 412 MB 在 Drive 上（audit cell 17 已确认）→ 写 `scripts/replay_to_offline.py` (~1-2h) 转 npz 做 D4RL 第 5 档 `medium-replay`。详 §5.3。

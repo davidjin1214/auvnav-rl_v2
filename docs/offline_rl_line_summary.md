@@ -225,7 +225,7 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 **v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v1 finding 不进 paper。
 
-### 4.3 Online 线交付的 SAC collector（active — rev.3 **Plan A + Sprint 1 COMPLETED** 2026-05-25; finding 1 DESCRIPTION ERROR + 数据 directionally consistent on power-bearing cells）
+### 4.3 Online 线交付的 SAC collector（**CLOSED 2026-05-26** — rev.3 Plan A + Sprint 1+2 + m_multi_mix supplement 39-run cross-source matrix; paper closure = **algorithm × data-quality interaction**）
 
 **Spec**：[`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) **rev.3** §4.0（rev.2 §4.1 路径 1 cross_u15 作废）。与本线协议严格对齐 = **s0 + k=4 + arrival_v2**。
 
@@ -263,25 +263,38 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 → 4 tier 清晰分离（success spread 15pp+，mean_reward 单调 -1.83→+0.97），medium tier 因 timeout 占比 20% avg_len 反转为最长（251 step > random 180 > mexp 171 > expert 115）— D4RL 范式 + failure-mode tier drift 双重证据。详 spec §4.0.7 / `_completed.ipynb`。
 
-**Head-to-head sweep**（spec §4.0.8 finalized 2026-05-25 — **FQL P2 sister paired**）：拆 2 sprint，共 36 run = 3 configs (FQL + ReBRAC β1=1/β2=2 + ReBRAC β1=4/β2=2) × 4 tier × 3 seed [42, 0, 7]（与 **FQL P2 v1.4 extended 3-seed** 严格 paired）：
-- **Sprint 1 ReBRAC × 24 run** ✅ **COMPLETED 2026-05-25** — 按 seed 拆 3 notebooks (`_seed42/_seed0/_seed7`) 3-session Colab L4 并发实测 wall ~3.3h (commits `5070862` / `8ed3aeb` / `104c14c`)。24/24 test_result.json 落 `results/offline/sac_collector_h2h/rebrac/`。
-- **Sprint 2 FQL × 12 run** ⏸ **DEFERRED** — `notebooks/sac_collector_h2h_fql_sweep.ipynb` 备用 notebook 已 land (commit `7589b2b`)，等 sprint 1 reframed finding 复盘 + 用户决策启动。
+**Head-to-head sweep**（spec §4.0.8 v2 + §4.0.10 — **FQL P2 sister paired**）：共 36 run = 3 configs (FQL + ReBRAC β1=1/β2=2 + ReBRAC β1=4/β2=2) × 4 tier × 3 seed [42, 0, 7]（与 **FQL P2 v1.4 extended 3-seed** 严格 paired），seed-shard 3-session L4 并发：
+- **Sprint 1 ReBRAC × 24 run** ✅ **COMPLETED 2026-05-25** — wall ~3.3h (commits `5070862` / `8ed3aeb` / `104c14c`)
+- **Sprint 2 FQL × 12 run** ✅ **COMPLETED 2026-05-26** — wall ~3.5h (commits `f5608cc` / `fc5cbce`)。36 test_result.json 落 `results/offline/sac_collector_h2h/{rebrac,fql}/`。
+- **M_multi_mix β1=1 supplement × 3 run** ✅ **COMPLETED 2026-05-26** — single L4 session ~1.7h, 补 FQL P2 v1.4 cross-source matrix 缺的 β1=1 cell (commits `f716a5d` / `cd56c8b`)。Joint 39-run matrix → cross-source paired bootstrap (spec §4.0.10)。
 
-**Paired baseline reframing**（2026-05-25 spec §4.0.8 v2 update）：原 spec v1 设计 broad val v2 N0 paired (64 epoch shuffle, [42, 43, 44])，但 finding 1/2 是 FQL P2 v1.4 已实证机制的 SAC-stochastic regime universality 验证 → FQL P2 sister 协议 (200k step uniform, [42, 0, 7]) 直接 head-to-head 才对齐触发条件 E。N0 paired finding 3 (collector axis) 改为 deferred follow-up。
+**分析脚本**: [`scripts/analyze_sac_collector_h2h_joint.py`](../scripts/analyze_sac_collector_h2h_joint.py)（36-cell stratified bootstrap）+ [`scripts/analyze_sac_collector_h2h_xsource.py`](../scripts/analyze_sac_collector_h2h_xsource.py)（cross-source paired bootstrap vs FQL P2 v1.4 m_multi_mix）。
 
-**4 tier ↔ FQL P2 3 cell 天然对位**：expert↔E-uni clean / mexp↔M-uni-noise σ=0.5 / medium↔M-multi-mix / random=独立贡献（noise spectrum 扩展）。
+**4 tier ↔ FQL P2 3 cell 天然对位**：expert↔E-uni clean / mexp↔M-uni-noise σ=0.5 / medium↔M-multi-mix / random=独立贡献。
 
-**Paper finding 现状**（详 spec §4.0.8 v2 + §4.0.9，专家审查 2026-05-25 完成）：
-1. ~~β1 翻转点 cross-noise-source universality~~ ❌ **DESCRIPTION ERROR (my mistake in commit 8a9616e)**: pre-registered hypothesis "翻转点" 由我自己 write spec line 387 时 mis-stated FQL P2 v1.4 真实 finding (universal monotone dominance, 不是翻转)。Sprint 1 actually:
-   - ✅ **Directionally consistent with FQL P2 真实 finding on power-bearing cells**: medium + mexp 都显示 β1=1 ≥ β1=4，mexp **statistically significant** (stratified bootstrap CI [−0.178, −0.011], 不跨 0); medium directional but inconclusive (CI 跨 0)。
-   - ⚠️ **Random + expert tier inconclusive**: random degenerate (两者 0%, SAC source 仅 0.2%)，expert saturated at collector ceiling (0.889 ≈ SAC source 0.899)。这两个 tier 没 power 测试 β1 effect, **不能用来 falsify 任何 hypothesis**。
-   - **Cross-source direction**: SAC mexp ↔ FQL P2 m_uni_noise 同向 β1=1 wins (✅ replication on noisy axis with statistical power). Magnitude SAC smaller but cross-source 比较 confounded (eval N 30 vs 100, dataset size + collector kernel 差异), 仅 direction is robust claim。
-2. FQL ≈ ReBRAC β1=1 on clean expert — ⏸ 待 sprint 2 verify（独立成立）。SAC expert ceiling = 0.889 已 known，sprint 2 直接 test FQL 是否能达到（达到 → dataset-bound regime；不达 → 复现 RESCUE-FAIL on SAC regime）。
-3. (Deferred follow-up) SAC vs rule-based collector — 如 reviewer push back，sprint 1b 用 N0 协议补 12 run ≈ 5h L4
+**Paper finding 现状（39 run 闭环后，详 spec §4.0.10）**：
 
-**总预算 rev.3 修订**：~21h L4 = **2 个 Colab session**（原 estimate ~4-6h 严重 underestimate，FQL P2 §8.2 权威实测：ReBRAC 200k step ≈ 25 min/run，FQL 200k step ≈ 50 min/run）。Adapter + audit + collection ~3.75h 已完成；剩 head-to-head 2 sprint ~21h。
+1. **β1=1 dominate β1=4 on non-saturated cells** — 跨数据源 universal weak dominance:
+   - ✅ SAC mexp: Δ +0.089 stratified CI [+0.011, +0.178] 不跨 0
+   - ✅ FQL P2 m_uni_noise: Δ +0.235 (FQL P2 v1.4 §6.3 Q1b/Q1c)
+   - ⚠️ Saturated cells (SAC expert, m_multi_mix): inconclusive (no power), NOT falsifying
+   - DESCRIPTION ERROR retired: 原 "翻转点" hypothesis 由 commit 8a9616e mis-statement 导致, 已 fix
 
-**关键约束**：`s0_k4 + arrival_v2 + cross_u15` 上不存在 expert SAC ckpt（rev.2 §4.5）— sensor floor 实证，与本线 v2 N2' / FQL §6.5 同物理。Plan A 选 cross_u10 而不是 cross_u15，正是基于此约束。
+2. **Algorithm × data-quality interaction (PAPER MAIN FINDING)** — direction FLIPS across regimes:
+   - **SAC mexp (collector SR 0.751, non-saturated)**: **FQL > ReBRAC β1=1** Δ +0.123 CI [+0.022, +0.233] ✓
+   - **FQL P2 m_multi_mix (collector SR 0.826 mix, saturated 0.95-0.99)**: **ReBRAC β1=1 > FQL** Δ +0.035 CI [+0.010, +0.065] ✓
+   - Both CIs strictly nonzero → NOT noise, **regime-dependent algorithm ranking**
+   - 高质量 saturated: ReBRAC actor BC penalty exploits clean modes
+   - 中质量 non-saturated: FQL flow-matching teacher extracts policy from noisy data
+   - → **FQL P2 v1.4 finding 2 ("β1=1 universal dominance over FQL") is refined to regime-dependent**
+
+3. **SAC expert dataset-bound regime confirmed** — ReBRAC β1∈{1,4} + FQL 都 0.889-0.911 ≈ SAC src ceiling 0.899 → algorithm-agnostic dataset-bound, sprint 2 finding 2 (RESCUE-FAIL universality) 在 saturated regime 上 inconclusive。
+
+**Paper closure 路径（locked 2026-05-26）**: cross-source contradiction → algorithm × data-quality interaction 写成主章节, 39 run 39 cell 矩阵作 §results 主表。SAC collector 作 controlled mid-quality stress-test, 揭示 privileged-collector tests 看不到的 regime-dependent ranking。
+
+**关键约束**：`s0_k4 + arrival_v2 + cross_u15` 上不存在 expert SAC ckpt（rev.2 §4.5）— sensor floor 实证。Plan A 选 cross_u10 而不是 cross_u15，正是基于此约束。
+
+**实际总成本**（vs spec ~21h L4 estimate）：sprint 1 ~3.3h + sprint 2 ~3.5h + supplement ~1.7h = **~8.5h L4** wall（seed-shard 3× 并发节省）。adapter + audit + collection ~3.75h 已计入。
 
 ### 4.4 AUVHamNODE Offline RL(⏸ PAUSED 2026-05-13)
 

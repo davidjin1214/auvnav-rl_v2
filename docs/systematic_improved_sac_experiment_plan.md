@@ -1,7 +1,13 @@
-# 改进 SAC 的系统实验方案
+# 改进 SAC 的系统实验方案【DEPRECATED】
 
+> **⚠️ 此文档已 deprecated（2026-04-26）。**  
+> **新计划见 [`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md)**——已重设为 thesis-grade systematic study，方法头条改为 *Asymmetric Critic with Privileged Hull-Integral Flow*，全实验压到 47 个 training run。  
+> 本文件保留仅作为历史决策依据，**不再被任何 active script 引用**。
+>
+> ---
+>
 > 文档版本：2026-04-23  
-> 对应报告：[`docs/systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md)  
+> 对应报告：[`docs/systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md) （同步 deprecated）  
 > 适用范围：当前仓库中的 `SAC / LayerNorm / Dropout / Asymmetric Critic / RLPD`
 
 ---

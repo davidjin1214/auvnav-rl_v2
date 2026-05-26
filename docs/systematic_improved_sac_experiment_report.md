@@ -1,7 +1,13 @@
-# 改进 SAC 的系统实验报告
+# 改进 SAC 的系统实验报告【DEPRECATED】
 
+> **⚠️ 此报告已 deprecated（2026-04-26）。**  
+> **新计划见 [`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md)**；新结果将累积在 [`docs/online_rl_thesis_report.md`](online_rl_thesis_report.md)。  
+> A0 阶段（cross_u10）的实测数据仍有效，本文件保留作为 A0 单一信源，但新的 thesis-grade 实验从 §2 sensor envelope 开始重启。
+>
+> ---
+>
 > 文档版本：2026-04-23  
-> 对应计划：[`docs/systematic_improved_sac_experiment_plan.md`](systematic_improved_sac_experiment_plan.md)
+> 对应计划：[`docs/systematic_improved_sac_experiment_plan.md`](systematic_improved_sac_experiment_plan.md) （同步 deprecated）
 
 ---
 

@@ -2,6 +2,8 @@
 
 > **Status (2026-05-19)**: COMPLETED — N0 + N2' 4-run 闭环（2 seed [42, 0]）。§5.2 verdict `HOLDS`，§5.3 verdict `STRONG_NEGATIVE`，§5.4 M1 BC sweep **not triggered**。
 >
+> **Addendum (2026-05-27)**: N2' **asym-critic ablation 完成**（2 seed [42, 0]，唯一变量 `--use-asymmetric-critic`，逐 episode 配对 vanilla N2'）。Verdict **ACTOR_FUNDAMENTAL_CONFIRMED** — 把完美 hull-integral flow `[u_eq,v_eq]` 喂给 critic 算 TD target，s0 actor success 仍 **0.000 / 0.000**（recovery 0% of oracle 0.70），部署行为与 vanilla 近乎不可区分。详见 **§4.5**。Raw: `results/offline/rebrac/broad_validation_v2_n2p_asym/{seed_42,seed_0}/test_result.json` + `summaries/asym_verdict.json`；notebook `notebooks/rebrac_broad_validation_v2_n2p_asym_critic_completed.ipynb`。
+>
 > **Branch**: `codex-arrival-v2-prototype`
 > **Plan**: [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) rev.3
 > **Raw outputs**: `results/offline/rebrac/broad_validation_v2/{N0,N2p}/seed_{42,0}/test_result.json` + `summaries/verdict_decision.json` + `summaries/p1_overview.csv`
@@ -41,6 +43,8 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 1. **reward bridge HOLDS but with paired degradation**：N0 在新 reward 下保持 0.85 anchor，Δ vs efficiency_v2 main-line anchor (0.902) = **−5.20pp**；两个 seed 同向退化（42: −3.5pp / 0: −6.9pp），不是 noise。Paper 写作时必须明标。
 2. **N2' STRONG_NEGATIVE confirms actor-fundamental partial-obs ceiling**：60 episode 全 out_of_bounds / timeout，progress_ratio ≈ 0，path_eff ≈ 0.10；零成功彻底跌破 online §7.6 catastrophic floor 10%。即便 oracle teacher (70% direct success) 提供 demonstrations，**s0-conditioned BC 在 critical regime 不能传递 hull-integral flow 知识**。
 3. **paper-quality claim** (§8.2 ceiling decomposition)：在 critical regime + deployable s0 actor 下，offline RL with oracle demonstrations 不仅 fails to bridge partial-obs gap，且 underperforms 同 setup 下的 online SAC — 这是 plan rev.3 §2.4 "actor-fundamental partial-obs ceiling" caveat 的直接实证。
+
+**Addendum 结论 (2026-05-27，§4.5)**：N2' asym-critic ablation 把 candidate B 的 critic 侧解释**排除**——即便 critic 在训练全程拿到完美 hull-integral flow，s0 actor success 仍 0.000，部署行为与 vanilla 配对近乎相同（paired median Δprogress ≈ 0）。天花板**不在 critic 价值估计**，与 actor-fundamental 一致并 **HARDENS** §5 主 claim。
 
 ---
 
@@ -158,7 +162,9 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 
 **Footprint**：N2' 行为不是 random（path_eff +0.10 > random expected ≈ 0），但也不是 task-solving — 看起来像「凑合的折中」。
 
-**预测**：plan §4.2 M1 BC sweep（若触发）应在 β1 ∈ {0, 1, 2} 看到 N2' 提升；β1 = 0 退化到 TD3-only 在 60 ep 上 success > 0.1 即支持 candidate B。**本轮 N2' = 0.000 不触发 M1**，所以 candidate B **暂不可证伪/证实**，列入 backlog 等 §9 5-seed 补全或 future asym-critic ablation 一并 probe。
+**预测**：plan §4.2 M1 BC sweep（若触发）应在 β1 ∈ {0, 1, 2} 看到 N2' 提升；β1 = 0 退化到 TD3-only 在 60 ep 上 success > 0.1 即支持 candidate B。**本轮 N2' = 0.000 不触发 M1**，所以 candidate B 的 **β1-tuning 轴**仍暂搁置。
+
+**Update (2026-05-27，§4.5 asym ablation)**：candidate B 有两种可能机制——(i) **critic 侧**：critic 拿到的价值信号不足 → actor 学不到；(ii) **actor 侧**：BC penalty 把 actor 拉向 `E[π_priv | s0_obs]` conditional mean 这个非-closed-loop 信号。asym-critic ablation（§4.5）在 β1=4 不变下把完美 hull-integral flow 喂给 critic，success 仍 0.000 → **排除 (i)**：bottleneck 不是 critic 价值估计质量。若 candidate B 成立，必经 (ii) 的 actor 侧 conditional-mean 塌缩，而非 critic 侧——这与 §5 actor-fundamental 框架一致。β1 sweep 仍 bypassed（gate 不触发）。
 
 ### 4.3 Candidate C: **online SAC's 10% is exploration luck, not a learned policy**
 
@@ -173,6 +179,39 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 - **Strong claim**：N2' < online floor 这件事 **本身就是新发现**，无论 mechanism 是哪一个，都说明 "offline RL with oracle demonstrations under s0 in critical regime" 是 nontrivial failure regime，不是 trivially-doable transfer
 - **Honest caveat**：paper 不应在 candidate A/B/C 之间下结论，保留三选一作为 alternative interpretations，强调 N2' = 0.0 与 online = 0.10 的 1-seed-on-each 比较 underpowered（online §7.6 也是少 seed）
 - **Future work hook**：plan backlog §9 已列 asym-critic ablation 与 M1 BC sweep — 若 paper 审稿人 push back，rev.4 可补 N2' + asym-critic 或 N2' + β1=0 至少 1-seed sanity 区分 A/B/C
+
+### 4.5 Asym-critic ablation — actor-fundamental vs critic-fundamental 机制判别 (completed 2026-05-27)
+
+vanilla N2' 中 actor 和 critic **都只看 s0**，0% 失败有两个无法区分的解释：(a) **actor-fundamental** — s0 actor 物理上还原不了 privileged 决策规则；(b) **critic-fundamental** — s0 critic 价值估计塌掉 → TD target 烂 → 训练失败。本 ablation 在**唯一变量** `--use-asymmetric-critic` 下隔离两者：critic 训练全程拿 hull-integral flow `privileged_obs=[u_eq,v_eq]` (dim=2) 算 TD target / critic loss，actor 改进时 priv 通道 zero-pad（`--privileged-actor-update-mode zeros`，mimic deployment，CLAUDE.md §3 默认）。dataset / manifest / β1=4 / β2=2 / seeds [42,0] 与 vanilla N2' **逐项相同**，eval 命令逐字一致（同 `--seed 123`，同 manifest，actor eval 仍只 s0）→ **逐 episode 配对**。
+
+**主结果（配对，2 seed × 30 ep）：**
+
+| | vanilla N2' (s0 critic) | **asym N2' (priv critic)** | Δ |
+|---|---:|---:|---:|
+| success seed 42 / seed 0 | 0.000 / 0.000 | **0.000 / 0.000** | +0.00pp |
+| mean success | 0.000 | **0.000 ± 0.000** | +0.00pp |
+| recovery of oracle 0.70 | — | **0.0%** | — |
+| termination (asym) | — | seed42 OOB 30；seed0 OOB 29 + timeout 1 | — |
+
+合计 **0 / 60 episodes 成功** → rule-of-three 95% 上界 ≈ 3/60 = **0.05**，远低于 online floor 0.10、oracle 0.70。即便给 critic 完美 hull-integral flow，**也不能把 s0 actor 抬过 catastrophic floor**。
+
+**配对 episode-level 诊断（关键：排除"asym 改善了行为"的假象）。** 表面上 mean progress_ratio 从 vanilla 0.041→asym 0.143 (seed 42) 似有提升，但逐 episode 配对后：
+
+| 量 (seed 42, n=30) | 值 | 含义 |
+|---|---:|---|
+| paired **mean** Δprogress (asym−van) | +0.1025 | 仅 **1.15 SEM**，不显著 |
+| paired **median** Δprogress | **−0.016** | 中位数甚至略负 → 无系统性改善 |
+| 单 episode (ep_0006) 贡献 | **46%** of mean Δ | vanilla 该 ep 跑飞 timeout (pr −1.849)，asym 同 ep 普通 OOB (pr −0.421)；去掉它 mean Δ 掉到 +0.057 |
+| \|Δprogress\| < 0.10 的 episodes | **17 / 30** | 过半 episode 配对近乎相同 |
+
+termination 差异跨 seed **方向相反**（seed 42：vanilla 1 timeout→asym 全 OOB；seed 0：vanilla 全 OOB→asym 1 timeout），进一步证明非系统性。**结论：asym 与 vanilla 部署行为在统计上不可区分**，mean-progress 的微小正偏是 per-episode 重尾噪声 + 单个 vanilla-timeout 离群点的假象。
+
+**Verdict（事先 commit 的 gate，§notebook §0）：mean success 0.000 ≤ 0.10 → `ACTOR_FUNDAMENTAL_CONFIRMED`。**
+
+**诚实的因果范围（写 paper 必须遵守）：**
+- ✅ **可下的强 claim**：privileged-flow critic **不能挽救** N2' 天花板；**排除了"纯 critic 价值估计失败"(critic-fundamental) 的解释**。这是项目自身 asymmetric-critic 方法（CLAUDE.md §3）在 offline critical-regime 下的直接负结果。
+- ⚠ **不能下的 claim**：本实验**不证明** s0 actor 信息论上不可能学到该策略。asym=0 同时兼容 "actor 表征上不可能" 与 "asym-critic 这一机制（含 zeros actor-update）在 offline 下没把 privileged 信息有效转化给 actor" 两种读法。措辞用 **"not rescued by a privileged critic / consistent with & HARDENS actor-fundamental"**，**不写** "proven actor-incapable"。
+- 统计上 2 seed 在此**充分**：双双 degenerate-0（强信号非 no-power），落在 ≤0.10 gate 区，**不触发**预登记的"补 seed 43 + stratified bootstrap"（该条件只在落入 MIXED [0.10,0.40] / REFRAME [≥0.40] 时触发）。
 
 ---
 
@@ -189,6 +228,7 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 | hand-coded baseline | crosscomp / s0 | **0.0%** | open-loop heading + speed under critical wake → cannot recover |
 | online RL | vanilla SAC / s0 / 1M steps / `arrival_v2` | 10.0% | reward shaping + exploration insufficient to learn closed-loop correction under partial obs |
 | **offline RL + oracle teacher** | **ReBRAC β1=4 / s0 / privileged dataset (N2')** | **0.0%** | **BC + critic regularization on `E[π_priv | s0_obs]` ≠ closed-loop correction policy** |
+| **+ privileged critic (asym ablation, §4.5)** | **ReBRAC β1=4 / s0 actor / asym critic sees `[u_eq,v_eq]`** | **0.0%** | **给 critic 完美 hull-integral flow 仍不能抬升 s0 actor → 天花板在 actor 侧，非 critic 价值估计；排除 critic-fundamental** |
 | oracle direct | privileged baseline + hull-integral `[u_eq, v_eq]` | 70.0% | hull-integral flow is **causally sufficient** to drive closed-loop correction; the ceiling between this row and the rows above quantifies the partial-obs gap |
 
 **Gap quantification under arrival_v2 / cross_u15 / s0**：
@@ -208,7 +248,8 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 ### 5.4 What v2 does NOT claim
 
 - **不 claim** ReBRAC algorithm 是"差的" — algorithm 本身在 sub-critical 仍 +23pp（v1 main paper）+ N0 0.85（v2 anchor holds）
-- **不 claim** offline RL 在 critical regime 完全 hopeless — asym-critic 等机制 backlog 已列，rev.4 candidate
+- **不 claim** offline RL 在 critical regime 完全 hopeless — 但 asym-critic ablation（§4.5，2026-05-27 完成）已证明**本项目自身的 privileged-critic 机制不能 bridge**；可探索方向退到 recurrent/history actor、显式 flow-estimation head 等 actor 侧改造，不在本闭环
+- **不 claim** asym=0 证明 s0 actor 信息论上不可能（§4.5 因果范围）；只 claim 排除 critic-fundamental + HARDENS actor-fundamental
 - **不 claim** 10pp gap (N2' vs online) 是 sharp finding — 2-seed × 30 ep underpowered，paper 保留 §4 三 candidate mechanism 作为 alternative explanation
 
 ---
@@ -222,7 +263,7 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 | 2 seed 而非 plan §6.2 预登记的 3 seed | Medium — N2' 0.000/0.000 deterministic 给出 strong signal；N0 0.867/0.833 同向 informative | Backlog §9 5-seed 补全；rev.4 可补 seed=43 at least for N0 |
 | 30 eval episodes per seed | Low — broad val convention 一致 | 与 main paper / v1 broad val 一致 |
 | `arrival_v2` reward 与 main paper anchor (`efficiency_v2`) Δ = −5.2pp 退化未做 mechanism diagnostic | Medium | Paper §experiments appendix 明标；future work：N0 + efficiency_v2 / arrival_v2 paired seed comparison |
-| candidate A/B/C 三选一未做 mechanism discriminator | Medium | M1 BC sweep gate (plan §5.4) 不触发 = 暂搁置；rev.4 可单独 spec asym-critic ablation |
+| ~~candidate A/B/C 三选一未做 mechanism discriminator~~ → **actor-vs-critic 轴已判别** | Low（升级） | **asym-critic ablation 已完成（§4.5，2026-05-27）= ACTOR_FUNDAMENTAL_CONFIRMED**，排除 critic-fundamental；candidate A（OOD shift）/ B 的 β1 轴仍 open 但优先级低 |
 | 与 online §7.6 vanilla SAC s0 cross_u15 = 0.10 的比较是 cross-source（不同 seed 集 + 不同实施细节） | Low — paper 明标 | §4 candidate C 已列 |
 
 ### 6.2 已完成的 verdict-gate-implied next actions
@@ -231,8 +272,9 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 |---|---|
 | N0 verdict §5.2 → "proceed to N2'" | ✓ 已完成 N2' |
 | N2' verdict §5.3 → "strong negative + skip M1" | ✓ M1 not triggered |
+| **Asym-critic ablation on N2'（机制判别）** | ✓ **完成 2026-05-27（§4.5）= ACTOR_FUNDAMENTAL_CONFIRMED** |
 | Plan §10 status 更新 | **待执行**（与本 report 同步 commit） |
-| Paper §robustness / appendix 段落 | **待写**（本 report §1 + §5 提供素材） |
+| Paper §robustness / appendix 段落 | **待写**（本 report §1 + §4.5 + §5 提供素材；落 paper 待 path B venue 决策后） |
 
 ### 6.3 推荐的 follow-up（不在本闭环范围）
 
@@ -240,7 +282,7 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 |---|---|---|
 | 5-seed 补全 N0（+seed 43, 44, 45） | Medium | 审稿人 push back 3 seed power |
 | 5-seed 补全 N2'（+seed 43, 44, 45） | Low | N2' deterministic 0.000，5 seed 不太可能反转 |
-| Asym-critic ablation on N2' (rev.4 candidate, plan §9 backlog) | **High** | 若 paper §discussion 想区分 "actor-fundamental partial-obs" vs "critic-fundamental partial-obs" |
+| ~~Asym-critic ablation on N2'~~ → **✓ COMPLETED 2026-05-27 (§4.5)** | — | verdict ACTOR_FUNDAMENTAL_CONFIRMED；区分 actor-vs-critic-fundamental 已落地，喂 paper §discussion/robustness |
 | M1 BC sweep (β1 ∈ {0, 1, 2, 4, 8} × 3 seed) | Low — N2' 不在 trigger zone | Bypassed |
 | online §7.6 candidate-C 验证（3 success episode trajectory 分析） | Medium | Paper §discussion 想 strengthen anomaly section |
 

@@ -4,12 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Research codebase for training autonomous underwater vehicles (AUVs) — specifically REMUS-100 class — to navigate wake fields using reinforcement learning. The project is organised into **two parallel research lines**, both targeting a thesis-grade systematic study:
+Research codebase for training autonomous underwater vehicles (AUVs) — specifically REMUS-100 class — to navigate wake fields using reinforcement learning. **Offline RL is the primary research line** (paper-driving); the **online RL line was strategically downgraded 2026-05-06** to a supporting role:
 
-1. **Online RL line** — primary algorithm Soft Actor-Critic (SAC) with deployment-realistic sensor (`s0` = DVL water-track only) as the main axis. Methodological contribution centres on **Asymmetric Critic with privileged hull-integral flow**, exposing the integrated effective flow that drives the dynamics to the critic during training while the actor remains restricted to the deployable single-point sensor at evaluation. Plan: [`docs/online_rl_thesis_plan.md`](docs/online_rl_thesis_plan.md).
-2. **Offline RL line** — TD3+BC was the first finalist; **ReBRAC** is the current main track. Plan: [`docs/rebrac_experiment_plan.md`](docs/rebrac_experiment_plan.md). Report: [`docs/rebrac_experiment_report.md`](docs/rebrac_experiment_report.md). Bridges to the online line via shared `auv_nav` env, probe layouts, and offline data formats.
+1. **Offline RL line (primary)** — paper-driving track. Phase 1 TD3+BC closed → **Phase 2 ReBRAC mainline paper-ready (4/4 findings closed, rev.8)** → Phase 2.5 v2 broad validation PASS (2026-05-19, N2' STRONG_NEGATIVE) → FQL Succession NEGATIVE closed (2026-05-23, B+A honest-negative) → AUVHamNODE Offline RL **PAUSED** (2026-05-13). Line entry: [`docs/offline_rl_line_summary.md`](docs/offline_rl_line_summary.md). Active main track: [`docs/rebrac_experiment_plan.md`](docs/rebrac_experiment_plan.md) / [`docs/rebrac_experiment_report.md`](docs/rebrac_experiment_report.md) / [`docs/rebrac_mainline_review.md`](docs/rebrac_mainline_review.md).
+2. **Online RL line (support)** — thesis-grade 47-run SAC matrix **cancelled 2026-05-06**. Remaining roles: (a) environment feasibility sanity (`A0 sensor screen` on `cross_u10`, the only thesis-grade multi-seed result that may be cited), and (b) **SAC collector for the Offline RL line** (`arrival_v2` design, used to build the offline datasets that feed ReBRAC / FQL succession). Line entry: [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md). The methodological idea of **Asymmetric Critic with privileged hull-integral flow** survives in code (`AsymmetricQNetwork`) and is still used as an ablation lever in the offline line — but is no longer the online thesis contribution.
 
-The project explicitly **does not** chase generic algorithm-paper improvements; algorithmic content is justified by the sim2real story (privileged training) and by offline RL deployment realism.
+Bridges between the two lines: shared `auv_nav` env, probe layouts, offline data format, and the `AsymmetricQNetwork` used by ReBRAC's `--use-asymmetric-critic`.
+
+The project explicitly **does not** chase generic algorithm-paper improvements; algorithmic content is justified by deployment realism (single-point `s0` actor, hull-integral critic) and by mechanism-discriminating negative findings.
+
+**Out of scope (do not propose without explicit user request):** AUVHamNODE / MBRL work (paused 2026-05-13, user-confirmed 2026-05-26); thesis-grade Online RL matrix expansion (cancelled 2026-05-06).
 
 ## Workflow & Compute Environment
 
@@ -17,10 +21,12 @@ Training runs on **Google Colab Pro / L4 GPU** with the codebase mounted from Go
 
 1. Author / edit code locally; commit to git.
 2. Sync the project directory to Google Drive (`drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5/`).
-3. Open a notebook (one per experimental sprint) in Colab; mount Drive; `cd` into the project; set env overrides; invoke shell scripts via `!bash`.
+3. Open a notebook (one per experimental sprint) in Colab; mount Drive; `cd` into the project; set env overrides; invoke training via IPython shell magic (`!python -m scripts.train_*`, **not** `subprocess.run` — needed for realtime stdout in Colab).
 4. Results land in `experiments/<study>/...` (small) and `checkpoints/<study>/...` (large) on Drive; sync back to git for analysis docs only.
 
 L4 wallclock for a 600k-step SAC run with `num_envs=6` is ~1.5h. Notebook-driven sprints are sized so each sprint fits in 1-2 Colab sessions.
+
+**Local Python env.** Use the `mytorch1` conda environment for local smoke tests and analysis scripts (already on `PATH`); Colab supplies its own runtime.
 
 ## Common Commands
 
@@ -28,7 +34,7 @@ L4 wallclock for a 600k-step SAC run with `num_envs=6` is ~1.5h. Notebook-driven
 # Basic SAC training (uses synthetic wake data if no flow file found)
 python -m scripts.train_sac
 
-# Training with key options (current online thesis-plan defaults)
+# Training with key options (A0 sensor-screen / SAC collector defaults)
 python -m scripts.train_sac \
   --total-steps 600000 \
   --batch-size 256 \
@@ -43,9 +49,9 @@ python -m scripts.train_sac \
   --eval-manifest benchmarks/single_u15_upstream_tgt15.json \
   --eval-episodes 30 \
   --objective efficiency_v2 \
-  --save-dir experiments/online_thesis_v1/.../seed_46
+  --save-dir experiments/<study>/<cell>/seed_46
 
-# Asymmetric Critic + LayerNorm + UTD=4 (online thesis §3 treatment)
+# Asymmetric Critic + LayerNorm + UTD=4 (ablation lever; still used by offline line)
 python -m scripts.train_sac \
   --use-asymmetric-critic \
   --use-layernorm \
@@ -79,7 +85,7 @@ python -m scripts.collect_offline_data \
   --episodes 1000 --seed 0 --num-workers 8 \
   --output-dir offline_data/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
 
-# RLPD training (SAC + offline data; reserved for offline chapter, not online thesis)
+# RLPD training (SAC + offline data; reserved for offline line, not the cancelled online thesis)
 python -m scripts.train_sac \
   --offline-data offline_data/<dataset>/transitions.npz \
   --offline-ratio 0.5 \
@@ -95,14 +101,14 @@ All scripts are run as modules from the repo root (`python -m scripts.<name>`).
 
 ### Stage scripts (sweep launchers)
 
-Each thesis stage has a thin sweep wrapper that calls `train_sac` per `(probe, seed)` pair, with `[skip]` resume logic so re-running the script after a Colab session restart picks up where it left off.
+`[skip]` resume logic in each launcher: re-running after a Colab session restart picks up where it left off (skip is keyed on `agent_final.pt`, not `trainer_state.json`).
 
-| Stage | Run script | Summarize script |
-|---|---|---|
-| A0 (cross_u10, completed) | [`scripts/run_stage_a0_layout_screen.sh`](scripts/run_stage_a0_layout_screen.sh) | [`scripts/summarize_stage_a0_layout_screen.sh`](scripts/summarize_stage_a0_layout_screen.sh) |
-| A1 (deprecated, kept for reference) | [`scripts/run_stage_a1_layout_main.sh`](scripts/run_stage_a1_layout_main.sh) | [`scripts/summarize_stage_a1_layout_main.sh`](scripts/summarize_stage_a1_layout_main.sh) |
+| Stage | Status | Run script | Summarize script |
+|---|---|---|---|
+| A0 (cross_u10 sensor screen) | ✅ thesis-grade result, citable | [`scripts/run_stage_a0_layout_screen.sh`](scripts/run_stage_a0_layout_screen.sh) | [`scripts/summarize_stage_a0_layout_screen.sh`](scripts/summarize_stage_a0_layout_screen.sh) |
+| A1 (layout main) | ⚠ archived; thesis matrix cancelled 2026-05-06 | [`scripts/run_stage_a1_layout_main.sh`](scripts/run_stage_a1_layout_main.sh) | [`scripts/summarize_stage_a1_layout_main.sh`](scripts/summarize_stage_a1_layout_main.sh) |
 
-The new `online_rl_thesis_plan` sprints reuse [`scripts/run_protocol_stage_common.sh`](scripts/run_protocol_stage_common.sh) directly via env-var overrides from each notebook (no per-stage wrapper needed).
+[`scripts/run_protocol_stage_common.sh`](scripts/run_protocol_stage_common.sh) is the shared sweep launcher; current online sprints (sanity + SAC collector) drive it via env-var overrides from each notebook (no per-stage wrapper needed). The previously planned `s2`–`s7` thesis stage wrappers were never created (matrix cancelled).
 
 ## Architecture
 
@@ -135,7 +141,7 @@ The core library. Components are loosely coupled; non-ML parts work without PyTo
 | `collect_offline_data.py` | Collects transition data from baseline policies (records `privileged_obs` for AsymCritic) |
 | `evaluate.py` | Loads a checkpoint and runs deterministic evaluation against a manifest |
 | `generate_standard_benchmarks.py` | Builds fixed evaluation manifests (`benchmarks/<key>.json`) for reproducible `--eval-manifest` |
-| `run_protocol_stage_common.sh` | Shared sweep launcher used by all online stage scripts |
+| `run_protocol_stage_common.sh` | Shared sweep launcher used by A0 and current online sprints (sanity + SAC collector); env-var-driven |
 
 ### Key Architectural Patterns
 
@@ -145,7 +151,7 @@ The core library. Components are loosely coupled; non-ML parts work without PyTo
 
 **Checkpointing.** `save_training_state()` in `train_utils.py` saves agent weights, replay buffer, Python RNG state, and a JSON metadata file. `maybe_resume()` restores all of it to continue training exactly. Checkpoints can be externalized via `--checkpoint-dir <PATH>` (kept separate from result `experiments/` tree).
 
-**Parallel environments.** Training supports `gymnasium.vector.AsyncVectorEnv` for wall-clock speedup. The `--num-envs` flag controls parallelism. **`num_envs` is part of the experimental protocol** (mixing different `num_envs` values across runs in the same study breaks comparability — see `docs/online_rl_thesis_plan.md` §1.2).
+**Parallel environments.** Training supports `gymnasium.vector.AsyncVectorEnv` for wall-clock speedup. The `--num-envs` flag controls parallelism. **`num_envs` is part of the experimental protocol** — mixing different `num_envs` values across runs in the same study breaks comparability; pick a value and hold it constant for any cell that will be compared.
 
 **Asymmetric Critic with privileged hull-integral flow.** When `--use-asymmetric-critic` is set:
 - `AsymmetricQNetwork` extends critic input with `privileged_obs` (dim=2: body-frame `[u_eq, v_eq]` from `EquivalentCurrentModel`, the integrated effective flow that drives the AUV dynamics).
@@ -166,12 +172,12 @@ The core library. Components are loosely coupled; non-ML parts work without PyTo
 - **`privileged_obs`** (emitted in `info`, used only by `AsymmetricQNetwork`): body-frame `[u_eq, v_eq]` (dim=2) — the **hull-integral** equivalent flow computed by `EquivalentCurrentModel` (weighted sum over multi-point hull samples). This is the true effective flow driving the dynamics, distinct from the actor's single-point probe samples.
 - **Action (2-D):** continuous heading command, speed command
 - **Probe layouts (`--probe-layout`):** all physically grounded in real REMUS-100 sensors
-  - `s0` — 1 probe at (0,0); DVL water-track, **deployment-realistic baseline** (the online thesis main axis)
+  - `s0` — 1 probe at (0,0); DVL water-track, **deployment-realistic baseline** (the actor sensor for both SAC collector and ReBRAC deployable cells)
   - `s1` — 2 probes at (0,0)+(4.5,0); DVL + 2 MHz short-range forward ADCP, ~3 steps advance warning (reference upper bound)
   - `s2` — 4 probes at (0,0)+(5,0)+(8,±4); DVL + 1 MHz long-range ADCP, ~7 steps warning + lateral gradient (reference upper bound)
 - **Task geometry:** `downstream`, `cross_stream`, `upstream`
 - **Benchmarks (fixed evaluation manifests):** `benchmarks/<key>.json`, e.g. `single_u10_cross_tgt15`, `single_u10_upstream_tgt15`, `single_u15_upstream_tgt15`, `tandem_u15_upstream_tgt15`, `sbs_u15_upstream_tgt15`. Difficulty in this study is parameterised by the benchmark key (flow speed, geometry, target speed) rather than the legacy `--difficulty {easy,medium,hard}` flag.
-- **Observation history:** `--history-length N` wraps env with `ObservationHistoryWrapper` for stacking N recent observations. Default for the online thesis line is `k=4`.
+- **Observation history:** `--history-length N` wraps env with `ObservationHistoryWrapper` for stacking N recent observations. Default for the SAC collector / A0 sensor screen is `k=4`.
 
 ### Data
 
@@ -181,37 +187,33 @@ Offline transition data lives in `offline_data/` (gitignored). Each subdirectory
 
 ### Default Hyperparameters (SACConfig)
 
-`hidden_dim=256`, `gamma=0.995`, `tau=0.005`, `actor/critic/alpha_lr=3e-4`, `init_alpha=0.2`, `grad_clip_norm=10.0`. Training defaults: `batch_size=256`, `random_steps=2000`, `update_after=2000`, `updates_per_step=1`. Online thesis line uses `random_steps=5000`, `update_after=5000` (per `run_protocol_stage_common.sh`).
+`hidden_dim=256`, `gamma=0.995`, `tau=0.005`, `actor/critic/alpha_lr=3e-4`, `init_alpha=0.2`, `grad_clip_norm=10.0`. Training defaults: `batch_size=256`, `random_steps=2000`, `update_after=2000`, `updates_per_step=1`. A0 sensor screen / SAC collector runs use `random_steps=5000`, `update_after=5000` (per `run_protocol_stage_common.sh`).
 
 ## Documentation Index
 
+**Two line-summary docs are the canonical index** — phase timelines, full doc routing, archive status, retrofit triggers all live there. Read them first; only fall back to the short list below for the highest-traffic entry points.
+
 | Doc | Role |
 |---|---|
-| [`docs/online_rl_thesis_plan.md`](docs/online_rl_thesis_plan.md) | **Active** plan for the online RL chapter (47 training run, 6 sections) |
-| [`docs/rebrac_experiment_plan.md`](docs/rebrac_experiment_plan.md) | Active plan for the offline RL chapter (ReBRAC main track) |
-| [`docs/rebrac_experiment_report.md`](docs/rebrac_experiment_report.md) | ReBRAC accumulated results |
-| [`docs/SAC_improvements_survey.md`](docs/SAC_improvements_survey.md) | 2020-2026 survey of SAC improvements (REDQ / DroQ / CrossQ / RLPD / SimBa etc.) — design context |
-| [`docs/world_model_and_offline_rl_survey.md`](docs/world_model_and_offline_rl_survey.md) | Survey for offline RL line |
-| [`docs/environment_design.md`](docs/environment_design.md) | Environment, sensor, reward, and benchmark specification |
-| [`docs/rlpd_design.md`](docs/rlpd_design.md) | RLPD implementation notes (used by both lines) |
-| [`docs/systematic_improved_sac_experiment_plan.md`](docs/systematic_improved_sac_experiment_plan.md) | **DEPRECATED** (2026-04-26) — replaced by `online_rl_thesis_plan.md` |
-| [`docs/systematic_improved_sac_experiment_report.md`](docs/systematic_improved_sac_experiment_report.md) | **DEPRECATED** — A0 results retained as historical record |
-| [`docs/td3bc_*.md`](docs/) | Historical TD3+BC closure documents (offline RL line, before ReBRAC took over) |
+| [`docs/offline_rl_line_summary.md`](docs/offline_rl_line_summary.md) | Offline RL line entry (primary) — phases, citable results, full doc index |
+| [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) | Online RL line entry (support) — A0 + SAC collector roles, thesis-matrix closure |
+| [`docs/environment_design.md`](docs/environment_design.md) / [`docs/rlpd_design.md`](docs/rlpd_design.md) | Env / RLPD design spec (cross-line) |
+| [`docs/rebrac_experiment_report.md`](docs/rebrac_experiment_report.md) | ReBRAC ground truth (rev.8) — only authoritative source for numbers |
+| [`docs/rebrac_paper_writing_index.md`](docs/rebrac_paper_writing_index.md) | "Which doc to open, which paragraph to copy" map for ReBRAC paper writing |
+| [`docs/fql_succession_p2_results.md`](docs/fql_succession_p2_results.md) | FQL Succession main report (NEGATIVE closed 2026-05-23) |
+| [`docs/auvhamnode_mbrl_line_pause_memo.md`](docs/auvhamnode_mbrl_line_pause_memo.md) | AUVHamNODE pause memo (⏸ PAUSED 2026-05-13) — read first if line is resumed |
 
 ## Notebooks
 
-The Colab workflow drives experiments from notebooks (one per sprint). Notebooks are committed under `notebooks/`. Each notebook follows the pattern: drive mount → `cd` into project → env-var overrides → `!bash` invoke of stage script → analysis cells reading the resulting summary CSVs.
+The Colab workflow drives experiments from notebooks under `notebooks/` (~117 files). Every notebook follows the same pattern: drive mount → `cd` into project → env-var overrides → `!python -m scripts.train_*` (IPython shell magic, **not** `subprocess.run` — needed for realtime stdout in Colab) → analysis cells reading the resulting summary CSVs.
 
-Active / planned notebooks:
+Family conventions (use `ls notebooks/<prefix>*` to enumerate; line summary docs index every closed family):
 
-| Notebook | Sprint | Status |
-|---|---|---|
-| `notebooks/sac_thesis_s0_preflight.ipynb` | Online thesis Sprint 0 (P1+P2) | scaffolded |
-| `notebooks/sac_thesis_s0b_profiling.ipynb` | Online thesis Sprint 0 addendum (P0 — cProfile + num_envs benchmark) | scaffolded |
-| `notebooks/_deprecated_sac_thesis_s2_sensor_envelope.ipynb` | Online thesis Sprint 1 | **deprecated 2026-05-06** — thesis 矩阵撤销，见 [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) |
-| `notebooks/sac_thesis_s3_privileged_critic.ipynb` | Online thesis Sprint 2 (§3) | **cancelled 2026-05-06** (never created) |
-| `notebooks/sac_thesis_s4_cross_sensor.ipynb` | Online thesis Sprint 2 (§4) | **cancelled 2026-05-06** (never created) |
-| `notebooks/sac_thesis_s5_topology_eval.ipynb` | Online thesis Sprint 3 | **cancelled 2026-05-06** (never created) |
-| `notebooks/sac_thesis_s6_confirmation.ipynb` | Online thesis Sprint 4 | **cancelled 2026-05-06** (never created) |
-| `notebooks/sac_thesis_s7_history.ipynb` | Online thesis Sprint 5 | **cancelled 2026-05-06** (never created) |
-| `notebooks/rebrac_*.ipynb` | Offline RL line (ReBRAC) | active |
+- `sac_thesis_*` — online thesis preflight / profiling (✅ closed; thesis matrix cancelled 2026-05-06)
+- `sac_arrival_v2_*` — `arrival_v2` reward + SAC collector R&D (✅ closed, feeds Offline collector)
+- `sac_collector_*` — D4RL tier audit / Plan A 4-tier / h2h ReBRAC vs FQL sweeps (✅ closed)
+- `rebrac_*` — ReBRAC mainline screen/formal + Stage D/E + broad-validation v1 (⚠ SUPERSEDED 2026-05-18) / v2 + C1 deep-dive (✅ closed; Findings (i)–(iv) + v2 N2′ ACTOR_FUNDAMENTAL_CONFIRMED 2026-05-27)
+- `fql_succession_*` — Gate B + P2 2×2 modality×noise matrix + Q1/Q1b/Q1c mechanism + xbench FLOOR probe + verdict (✅ NEGATIVE closed 2026-05-23)
+- `profile_train_*` — env / update wallclock profile (✅ closed)
+
+Naming: bare `*.ipynb` = template; sibling `*_completed.ipynb` = materialised outputs. `_seedN` suffix = per-seed split for 3-way parallel Colab sessions.

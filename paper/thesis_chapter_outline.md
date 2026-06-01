@@ -1,9 +1,18 @@
 # 博士论文章节写作 Spec：Deployable-Sensor Offline RL for AUV Wake Navigation
 
-> 文档版本：rev.1（2026-05-30）
-> 定位：**单章统一三线**（online SAC + TD3+BC/ReBRAC + FQL succession）的**核心贡献章**写作 spec。
+> 文档版本：rev.4（2026-06-02）
+> 定位：**博士论文第 5 章 单章统一三线**（online SAC + TD3+BC/ReBRAC + FQL succession）的**核心贡献章**写作 spec。
+>
+> **✅ 写作策略（2026-06-02 用户拍板）：本 spec = 当前写作目标，不是未来蓝图。**
+> Active priority = **直接合成博士论文第 5 章**；**不另起任何 standalone paper**。
+> Paper 1 ReBRAC 已有的 31pp arXiv preprint draft（commit `932aca1`）作为 §N.4 主干**直接复用**；paper 2 FQL standalone / paper 3 online SAC standalone **均撤销**，素材分别整合进 §N.6（FQL 算法对比）与 §N.2（online RL 节）。
+> Spec 全部内容（§0 中心命题 / §0.4 红线 / §3 缝合点 / §6 复用矩阵 / §N.7 β1 reconciliation 等）直接驱动第 5 章逐节起草，§7 写作顺序 #1 = §N.1 setup 泛化是下一步动作。
+> rev.4 修订要点：撤销 rev.3 短暂存在过的"先独立 paper、后合并"框架（用户 2026-06-02 否决该框架）；恢复并明确"thesis 章 = 唯一写作目标"。
+>
+> ⚠ rev 历史：rev.1（2026-05-30 初稿）→ rev.2（2026-05-31 §0 spine 收紧 + §0.4 红线）→ rev.3（2026-06-02 sync paper Phase 6/6.1 + §N.7 rev refs 校准；曾短暂含"先独立 paper"框架）→ rev.4（2026-06-02 撤销"先独立"框架 + 章号=5 lock + SAC collector 进 §N.6 正文 + 各 standalone paper 撤销）。
+>
 > 与现有文档的关系：
-> - 本文是 thesis chapter 的**总规划**；它**统摄**而非取代 [`paper/outline.md`](outline.md)（那是 ReBRAC paper 1 的 8 页 conference outline，对应本章 §N.3–N.5 的素材来源）与 [`paper/progress.md`](progress.md)（paper 1 LaTeX 工程进度，30 页 arXiv/thesis 稿，可作本章主干直接复用）。
+> - 本文是 thesis chapter 的**总规划**；它**统摄**而非取代 [`paper/outline.md`](outline.md)（那是 ReBRAC paper 1 的 8 页 conference outline，对应本章 §N.3–N.5 的素材来源）与 [`paper/progress.md`](progress.md)（paper 1 LaTeX 工程进度，**31 页 arXiv preprint draft**，可作本章主干直接复用）。
 > - 数字 ground truth 一律链接源文档，本文**不复制可能漂移的数字**；headline 数字仅作锚点，写作时实时回查源。
 > - 三条 line summary 入口：[`docs/offline_rl_line_summary.md`](../docs/offline_rl_line_summary.md)、[`docs/online_rl_line_summary.md`](../docs/online_rl_line_summary.md)、[`docs/rebrac_line_overview.md`](../docs/rebrac_line_overview.md)。
 
@@ -114,7 +123,7 @@
 ### §N.7 统一讨论 + 跨线 reconciliation + limitations
 - **写什么**：(1) 统一机制（actor 信息 + BC-anchor 目标质量两轴）；(2) **β1 跨线 reconciliation**（paper 1 用 β1=4.0、FQL 线用 β1=1.0 不矛盾）；(3) sim2real implication；(4) limitations。
 - **β1 reconciliation 源**：[`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §6（四轴差异：reward / collector / 动作噪声 / seed pool；原线 β1=4.0 本是 seed-44 std-driven 选择）+ [`rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) §2.2.6 + [`fql_succession_p2_results.md`](../docs/fql_succession_p2_results.md) §8.1。**这是单章统一三线相比两篇独立 paper 的最大叙事增值点** — 在一章里能把"同一 BC-anchor 旋钮、相反最优点、由 anchor target 是否带噪决定"讲成统一机制。
-- **复用资产**：paper 1 `discussion.tex`（rev.3，6 子节）+ `limitations.tex`（rev.3，L1–L12）+ `conclusion.tex`。
+- **复用资产**：paper 1 `discussion.tex`（rev.3，6 子节，含 §6.6 critical-regime boundary probe）+ `limitations.tex`（rev.4，L1–L12，含 L12 actor-fundamental ceiling 论证）+ `conclusion.tex`（rev.2，末句 scope tag 显式化 sub-critical regime + efficiency-v2 reward，指回 L12 / §6.6）。
 - **限定红线**（paper 1 progress R7/R8）：anti-scaling reversal 与 sim2real implication 严格限定在 `s0 + Kármán wake + REMUS-100` 边界内，不包装为 algorithm-paper claim。
 
 ---
@@ -191,9 +200,15 @@
 
 ---
 
-## 8. 待用户后续确认的开放点（不阻塞动笔）
+## 8. 用户后续确认的开放点 / 已决策状态（不阻塞动笔）
 
-1. **章号 N**：本章在整本博士论文里的序号 / 前后章如何衔接（决定 §N.1 引言要承接多少前文）。
-2. **SAC collector 39-run** 是否进正文（§N.6 末段）还是仅 appendix。
-3. **online §7.7 AsymCritic** 是否要与 §N.5 offline asym ablation 并列呈现（cross-line 一致性证据）还是只留 offline 版。
-4. **是否同时保留 paper 1 / paper 2 的独立投稿版** — 本章统一后，两篇 conference paper 是否仍按原 venue 计划独立投，还是合并为 thesis-only。
+1. ~~**章号 N**~~ — ✅ **resolved 2026-06-02**：**章号 = 第 5 章**（用户拍板 2026-06-02）。本 spec 中 `§N.1 / §N.2 / ...` 即未来 LaTeX 落地的 §5.1 / §5.2 / ...，spec 内部可继续用 `§N.k` 占位以减少全文重编号噪音，实际写章 LaTeX 时按章号 5 落地。前后章衔接（§5 引言要承接多少前文）待整本博士论文目录拍板后再补，**不阻塞 §N.1 起草**。
+2. ~~**SAC collector 39-run** 是否进正文（§N.6 末段）还是仅 appendix~~ — ✅ **resolved 2026-06-02**：**进第 5 章 §N.6 正文末段**，作为 §N.6 章级 headline。锚点 = spec §N.6 layer 2 + §0.2 子问 4（"算法排名是 regime-dependent (algorithm × data-quality interaction)，不是全局"），是 §0 中心命题"特权信息可有可无 + 真杠杆是 anchor 目标质量 × 数据 regime"的关键支撑。带 §0.4 红线 5 cross-source magnitude caveat（同源 SAC mexp 干净，异源 m_multi_mix 仅 direction-robust）。
+3. **online §7.7 AsymCritic** 是否要与 §N.5 offline asym ablation 并列呈现（cross-line 一致性证据）还是只留 offline 版。 — 🟡 待用户拍板；可在写到 §N.5 时再定，**不阻塞 §N.1 起草**。
+4. ~~**是否同时保留 paper 1 / paper 2 的独立投稿版**~~ — ✅ **resolved 2026-06-02**：**不另起任何 standalone paper**，全部素材整合进博士论文第 5 章。
+   - **paper 1 ReBRAC**：31pp arXiv preprint draft（Phase 6.1 commit `932aca1`）作为第 5 章 §N.4 主干**直接复用**；不另投 CoRL/RA-L，也不单独上 arXiv（除非用户后续另议）
+   - **paper 2（FQL standalone）**：**撤销启动**。素材并入 §N.6（FQL 算法对比 + SAC collector cross-source headline）；Method/RW/Abstract 不写独立版，按 §N.6 节级 prose 起草
+   - **paper 3（online SAC standalone）**：**撤销候选**。素材并入 §N.2（online RL：可学性与信息瓶颈）
+   - thesis 第 5 章 = 当前唯一写作目标，本 spec 直接驱动其逐节起草
+
+> **跨开放点决策（2026-06-02）**：用户明确"**直接合成博士论文第 5 章，不另写独立 paper**"。本 spec 是第 5 章的写作 spec（不是"合并蓝图"）；§7 写作顺序 #1（§N.1 setup 泛化）是下一步动作。

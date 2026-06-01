@@ -1,12 +1,13 @@
 % =====================================================================
 % paper/main.tex
-% Paper main document framework (rev.1, 2026-05-01)
+% Paper main document framework (rev.2, 2026-06-02)
 % Title: Deployable-only Offline RL Closes the Privileged-Critic Gap
 %        on Underwater Wake Navigation
 % Algorithm: Q-normalized dual-penalty TD3+BC variant (alias: ReBRAC-Q)
 %
-% 排版：单栏（thesis / arXiv preprint 风格，便于审阅与可读性预览）
-%   - 投稿 CoRL/RA-L 双栏时，把下文 \documentclass 改回 [10pt, twocolumn]
+% 排版：单栏 11pt（arXiv preprint / thesis 章节稿，便于审阅与可读性预览）
+%   - 当前 venue：arXiv preprint（匿名）+ 博士论文章节；不再以 CoRL/RA-L 投稿为口径。
+%   - 若后续需转双栏会议格式，把下文 \documentclass 改为 [10pt, twocolumn]
 %     并把 geometry margin 改回 0.85in 即可，章节内浮动均使用普通 figure/table
 %     兼容单/双栏两种排版。
 % 编译方式：
@@ -64,7 +65,7 @@
 \title{Deployable-only Offline RL Closes the Privileged-Critic Gap\\
 on Underwater Wake Navigation}
 \author{Anonymous Authors\\
-\textit{(submitted to CoRL / RA-L; double-blind)}}
+\textit{(arXiv preprint draft; under preparation)}}
 \date{}
 
 \begin{document}
@@ -96,8 +97,9 @@ on Underwater Wake Navigation}
 \bibliography{refs}
 
 % =====================================================================
-% Appendix（投稿时若需移到 supplementary，把下文整段连同 sections/appendix.tex
-% 一起拷至 supplementary.tex；7 个 \section 自动重新编号 A–G）
+% Appendix（arXiv preprint / thesis 章节稿：Appendix A–G 作为正文末尾整体编译；
+% 若后续转双栏会议 supplementary，把下文整段连同 sections/appendix.tex
+% 一起拷至 supplementary.tex 即可，7 个 \section 自动重新编号 A–G）
 % =====================================================================
 \input{sections/appendix}        % Appendix A–G — ✅ rev.1
 

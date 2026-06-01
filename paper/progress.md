@@ -5,11 +5,19 @@
 > Layout: 单栏 11pt（thesis / arXiv preprint 风格）
 > 主算法别名：ReBRAC-Q（actor 端保留 TD3+BC Q-normalization；critic 端追加 dual-penalty + LayerNorm）
 >
-> **Last updated:** 2026-05-02（Phase 5 reviewer stress-test 收口）
-> **Last commit:** `166766e` — Phase 4 (Appendix A–G) 全展开（7 sections / ~290 行）；Phase 5 patches **待 commit**
-> **Branch:** main, +27 ahead of `origin/main`（Phase 5 limitations L9/L10/L11 + discussion §6.2 末段 patch 尚未 commit）
-> **Build status:** `latexmk -pdf -xelatex`，exit=0，0 undefined refs，0 cite warnings，0 missing chars，**12 cites parsed**（无 placeholder），bibtex `warning$ -- 0`
-> **Compiled output:** `main.pdf`，**30 页**，594 KB（Phase 5 新增 1 页：limitations 11 条 + discussion §6.2 dataset-invariance 论点定位）
+> **Last updated:** 2026-05-29（Phase 6 重定向 + critical-regime boundary 折叠）
+> **Last commit:** `bb0fa38` — Phase 5 reviewer stress-test 收口（L9/L10/L11 + §6.2 末段 patch + R1–R10 polish 已 commit）
+> **Branch:** `codex-arrival-v2-prototype`（非 main；不 push origin）
+> **Build status (pre-Phase-6):** `latexmk -pdf -xelatex`，exit=0，0 undefined refs，0 cite warnings，0 missing chars，**12 cites parsed**（无 placeholder），bibtex `warning$ -- 0`
+> **Compiled output (pre-Phase-6):** `main.pdf`，**30 页**，594 KB
+>
+> **Phase 6 (2026-05-29)** — venue 重定向为 **arXiv / thesis（单栏 11pt，不压篇幅）**，关注内容完整性而非格式。折叠 critical-regime boundary 入 paper：
+>   - `sections/limitations.tex` **新增 L12**（regime/reward scope + critical-regime boundary + asym-critic ablation + actor-side ceiling 论证 + future work hook + supplementary 脚注）
+>   - `sections/discussion.tex` **新增 §6.6 Scope: A Critical-Regime Boundary Probe Identifies the Bottleneck as Actor-Side**（关 critic-vs-actor mechanism 问题；指回 L12 + standalone 报告脚注）
+>   - `sections/conclusion.tex` 末句 scope tag 显式化（``sub-critical regime + efficiency-v2 reward''）+ 指回 L12 / §6.6
+>   - Headline / Abstract / 4 main findings / §5 / Method **不动**
+>   - 数字源：[`docs/rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3--§5 (broad-val v2 N0+N2$'$) 与 §4.5 (asym-critic ablation)
+>   - 待 build + visual QA 后 commit
 
 ---
 
@@ -24,8 +32,8 @@
 | Phase 4.0 | Figure 1 sensor schematic（matplotlib 脚本 + setup.tex callout） | ✅ done | `2830589` |
 | Phase 4.1 | 占位 cite 替换：`td3bc_phase0c_report` → inline supplementary；`underwater_rl_placeholder` → 4 篇 concrete refs（Carlucho2018, Yu2017, Verma2018pnas, Gunnarson2021ncomm） | ✅ done | `2830589` |
 | Phase 4 (Appendix) | Appendix A–G（reproducibility / hyperparams / full tables / stats / derivations / curves / obs spec） | ✅ done | `166766e` |
-| Phase 5 | reviewer stress-test（review.md §2.2 / §4 反向压测）+ §7 limitations L9/L10/L11 patch + §6.2 dataset-invariance 论点定位 + R1–R10 polish pass | ✅ done | uncommitted |
-| **Phase 6** | **投稿格式打包（CoRL / RA-L 双栏切换 + supplementary 拆分）** | ⏳ **TODO（next）** | — |
+| Phase 5 | reviewer stress-test（review.md §2.2 / §4 反向压测）+ §7 limitations L9/L10/L11 patch + §6.2 dataset-invariance 论点定位 + R1–R10 polish pass | ✅ done | `bb0fa38` |
+| **Phase 6 (rev.)** | venue 重定向 arXiv/thesis（不压篇幅）+ critical-regime boundary 折叠：§7 L12 + §6.6 + §8 scope tag；headline/abstract/findings/§5/method 不动 | 🟡 in progress | — |
 
 ---
 
@@ -39,9 +47,9 @@
 | §3 Problem Setup | `sections/setup.tex` | 99 | rev.2 | ✅ | `sec:setup`, `subsec:setup_task`, `subsec:setup_obs_deployable`, `subsec:setup_obs_privileged`, `subsec:setup_reward`, `subsec:setup_datasets`, `tab:dataset_matrix`, `fig:sensor_schematic`, `eq:setup_priv_obs`, `eq:setup_reward` |
 | §4 Method | `sections/method.tex` | 134 | rev.2 | ✅ | `sec:method`, `subsec:method_actor_loss`, `subsec:method_critic_loss`, `subsec:method_diff` |
 | §5 Experiments | `sections/experiments.tex` | 233 | rev.2 | ✅ | `sec:experiments`, `subsec:main_results`, `subsec:ablations`, `subsubsec:finding_1..4`, `tab:main_table`, `tab:beta2_ablation`, `tab:ln_ablation`, `fig:seed_dotplot`, `fig:q_drift` |
-| §6 Mechanistic Discussion | `sections/discussion.tex` | 41 | rev.2 | ✅ | `sec:discussion` + 5 subsec（rev.2: §6.2 末段加 1 句把 dataset-invariance 论点定位在「漂移方向 + 相对幅度」而非 baseline $\hat{Q}$ 绝对符号） |
-| §7 Limitations | `sections/limitations.tex` | 50 | rev.2 | ✅ | `sec:limitations`（L1–L11；rev.2 加 L9 budget parity / L10 β₂ dataset coverage / L11 unanalyzed observations） |
-| §8 Conclusion | `sections/conclusion.tex` | 15 | rev.1 | ✅ | `sec:conclusion` |
+| §6 Mechanistic Discussion | `sections/discussion.tex` | 52 | rev.3 | ✅ | `sec:discussion` + 6 subsec（rev.3 加 §6.6 Critical-Regime Boundary Probe — actor-side ceiling 论证，关 critic-vs-actor mechanism 问题） |
+| §7 Limitations | `sections/limitations.tex` | ~62 | rev.3 | ✅ | `sec:limitations`（L1–L12；rev.3 加 L12 critical-regime boundary：N2$'$ + asym-critic ablation，排除 critic-fundamental） |
+| §8 Conclusion | `sections/conclusion.tex` | 16 | rev.2 | ✅ | `sec:conclusion`（rev.2 末句 scope tag 显式化 sub-critical regime + efficiency-v2 reward，指回 L12 / §6.6） |
 
 **Body 总行数：616**（不含 main.tex 框架、refs.bib、appendix.tex）
 

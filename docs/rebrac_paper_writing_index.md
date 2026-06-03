@@ -1,5 +1,9 @@
 # ReBRAC Paper 写作文档索引
 
+> ⚠ **去向更新 2026-06-02 (rev.1 head note)**：写作出口 LOCKED 为**博士论文第 5 章 §N.4 主干**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.4）。ReBRAC paper **不另起独立投稿**——31pp arXiv preprint draft（[`../paper/main.pdf`](../paper/main.pdf)，Phase 6.1 commit `932aca1`）作为 §N.4 主干**直接复用**；不再投 CoRL/RA-L，也不单独上 arXiv（除非用户后续另议）。
+> - 本索引「读哪份 / 抄哪段」映射在 §N.4 写作上下文中**完全适用**（method.tex / experiments.tex / discussion.tex / limitations.tex 整段搬入即可）；§N.5 critical-regime boundary 提级独立节请用 paper 1 §6.6 + L12 + standalone broad-validation report §3–§5 + §4.5。
+> - 写作前必读：[`../paper/progress.md`](../paper/progress.md) §1 Phase 时间轴（已到 Phase 6.1 R10 sweep）+ [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4。
+>
 > 文档版本：rev.1（2026-05-01）
 > 用途：写论文时的"读哪一份、抄哪一段"地图。本身不持有任何实验数字 ground truth；
 > 所有数字仍以 [`rebrac_experiment_report.md`](./rebrac_experiment_report.md) 为准。

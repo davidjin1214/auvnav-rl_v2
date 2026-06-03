@@ -1,5 +1,7 @@
 # Offline RL 线总结报告
 
+> ⚠ **写作出口 LOCKED 2026-06-02**：本线全部素材的写作出口 = **博士论文第 5 章**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4）；ReBRAC 主线 → §N.4 主干（[`../paper/main.pdf`](../paper/main.pdf) 31pp arXiv preprint draft commit `932aca1` 直接复用），FQL succession → §N.6 节，broad-val v2 + asym-critic ablation → §N.5 节 + §N.4 paper 1 §6.6/L12。**不另起任何 standalone paper**（paper 1 ReBRAC / paper 2 FQL standalone 均撤销）。本文中"paper 1 / paper 2"用法是历史 / 线索内部 shorthand，**实际写作去向是上述 §N.k 节**。
+>
 > 文档版本：2026-05-07
 > 作用：Offline RL 线的**总览入口**——给不熟悉本仓库的新读者一份时间轴 + 当前位置 + 下一步走向，**不重复任何 ground-truth 数字**（数字一律链接到源文档）。
 > 镜像姊妹文档：[`docs/online_rl_line_summary.md`](online_rl_line_summary.md)。

@@ -1,5 +1,10 @@
 # ReBRAC AUV Wake Navigation — 论文写作大纲
 
+> ⚠ **SUPERSEDED 2026-06-02**：本 outline 按 8 页 CoRL/RA-L 独立投稿设计；已被 [`thesis_chapter_outline.md`](thesis_chapter_outline.md) rev.4 取代。
+> - paper 1 ReBRAC **不再独立投稿** — 31pp arXiv preprint draft（Phase 6.1 commit `932aca1`）作为博士论文**第 5 章 §N.4 主干直接复用**。
+> - 本 outline 的 venue 分析（§0.1）、narrative spine（§0.3）、结构骨架（§1）、写作纪律（§8 R*）等**历史价值仍在**，作为 §N.4 节级写作时的参考；但**投稿口径相关段落**（venue 选择、CoRL/RA-L 8pp / IROS 6pp / 双栏切换等）请直接跳过。
+> - 仅保留作存档；新动作请去 `thesis_chapter_outline.md`（rev.4）。
+>
 > 文档版本：rev.1（2026-05-01）
 > 基于材料：[`docs/rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) rev.2、[`docs/rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md) rev.8、[`docs/rebrac_method_section_draft.md`](../docs/rebrac_method_section_draft.md)、[`docs/rebrac_statistical_test_followup.md`](../docs/rebrac_statistical_test_followup.md)、[`docs/rebrac_paper_writing_index.md`](../docs/rebrac_paper_writing_index.md)
 > 作者视角：从 offline-RL × sim2real-robotics 交叉领域审稿人 / chair 的角度反推写作骨架。

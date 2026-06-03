@@ -1,10 +1,15 @@
-# FQL Succession (Paper 2 候选) 写作文档索引
+# FQL Succession 写作文档索引（原 Paper 2 候选 → 博士论文第 5 章 §N.6）
 
+> ⚠ **定位锁定 2026-06-02 (rev.2 head note)**：写作出口已 LOCKED 为**博士论文第 5 章 §N.6 节**（FQL 算法对比 + SAC collector cross-source headline）；候选 (a) standalone / (b) 并入 ReBRAC paper 均已**作废**。本索引 §5 三候选表保留作历史，实际写作直接对接 [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.6。
+> - **§N.6 章级 headline**（spec L106 锚） = SAC collector 39-run **algorithm × data-quality interaction**（regime-dependent ranking），不是 FQL P2 内部的 "ReBRAC dominate"。
+> - **§N.6 写作纪律**：带 spec §0.4 红线 5 cross-source magnitude caveat（同源 SAC mexp 干净，异源 m_multi_mix 仅 direction-robust）。
+> - 不要按 §6 "投稿前 TODO" 推进任何 standalone 投稿动作；该 TODO 已停。
+>
 > 文档版本：rev.1（2026-05-24，P4 收尾）
-> 用途：把 FQL-vs-ReBRAC negative/mechanism 结果写成论文时的"读哪一份、抄哪一段"地图。
+> 用途：把 FQL-vs-ReBRAC negative/mechanism 结果写成论文（现为 thesis 第 5 章 §N.6 节）时的"读哪一份、抄哪一段"地图。
 > **本身不持有任何实验数字 ground truth**；所有数字以 [`fql_succession_p2_results.md`](./fql_succession_p2_results.md)
 > + [`fql_succession_p2_mechanism_diagnostic.md`](./fql_succession_p2_mechanism_diagnostic.md) §9 为准。
-> 定位（standalone / 并入 ReBRAC paper / thesis 小节）**尚未锁定**（见 §5），本索引按 standalone 草拟、留可并入接口。
+> ~~定位（standalone / 并入 ReBRAC paper / thesis 小节）**尚未锁定**（见 §5），本索引按 standalone 草拟、留可并入接口。~~ → **2026-06-02 LOCKED = thesis 第 5 章 §N.6（见上 head note）**。
 
 ---
 
@@ -115,17 +120,17 @@ FQL Succession P2 已 **NEGATIVE 闭环（B+A：机制发现 + 诚实负面，NO
 
 ---
 
-## 5. 定位（positioning，尚未锁定）
+## 5. 定位（positioning，**已锁定 2026-06-02 = (c) Thesis 章节 subsection**）
 
-用户 2026-05-24 决定：**先不锁定**，按 standalone 草拟、留可并入接口。三个候选：
+> **2026-06-02 LOCKED**：用户拍板**直接合成博士论文第 5 章**，候选 (a) standalone / (b) 并入 ReBRAC paper **均已作废**。FQL 素材作为**第 5 章 §N.6 节**（FQL 算法对比 + SAC collector cross-source headline；spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.6）。下表三候选保留作历史记录。
 
-| 候选 | framing / 长度 | 还需补什么 |
+| 候选 | framing / 长度 | 状态 |
 |---|---|---|
-| **(a) Standalone 短文**（默认草拟方向） | negative-result / mechanism workshop-style；自带 Intro / Related Work / Abstract | Related Work 节 + Method prose + Abstract（见 §6 TODO） |
-| **(b) 并入 ReBRAC 主 paper** | 作为 Discussion + Appendix（baseline-fairness / BC-anchor 机制旁证）；不单独成文 | 只需把 results §6 机制 + §4 公平复赛压成 1-2 段 Discussion + 1 个 appendix 表；最省 |
-| **(c) Thesis 章节 subsection** | offline-RL 章里一个小节 | 与 ReBRAC 主线、broad-validation 串成统一叙事 |
+| **(a) Standalone 短文** | negative-result / mechanism workshop-style；自带 Intro / Related Work / Abstract | ❌ 撤销 2026-06-02 |
+| **(b) 并入 ReBRAC 主 paper** | 作为 Discussion + Appendix（baseline-fairness / BC-anchor 机制旁证） | ❌ 撤销 2026-06-02（paper 1 自身也不独立投稿） |
+| **(c) Thesis 章节 subsection** | 博士论文第 5 章 §N.6 节（FQL 算法对比 + SAC collector cross-source headline） | ✅ **LOCKED 2026-06-02** |
 
-**接口保留**：无论走哪条，Method（FQL/ReBRAC loss + 代码锚）与机制综合（results §6）都是共享的，先写它们不会浪费。
+**接口保留（与 (c) 对齐）**：Method（FQL/ReBRAC loss + 代码锚）与机制综合（results §6）共享 §N.4 ReBRAC method 节，§N.6 只增量讲 FQL distill 差异。先写它们不会浪费。
 
 ---
 

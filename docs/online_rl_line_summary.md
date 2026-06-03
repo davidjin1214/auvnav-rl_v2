@@ -1,8 +1,10 @@
 # Online RL 线总结报告
 
+> ⚠ **写作出口 LOCKED 2026-06-02**：本线全部可引用素材的写作出口 = **博士论文第 5 章**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4）；A0 sensor screen → §N.2 节（online RL：可学性与信息瓶颈），SAC collector cross-source matrix → §N.6 末段章级 headline（algorithm × data-quality interaction）。**Online SAC standalone paper（曾候选）已撤销**；不另起独立投稿。文中残留的「ReBRAC 论文投稿/接收后」「未来 paper revision」等表述请理解为「第 5 章 §N.4 起草/收尾后」。
+>
 > 文档版本：2026-05-06
 > 作用：Online RL 线的**收口**报告。汇总可引用的正式结果、记录踩过的坑、整理仓库中所有 online 线相关产出，并给出 2026-05-06 战略下调后的下一步建议。
-> 战略状态：thesis-grade 47-run 矩阵已撤销（详见 §3.1）；本线只保留 (a) 环境可行性 sanity（A0）、(b) Offline RL chapter 的 SAC collector 数据源（待 spec）两个角色。
+> 战略状态：thesis-grade 47-run 矩阵已撤销（详见 §3.1）；本线只保留 (a) 环境可行性 sanity（A0）、(b) Offline RL chapter 的 SAC collector 数据源（spec 已就位 = 第 5 章 §N.2 / §N.6 per 2026-06-02 LOCKED）两个角色。
 
 ---
 

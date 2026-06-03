@@ -1,5 +1,10 @@
 # FQL Succession Plan v1 — Offline RL on Data Quality × Modality Spectrum (Lean MVP)
 
+> ⚠ **SUPERSEDED 2026-06-02**：本 plan 的实验 phase（P0–P4）已**全部完成且闭环**（NEGATIVE 收口 2026-05-23，见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md)）。本 plan 当时设计的 paper-writing 出口（"FQL Paper 2 standalone"）**已撤销启动**——per 2026-06-02 用户拍板，全部 FQL 素材作为**博士论文第 5 章 §N.6 节**（FQL 算法对比 + SAC collector cross-source headline），不另起独立投稿。
+> - **实验设计 / phase plan / gate 条件 / sprint 节奏 等仍有历史 / 复现价值**，可作为 §N.6 写作时回查实验 provenance 的档案。
+> - **不再据本 plan 推进任何写作动作**；写作方向去 [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.6。
+> - 已闭环结果数字 ground truth 见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md) + [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9。
+>
 > **文档版本**：v1.4（2026-05-21,P2 sprint 0 collection 实测 + audit 降级 advisory)
 > **作用**：把"重启 FQL 作 ReBRAC 后续"的 framing、scope、phase plan 与 gate 条件落地为可执行计划。**v1 相对 v0 砍掉约 50% validation insurance**（6 tier → 3 cell；4 audit 指标 → 1；4 ablation → 1；anchor 5-seed → 1-seed smoke），保留全部 core paper claim 支撑实验。
 > **状态**：**Plan v1.2** — P0+P1 closed（Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 audit dry-run + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL seed-driven, progress with caveat）；P2 main comparison spec drafting (Session A 2026-05-20)。

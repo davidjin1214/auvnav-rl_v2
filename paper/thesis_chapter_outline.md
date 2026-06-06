@@ -5,19 +5,19 @@
 >
 > **✅ 写作策略（2026-06-02 用户拍板）：本 spec = 当前写作目标，不是未来蓝图。**
 > Active priority = **直接合成博士论文第 5 章**；**不另起任何 standalone paper**。
-> Paper 1 ReBRAC 已有的 31pp arXiv preprint draft（commit `932aca1`）作为 §5.5 主干**直接复用**；paper 2 FQL standalone / paper 3 online SAC standalone **均撤销**，素材分别整合进 §5.7（FQL 算法对比）与 §5.3（online RL 节）。
-> Spec 全部内容（§0 中心命题 / §0.4 红线 / §0.5 体裁规范 / §3 缝合点 / §6 复用矩阵 / §5.8 β1 reconciliation 等）直接驱动第 5 章逐节起草，§7 写作顺序 #1 = §5.1 引言起草是下一步动作。
+> Paper 1 ReBRAC 已有的 31pp arXiv preprint draft（commit `932aca1`）作为 §5.6 主干**直接复用**；paper 2 FQL standalone / paper 3 online SAC standalone **均撤销**，素材分别整合进 §5.8（FQL 算法对比）与 §5.4（online RL 节）。
+> Spec 全部内容（§0 中心命题 / §0.4 红线 / §0.5 体裁规范 / §3 缝合点 / §6 复用矩阵 / §5.9 β1 reconciliation 等）直接驱动第 5 章逐节起草，§7 写作顺序 #1 = §5.1 引言起草是下一步动作。
 >
 > **rev.5 修订要点（2026-06-05 用户拍板）**：
 > 1. **NO APPENDIX 锁**：本章不设 appendix；paper 1 Appendix A–G（Reproducibility / Hyperparams / Full tables / Stats / Derivations / Curves / Obs spec）全部**按节融入正文**各 §5.x 的"实施细节"子节。该约束写入 §0.5 体裁规范。
-> 2. **8 节结构（vs rev.4 的 7 节）**：拆原 §N.1 为 §5.1 引言（dissertation 章级独立引言，与全博士论文 §1 总引言对接）+ §5.2 problem description（任务/环境/sensor/reward/数据集统一 setup）；后续 §N.2…§N.7 平移到 §5.3…§5.8，§5.8 章末加"本章小结"段。
+> 2. **8 节结构（vs rev.4 的 7 节；⚠ rev.8 已扩为 9 节——独立 §5.2 Background & Related Work，见 §1 节号统一 note）**：拆原 §N.1 为 §5.1 引言（dissertation 章级独立引言，与全博士论文 §1 总引言对接）+ §5.2 problem description（任务/环境/sensor/reward/数据集统一 setup）；后续 §N.2…§N.7 平移到 §5.3…§5.8，§5.8 章末加"本章小结"段。
 > 3. **新增 §0.5 章级写作体裁规范（7 + 1 条）**：reader model / voice / structural depth / citation 策略（定性，**不预设条数**）/ no-appendix 实施细节融入 / 负面结果作贡献项 / 写作纪律（不预设页数）/ **内容优先于篇幅**。该节是 rev.4 缺的"how-to-write"层。
 > 4. **撤销所有量化目标**（用户 2026-06-05 指示："先不要考虑预设篇幅和 cite 数，重点是先把内容写清楚，而不是控制篇幅"）：§1 章节骨架表删"估计篇幅"列；§0.5 citation 策略与 interpretation 段长改为定性原则；章节总篇幅无 hard cap。
 >
-> ⚠ rev 历史：rev.1（2026-05-30 初稿）→ rev.2（2026-05-31 §0 spine 收紧 + §0.4 红线）→ rev.3（2026-06-02 sync paper Phase 6/6.1 + §N.7 rev refs 校准；曾短暂含"先独立 paper"框架）→ rev.4（2026-06-02 撤销"先独立"框架 + 章号=5 lock + SAC collector 进 §N.6 正文 + 各 standalone paper 撤销）→ **rev.5（2026-06-05 加 §0.5 体裁规范 + NO APPENDIX 锁 + 8 节结构拆分 + 撤所有量化目标）** → **rev.6（2026-06-06 加 §0.5.9 报告体→学术体 register 提级 checklist；§5.1 rev.3 落地为 worked example，标题宽泛化为「局部感知下水下航行器运动规划的强化学习方法」）** → **rev.7（2026-06-07 §5.1 引言 rev.4 复审落地——去 §5.7 算法发现误嫁接到 §5.6 ceiling、cite 对齐补 SAC/FQL；spec 侧：§0.5.3 / §2 §5.1「上承下接」据 §5.1 rev.3 零跨章引述锁定回写为自足口径、§8 #8 部分 resolved、§1 新增节号待决登记 note）**。
+> ⚠ rev 历史：rev.1（2026-05-30 初稿）→ rev.2（2026-05-31 §0 spine 收紧 + §0.4 红线）→ rev.3（2026-06-02 sync paper Phase 6/6.1 + §N.7 rev refs 校准；曾短暂含"先独立 paper"框架）→ rev.4（2026-06-02 撤销"先独立"框架 + 章号=5 lock + SAC collector 进 §N.6 正文 + 各 standalone paper 撤销）→ **rev.5（2026-06-05 加 §0.5 体裁规范 + NO APPENDIX 锁 + 8 节结构拆分 + 撤所有量化目标）** → **rev.6（2026-06-06 加 §0.5.9 报告体→学术体 register 提级 checklist；§5.1 rev.3 落地为 worked example，标题宽泛化为「局部感知下水下航行器运动规划的强化学习方法」）** → **rev.7（2026-06-07 §5.1 引言 rev.4 复审落地——去 §5.7 算法发现误嫁接到 §5.6 ceiling、cite 对齐补 SAC/FQL；spec 侧：§0.5.3 / §2 §5.1「上承下接」据 §5.1 rev.3 零跨章引述锁定回写为自足口径、§8 #8 部分 resolved、§1 新增节号待决登记 note）** → **rev.8（2026-06-07 用户拍板**独立 §5.2 Background & Related Work 永久化**：全 spec 重编号为 9 节[原 §5.2–§5.8 整体 +1 → §5.3–§5.9]；§5.2 定位"研究背景与定位"短节[领域地图 + gap 精确区分 + 贡献坐标，深度算法对比下放各方法节]；rev.7 节号待决 CLOSED；§1 骨架表/§2 新增 §5.2 RW 节定位）**。
 >
 > 与现有文档的关系：
-> - 本文是 thesis chapter 的**总规划**；它**统摄**而非取代 [`paper/outline.md`](outline.md)（那是 ReBRAC paper 1 的 8 页 conference outline，对应本章 §5.4–§5.6 的素材来源）与 [`paper/progress.md`](progress.md)（paper 1 LaTeX 工程进度，**31 页 arXiv preprint draft**，可作本章主干直接复用）。
+> - 本文是 thesis chapter 的**总规划**；它**统摄**而非取代 [`paper/outline.md`](outline.md)（那是 ReBRAC paper 1 的 8 页 conference outline，对应本章 §5.5–§5.7 的素材来源）与 [`paper/progress.md`](progress.md)（paper 1 LaTeX 工程进度，**31 页 arXiv preprint draft**，可作本章主干直接复用）。
 > - 数字 ground truth 一律链接源文档，本文**不复制可能漂移的数字**；headline 数字仅作锚点，写作时实时回查源。
 > - 三条 line summary 入口：[`docs/offline_rl_line_summary.md`](../docs/offline_rl_line_summary.md)、[`docs/online_rl_line_summary.md`](../docs/online_rl_line_summary.md)、[`docs/rebrac_line_overview.md`](../docs/rebrac_line_overview.md)。
 
@@ -36,17 +36,17 @@
 
 | 子问 | 由谁回答（角色） | 结论（精确版，已过 §0.4 红线） |
 |---|---|---|
-| **能做到吗？** | ReBRAC 主线（**核心**，§5.5） | deployable-only ReBRAC-Q 在统计意义上**追平** privileged-critic 协议（worldcomp 0.928 vs 0.922, Welch p=0.92），并优于 vanilla TD3+BC 23–32pp。→ 特权信息喂 critic 对 **mean 不贡献**（5-seed Δ priv−dep=+0.6pp），只救 outlier seed 44（+12pp） |
-| **靠什么机制？** | Online SAC（**铺垫/机制**，§5.3） | 难流场下 s0→s1 的 80pp gap **不是空间传感器瓶颈、是 actor 时序访问瓶颈**：s0+history k=12（~6s≈涡街周期 30–60%）单变量闭合到 s1 上界（§7.8/§7.9）。给 critic 喂特权流在 online 同样**不闭合 gap**（§7.7）——offline §4.5 asym ablation 的独立 echo |
-| **边界在哪？** | broad-val v2（**边界**，§5.6） | critical regime（Re250/u15）下 s0 与 hull-integral 流弱相关，**oracle 示范 + 特权 critic 都救不了**（N2'=0.000；asym ablation = ACTOR_FUNDAMENTAL_CONFIRMED）→ actor-fundamental ceiling |
-| **换更强算法会变吗？** | FQL succession（**对照/确证**，§5.7） | 表达力更强的 flow-matching 先验（FQL）**不普遍取胜**：算法排名 regime-dependent（SAC mexp 中质量 FQL 赢、saturated 高质量 ReBRAC 赢，两 CI 各自非零）。真正的算法决定因素是 **BC-anchor 目标质量 × 数据 regime 的匹配**，不是先验表达力 |
+| **能做到吗？** | ReBRAC 主线（**核心**，§5.6） | deployable-only ReBRAC-Q 在统计意义上**追平** privileged-critic 协议（worldcomp 0.928 vs 0.922, Welch p=0.92），并优于 vanilla TD3+BC 23–32pp。→ 特权信息喂 critic 对 **mean 不贡献**（5-seed Δ priv−dep=+0.6pp），只救 outlier seed 44（+12pp） |
+| **靠什么机制？** | Online SAC（**铺垫/机制**，§5.4） | 难流场下 s0→s1 的 80pp gap **不是空间传感器瓶颈、是 actor 时序访问瓶颈**：s0+history k=12（~6s≈涡街周期 30–60%）单变量闭合到 s1 上界（§7.8/§7.9）。给 critic 喂特权流在 online 同样**不闭合 gap**（§7.7）——offline §4.5 asym ablation 的独立 echo |
+| **边界在哪？** | broad-val v2（**边界**，§5.7） | critical regime（Re250/u15）下 s0 与 hull-integral 流弱相关，**oracle 示范 + 特权 critic 都救不了**（N2'=0.000；asym ablation = ACTOR_FUNDAMENTAL_CONFIRMED）→ actor-fundamental ceiling |
+| **换更强算法会变吗？** | FQL succession（**对照/确证**，§5.8） | 表达力更强的 flow-matching 先验（FQL）**不普遍取胜**：算法排名 regime-dependent（SAC mexp 中质量 FQL 赢、saturated 高质量 ReBRAC 赢，两 CI 各自非零）。真正的算法决定因素是 **BC-anchor 目标质量 × 数据 regime 的匹配**，不是先验表达力 |
 
 > 侧重：ReBRAC 是**唯一正面核心贡献**（正面回答"能做到吗"）；online=机制铺垫，broad-val=边界，FQL=对照确证 + 真实算法决定因素。四块都在为同一句"特权信息可有可无 + 真正杠杆是 actor 时序访问 / anchor 质量"服务。
 
 ### 0.3 统一 takeaway（章末收束）
 > 对 deployable-sensor offline RL：正向杠杆是 **actor 对部署信号的时序访问** + **BC-anchor 目标质量与数据 regime 的匹配**；几个"直觉上该有用"的东西其实**非必需或不普遍有效**——给 critic 喂特权流不闭合 gap（online §7.7 + offline §4.5 两条**独立** asym ablation）、增加空间探头有效但**非必需且不可部署**（online §7.8 时序访问可替代）、更强生成式先验**不普遍取胜**（FQL regime-dependent）。这给水下机器人这类部署受限场景一条"**不依赖任何 simulator-only 信号即可逼近 online teacher**"的配方，及其在 critical regime 的失效边界。
 
-> 该 takeaway 在 §5.8 "本章小结"段以 dissertation 章末口吻完整复述（不只是 conference paper 的一句 punchline，需展开到对全博士论文的承上启下 — 见 §0.5.3 structural depth 规范）。
+> 该 takeaway 在 §5.9 "本章小结"段以 dissertation 章末口吻完整复述（不只是 conference paper 的一句 punchline，需展开到对全博士论文的承上启下 — 见 §0.5.3 structural depth 规范）。
 
 ### 0.4 ⚠ 机制归因红线（防答辩席反例，写作时严守）
 1. **不写"actor 侧因素*决定*全部 mean 性能"**。critic **LayerNorm** 是单项最大 mean 杠杆（LN-off **−16.2pp**，远超 β2=0 的 −2.4pp；[`rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) §5.2b）。mean 归因只在**两个 BC penalty 之间**成立：actor β1 carry mean、critic β2 carry 跨数据集 Q-stability（review §0.3 / §5.2）。LayerNorm 是**第三条独立的"表征稳定性"轴**，与"特权信息"命题正交——属"必要基础设施"，**不进** §0.3 的"可有可无"清单。
@@ -76,7 +76,7 @@ shorthand 检验：写每一段时问"如果只看这一段，外审能否复述
 | 实验报告 / progress log | "我们跑了 X seed，结果 Y" / "TODO: Z" | ❌ |
 | 代码文档 / spec | "脚本 `train_sac.py` 接受 `--probe-layout` 参数" | ❌（实施细节嵌入论证，**不**单列脚本说明段） |
 | 会议论文节 | "我们提出 X，实验显示 +Y pp" | ⚠（dissertation 章需更展开 motivation 与 caveat） |
-| **博士论文章 ✅** | "在 X 假设下，[mechanism Y] 决定 [outcome Z]。第 5.k.m 节给出 statistical evidence [reference]，以及它在 critical regime 失效的边界 [reference §5.6]。" | — |
+| **博士论文章 ✅** | "在 X 假设下，[mechanism Y] 决定 [outcome Z]。第 5.k.m 节给出 statistical evidence [reference]，以及它在 critical regime 失效的边界 [reference §5.7]。" | — |
 
 具体规则：
 - 主语优先**机制**（"actor 的时序访问能力决定 …"），其次**结果**（"deployable-only ReBRAC-Q 追平 …"），最后才是**操作**（"我们运行了 …"）。
@@ -87,8 +87,8 @@ shorthand 检验：写每一段时问"如果只看这一段，外审能否复述
 
 dissertation 章相对会议论文节多两层：
 
-- **§5.1 章级独立引言**（rev.5 拆出；**rev.7 据 §5.1 rev.3 「零跨章引述」锁定回写**）：做**自足的章级定位**——以不依赖具体邻章的抽象口径交代本课题在博论中的角色与本章独立贡献，**不点名引述前一章**（不同范式的全局路径规划；§5.1 rev.3 已锁零跨章），**不**提前披露 §5.2 problem description 的具体 setup。roadmap 以**结果语态、节作主语**收尾（§0.5.9 表(a)），**按语义标签描述节序**（问题设定与评估协议 → online 可学性与瓶颈 → 离线基线 → 离线主线 → 失效边界 → 算法对比 → 统一讨论），硬编号以落地 `thesis_ch5/main.tex` 实际节序为准（见 §1 节号待决登记 note）。**不是** paper 1 abstract 的扩写。
-- **§5.8 末段"本章小结"**（rev.7 零跨章回写，与 §5.1 对称）：除 takeaway 复述外，加一段**自足的承上启下**——以抽象口径交代本章命题在博论整体论证中的位置（如"本章为博论提供 deployable-sensor offline RL 的可行性证明、边界与算法决定因素"），**不点名引述具体后续章**（不写"下一章 §6 将…"等硬章号衔接）。
+- **§5.1 章级独立引言**（rev.5 拆出；**rev.7 据 §5.1 rev.3 「零跨章引述」锁定回写**）：做**自足的章级定位**——以不依赖具体邻章的抽象口径交代本课题在博论中的角色与本章独立贡献，**不点名引述前一章**（不同范式的全局路径规划；§5.1 rev.3 已锁零跨章），**不**提前披露 §5.3 problem description 的具体 setup。roadmap 以**结果语态、节作主语**收尾（§0.5.9 表(a)），**按语义标签描述节序**（问题设定与评估协议 → online 可学性与瓶颈 → 离线基线 → 离线主线 → 失效边界 → 算法对比 → 统一讨论），硬编号以落地 `thesis_ch5/main.tex` 实际节序为准（见 §1 节号待决登记 note）。**不是** paper 1 abstract 的扩写。
+- **§5.9 末段"本章小结"**（rev.7 零跨章回写，与 §5.1 对称）：除 takeaway 复述外，加一段**自足的承上启下**——以抽象口径交代本章命题在博论整体论证中的位置（如"本章为博论提供 deployable-sensor offline RL 的可行性证明、边界与算法决定因素"），**不点名引述具体后续章**（不写"下一章 §6 将…"等硬章号衔接）。
 
 每节内部仍按 conference paper 节级展开（motivation → method/setup → results → mechanism/discussion → 实施细节子节），无需额外加层。
 
@@ -97,7 +97,7 @@ dissertation 章相对会议论文节多两层：
 原则：每条 substantive claim（机制、数字、对比、限制）须可追溯到 (a) 本课题已有 docs（行内链接，源文档绝对权威）或 (b) 外部文献（`\cite{}`，正式 BibTeX）。**不刻意凑数，也不为压缩而省**。
 
 具体场景：
-- **机制 claim**（e.g. "BC anchor 目标质量决定 algorithm × data interaction"）：必须同时 cite 自己实验（§5.7）与原文献（FQL Park et al. 2024）。
+- **机制 claim**（e.g. "BC anchor 目标质量决定 algorithm × data interaction"）：必须同时 cite 自己实验（§5.8）与原文献（FQL Park et al. 2024）。
 - **方法对照**（e.g. "ReBRAC-Q vs vanilla TD3+BC vs FQL"）：算法原文献全部 cite，不假设读者已知。
 - **背景概念**（e.g. "Kármán wake / Reynolds number / DVL water-track"）：cite 一篇规范综述/教科书章即可。
 - **avoiding citation rot**：本课题 docs 链接用相对路径（`../docs/foo.md`），LaTeX 落地时改成 BibTeX style 内部引用或注释化。
@@ -120,7 +120,7 @@ dissertation 章相对会议论文节多两层：
 
 **0.5.6 负面结果作章级贡献（不是 "limitation" 而是 "finding"）**
 
-本章三条核心负面结果（§5.6 critical-regime actor-fundamental ceiling / §5.7 FQL conditional-iff 证伪 / §0.4 红线 3 三种"可有可无"失效方式各异）**作为正面 finding 写**，不降级为 limitation 段。这是本课题区别于"算法 paper 总宣称 SOTA"的章级骨气。
+本章三条核心负面结果（§5.7 critical-regime actor-fundamental ceiling / §5.8 FQL conditional-iff 证伪 / §0.4 红线 3 三种"可有可无"失效方式各异）**作为正面 finding 写**，不降级为 limitation 段。这是本课题区别于"算法 paper 总宣称 SOTA"的章级骨气。
 
 具体写法：
 - 节标题不写"limitation of X"；写"Boundary: X fails when Y"或"Honest Negative: X 不普遍"。
@@ -132,7 +132,7 @@ dissertation 章相对会议论文节多两层：
 - 每段 3–4 句封顶（沿用 paper 1 progress.md §9 R1）；超出 → 拆段或拆子节。
 - 每节"finding → interpretation → caveat"三段式 — interpretation 段**不可省**（finding 与 contribution 之间靠 interpretation 缝合），**长度由论证完整性决定**，不预设上限。
 - 数字实时回查源 docs（不复制可能漂移的 headline）；§0.4 红线写作时严守。
-- 算法命名统一 **ReBRAC-Q**（§5.5 严守）/ **TD3+BC** / **FQL** / **SAC**（不裸写 "ReBRAC"，§5.5 method 首句立规）。
+- 算法命名统一 **ReBRAC-Q**（§5.6 严守）/ **TD3+BC** / **FQL** / **SAC**（不裸写 "ReBRAC"，§5.6 method 首句立规）。
 
 **0.5.8 内容优先于篇幅（rev.5 用户拍板的最高写作原则）**
 
@@ -176,36 +176,37 @@ dissertation 章相对会议论文节多两层：
 
 > **rev.5 重构（2026-06-05）**：拆原 §N.1 为 §5.1 章级独立引言 + §5.2 problem description；后续节平移到 §5.3…§5.8；§5.8 末加"本章小结"段。**删除"估计篇幅"列**（NO PRESETS — §0.5.8）；**删除 Appendix 行**（NO APPENDIX — §0.5.5，paper 1 App A–G 按内容主题融入各 §5.x 末"实施细节"子节）。
 >
-> ⚠ **rev.7 节号待决登记（2026-06-07，编号未统一前的权威映射）**：§5.1 引言落地（`thesis_ch5/`）时引入了**独立 §5.2 Related Work 节**，使其后各节较本骨架表 **+1**。该独立 RW 节标记为**可逆 / 尚未永久化**，故本 spec 的 §0–§7 **暂保持下表 8 节基线编号**（5.2=problem description … 5.8=讨论），**未全文 +1**。落地 `main.tex` 实际节序为 9 节：
-> | 落地（main.tex 9 节） | spec 基线（下表 8 节） |
+> ✅ **节号统一（rev.8，2026-06-07，用户拍板独立 §5.2 RW 永久化）**：§5.1 引言落地（`thesis_ch5/`）引入**独立 §5.2 Background & Related Work（研究背景与定位）节**；全 spec 已据此**统一重编号为 9 节**——原 8 节基线 §5.2–§5.8 整体 **+1 → §5.3–§5.9**（rev.7 的「待决登记」CLOSED）。下表为 8→9 历史对照（仅供回溯，spec 正文已全部对齐落地 9 节，与 `main.tex` 一致）：
+> | 落地 9 节（现行） | 原 8 节基线（已废止） |
 > |---|---|
 > | 5.1 引言 | 5.1 引言 |
-> | **5.2 Related Work（独立，可逆）** | —（rev.5 并入 §5.1 / §0.5.3） |
-> | 5.3 Problem setup | 5.2 Problem description |
-> | 5.4 Online | 5.3 Online RL |
+> | **5.2 Background & Related Work（研究背景与定位，独立）** | —（原并入 §5.1 / §0.5.3） |
+> | 5.3 Problem description | 5.2 Problem description |
+> | 5.4 Online RL | 5.3 Online RL |
 > | 5.5 TD3+BC | 5.4 TD3+BC |
 > | 5.6 ReBRAC 主线 | 5.5 ReBRAC 主线 |
 > | 5.7 边界 | 5.6 边界 |
 > | 5.8 算法对比 | 5.7 算法对比 |
 > | 5.9 讨论 | 5.8 讨论 |
 >
-> 待用户就「独立 §5.2 RW 去留」拍板后统一编号：**永久化** → spec 全文 +1 对齐落地；**回退** → 落地撤 RW 回到 8 节。**写作时硬编号一律以落地 `main.tex` 节序为最终依据**，本表 8 节编号仅为 spec 内部锚点。
+> **§5.2 RW 职责限定（用户专家判断，2026-06-07）**：定位为**简短的"研究背景与定位"节，非全面文献综述**——承载 (i) 三支领域地图（offline RL 谱系 / 部分可观测·特权信息 / 数据驱动流场控制）、(ii) 本章 gap 的精确区分（已有工作要么假设丰富观测、要么允许在线交互、要么部署期可用特权信息；"单点 + 离线 + 无特权"的组合尚无系统刻画）、(iii) 科学洞见型贡献在该图上的坐标。**算法间深度技术对比**（TD3+BC α / ReBRAC dual-penalty / FQL flow-matching 差异）**下放各方法节**（§5.6/§5.8 method），§5.2 不重复；应用 hook 留引言 ¶1，方法谱系初次点名留引言 ¶5，§5.2 只深化 gap。篇幅 1.5–2.5 页量级。**反向触发**：仅当博论确有独立 RL 综述章、且放宽"零跨章自足"锁时，才回退为无独立 §5.2（与当前已锁决策冲突，非默认路径）。
 
 | § | 小节 | 主要素材来源 | 资产状态 |
 |---|---|---|---|
-| 5.1 | **章级独立引言**（dissertation 体裁层，与 §1 总引言对接 + 本章 roadmap + 与前后章衔接） | 全新写（参考 §0.5.3 structural depth） | 🟡 **新写**（不复用 paper 1 abstract，§0.5.1 reader model 决定 voice） |
-| 5.2 | **Problem description**（任务 / 环境 / s0 vs privileged / reward 双轨 / 数据集 statistics） | [`environment_design.md`](../docs/environment_design.md) + paper 1 `setup.tex` | ✅ **可直接复用** paper 1 §3 + Fig 1，需泛化到 reward 双轨 / 多 regime |
-| 5.3 | Online RL：可学性与信息瓶颈 | [`online_rl_line_summary.md`](../docs/online_rl_line_summary.md) §1.1 + [`arrival_v2_experiment_report.md`](../docs/arrival_v2_experiment_report.md) §7.9 | 🟡 **新写**（仅 docs，无 LaTeX） |
-| 5.4 | Offline baseline：TD3+BC 拆瓶颈 | [`td3bc_phase0c_experiment_report.md`](../docs/td3bc_phase0c_experiment_report.md) + [`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §1 | 🟡 **新写/扩写**（paper 1 仅作 baseline 引用，无独立节） |
-| 5.5 | ReBRAC 主线：方法 + 四 findings（**章重心**） | paper 1 `method.tex` + `experiments.tex` + [`rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md) | ✅ **几乎全文复用** paper 1 §4–§6 + Fig 2/3 |
-| 5.6 | 泛化边界：broad-val v2 → actor-fundamental ceiling | [`rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3–§5 + §4.5 | 🟡 **部分复用**（paper 1 Phase 6 已折叠为 §6.6 + L12，提级为独立节） |
-| 5.7 | 算法对比：FQL succession 诚实负面 + SAC collector cross-source headline | [`fql_succession_p2_results.md`](../docs/fql_succession_p2_results.md) + [`fql_succession_paper_writing_index.md`](../docs/fql_succession_paper_writing_index.md) + [`arrival_v2_sac_collector_design.md`](../docs/arrival_v2_sac_collector_design.md) §4.0.10 | 🟡 **新写**（撤销的 paper 2 素材整合，定位 thesis subsection；Method/RW/Abstract 按节级 prose 起草） |
-| 5.8 | 统一讨论 + 跨线 reconciliation + limitations + **本章小结** | paper 1 `discussion.tex`/`limitations.tex` + 各线 discussion 段 | 🟡 **整合改写**（融合三线 + β1 reconciliation + dissertation 章末承上启下段） |
+| 5.1 | **章级独立引言**（dissertation 体裁层，与 §1 总引言对接 + 本章 roadmap；零跨章自足） | 全新写（参考 §0.5.3 structural depth） | ✅ **已落地 rev.4**（`thesis_ch5/sections/intro.tex`，commit `bf6fc12`） |
+| 5.2 | **Background & Related Work（研究背景与定位）**（领域地图 + 本章 gap 精确区分 + 贡献坐标；**短节非综述**，深度算法对比下放各方法节，详上方职责限定 note） | 引言 ¶1/¶5 cite 起步 + offline RL 谱系 / 部分可观测·特权信息 / 数据驱动流场控制 三支文献 | 🟡 **新写**（用户 2026-06-07 拍板独立；1.5–2.5 页量级） |
+| 5.3 | **Problem description**（任务 / 环境 / s0 vs privileged / reward 双轨 / 数据集 statistics） | [`environment_design.md`](../docs/environment_design.md) + paper 1 `setup.tex` | ✅ **可直接复用** paper 1 §3 + Fig 1，需泛化到 reward 双轨 / 多 regime |
+| 5.4 | Online RL：可学性与信息瓶颈 | [`online_rl_line_summary.md`](../docs/online_rl_line_summary.md) §1.1 + [`arrival_v2_experiment_report.md`](../docs/arrival_v2_experiment_report.md) §7.9 | 🟡 **新写**（仅 docs，无 LaTeX） |
+| 5.5 | Offline baseline：TD3+BC 拆瓶颈 | [`td3bc_phase0c_experiment_report.md`](../docs/td3bc_phase0c_experiment_report.md) + [`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §1 | 🟡 **新写/扩写**（paper 1 仅作 baseline 引用，无独立节） |
+| 5.6 | ReBRAC 主线：方法 + 四 findings（**章重心**） | paper 1 `method.tex` + `experiments.tex` + [`rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md) | ✅ **几乎全文复用** paper 1 §4–§6 + Fig 2/3 |
+| 5.7 | 泛化边界：broad-val v2 → actor-fundamental ceiling | [`rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3–§5 + §4.5 | 🟡 **部分复用**（paper 1 Phase 6 已折叠为 §6.6 + L12，提级为独立节） |
+| 5.8 | 算法对比：FQL succession 诚实负面 + SAC collector cross-source headline | [`fql_succession_p2_results.md`](../docs/fql_succession_p2_results.md) + [`fql_succession_paper_writing_index.md`](../docs/fql_succession_paper_writing_index.md) + [`arrival_v2_sac_collector_design.md`](../docs/arrival_v2_sac_collector_design.md) §4.0.10 | 🟡 **新写**（撤销的 paper 2 素材整合，定位 thesis subsection；Method/RW/Abstract 按节级 prose 起草） |
+| 5.9 | 统一讨论 + 跨线 reconciliation + limitations + **本章小结** | paper 1 `discussion.tex`/`limitations.tex` + 各线 discussion 段 | 🟡 **整合改写**（融合三线 + β1 reconciliation + dissertation 章末承上启下段） |
 
 **实施细节融入方式（NO APPENDIX）**：每节末附 §5.k.m "实施细节与可复现性"子节，承载 paper 1 App A–G 对应内容（§0.5.5 详）。例：
-- §5.5.m 承担 paper 1 App A (Repro) + B (Hyperparams) + C (Full ReBRAC tables) + D (Stats) + E (Dual-penalty derivations) + F (Q-drift curves) + G (Obs spec)
-- §5.2.m 承担 reward 双轨 + dataset matrix + sensor schematic 复现细节
-- §5.7.m 承担 FQL collector / SAC 39-run 数据来源 + statistical method
+- §5.6.m 承担 paper 1 App A (Repro) + B (Hyperparams) + C (Full ReBRAC tables) + D (Stats) + E (Dual-penalty derivations) + F (Q-drift curves) + G (Obs spec)
+- §5.3.m 承担 reward 双轨 + dataset matrix + sensor schematic 复现细节
+- §5.8.m 承担 FQL collector / SAC 39-run 数据来源 + statistical method
 
 ---
 
@@ -219,37 +220,46 @@ dissertation 章相对会议论文节多两层：
   1. **章级定位（取代原"上承"）**：以抽象口径交代本课题在博论中的角色——自主航行器在自身无法完整观测的环境流场中做运动规划，单点局部可观测约束下 RL 能推进到何种水平；**不点名前一章**（不同范式的全局路径规划，零跨章），任务名统一"运动规划"（不用"导航/navigation"）；
   2. **本章独立贡献**：deployable-sensor offline RL 这一统一命题（§0.1 中心命题，按 §0.5.9 贡献优先散文综合为少数主线，**不** itemize、**不**借用 paper 1 abstract 的紧凑写法 — 章级独立引言可以而且应当展开 motivation 与 stakes）；
   3. **章 roadmap**：以结果语态、节作主语收尾（§0.5.9），按语义标签——问题设定与评估协议 → online 可学性与瓶颈 → 离线基线（TD3+BC）→ 离线主线（章重心）→ 失效边界 → 算法对比 → 统一讨论；硬编号以落地 `thesis_ch5/main.tex` 节序为准（§1 节号待决登记 note）；
-  4. **章级承接（取代原"下接"）**：以抽象口径点出本章结论在博论整体论证中的位置，**不点名引述具体后续章**（与 §5.8 本章小结对称，零跨章）。
+  4. **章级承接（取代原"下接"）**：以抽象口径点出本章结论在博论整体论证中的位置，**不点名引述具体后续章**（与 §5.9 本章小结对称，零跨章）。
 - **复用资产**：**无**。不复用 paper 1 abstract（abstract 是 8 页会议节级口吻，外审会立刻识别为"被搬过来"）。重新起草。
 - **caveat（reader model，§0.5.1）**：假设外审人/答辩席知道 RL 标准术语（SAC / TD3+BC / Q-learning），但**不**熟悉本课题历史；术语首次出现需 1 句定义 + 1 个 cite。
 - **实施细节子节**：本节无 §5.1.m（引言节不需"复现"段）。
-- **落地状态（rev.4，2026-06-07）**：§5.1 已落地 LaTeX（[`thesis_ch5/sections/intro.tex`](thesis_ch5/sections/intro.tex)），6 段——环境流场 + 单点可观测的 funnel → 核心问题（online/offline 两情形，offline 重心）→ 两点反直觉 + ceiling 边界 → scope caveat → 贡献（两条主线散文：信息时序维度 / 离线内部 anchor-数据适配）→ roadmap（节作主语、结果语态）。零跨章引述、抽象下界（环境流场 + 单点局部可观测）、贡献散文（非 itemize）、online/offline 不对称权重、§0.4 红线（不提 LayerNorm / 不嫁接 §5.7 算法发现到 §5.6 ceiling）均已守。复审记录见 commit `bf6fc12`。
+- **落地状态（rev.4，2026-06-07）**：§5.1 已落地 LaTeX（[`thesis_ch5/sections/intro.tex`](thesis_ch5/sections/intro.tex)），6 段——环境流场 + 单点可观测的 funnel → 核心问题（online/offline 两情形，offline 重心）→ 两点反直觉 + ceiling 边界 → scope caveat → 贡献（两条主线散文：信息时序维度 / 离线内部 anchor-数据适配）→ roadmap（节作主语、结果语态）。零跨章引述、抽象下界（环境流场 + 单点局部可观测）、贡献散文（非 itemize）、online/offline 不对称权重、§0.4 红线（不提 LayerNorm / 不嫁接 §5.8 算法发现到 §5.7 ceiling）均已守。复审记录见 commit `bf6fc12`。
 
-### §5.2 Problem description（任务 / 环境 / sensor / reward / 数据集）
+### §5.2 Background & Related Work（研究背景与定位 — rev.8 独立成节）
+
+- **写什么（短节非综述，§0.5.3 + §1 职责限定 note）**：三段式定位——(1) **领域地图**：offline RL 行为约束谱系（BC penalty → 更具表达力的生成式策略先验）、部分可观测下的特权信息与非对称 actor-critic、数据驱动流场环境中的决策；(2) **本章 gap 精确区分**：已有工作要么假设丰富/多点观测、要么允许在线交互、要么部署期仍可访问特权信息——"单点局部感知 + 纯离线 + 部署无特权"这一组合尚无系统刻画；(3) **本章坐标**：科学洞见型贡献（信息时序维度 + 离线 anchor-数据适配两条主线）在该图上的位置。
+- **不写什么（去重红线，避免与引言/各方法节重复）**：算法间**深度技术对比**（TD3+BC α / ReBRAC dual-penalty / FQL flow-matching loss 差异）**下放各方法节**（§5.6 / §5.8 method），§5.2 不展开公式；应用 hook（流场动机）留引言 ¶1；方法谱系的初次点名留引言 ¶5，§5.2 只就 gap 深化。
+- **复用资产**：引言 ¶1/¶5 已有 cite（`gunnarson2021ncomm` / `verma2018pnas` / `levine2020offline` / `haarnoja2018sac` / `fujimoto2021td3bc` / `tarasov2023rebrac` / `park2025fql` / `pinto2017asymmetric`）作起点；需补三支领域代表性综述/锚文献（offline RL survey、POMDP·privileged-info、数据驱动流场控制），数量定性不预设（§0.5.4）。
+- **voice / 篇幅**：§0.5.2 dissertation 学术体（有论点的 positioning，非 literature dump）；1.5–2.5 页量级，避免膨胀为第二个综述章（§0.5.7）。RW 用**领域层**术语，具体平台 / 传感硬件留 §5.3 setup。
+- **caveat（零跨章自足）**：本节是全章自足的背景锚点，不引述博论其他章的综述章；术语首次出现 1 句定义 + 1 cite（§0.5.1 reader model）。
+- **实施细节子节**：本节无 §5.2.m（背景节不需"复现"段，与 §5.1 同）。
+
+### §5.3 Problem description（任务 / 环境 / sensor / reward / 数据集）
 
 - **写什么**：AUV/wake 任务定义 → deployable `s0`（DVL 单点）vs privileged hull-integral `[u_eq, v_eq]`（critic-only）→ **reward 双轨**（efficiency_v2 / arrival_v2）→ **数据集 statistics**（来源 / size / regime / collector policy）→ 评估协议（manifest / Welch / paired-mean / rule-of-three）。本章统一 setup，后续三线共享。
 - **数字/概念源**：[`environment_design.md`](../docs/environment_design.md)；state-space 速查 [`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §5.2（obs 维度：efficiency_v2 s0/h4=40-D；arrival_v2 s0/h4=48-D；privileged_obs dim=2 不堆叠）。
 - **复用资产**：paper 1 `sections/setup.tex`（rev.2，99 行，含 dataset matrix 表 + 5 子节）+ **Fig 1 sensor schematic**（已出 pdf/png）。
 - **本章新增**：需把 setup 从"单一 canonical 协议（cross_u10/efficiency_v2）"**泛化**到覆盖三线用到的多个 regime（efficiency_v2 ↔ arrival_v2 reward；Re150/u10 sub-critical ↔ Re250/u15 critical；s0/s1/s2 sensor；SAC vs baseline collector）。这是统一三线的第一处缝合工作。
 - **caveat**：reward 已从 `efficiency_v2`（paper 1 / TD3+BC 历史）迁到 `arrival_v2`（broad-val v2 / FQL）；两者 obs 维度不同（40 vs 48），setup 必须显式交代两套并存，否则后续表格维度对不上。
-- **§5.2.m 实施细节与可复现性**（NO APPENDIX 融入）：承担 paper 1 App A reproducibility + App G obs spec + dataset matrix 表；evaluation manifest JSON schema + Welch / paired-mean / rule-of-three 计算式 + seed 选择协议。
+- **§5.3.m 实施细节与可复现性**（NO APPENDIX 融入）：承担 paper 1 App A reproducibility + App G obs spec + dataset matrix 表；evaluation manifest JSON schema + Welch / paired-mean / rule-of-three 计算式 + seed 选择协议。
 
-### §5.3 Online RL：可学性与信息瓶颈
+### §5.4 Online RL：可学性与信息瓶颈
 - **写什么**：(1) A0 sensor screen — deployable s0 在简单 wake viable；(2) arrival_v2 prototype — H_information-bottleneck（s0+history k=12 闭合 80pp 的 s0→s1 gap）+ manifest universal-floor 概念。
 - **数字源（thesis-grade）**：[`online_rl_line_summary.md`](../docs/online_rl_line_summary.md) §1.1（A0：efficiency_v2 s1 0.967 / s0 0.789 / s2 0.856）；[`arrival_v2_experiment_report.md`](../docs/arrival_v2_experiment_report.md) §7.9 / §7.9.7（k=12 在 2/3 seed saturate manifest floor 27/30=0.900；3-seed σ_final=0.038 << target 0.10）。
 - **复用资产**：无 LaTeX，**全新写**。可新作 figure（A0 三 sensor bar + arrival_v2 k-monotonicity 相位跃迁图）。
-- **叙事作用**：为全章奠定"瓶颈在 actor 信息访问，不在传感器硬件"的基调，**为 §5.6 actor-fundamental ceiling 埋伏笔**（online 难流场 catastrophic floor 10% ↔ offline N2' 跌破到 0%）。
+- **叙事作用**：为全章奠定"瓶颈在 actor 信息访问，不在传感器硬件"的基调，**为 §5.7 actor-fundamental ceiling 埋伏笔**（online 难流场 catastrophic floor 10% ↔ offline N2' 跌破到 0%）。
 - **caveat**：reward preset sweep（27 run×200k）**绝对数字不可引用**，仅作 `efficiency_v2` 选择的方法学依据；Sprint 0 preflight 不可作性能基线。坑（200k 假性否决 / flow 不一致 bug / efficiency_v2 OOB-suicide）可入方法论或 limitations。
-- **§5.3.m 实施细节与可复现性**：A0 sensor screen 3-seed 协议 + arrival_v2 prototype k-sweep 协议 + manifest universal-floor 计算 + reward preset sweep 方法学（数字不引、仅作 viability 论证）；online §7.7 AsymCritic ablation 复现细节（若 §8 开放点 3 决定保留 cross-line 旁证）。
+- **§5.4.m 实施细节与可复现性**：A0 sensor screen 3-seed 协议 + arrival_v2 prototype k-sweep 协议 + manifest universal-floor 计算 + reward preset sweep 方法学（数字不引、仅作 viability 论证）；online §7.7 AsymCritic ablation 复现细节（若 §8 开放点 3 决定保留 cross-line 旁证）。
 
-### §5.4 Offline baseline：TD3+BC 拆瓶颈
+### §5.5 Offline baseline：TD3+BC 拆瓶颈
 - **写什么**：TD3+BC 把"数据越多越差"从协议伪象**纠正为真实现象**，拆出两个瓶颈：(1) 数据支持集结构（"2000<1000"退化在纯 BC 下同样成立）；(2) deployable critic 信息瓶颈（privileged-critic 关 48.5% gap）。→ 为 ReBRAC 创造问题设定。
 - **数字源**：[`td3bc_phase0c_experiment_report.md`](../docs/td3bc_phase0c_experiment_report.md)；headline（[`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §1）：crosscomp 500/1000/2000 = 0.592/**0.672**/0.596；worldcomp deployable 最优退回 α≈0（纯 BC 0.858）/ privileged 0.922 / teacher 0.990。
 - **复用资产**：paper 1 把 TD3+BC 仅作 baseline 行引用，**无独立节** → 本章需扩写成一个短节（dissertation 容量允许讲完整 baseline 故事，§0.5.3 structural depth）。
-- **叙事作用**：建立"为何需要 dual-BC penalty"的动机，自然过渡到 §5.5。
-- **§5.4.m 实施细节与可复现性**：TD3+BC 损失全式 + α-sweep 协议 + nearest-action 距离度量 + crosscomp 500/1000/2000 数据集构造 + worldcomp deployable/privileged α-optimum 报告。
+- **叙事作用**：建立"为何需要 dual-BC penalty"的动机，自然过渡到 §5.6。
+- **§5.5.m 实施细节与可复现性**：TD3+BC 损失全式 + α-sweep 协议 + nearest-action 距离度量 + crosscomp 500/1000/2000 数据集构造 + worldcomp deployable/privileged α-optimum 报告。
 
-### §5.5 ReBRAC 主线：方法 + 四 findings（**本章重心**）
+### §5.6 ReBRAC 主线：方法 + 四 findings（**本章重心**）
 - **写什么**：方法（Q-normalized dual-penalty TD3+BC variant = ReBRAC-Q）+ 四条 paper-level finding。
 - **四 findings 数字锚**（实时回查 [`rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md)；镜像见 paper 1 progress.md §3）：
   - (i) crosscomp +23.0pp（1000）/ +32.2pp（2000），翻转"more data hurts"，std 不增反降
@@ -258,9 +268,9 @@ dissertation 章相对会议论文节多两层：
   - (iv) critic LayerNorm ⊥ dual penalty（LN-off −16.2pp，远超 β2=0 的 −2.4pp，方向相反）
 - **⚠ 与 §0 dispensability 命题的接口（写 Finding (iv) 时严守，防自相矛盾，cross-ref §0.4 红线 1）**：critic LayerNorm 是**第三条独立的"表征稳定性"轴 = 必要基础设施**，与 §0 的"特权信息可有可无"命题**正交**——它**不**进 §0.3 的"可有可无"清单。两条配套红线：(a) mean 归因只在 **actor β1 vs critic β2** 之间成立（β1 carry mean、β2 carry Q-stability），**不可**升级为"actor 侧决定全部 mean"（LN 才是单项最大 mean 杠杆）；(b) LN claim 强度 n=2 seeds 仅支撑 "necessary component 存在性"，**不 claim "LN 比 dual penalty 重要"**（review §2.2.4）。
 - **复用资产**：✅ **paper 1 主干几乎全文可搬** — `method.tex`（rev.2，134 行）+ `experiments.tex`（rev.2，233 行，含 4 finding 子节 + 主表 + 2 ablation 表）+ **Fig 2 seed dotplot** + **Fig 3 Q-drift**。
-- **关键命名红线**：全文 **ReBRAC-Q (ours)**，method 节首句声明 + §5.5.4 差异表（β1=4.0 ↔ TD3+BC α≈0.25）；不裸写 "ReBRAC"。
-- **finalist**：`(β1=4.0, β2=2.0)`，是 **robustness winner（救 seed 44）**非 peak winner — 这是 §5.8 β1 reconciliation 的前提，§5.5 须埋点。
-- **§5.5.m 实施细节与可复现性**（NO APPENDIX 重头戏 — 集中承担 paper 1 App A–G 中 ReBRAC 部分）：
+- **关键命名红线**：全文 **ReBRAC-Q (ours)**，method 节首句声明 + §5.6.4 差异表（β1=4.0 ↔ TD3+BC α≈0.25）；不裸写 "ReBRAC"。
+- **finalist**：`(β1=4.0, β2=2.0)`，是 **robustness winner（救 seed 44）**非 peak winner — 这是 §5.9 β1 reconciliation 的前提，§5.6 须埋点。
+- **§5.6.m 实施细节与可复现性**（NO APPENDIX 重头戏 — 集中承担 paper 1 App A–G 中 ReBRAC 部分）：
   - paper 1 App A reproducibility（5-seed 协议 / Welch / paired-mean / rule-of-three / robustness winner 选择规则）
   - paper 1 App B 超参表（actor/critic lr / batch / γ / τ / β1=4.0 β2=2.0 / Q-norm 实现 / LN 位置）
   - paper 1 App C 全表（worldcomp / crosscomp 双数据集 × 5 seed × β1×β2 sweep）
@@ -268,37 +278,37 @@ dissertation 章相对会议论文节多两层：
   - paper 1 App E dual-penalty derivation（actor β1 carry mean / critic β2 carry Q-stability 的损失梯度分解）
   - paper 1 App F 学习曲线全图（5-seed 收敛轨迹 + Q-drift bar）
   - paper 1 App G obs 24-D / 40-D 详细 spec
-  - 该实施细节子节是全章最长子节（论证完整性，§0.5.8）；不"放在最后"，紧接 §5.5 四 finding 后。
+  - 该实施细节子节是全章最长子节（论证完整性，§0.5.8）；不"放在最后"，紧接 §5.6 四 finding 后。
 
-### §5.6 泛化边界：broad-val v2 → actor-fundamental ceiling
+### §5.7 泛化边界：broad-val v2 → actor-fundamental ceiling
 - **写什么**：broad-val v2 两 cell — N0（sub-critical）HOLDS；N2'（critical Re250）STRONG_NEGATIVE → **deployable s0 actor-fundamental partial-observability ceiling**；asym-critic ablation 排除 critic-fundamental 解释。
 - **数字源**：[`rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3–§5（N0 0.850 HOLDS / N2' 0.000 STRONG_NEGATIVE，跌破 online catastrophic floor 10pp）+ §4.5（asym-critic ablation，verdict **ACTOR_FUNDAMENTAL_CONFIRMED**：完美 hull-integral flow 喂 critic，s0 actor 仍 0.000）。
 - **复用资产**：paper 1 Phase 6 已把这部分折叠为 `discussion.tex` §6.6 + `limitations.tex` L12 → 本章**提级为独立节**（dissertation 容量允许，§0.5.3 + §0.5.6 负面结果作 finding 不降级 limitation）。
-- **叙事作用（§0.5.6）**：这是本章**最强负面 finding**，与 §5.5 正面 finding 同台呈现统计 evidence（n / verdict / CI），**不**降级为 limitation 段；mechanism explanation 与正面 finding 同等深度（"为何会失败 = 也是机制贡献"）。
+- **叙事作用（§0.5.6）**：这是本章**最强负面 finding**，与 §5.6 正面 finding 同台呈现统计 evidence（n / verdict / CI），**不**降级为 limitation 段；mechanism explanation 与正面 finding 同等深度（"为何会失败 = 也是机制贡献"）。
 - **⚠ claim 边界红线**（[`fql_succession_paper_writing_index`](../docs/fql_succession_paper_writing_index.md) 同源原则，broad-val v2 report §4.5 明确）：
   - ✅ **可下**："privileged-flow critic 不能挽救 N2' 天花板；**排除 critic-fundamental**；HARDENS actor-fundamental"
   - ❌ **不可下**："proven actor-incapable / s0 actor 信息论上不可能" — asym=0 同时兼容"表征不可能"与"asym-critic 机制没把信息转化给 actor"两种读法。
-- **§5.6.m 实施细节与可复现性**：broad-val v2 manifest（u15_cross / u15_upstream）+ N0/N2' 2-seed 协议 + asym-critic ablation 实验设置（特权流喂 critic 通道，actor 保持 s0）+ verdict ACTOR_FUNDAMENTAL_CONFIRMED 推导链 + N2' 跌破 online catastrophic floor 的对照（§5.3 online ↔ §5.6 offline floor 比对表）。
+- **§5.7.m 实施细节与可复现性**：broad-val v2 manifest（u15_cross / u15_upstream）+ N0/N2' 2-seed 协议 + asym-critic ablation 实验设置（特权流喂 critic 通道，actor 保持 s0）+ verdict ACTOR_FUNDAMENTAL_CONFIRMED 推导链 + N2' 跌破 online catastrophic floor 的对照（§5.4 online ↔ §5.7 offline floor 比对表）。
 
-### §5.7 算法对比：FQL vs ReBRAC — 先验表达力 vs anchor 目标质量
+### §5.8 算法对比：FQL vs ReBRAC — 先验表达力 vs anchor 目标质量
 - **写什么（两层结论，必须按此顺序，否则会过头）**：
   1. **privileged-collector regime（FQL P2）**：核心 conditional-iff 假设（"FQL > ReBRAC iff sub-optimal AND multi-modal"）**证伪** → discriminator 是**噪声**非 modality（E-multi NULL）；机制三连 Q1→Q1b→Q1c（critic 侧排除 → actor β1 4→1 noisy **+23.5pp** → β1=1 clean 也更好）；C-1 给 FQL 自己的 anchor 旋钮做公平复赛 **RESCUE-FAIL**。**该 regime 内**：单一 ReBRAC β1=1.0 双轴 dominate FQL（worst-case 0.910 > 0.858）。
   2. **跨数据源 refine（SAC collector，最新，2026-05-26）**：把 1 的 "ReBRAC dominate" 放到 RL-trained behavior policy 数据源上**会翻转** → 算法排名是 **regime-dependent（algorithm × data-quality interaction）**，不是全局。**这才是本节的章级 headline**（不是 1 的 "ReBRAC dominate"）。
-- **统一机制（贯穿两层，喂 §5.8）**：offline RL 性能由 **BC-anchor 目标质量与数据 regime 的匹配**决定、**不**由策略类先验表达力决定——中质量噪声数据 FQL 的 flow-denoised teacher 更优、高质量 clean 数据 ReBRAC 的 raw-action anchor 更优。
+- **统一机制（贯穿两层，喂 §5.9）**：offline RL 性能由 **BC-anchor 目标质量与数据 regime 的匹配**决定、**不**由策略类先验表达力决定——中质量噪声数据 FQL 的 flow-denoised teacher 更优、高质量 clean 数据 ReBRAC 的 raw-action anchor 更优。
 - **数字源**：FQL P2 = [`fql_succession_p2_results.md`](../docs/fql_succession_p2_results.md) + [`..._mechanism_diagnostic.md`](../docs/fql_succession_p2_mechanism_diagnostic.md) §9（cheatsheet [`..._paper_writing_index.md`](../docs/fql_succession_paper_writing_index.md) §2）；SAC collector interaction = [`arrival_v2_sac_collector_design.md`](../docs/arrival_v2_sac_collector_design.md) §4.0.10（SAC mexp **FQL 0.922 vs ReBRAC β1=1 0.800, Δ+0.123 CI[+0.022,+0.233]**；m_multi_mix 反向 +0.035 CI[+0.010,+0.065]）。
 - **⚠ 口径红线**（§0.4 红线 5）：mexp 反超是**同源**（sprint1+2 同 collector/manifest）干净比较；"方向翻转"的 ReBRAC>FQL 一侧落在**异源** m_multi_mix（不同 dataset/manifest），cross-source 仅 **direction robust、magnitude 不可比**。interaction 只 claim 方向，不 claim 幅度比；**不要把 FQL P2 的 "ReBRAC dominate" 当章级 headline**。
 - **复用资产**：verdict notebook 3 图已出（matrix / noise-axis / c1-rescue）；**Method prose / Related Work / Abstract 待写**（writing index §6 TODO，按 §0.5.2 dissertation voice 起草，不复用 paper 2 abstract）。
-- **定位对接**：writing index §5 已预留**定位 (c) = thesis 章节 subsection**，与本方案一致 → FQL 作为本章一节，Method 与 ReBRAC 共享（§5.5）。
+- **定位对接**：writing index §5 已预留**定位 (c) = thesis 章节 subsection**，与本方案一致 → FQL 作为本章一节，Method 与 ReBRAC 共享（§5.6）。
 - **caveat**：跨-benchmark 探测在 `single_u15_cross` 撞 s0 observability **FLOOR**（clean priv 0.719 / noisy 0.098）→ scope caveat，不弱化 u10_cross 主结果。
-- **§5.7.m 实施细节与可复现性**：FQL 方法增量（flow-matching teacher 损失全式，与 §5.5 ReBRAC dual-penalty 共享共有部分）+ FQL P2 2×2 modality×noise matrix 协议 + Q1/Q1b/Q1c 机制三连 ablation 设置 + C-1 RESCUE-FAIL 协议 + **SAC collector 39-run cross-source 设计**（sprint 1/2 collector / manifest / regime / 5×β1 sweep）+ §4.0.10 cross-source magnitude caveat 计算 + verdict notebook 3 图复现。
+- **§5.8.m 实施细节与可复现性**：FQL 方法增量（flow-matching teacher 损失全式，与 §5.6 ReBRAC dual-penalty 共享共有部分）+ FQL P2 2×2 modality×noise matrix 协议 + Q1/Q1b/Q1c 机制三连 ablation 设置 + C-1 RESCUE-FAIL 协议 + **SAC collector 39-run cross-source 设计**（sprint 1/2 collector / manifest / regime / 5×β1 sweep）+ §4.0.10 cross-source magnitude caveat 计算 + verdict notebook 3 图复现。
 
-### §5.8 统一讨论 + 跨线 reconciliation + limitations + 本章小结
+### §5.9 统一讨论 + 跨线 reconciliation + limitations + 本章小结
 - **写什么**：(1) 统一机制（actor 信息 + BC-anchor 目标质量两轴）；(2) **β1 跨线 reconciliation**（paper 1 用 β1=4.0、FQL 线用 β1=1.0 不矛盾）；(3) sim2real implication；(4) limitations；(5) **本章小结**（dissertation 章末承上启下段，§0.5.3）。
 - **β1 reconciliation 源**：[`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §6（四轴差异：reward / collector / 动作噪声 / seed pool；原线 β1=4.0 本是 seed-44 std-driven 选择）+ [`rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) §2.2.6 + [`fql_succession_p2_results.md`](../docs/fql_succession_p2_results.md) §8.1。**这是单章统一三线相比两篇独立 paper 的最大叙事增值点** — 在一章里能把"同一 BC-anchor 旋钮、相反最优点、由 anchor target 是否带噪决定"讲成统一机制。
-- **本章小结**（§0.5.3 dissertation 体裁要求 — 不是 conference paper 的一句 punchline）：(a) 复述 §0.3 统一 takeaway；(b) 与博论整体 spine 衔接（本章为博论提供 deployable-sensor offline RL 的可行性证明 + 边界 + 算法决定因素）；(c) **自足的章级承接**（rev.7 零跨章：以抽象口径点出本章命题在博论整体论证中的位置，**不点名引述具体后续章**；与 §0.5.3 §5.8 小结、§2 §5.1 章级承接对称）。
+- **本章小结**（§0.5.3 dissertation 体裁要求 — 不是 conference paper 的一句 punchline）：(a) 复述 §0.3 统一 takeaway；(b) 与博论整体 spine 衔接（本章为博论提供 deployable-sensor offline RL 的可行性证明 + 边界 + 算法决定因素）；(c) **自足的章级承接**（rev.7 零跨章：以抽象口径点出本章命题在博论整体论证中的位置，**不点名引述具体后续章**；与 §0.5.3 §5.9 小结、§2 §5.1 章级承接对称）。
 - **复用资产**：paper 1 `discussion.tex`（rev.3，6 子节，含 §6.6 critical-regime boundary probe）+ `limitations.tex`（rev.4，L1–L12，含 L12 actor-fundamental ceiling 论证）+ `conclusion.tex`（rev.2，末句 scope tag 显式化 sub-critical regime + efficiency-v2 reward，指回 L12 / §6.6）。本章小结段**全新写**（paper 1 conclusion 是 8 页节级口吻，dissertation 章末需扩展承上启下，§0.5.3）。
 - **限定红线**（paper 1 progress R7/R8）：anti-scaling reversal 与 sim2real implication 严格限定在 `s0 + Kármán wake + REMUS-100` 边界内，不包装为 algorithm-paper claim。
-- **§5.8.m 实施细节与可复现性**：β1 reconciliation 四轴差异表（reward / collector / 动作噪声 / seed pool）+ paper 1 L1–L12 limitations 完整列表 + sim2real implication 的 scope tag 列表（s0 + Kármán wake + REMUS-100 + sub-critical regime + efficiency_v2 reward 五重限定）。
+- **§5.9.m 实施细节与可复现性**：β1 reconciliation 四轴差异表（reward / collector / 动作噪声 / seed pool）+ paper 1 L1–L12 limitations 完整列表 + sim2real implication 的 scope tag 列表（s0 + Kármán wake + REMUS-100 + sub-critical regime + efficiency_v2 reward 五重限定）。
 
 ---
 
@@ -306,11 +316,11 @@ dissertation 章相对会议论文节多两层：
 
 | 缝合点 | 问题 | 建议处理 |
 |---|---|---|
-| **reward 双轨** | efficiency_v2（paper 1/TD3BC）vs arrival_v2（broad-val v2/FQL），obs 40-D vs 48-D | §5.2 setup 显式交代两套 reward + 各自 obs 维度；每个 results 表标注 reward regime |
-| **β1 = 4.0 vs 1.0** | 两线最优 β1 不同会被审稿人当矛盾 | §5.5 埋点（finalist 是 robustness winner）；§5.8 统一 reconciliation（四轴差异 + 统一机制）→ 化矛盾为 finding |
-| **online ↔ offline floor 呼应** | online catastrophic floor 10% ↔ offline N2' 0% | §5.3 埋伏笔，§5.6 收束："offline + oracle 示范反而 underperform online SAC" |
-| **FQL Method 去重** | FQL 与 ReBRAC 的 loss 公式若各写一遍会冗余 | Method 集中在 §5.5，§5.7 只增量讲 FQL distill 差异，共享 ReBRAC 公式 |
-| **AsymCritic 两处出现** | online §7.7 AsymCritic ablation ↔ offline N2' asym-critic ablation | 统一术语；§5.6 主用 offline 版（actor-fundamental），online §7.7 版作 cross-line 旁证（§8 开放点 3 待定是否独立呈现） |
+| **reward 双轨** | efficiency_v2（paper 1/TD3BC）vs arrival_v2（broad-val v2/FQL），obs 40-D vs 48-D | §5.3 setup 显式交代两套 reward + 各自 obs 维度；每个 results 表标注 reward regime |
+| **β1 = 4.0 vs 1.0** | 两线最优 β1 不同会被审稿人当矛盾 | §5.6 埋点（finalist 是 robustness winner）；§5.9 统一 reconciliation（四轴差异 + 统一机制）→ 化矛盾为 finding |
+| **online ↔ offline floor 呼应** | online catastrophic floor 10% ↔ offline N2' 0% | §5.4 埋伏笔，§5.7 收束："offline + oracle 示范反而 underperform online SAC" |
+| **FQL Method 去重** | FQL 与 ReBRAC 的 loss 公式若各写一遍会冗余 | Method 集中在 §5.6，§5.8 只增量讲 FQL distill 差异，共享 ReBRAC 公式 |
+| **AsymCritic 两处出现** | online §7.7 AsymCritic ablation ↔ offline N2' asym-critic ablation | 统一术语；§5.7 主用 offline 版（actor-fundamental），online §7.7 版作 cross-line 旁证（§8 开放点 3 待定是否独立呈现） |
 
 ---
 
@@ -328,17 +338,17 @@ dissertation 章相对会议论文节多两层：
 ## 5. Figure & Table 清单
 
 **已就位（可直接搬）**：
-- Fig 1 sensor schematic（paper 1，s0 vs hull-integral 几何）→ §5.2
-- Fig 2 seed dotplot（paper 1，C2 dep vs priv）→ §5.5
-- Fig 3 Q-drift bar（paper 1，C3 β2=0）→ §5.5
-- FQL verdict 3 图（matrix / noise-axis / c1-rescue，notebook 已出）→ §5.7
+- Fig 1 sensor schematic（paper 1，s0 vs hull-integral 几何）→ §5.3
+- Fig 2 seed dotplot（paper 1，C2 dep vs priv）→ §5.6
+- Fig 3 Q-drift bar（paper 1，C3 β2=0）→ §5.6
+- FQL verdict 3 图（matrix / noise-axis / c1-rescue，notebook 已出）→ §5.8
 
 **本章需新作**：
-- (5.3-a) A0 三 sensor success bar（s0/s1/s2 × efficiency_v2/arrival_v1）
-- (5.3-b) arrival_v2 k-monotonicity 相位跃迁（k=4→8→12，含 seed=0 CROSS-SEED-RESCUE）
-- (5.4) TD3+BC "2000<1000" 退化 + 纯 BC 对照（可选）
-- (5.6) N2' ceiling decomposition（oracle 70% → offline+oracle 0%；含 asym ablation 行）
-- (5.7) SAC collector 39-run algorithm×data-quality interaction heatmap（**章级 headline，强推**，§0.2 子问 4 锚）
+- (5.4-a) A0 三 sensor success bar（s0/s1/s2 × efficiency_v2/arrival_v1）
+- (5.4-b) arrival_v2 k-monotonicity 相位跃迁（k=4→8→12，含 seed=0 CROSS-SEED-RESCUE）
+- (5.5) TD3+BC "2000<1000" 退化 + 纯 BC 对照（可选）
+- (5.7) N2' ceiling decomposition（oracle 70% → offline+oracle 0%；含 asym ablation 行）
+- (5.8) SAC collector 39-run algorithm×data-quality interaction heatmap（**章级 headline，强推**，§0.2 子问 4 锚）
 
 ---
 
@@ -346,21 +356,21 @@ dissertation 章相对会议论文节多两层：
 
 | paper 1 资产 | 本章去向 | 改动量 |
 |---|---|---|
-| `setup.tex` (§3) | §5.2 | 中：泛化到多 reward/regime/sensor |
-| `method.tex` (§4) | §5.5 | 小：基本照搬 |
-| `experiments.tex` (§5) | §5.5 | 小：照搬四 findings |
-| `discussion.tex` (§6，含 §6.6) | §5.6（§6.6 提级独立节）+ §5.8 | 中：拆分 + 融入三线 |
-| `limitations.tex` (§7，L1–L12) | §5.8 | 中：合并各线 limitations |
-| `conclusion.tex` (§8) | §5.8/本章小结段 | 大：升级到 dissertation 章末，扩展承上启下（§0.5.3） |
-| **Appendix A–G** | **按内容主题融入各 §5.x 末"实施细节"子节（NO APPENDIX，§0.5.5）** | **重组**：A/G → §5.2.m + §5.5.m；B/C/D/E/F → 主要进 §5.5.m；TD3+BC 复现 → §5.4.m；online 复现 → §5.3.m；broad-val v2 → §5.6.m；FQL + SAC collector → §5.7.m |
+| `setup.tex` (§3) | §5.3 | 中：泛化到多 reward/regime/sensor |
+| `method.tex` (§4) | §5.6 | 小：基本照搬 |
+| `experiments.tex` (§5) | §5.6 | 小：照搬四 findings |
+| `discussion.tex` (§6，含 §6.6) | §5.7（§6.6 提级独立节）+ §5.9 | 中：拆分 + 融入三线 |
+| `limitations.tex` (§7，L1–L12) | §5.9 | 中：合并各线 limitations |
+| `conclusion.tex` (§8) | §5.9/本章小结段 | 大：升级到 dissertation 章末，扩展承上启下（§0.5.3） |
+| **Appendix A–G** | **按内容主题融入各 §5.x 末"实施细节"子节（NO APPENDIX，§0.5.5）** | **重组**：A/G → §5.3.m + §5.6.m；B/C/D/E/F → 主要进 §5.6.m；TD3+BC 复现 → §5.5.m；online 复现 → §5.4.m；broad-val v2 → §5.7.m；FQL + SAC collector → §5.8.m |
 | `refs.bib`（12 cites） | 本章 | 增：+ FQL (Park et al.) + flow-matching policy 综述 + dissertation reader-model 所需的领域综述（§0.5.4） |
 
 **新写内容（无现成 LaTeX）**：
 - §5.1 章级独立引言（全新写，dissertation 体裁，不复用 paper 1 abstract）
-- §5.3 online 全节
-- §5.4 TD3+BC 扩写
-- §5.7 的 Method/RW/prose（按 §0.5.2 dissertation voice，不复用 paper 2 abstract）+ SAC collector 章级 headline
-- §5.8 的 β1 reconciliation 段 + **本章小结**（§0.5.3 dissertation 章末承上启下，全新写）
+- §5.4 online 全节
+- §5.5 TD3+BC 扩写
+- §5.8 的 Method/RW/prose（按 §0.5.2 dissertation voice，不复用 paper 2 abstract）+ SAC collector 章级 headline
+- §5.9 的 β1 reconciliation 段 + **本章小结**（§0.5.3 dissertation 章末承上启下，全新写）
 - 各 §5.x.m 实施细节子节的重组写作（不"放在最后"，紧接各节论证后，§0.5.5）
 
 ---
@@ -370,14 +380,15 @@ dissertation 章相对会议论文节多两层：
 > **rev.5 关键改动（2026-06-05）**：原 rev.4 写作顺序 #1 = "§N.1 setup 泛化"。rev.5 拆 §N.1 为 §5.1 章级独立引言 + §5.2 problem description；写作顺序新 #1 = **§5.1 章级独立引言（Markdown outline 优先于 LaTeX）**，作为 dissertation 体裁锚点 — 先在 Markdown 落地体裁、与 §0.5 体裁规范对照通过后再起 LaTeX。详见用户 2026-06-05 拍板"补 spec → 起 §5.1 outline → 再 LaTeX"步骤序。
 
 1. **§5.1 章级独立引言（Markdown outline）** — 不直接起 LaTeX；先用 Markdown 起草段落级骨架（reader model 假设 / 与博论 §1 总引言对接句 / 本章 roadmap / 与前后章衔接），与 §0.5 体裁规范条对条 review；通过后再起 LaTeX 工程 `paper/thesis_ch5/`。这是 dissertation 体裁的第一次落地实验。
-2. **§5.2 Problem description**（搬 paper 1 §3 setup.tex + 扩 reward 双轨 + dataset matrix 泛化）→ 立刻能编译，建立框架。
-3. **§5.5 ReBRAC 主体**（搬 paper 1 §4–§6 + §5.5.m 实施细节子节集中承担 App A–G）→ 章重心先就位。
-4. **§5.8 讨论/limitations/本章小结整合**（搬 paper 1 §6–§8 + 融三线 + 章末承上启下段全新写）→ 含 β1 reconciliation 这一最大增值点。
-5. **§5.6 边界节**（提级 paper 1 §6.6 + L12，§0.5.6 负面结果作 finding 不降级）。
-6. **§5.7 FQL + SAC collector 节**（writing index §2 cheatsheet 逐节填 + FQL Method 增量 + **SAC collector 39-run 章级 headline**）。
-7. **§5.4 TD3+BC 短节**（baseline 故事扩写）。
-8. **§5.3 online 节**（全新写 + 2 张新 figure，依赖最少、可最后补）。
-9. **章 abstract（若博论目录要求）+ 统一 takeaway 章末收束** → 全章成稿后回写。
+2. **§5.3 Problem description**（搬 paper 1 §3 setup.tex + 扩 reward 双轨 + dataset matrix 泛化）→ 立刻能编译，建立框架。
+3. **§5.6 ReBRAC 主体**（搬 paper 1 §4–§6 + §5.6.m 实施细节子节集中承担 App A–G）→ 章重心先就位。
+4. **§5.9 讨论/limitations/本章小结整合**（搬 paper 1 §6–§8 + 融三线 + 章末承上启下段全新写）→ 含 β1 reconciliation 这一最大增值点。
+5. **§5.7 边界节**（提级 paper 1 §6.6 + L12，§0.5.6 负面结果作 finding 不降级）。
+6. **§5.8 FQL + SAC collector 节**（writing index §2 cheatsheet 逐节填 + FQL Method 增量 + **SAC collector 39-run 章级 headline**）。
+7. **§5.5 TD3+BC 短节**（baseline 故事扩写）。
+8. **§5.4 online 节**（全新写 + 2 张新 figure，依赖最少、可最后补）。
+9. **§5.2 Background & Related Work 短节**（研究背景与定位）→ 待主体节（§5.3 setup + §5.6 ReBRAC + §5.7 边界 + §5.8 算法对比 + §5.9 讨论）就位后写，使 gap 区分精确呼应正文论点；短节非综述、深度算法对比下放各方法节（§1 职责限定 note）。
+10. **章 abstract（若博论目录要求）+ 统一 takeaway 章末收束** → 全章成稿后回写。
 
 > 编译路径**新建** `paper/thesis_ch5/`（方案 A，paper 1 完全不动）：`cd paper/thesis_ch5 && latexmk -pdf -xelatex -interaction=nonstopmode -halt-on-error main.tex`；成功后立即 `latexmk -c` 清中间文件（用户偏好，见 memory `feedback_latex_cleanup`）。LaTeX 工程结构（`\documentclass[11pt]{report}` + `\chapter` macro + `\input{sections/...}` 章节文件夹）在 §5.1 Markdown outline 通过后再 bootstrap。
 
@@ -386,16 +397,16 @@ dissertation 章相对会议论文节多两层：
 ## 8. 用户后续确认的开放点 / 已决策状态（不阻塞动笔）
 
 1. ~~**章号 N**~~ — ✅ **resolved 2026-06-02**：**章号 = 第 5 章**（用户拍板 2026-06-02）。本 spec **rev.5 已全文落地** §5.1 / §5.2 / ... / §5.8 标号（rev.4 阶段曾保留 §N.k 占位以减少重编号噪音，rev.5 章号已 lock 后直接落地）。前后章衔接（§5 引言要承接多少前文）待整本博士论文目录拍板后再补，**不阻塞 §5.1 起草**。
-2. ~~**SAC collector 39-run** 是否进正文（§5.7 末段）还是仅 appendix~~ — ✅ **resolved 2026-06-02**：**进第 5 章 §5.7 正文末段**，作为 §5.7 章级 headline。锚点 = spec §5.7 layer 2 + §0.2 子问 4（"算法排名是 regime-dependent (algorithm × data-quality interaction)，不是全局"），是 §0 中心命题"特权信息可有可无 + 真杠杆是 anchor 目标质量 × 数据 regime"的关键支撑。带 §0.4 红线 5 cross-source magnitude caveat（同源 SAC mexp 干净，异源 m_multi_mix 仅 direction-robust）。
-3. **online §7.7 AsymCritic** 是否要与 §5.6 offline asym ablation 并列呈现（cross-line 一致性证据）还是只留 offline 版。 — 🟡 待用户拍板；可在写到 §5.6 时再定，**不阻塞 §5.1 起草**。
+2. ~~**SAC collector 39-run** 是否进正文（§5.8 末段）还是仅 appendix~~ — ✅ **resolved 2026-06-02**：**进第 5 章 §5.8 正文末段**，作为 §5.8 章级 headline。锚点 = spec §5.8 layer 2 + §0.2 子问 4（"算法排名是 regime-dependent (algorithm × data-quality interaction)，不是全局"），是 §0 中心命题"特权信息可有可无 + 真杠杆是 anchor 目标质量 × 数据 regime"的关键支撑。带 §0.4 红线 5 cross-source magnitude caveat（同源 SAC mexp 干净，异源 m_multi_mix 仅 direction-robust）。
+3. **online §7.7 AsymCritic** 是否要与 §5.7 offline asym ablation 并列呈现（cross-line 一致性证据）还是只留 offline 版。 — 🟡 待用户拍板；可在写到 §5.7 时再定，**不阻塞 §5.1 起草**。
 4. ~~**是否同时保留 paper 1 / paper 2 的独立投稿版**~~ — ✅ **resolved 2026-06-02**：**不另起任何 standalone paper**，全部素材整合进博士论文第 5 章。
-   - **paper 1 ReBRAC**：31pp arXiv preprint draft（Phase 6.1 commit `932aca1`）作为第 5 章 §5.5 主干**直接复用**；不另投 CoRL/RA-L，也不单独上 arXiv（除非用户后续另议）
-   - **paper 2（FQL standalone）**：**撤销启动**。素材并入 §5.7（FQL 算法对比 + SAC collector cross-source headline）；Method/RW/Abstract 不写独立版，按 §5.7 节级 prose 起草（§0.5.2 dissertation voice）
-   - **paper 3（online SAC standalone）**：**撤销候选**。素材并入 §5.3（online RL：可学性与信息瓶颈）
+   - **paper 1 ReBRAC**：31pp arXiv preprint draft（Phase 6.1 commit `932aca1`）作为第 5 章 §5.6 主干**直接复用**；不另投 CoRL/RA-L，也不单独上 arXiv（除非用户后续另议）
+   - **paper 2（FQL standalone）**：**撤销启动**。素材并入 §5.8（FQL 算法对比 + SAC collector cross-source headline）；Method/RW/Abstract 不写独立版，按 §5.8 节级 prose 起草（§0.5.2 dissertation voice）
+   - **paper 3（online SAC standalone）**：**撤销候选**。素材并入 §5.4（online RL：可学性与信息瓶颈）
    - thesis 第 5 章 = 当前唯一写作目标，本 spec 直接驱动其逐节起草
 5. ~~**是否设 appendix**~~ — ✅ **resolved 2026-06-05（rev.5）**：**NO APPENDIX**。本章不设附录；paper 1 App A–G 全部按内容主题融入各 §5.x 末"实施细节"子节（§0.5.5）。这是 dissertation 章相对 conference paper 的体裁差之一：dissertation 章读者期待每节读完即拥有该节复现细节，不希望来回翻附录；conference paper 读者接受附录补充。
 6. ~~**章节总篇幅 / cite 条数硬性目标**~~ — ✅ **resolved 2026-06-05（rev.5）**：**无硬性目标，内容优先于篇幅**（§0.5.8）。所有规模决策由「论证完整性 + 读者可追溯」裁决；写完一节后回顾"是否多说 / 少说"，不回顾"是否超页"。
 7. ~~**§5.1 起草是直接起 LaTeX 还是先 Markdown outline**~~ — ✅ **resolved 2026-06-05（rev.5）**：**先 Markdown outline，对照 §0.5 体裁规范 review 通过后再起 LaTeX**。§5.1 章级独立引言是 dissertation 体裁的第一次落地实验，需双重 review（体裁是否到位 + 与 §0 中心命题是否一致），用 Markdown 比 LaTeX 迭代成本低。§5.1 outline 通过后 bootstrap `paper/thesis_ch5/` LaTeX 工程。
-8. **博论整体目录与前后章衔接** — 🟢 **部分 resolved（rev.7，2026-06-07）**：§5.1 rev.3 已锁**零跨章引述**——引言"章级定位"段与 §5.8"本章小结"承接段均回写为**不点名引述邻章的自足口径**（§0.5.3 + §2 §5.1 已落地），故**不再依赖**具体前后章名称，原"待前后章名称拍板"的阻塞已消解。**仍 open** 的只剩整本博论目录与硬章号衔接（与开放点 1 相关），但**不影响** §5.x 各节起草（引言/小结已零跨章自足）。
+8. **博论整体目录与前后章衔接** — 🟢 **部分 resolved（rev.7，2026-06-07）**：§5.1 rev.3 已锁**零跨章引述**——引言"章级定位"段与 §5.9"本章小结"承接段均回写为**不点名引述邻章的自足口径**（§0.5.3 + §2 §5.1 已落地），故**不再依赖**具体前后章名称，原"待前后章名称拍板"的阻塞已消解。**仍 open** 的只剩整本博论目录与硬章号衔接（与开放点 1 相关），但**不影响** §5.x 各节起草（引言/小结已零跨章自足）。
 
 > **跨开放点决策（2026-06-02 + 2026-06-05）**：用户明确 (a) "**直接合成博士论文第 5 章，不另写独立 paper**"（2026-06-02 lock）；(b) "**dissertation 章是正式学术论文，不是备忘录 / 实验报告 / 代码文档**"（2026-06-05 拍板，落入 §0.5 体裁规范）；(c) "**内容优先于篇幅，不预设页数 / cite 数**"（2026-06-05 拍板，§0.5.8 + §8 #6 lock）。本 spec 是第 5 章的写作 spec（不是"合并蓝图"）；§7 写作顺序 **#1 = §5.1 章级独立引言 Markdown outline** 是下一步动作。

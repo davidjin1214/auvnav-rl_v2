@@ -10,8 +10,9 @@
 % 成功后立即 latexmk -c 清中间文件（用户偏好）。
 %
 % 当前状态（逐节落地，写完取消注释）：
-%   - sections/intro.tex   §5.1 章级独立引言   ✅ rev.4（复审落地：去算法嫁接 + cite 对齐）
-%   - 其余 §5.2–§5.9        ⏳ 后续对话逐节加
+%   - sections/intro.tex        §5.1 章级独立引言   ✅ rev.5（生物出发点 hook 重构）
+%   - sections/related_work.tex §5.2 研究背景与定位 ✅ rev.1（生物借流 + RL 复现 + gap）
+%   - 其余 §5.3–§5.9             ⏳ 后续对话逐节加
 % =====================================================================
 
 \documentclass[11pt]{report}
@@ -61,8 +62,8 @@
 % =====================================================================
 % Section bodies（逐节落地后取消注释）
 % =====================================================================
-\input{sections/intro}          % §5.1 章级独立引言        — ✅ rev.4
-% \input{sections/related_work} % §5.2 Background & Related Work（研究背景与定位，rev.8 独立成节） — ⏳
+\input{sections/intro}          % §5.1 章级独立引言        — ✅ rev.5（生物 hook）
+\input{sections/related_work}   % §5.2 Background & Related Work（研究背景与定位） — ✅ rev.1
 % \input{sections/setup}        % §5.3 Problem setup        — ⏳
 % \input{sections/online}       % §5.4 Online: 可学性与瓶颈 — ⏳
 % \input{sections/td3bc}        % §5.5 Offline baseline     — ⏳

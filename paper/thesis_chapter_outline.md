@@ -14,7 +14,7 @@
 > 3. **新增 §0.5 章级写作体裁规范（7 + 1 条）**：reader model / voice / structural depth / citation 策略（定性，**不预设条数**）/ no-appendix 实施细节融入 / 负面结果作贡献项 / 写作纪律（不预设页数）/ **内容优先于篇幅**。该节是 rev.4 缺的"how-to-write"层。
 > 4. **撤销所有量化目标**（用户 2026-06-05 指示："先不要考虑预设篇幅和 cite 数，重点是先把内容写清楚，而不是控制篇幅"）：§1 章节骨架表删"估计篇幅"列；§0.5 citation 策略与 interpretation 段长改为定性原则；章节总篇幅无 hard cap。
 >
-> ⚠ rev 历史：rev.1（2026-05-30 初稿）→ rev.2（2026-05-31 §0 spine 收紧 + §0.4 红线）→ rev.3（2026-06-02 sync paper Phase 6/6.1 + §N.7 rev refs 校准；曾短暂含"先独立 paper"框架）→ rev.4（2026-06-02 撤销"先独立"框架 + 章号=5 lock + SAC collector 进 §N.6 正文 + 各 standalone paper 撤销）→ **rev.5（2026-06-05 加 §0.5 体裁规范 + NO APPENDIX 锁 + 8 节结构拆分 + 撤所有量化目标）** → **rev.6（2026-06-06 加 §0.5.9 报告体→学术体 register 提级 checklist；§5.1 rev.3 落地为 worked example，标题宽泛化为「局部感知下水下航行器运动规划的强化学习方法」）**。
+> ⚠ rev 历史：rev.1（2026-05-30 初稿）→ rev.2（2026-05-31 §0 spine 收紧 + §0.4 红线）→ rev.3（2026-06-02 sync paper Phase 6/6.1 + §N.7 rev refs 校准；曾短暂含"先独立 paper"框架）→ rev.4（2026-06-02 撤销"先独立"框架 + 章号=5 lock + SAC collector 进 §N.6 正文 + 各 standalone paper 撤销）→ **rev.5（2026-06-05 加 §0.5 体裁规范 + NO APPENDIX 锁 + 8 节结构拆分 + 撤所有量化目标）** → **rev.6（2026-06-06 加 §0.5.9 报告体→学术体 register 提级 checklist；§5.1 rev.3 落地为 worked example，标题宽泛化为「局部感知下水下航行器运动规划的强化学习方法」）** → **rev.7（2026-06-07 §5.1 引言 rev.4 复审落地——去 §5.7 算法发现误嫁接到 §5.6 ceiling、cite 对齐补 SAC/FQL；spec 侧：§0.5.3 / §2 §5.1「上承下接」据 §5.1 rev.3 零跨章引述锁定回写为自足口径、§8 #8 部分 resolved、§1 新增节号待决登记 note）**。
 >
 > 与现有文档的关系：
 > - 本文是 thesis chapter 的**总规划**；它**统摄**而非取代 [`paper/outline.md`](outline.md)（那是 ReBRAC paper 1 的 8 页 conference outline，对应本章 §5.4–§5.6 的素材来源）与 [`paper/progress.md`](progress.md)（paper 1 LaTeX 工程进度，**31 页 arXiv preprint draft**，可作本章主干直接复用）。
@@ -87,8 +87,8 @@ shorthand 检验：写每一段时问"如果只看这一段，外审能否复述
 
 dissertation 章相对会议论文节多两层：
 
-- **§5.1 章级独立引言**（rev.5 拆出）：与博士论文整体引言（§1）对接，假设读者刚从前一章过来——简述本课题在博论 spine 中的位置、本章独立贡献相对前序章的增量、本章 roadmap（"§5.3 先 …，§5.5 是 …，§5.7 给出 …"）。**不是** paper 1 abstract 的扩写，**不是** §5.2 problem description 的提前披露。
-- **§5.8 末段"本章小结"**：除 takeaway 复述外，加一段对全博论的承上启下（"本章证明 X，下一章 §6 将基于此 …"或"本章命题为博论中段 thesis statement 提供 …"）。
+- **§5.1 章级独立引言**（rev.5 拆出；**rev.7 据 §5.1 rev.3 「零跨章引述」锁定回写**）：做**自足的章级定位**——以不依赖具体邻章的抽象口径交代本课题在博论中的角色与本章独立贡献，**不点名引述前一章**（不同范式的全局路径规划；§5.1 rev.3 已锁零跨章），**不**提前披露 §5.2 problem description 的具体 setup。roadmap 以**结果语态、节作主语**收尾（§0.5.9 表(a)），**按语义标签描述节序**（问题设定与评估协议 → online 可学性与瓶颈 → 离线基线 → 离线主线 → 失效边界 → 算法对比 → 统一讨论），硬编号以落地 `thesis_ch5/main.tex` 实际节序为准（见 §1 节号待决登记 note）。**不是** paper 1 abstract 的扩写。
+- **§5.8 末段"本章小结"**（rev.7 零跨章回写，与 §5.1 对称）：除 takeaway 复述外，加一段**自足的承上启下**——以抽象口径交代本章命题在博论整体论证中的位置（如"本章为博论提供 deployable-sensor offline RL 的可行性证明、边界与算法决定因素"），**不点名引述具体后续章**（不写"下一章 §6 将…"等硬章号衔接）。
 
 每节内部仍按 conference paper 节级展开（motivation → method/setup → results → mechanism/discussion → 实施细节子节），无需额外加层。
 
@@ -175,6 +175,21 @@ dissertation 章相对会议论文节多两层：
 ## 1. 章节骨架总览
 
 > **rev.5 重构（2026-06-05）**：拆原 §N.1 为 §5.1 章级独立引言 + §5.2 problem description；后续节平移到 §5.3…§5.8；§5.8 末加"本章小结"段。**删除"估计篇幅"列**（NO PRESETS — §0.5.8）；**删除 Appendix 行**（NO APPENDIX — §0.5.5，paper 1 App A–G 按内容主题融入各 §5.x 末"实施细节"子节）。
+>
+> ⚠ **rev.7 节号待决登记（2026-06-07，编号未统一前的权威映射）**：§5.1 引言落地（`thesis_ch5/`）时引入了**独立 §5.2 Related Work 节**，使其后各节较本骨架表 **+1**。该独立 RW 节标记为**可逆 / 尚未永久化**，故本 spec 的 §0–§7 **暂保持下表 8 节基线编号**（5.2=problem description … 5.8=讨论），**未全文 +1**。落地 `main.tex` 实际节序为 9 节：
+> | 落地（main.tex 9 节） | spec 基线（下表 8 节） |
+> |---|---|
+> | 5.1 引言 | 5.1 引言 |
+> | **5.2 Related Work（独立，可逆）** | —（rev.5 并入 §5.1 / §0.5.3） |
+> | 5.3 Problem setup | 5.2 Problem description |
+> | 5.4 Online | 5.3 Online RL |
+> | 5.5 TD3+BC | 5.4 TD3+BC |
+> | 5.6 ReBRAC 主线 | 5.5 ReBRAC 主线 |
+> | 5.7 边界 | 5.6 边界 |
+> | 5.8 算法对比 | 5.7 算法对比 |
+> | 5.9 讨论 | 5.8 讨论 |
+>
+> 待用户就「独立 §5.2 RW 去留」拍板后统一编号：**永久化** → spec 全文 +1 对齐落地；**回退** → 落地撤 RW 回到 8 节。**写作时硬编号一律以落地 `main.tex` 节序为最终依据**，本表 8 节编号仅为 spec 内部锚点。
 
 | § | 小节 | 主要素材来源 | 资产状态 |
 |---|---|---|---|
@@ -200,14 +215,15 @@ dissertation 章相对会议论文节多两层：
 
 ### §5.1 章级独立引言（dissertation 体裁层 — rev.5 新增）
 
-- **写什么（与会议节级引言显著不同，§0.5.3 structural depth）**：
-  1. **上承**：本课题在博士论文 spine 中的位置（前序章给出 AUV/wake 任务设定与传统 navigation 方法的局限；本章是 RL 章的核心贡献）；
-  2. **本章独立贡献**：deployable-sensor offline RL 这一统一命题（§0.1 中心命题完整复述，**不**借用 paper 1 abstract 的紧凑写法 — 章级独立引言可以而且应当展开 motivation 与 stakes）；
-  3. **章 roadmap**：§5.2 statement setup → §5.3 online 铺垫 → §5.4 TD3+BC baseline → §5.5 ReBRAC 主线（章重心）→ §5.6 边界 → §5.7 算法对比 → §5.8 统一讨论；
-  4. **下接**：本章结论对全博论后续章的承接（写作时与博士论文整体目录对齐，参 §8 开放点 1）。
+- **写什么（与会议节级引言显著不同，§0.5.3 structural depth；rev.7 据 §5.1 rev.3 零跨章引述锁定回写——下列各点均改为不点名引述邻章的自足口径）**：
+  1. **章级定位（取代原"上承"）**：以抽象口径交代本课题在博论中的角色——自主航行器在自身无法完整观测的环境流场中做运动规划，单点局部可观测约束下 RL 能推进到何种水平；**不点名前一章**（不同范式的全局路径规划，零跨章），任务名统一"运动规划"（不用"导航/navigation"）；
+  2. **本章独立贡献**：deployable-sensor offline RL 这一统一命题（§0.1 中心命题，按 §0.5.9 贡献优先散文综合为少数主线，**不** itemize、**不**借用 paper 1 abstract 的紧凑写法 — 章级独立引言可以而且应当展开 motivation 与 stakes）；
+  3. **章 roadmap**：以结果语态、节作主语收尾（§0.5.9），按语义标签——问题设定与评估协议 → online 可学性与瓶颈 → 离线基线（TD3+BC）→ 离线主线（章重心）→ 失效边界 → 算法对比 → 统一讨论；硬编号以落地 `thesis_ch5/main.tex` 节序为准（§1 节号待决登记 note）；
+  4. **章级承接（取代原"下接"）**：以抽象口径点出本章结论在博论整体论证中的位置，**不点名引述具体后续章**（与 §5.8 本章小结对称，零跨章）。
 - **复用资产**：**无**。不复用 paper 1 abstract（abstract 是 8 页会议节级口吻，外审会立刻识别为"被搬过来"）。重新起草。
 - **caveat（reader model，§0.5.1）**：假设外审人/答辩席知道 RL 标准术语（SAC / TD3+BC / Q-learning），但**不**熟悉本课题历史；术语首次出现需 1 句定义 + 1 个 cite。
 - **实施细节子节**：本节无 §5.1.m（引言节不需"复现"段）。
+- **落地状态（rev.4，2026-06-07）**：§5.1 已落地 LaTeX（[`thesis_ch5/sections/intro.tex`](thesis_ch5/sections/intro.tex)），6 段——环境流场 + 单点可观测的 funnel → 核心问题（online/offline 两情形，offline 重心）→ 两点反直觉 + ceiling 边界 → scope caveat → 贡献（两条主线散文：信息时序维度 / 离线内部 anchor-数据适配）→ roadmap（节作主语、结果语态）。零跨章引述、抽象下界（环境流场 + 单点局部可观测）、贡献散文（非 itemize）、online/offline 不对称权重、§0.4 红线（不提 LayerNorm / 不嫁接 §5.7 算法发现到 §5.6 ceiling）均已守。复审记录见 commit `bf6fc12`。
 
 ### §5.2 Problem description（任务 / 环境 / sensor / reward / 数据集）
 
@@ -279,7 +295,7 @@ dissertation 章相对会议论文节多两层：
 ### §5.8 统一讨论 + 跨线 reconciliation + limitations + 本章小结
 - **写什么**：(1) 统一机制（actor 信息 + BC-anchor 目标质量两轴）；(2) **β1 跨线 reconciliation**（paper 1 用 β1=4.0、FQL 线用 β1=1.0 不矛盾）；(3) sim2real implication；(4) limitations；(5) **本章小结**（dissertation 章末承上启下段，§0.5.3）。
 - **β1 reconciliation 源**：[`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §6（四轴差异：reward / collector / 动作噪声 / seed pool；原线 β1=4.0 本是 seed-44 std-driven 选择）+ [`rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) §2.2.6 + [`fql_succession_p2_results.md`](../docs/fql_succession_p2_results.md) §8.1。**这是单章统一三线相比两篇独立 paper 的最大叙事增值点** — 在一章里能把"同一 BC-anchor 旋钮、相反最优点、由 anchor target 是否带噪决定"讲成统一机制。
-- **本章小结**（§0.5.3 dissertation 体裁要求 — 不是 conference paper 的一句 punchline）：(a) 复述 §0.3 统一 takeaway；(b) 与博论整体 spine 衔接（本章为博论提供 deployable-sensor offline RL 的可行性证明 + 边界 + 算法决定因素）；(c) 对全博论后续章的承接（写作时与博士论文整体目录对齐，参 §8 开放点 1 与博论 §1 总引言的呼应）。
+- **本章小结**（§0.5.3 dissertation 体裁要求 — 不是 conference paper 的一句 punchline）：(a) 复述 §0.3 统一 takeaway；(b) 与博论整体 spine 衔接（本章为博论提供 deployable-sensor offline RL 的可行性证明 + 边界 + 算法决定因素）；(c) **自足的章级承接**（rev.7 零跨章：以抽象口径点出本章命题在博论整体论证中的位置，**不点名引述具体后续章**；与 §0.5.3 §5.8 小结、§2 §5.1 章级承接对称）。
 - **复用资产**：paper 1 `discussion.tex`（rev.3，6 子节，含 §6.6 critical-regime boundary probe）+ `limitations.tex`（rev.4，L1–L12，含 L12 actor-fundamental ceiling 论证）+ `conclusion.tex`（rev.2，末句 scope tag 显式化 sub-critical regime + efficiency-v2 reward，指回 L12 / §6.6）。本章小结段**全新写**（paper 1 conclusion 是 8 页节级口吻，dissertation 章末需扩展承上启下，§0.5.3）。
 - **限定红线**（paper 1 progress R7/R8）：anti-scaling reversal 与 sim2real implication 严格限定在 `s0 + Kármán wake + REMUS-100` 边界内，不包装为 algorithm-paper claim。
 - **§5.8.m 实施细节与可复现性**：β1 reconciliation 四轴差异表（reward / collector / 动作噪声 / seed pool）+ paper 1 L1–L12 limitations 完整列表 + sim2real implication 的 scope tag 列表（s0 + Kármán wake + REMUS-100 + sub-critical regime + efficiency_v2 reward 五重限定）。
@@ -380,6 +396,6 @@ dissertation 章相对会议论文节多两层：
 5. ~~**是否设 appendix**~~ — ✅ **resolved 2026-06-05（rev.5）**：**NO APPENDIX**。本章不设附录；paper 1 App A–G 全部按内容主题融入各 §5.x 末"实施细节"子节（§0.5.5）。这是 dissertation 章相对 conference paper 的体裁差之一：dissertation 章读者期待每节读完即拥有该节复现细节，不希望来回翻附录；conference paper 读者接受附录补充。
 6. ~~**章节总篇幅 / cite 条数硬性目标**~~ — ✅ **resolved 2026-06-05（rev.5）**：**无硬性目标，内容优先于篇幅**（§0.5.8）。所有规模决策由「论证完整性 + 读者可追溯」裁决；写完一节后回顾"是否多说 / 少说"，不回顾"是否超页"。
 7. ~~**§5.1 起草是直接起 LaTeX 还是先 Markdown outline**~~ — ✅ **resolved 2026-06-05（rev.5）**：**先 Markdown outline，对照 §0.5 体裁规范 review 通过后再起 LaTeX**。§5.1 章级独立引言是 dissertation 体裁的第一次落地实验，需双重 review（体裁是否到位 + 与 §0 中心命题是否一致），用 Markdown 比 LaTeX 迭代成本低。§5.1 outline 通过后 bootstrap `paper/thesis_ch5/` LaTeX 工程。
-8. **博论整体目录与前后章衔接** — 🟡 仍 open（与开放点 1 相关）。§5.1 章级引言"上承"段与 §5.8 本章小结"下接"段所需的具体前后章名称，待整本博论目录拍板。**不阻塞 §5.1 outline Markdown 起草**（可先用占位"前一章给出 X 设定"等口径）。
+8. **博论整体目录与前后章衔接** — 🟢 **部分 resolved（rev.7，2026-06-07）**：§5.1 rev.3 已锁**零跨章引述**——引言"章级定位"段与 §5.8"本章小结"承接段均回写为**不点名引述邻章的自足口径**（§0.5.3 + §2 §5.1 已落地），故**不再依赖**具体前后章名称，原"待前后章名称拍板"的阻塞已消解。**仍 open** 的只剩整本博论目录与硬章号衔接（与开放点 1 相关），但**不影响** §5.x 各节起草（引言/小结已零跨章自足）。
 
 > **跨开放点决策（2026-06-02 + 2026-06-05）**：用户明确 (a) "**直接合成博士论文第 5 章，不另写独立 paper**"（2026-06-02 lock）；(b) "**dissertation 章是正式学术论文，不是备忘录 / 实验报告 / 代码文档**"（2026-06-05 拍板，落入 §0.5 体裁规范）；(c) "**内容优先于篇幅，不预设页数 / cite 数**"（2026-06-05 拍板，§0.5.8 + §8 #6 lock）。本 spec 是第 5 章的写作 spec（不是"合并蓝图"）；§7 写作顺序 **#1 = §5.1 章级独立引言 Markdown outline** 是下一步动作。

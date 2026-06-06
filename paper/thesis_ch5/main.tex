@@ -1,0 +1,79 @@
+% =====================================================================
+% paper/thesis_ch5/main.tex
+% 博士论文 第 5 章：Deployable-Sensor Offline RL for AUV Wake Navigation
+% 统一三线（online SAC + TD3+BC/ReBRAC + FQL succession）的核心贡献章。
+%
+% 方案 A：本工程独立于 paper/（paper 1 ReBRAC arXiv preprint）完全不动。
+% 排版：单栏 11pt report（dissertation 章节稿）；\setcounter 使本章编号为 5。
+% 编译：
+%   latexmk -pdf -xelatex -interaction=nonstopmode -halt-on-error main.tex
+% 成功后立即 latexmk -c 清中间文件（用户偏好）。
+%
+% 当前状态（逐节落地，写完取消注释）：
+%   - sections/intro.tex   §5.1 章级独立引言   ✅ rev.1
+%   - 其余 §5.2–§5.9        ⏳ 后续对话逐节加
+% =====================================================================
+
+\documentclass[11pt]{report}
+
+% ---------- geometry / typography ----------
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+% 中文（XeLaTeX）：ctex + xeCJK；heading=true 使 \chapter 渲染为"第 5 章"
+\usepackage[heading=true]{ctex}
+\usepackage{xeCJK}
+
+% ---------- math ----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+
+% ---------- floats / tables / figures ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{siunitx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% ---------- references / hyperlinks ----------
+\usepackage[hidelinks, breaklinks=true]{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+
+% ---------- code / verbatim ----------
+\usepackage{verbatim}
+\usepackage{xcolor}
+
+\begin{document}
+
+% 使本章在博论中为第 5 章；节自动编号 5.1, 5.2, ...
+\setcounter{chapter}{4}
+\chapter{面向可部署传感的水下航行器尾流导航离线强化学习}
+\label{chap:deployable_offline_rl}
+
+% =====================================================================
+% Section bodies（逐节落地后取消注释）
+% =====================================================================
+\input{sections/intro}          % §5.1 章级独立引言        — ✅ rev.1
+% \input{sections/related_work} % §5.2 Background & RW      — ⏳
+% \input{sections/setup}        % §5.3 Problem setup        — ⏳
+% \input{sections/online}       % §5.4 Online: 可学性与瓶颈 — ⏳
+% \input{sections/td3bc}        % §5.5 Offline baseline     — ⏳
+% \input{sections/rebrac}       % §5.6 Offline 主线（重心） — ⏳
+% \input{sections/boundary}     % §5.7 泛化边界             — ⏳
+% \input{sections/algo_compare} % §5.8 算法对比 + headline  — ⏳
+% \input{sections/discussion}   % §5.9 统一讨论 + 本章小结  — ⏳
+
+% =====================================================================
+% Bibliography
+% =====================================================================
+\bibliography{refs}
+
+\end{document}

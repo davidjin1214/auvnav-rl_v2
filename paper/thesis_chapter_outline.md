@@ -14,7 +14,7 @@
 > 3. **新增 §0.5 章级写作体裁规范（7 + 1 条）**：reader model / voice / structural depth / citation 策略（定性，**不预设条数**）/ no-appendix 实施细节融入 / 负面结果作贡献项 / 写作纪律（不预设页数）/ **内容优先于篇幅**。该节是 rev.4 缺的"how-to-write"层。
 > 4. **撤销所有量化目标**（用户 2026-06-05 指示："先不要考虑预设篇幅和 cite 数，重点是先把内容写清楚，而不是控制篇幅"）：§1 章节骨架表删"估计篇幅"列；§0.5 citation 策略与 interpretation 段长改为定性原则；章节总篇幅无 hard cap。
 >
-> ⚠ rev 历史：rev.1（2026-05-30 初稿）→ rev.2（2026-05-31 §0 spine 收紧 + §0.4 红线）→ rev.3（2026-06-02 sync paper Phase 6/6.1 + §N.7 rev refs 校准；曾短暂含"先独立 paper"框架）→ rev.4（2026-06-02 撤销"先独立"框架 + 章号=5 lock + SAC collector 进 §N.6 正文 + 各 standalone paper 撤销）→ **rev.5（2026-06-05 加 §0.5 体裁规范 + NO APPENDIX 锁 + 8 节结构拆分 + 撤所有量化目标）** → **rev.6（2026-06-06 加 §0.5.9 报告体→学术体 register 提级 checklist；§5.1 rev.3 落地为 worked example，标题宽泛化为「局部感知下水下航行器运动规划的强化学习方法」）** → **rev.7（2026-06-07 §5.1 引言 rev.4 复审落地——去 §5.7 算法发现误嫁接到 §5.6 ceiling、cite 对齐补 SAC/FQL；spec 侧：§0.5.3 / §2 §5.1「上承下接」据 §5.1 rev.3 零跨章引述锁定回写为自足口径、§8 #8 部分 resolved、§1 新增节号待决登记 note）** → **rev.8（2026-06-07 用户拍板**独立 §5.2 Background & Related Work 永久化**：全 spec 重编号为 9 节[原 §5.2–§5.8 整体 +1 → §5.3–§5.9]；§5.2 定位"研究背景与定位"短节[领域地图 + gap 精确区分 + 贡献坐标，深度算法对比下放各方法节]；rev.7 节号待决 CLOSED；§1 骨架表/§2 新增 §5.2 RW 节定位）**。
+> ⚠ rev 历史：rev.1（2026-05-30 初稿）→ rev.2（2026-05-31 §0 spine 收紧 + §0.4 红线）→ rev.3（2026-06-02 sync paper Phase 6/6.1 + §N.7 rev refs 校准；曾短暂含"先独立 paper"框架）→ rev.4（2026-06-02 撤销"先独立"框架 + 章号=5 lock + SAC collector 进 §N.6 正文 + 各 standalone paper 撤销）→ **rev.5（2026-06-05 加 §0.5 体裁规范 + NO APPENDIX 锁 + 8 节结构拆分 + 撤所有量化目标）** → **rev.6（2026-06-06 加 §0.5.9 报告体→学术体 register 提级 checklist；§5.1 rev.3 落地为 worked example，标题宽泛化为「局部感知下水下航行器运动规划的强化学习方法」）** → **rev.7（2026-06-07 §5.1 引言 rev.4 复审落地——去 §5.7 算法发现误嫁接到 §5.6 ceiling、cite 对齐补 SAC/FQL；spec 侧：§0.5.3 / §2 §5.1「上承下接」据 §5.1 rev.3 零跨章引述锁定回写为自足口径、§8 #8 部分 resolved、§1 新增节号待决登记 note）** → **rev.8（2026-06-07 用户拍板**独立 §5.2 Background & Related Work 永久化**：全 spec 重编号为 9 节[原 §5.2–§5.8 整体 +1 → §5.3–§5.9]；§5.2 定位"研究背景与定位"短节[领域地图 + gap 精确区分 + 贡献坐标，深度算法对比下放各方法节]；rev.7 节号待决 CLOSED；§1 骨架表/§2 新增 §5.2 RW 节定位）** → **rev.9（2026-06-07 用户拍板"生物出发点"叙事框架——§5.1 hook 提级为"自然生物借流 → RL 复现 → 本文"三段弧[聚焦鱼类主线，鸟/浮游一笔带过]、§5.2 RW 用 [`flow_navigation_rl_review_zh.md`](../reference/flow_navigation_rl_review_zh.md) 综述做骨架[生物现象 + RL 复现谱系 + 算法背景 三支汇于 gap]；先 spec 设计、intro.tex/refs.bib 后落地）**。
 >
 > 与现有文档的关系：
 > - 本文是 thesis chapter 的**总规划**；它**统摄**而非取代 [`paper/outline.md`](outline.md)（那是 ReBRAC paper 1 的 8 页 conference outline，对应本章 §5.5–§5.7 的素材来源）与 [`paper/progress.md`](progress.md)（paper 1 LaTeX 工程进度，**31 页 arXiv preprint draft**，可作本章主干直接复用）。
@@ -194,7 +194,7 @@ dissertation 章相对会议论文节多两层：
 | § | 小节 | 主要素材来源 | 资产状态 |
 |---|---|---|---|
 | 5.1 | **章级独立引言**（dissertation 体裁层，与 §1 总引言对接 + 本章 roadmap；零跨章自足） | 全新写（参考 §0.5.3 structural depth） | ✅ **已落地 rev.4**（`thesis_ch5/sections/intro.tex`，commit `bf6fc12`） |
-| 5.2 | **Background & Related Work（研究背景与定位）**（领域地图 + 本章 gap 精确区分 + 贡献坐标；**短节非综述**，深度算法对比下放各方法节，详上方职责限定 note） | 引言 ¶1/¶5 cite 起步 + offline RL 谱系 / 部分可观测·特权信息 / 数据驱动流场控制 三支文献 | 🟡 **新写**（用户 2026-06-07 拍板独立；1.5–2.5 页量级） |
+| 5.2 | **Background & Related Work（研究背景与定位）**（生物借流现象 + RL 复现谱系 + 算法背景 三支汇于 gap；**短节非综述**，承 §5.1 生物 hook、聚焦鱼类，详上方职责限定 note + §2 骨架） | [`flow_navigation_rl_review_zh.md`](../reference/flow_navigation_rl_review_zh.md)（生物借流 + RL 复现综述骨架，22 refs）+ 引言 ¶1/¶5 cite 起步 + offline RL/POMDP·特权信息 文献 | 🟡 **新写**（用户 2026-06-07 拍板独立 + 生物出发点框架；1.5–2.5 页量级） |
 | 5.3 | **Problem description**（任务 / 环境 / s0 vs privileged / reward 双轨 / 数据集 statistics） | [`environment_design.md`](../docs/environment_design.md) + paper 1 `setup.tex` | ✅ **可直接复用** paper 1 §3 + Fig 1，需泛化到 reward 双轨 / 多 regime |
 | 5.4 | Online RL：可学性与信息瓶颈 | [`online_rl_line_summary.md`](../docs/online_rl_line_summary.md) §1.1 + [`arrival_v2_experiment_report.md`](../docs/arrival_v2_experiment_report.md) §7.9 | 🟡 **新写**（仅 docs，无 LaTeX） |
 | 5.5 | Offline baseline：TD3+BC 拆瓶颈 | [`td3bc_phase0c_experiment_report.md`](../docs/td3bc_phase0c_experiment_report.md) + [`rebrac_line_overview.md`](../docs/rebrac_line_overview.md) §1 | 🟡 **新写/扩写**（paper 1 仅作 baseline 引用，无独立节） |
@@ -225,12 +225,22 @@ dissertation 章相对会议论文节多两层：
 - **caveat（reader model，§0.5.1）**：假设外审人/答辩席知道 RL 标准术语（SAC / TD3+BC / Q-learning），但**不**熟悉本课题历史；术语首次出现需 1 句定义 + 1 个 cite。
 - **实施细节子节**：本节无 §5.1.m（引言节不需"复现"段）。
 - **落地状态（rev.4，2026-06-07）**：§5.1 已落地 LaTeX（[`thesis_ch5/sections/intro.tex`](thesis_ch5/sections/intro.tex)），6 段——环境流场 + 单点可观测的 funnel → 核心问题（online/offline 两情形，offline 重心）→ 两点反直觉 + ceiling 边界 → scope caveat → 贡献（两条主线散文：信息时序维度 / 离线内部 anchor-数据适配）→ roadmap（节作主语、结果语态）。零跨章引述、抽象下界（环境流场 + 单点局部可观测）、贡献散文（非 itemize）、online/offline 不对称权重、§0.4 红线（不提 LayerNorm / 不嫁接 §5.8 算法发现到 §5.7 ceiling）均已守。复审记录见 commit `bf6fc12`。
+- **hook 弧调整（rev.9，2026-06-07 用户拍板"生物出发点"框架；先 spec 设计、后落地 intro.tex）**：rev.4 的 ¶1 工程 hook（直接从航行器 / 环境流场切入）提级为 **"自然生物借流 → RL 复现 → 本文"三段弧**（本章最早出发点）。注意 rev.4 ¶1 已 cite `gunnarson2021ncomm` + `verma2018pnas`（即综述 [15]/[14]），生物根基已隐含，本次为**显式化、前置化**：
+  - **新 ¶1（自然原则）**：自然界生物并非被动承受流场，而是**主动感知局部流动结构并转化为运动收益**，且依赖**局部、单点式感知**而非全局观测——一条普适自然原则。**聚焦鱼类主线**（涡街 Kármán gait / 障碍物尾流 / 侧线分布式局部感知），鸟类（热气流·动态滑翔）与浮游生物作"更广泛自然界印证"一笔带过（用户 2026-06-07 选定广度）。
+  - **新 ¶2（RL 复现 + 收口）**：该借流现象启发用 RL 在复杂流场学习高效运动的研究路线（cite Colabrese 2017 / Verma 2018 / Gunnarson 2021 / Jiao 2025）→ 已有工作多假设丰富观测或允许在线交互 → 收紧到真实部署的严格约束（单点 + 离线 + 部署无特权）→ **接现有 ¶2 核心问题**。
+  - **保留**：现 ¶2–¶6（核心问题 / 两点反直觉 / scope caveat / 贡献散文 / roadmap）不动；仅前置改写 ¶1 为两段弧。
+  - **红线**：① 生物术语仅在 motivation 层，贡献层（¶5/¶6）仍守抽象下界（不写涡街/REMUS/DVL）；② 生物开篇放大"宽问题"，**scope 收口须更硬**（¶4 caveat + 贡献句旁诚实 scope 顶住 over-claim，§0.4 + R7/R8）；③ 收敛 ≤2 段，详细 landscape 留 §5.2，引言只取代表性 cite；④ 不破坏 rev.4 已守（零跨章 / 贡献散文 / 不对称权重 / 不提 LayerNorm / 不嫁接算法发现）。
+  - **素材源**：[`flow_navigation_rl_review_zh.md`](../reference/flow_navigation_rl_review_zh.md)（自然生物借流 + RL 复现综述，22 refs 带 DOI）。
 
 ### §5.2 Background & Related Work（研究背景与定位 — rev.8 独立成节）
 
-- **写什么（短节非综述，§0.5.3 + §1 职责限定 note）**：三段式定位——(1) **领域地图**：offline RL 行为约束谱系（BC penalty → 更具表达力的生成式策略先验）、部分可观测下的特权信息与非对称 actor-critic、数据驱动流场环境中的决策；(2) **本章 gap 精确区分**：已有工作要么假设丰富/多点观测、要么允许在线交互、要么部署期仍可访问特权信息——"单点局部感知 + 纯离线 + 部署无特权"这一组合尚无系统刻画；(3) **本章坐标**：科学洞见型贡献（信息时序维度 + 离线 anchor-数据适配两条主线）在该图上的位置。
-- **不写什么（去重红线，避免与引言/各方法节重复）**：算法间**深度技术对比**（TD3+BC α / ReBRAC dual-penalty / FQL flow-matching loss 差异）**下放各方法节**（§5.6 / §5.8 method），§5.2 不展开公式；应用 hook（流场动机）留引言 ¶1；方法谱系的初次点名留引言 ¶5，§5.2 只就 gap 深化。
-- **复用资产**：引言 ¶1/¶5 已有 cite（`gunnarson2021ncomm` / `verma2018pnas` / `levine2020offline` / `haarnoja2018sac` / `fujimoto2021td3bc` / `tarasov2023rebrac` / `park2025fql` / `pinto2017asymmetric`）作起点；需补三支领域代表性综述/锚文献（offline RL survey、POMDP·privileged-info、数据驱动流场控制），数量定性不预设（§0.5.4）。
+- **写什么（短节非综述，§0.5.3 + §1 职责限定 note；rev.9 用 [`flow_navigation_rl_review_zh.md`](../reference/flow_navigation_rl_review_zh.md) 做骨架，承 §5.1 生物 hook）**：四支汇于 gap——
+  1. **自然生物借流现象**（呼应 §5.1 hook，**聚焦鱼类**）：流场的**能量场 / 信息场二分**；鱼类主线（rheotaxis 流趋性 / Kármán gait 涡街 / 障碍物尾流节能 / 鱼群涡相位匹配 / **侧线分布式局部感知**）；鸟类·浮游生物一笔带过。
+  2. **RL 复现谱系**：奠基（Colabrese 2017 微游泳体 / Verma 2018 涡利用集体游泳）→ 局部感知目标导航（Gunnarson 2021 局部流速 / Jiao 2025 流场梯度必要性）→ 具身鱼形机器人穿越涡街（Zhu 2022 / Feng 2024）→ 微游泳体算法评估（Qiu 2022 对称性 / Mecanna 2025）。
+  3. **算法侧背景**：offline RL 行为约束谱系（BC penalty → 更具表达力的生成式策略先验）、部分可观测下的特权信息与非对称 actor-critic。
+  4. **本章 gap 精确区分 + 坐标**：已有 RL 借流 / offline 工作要么假设丰富·多点观测、要么允许在线交互、要么部署期可访问特权信息——"**单点局部感知 + 纯离线 + 部署无特权 + 可部署传感**"这一组合尚无系统刻画；本章科学洞见型贡献（信息时序维度 + 离线 anchor-数据适配）即定位于此。
+- **不写什么（去重红线，避免与引言/各方法节重复）**：算法间**深度技术对比**（TD3+BC α / ReBRAC dual-penalty / FQL flow-matching loss 差异）**下放各方法节**（§5.6 / §5.8 method），§5.2 不展开公式；引言 ¶1/¶2 的生物 hook 与方法谱系初次点名不在 §5.2 重复，§5.2 把它们**展开为有论点的 landscape 并深化 gap**。
+- **复用资产 / 素材源**：主骨架 = [`flow_navigation_rl_review_zh.md`](../reference/flow_navigation_rl_review_zh.md)（§2 能量/信息场框架 + §3 生物进展 + §4 RL 进展 + §5 自然↔RL 对应表 + §7 gap 可直接转写）；引言 ¶1/¶5 已有 cite（`gunnarson2021ncomm` / `verma2018pnas` / `levine2020offline` / `haarnoja2018sac` / `fujimoto2021td3bc` / `tarasov2023rebrac` / `park2025fql` / `pinto2017asymmetric`）作起点。**refs.bib 待补（wake-relevant 子集，落地时转 bibtex）**：核心 = Coombs 2020[1] / Liao 2022[2] / Li 2020[3] / Colabrese 2017[13] / Qiu 2022[16] / Zhu 2022[17] / Feng 2024[18] / Jiao 2025[20] / Mecanna 2025[21]；可选鱼类机制 [4][5][6][7]；广印证少量取鸟[19]·浮游[9 或 10]。约 8–12 篇，**不全搬 22 篇**（§0.5.4 定性不预设、wake-relevant 优先）。
 - **voice / 篇幅**：§0.5.2 dissertation 学术体（有论点的 positioning，非 literature dump）；1.5–2.5 页量级，避免膨胀为第二个综述章（§0.5.7）。RW 用**领域层**术语，具体平台 / 传感硬件留 §5.3 setup。
 - **caveat（零跨章自足）**：本节是全章自足的背景锚点，不引述博论其他章的综述章；术语首次出现 1 句定义 + 1 cite（§0.5.1 reader model）。
 - **实施细节子节**：本节无 §5.2.m（背景节不需"复现"段，与 §5.1 同）。

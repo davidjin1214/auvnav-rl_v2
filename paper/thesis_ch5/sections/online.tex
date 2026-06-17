@@ -50,7 +50,6 @@
 \centering
 \caption{亚临界主工况（$\mathrm{Re}=150$、$U_\infty=1.0$ m/s）横流穿越任务下三种传感配置的在线可学习性。采用历史效率导向奖励、$k=4$ 历史堆叠，三次重复训练、每次评估 $30$ 回合，报告均值 $\pm$ 标准差。成功率为质心进入目标半径内的回合占比，路径效率为成功回合的航程效率（越接近 $1$ 表示路径越省）。粗体为各列最优。}
 \label{tab:ch5_a0_sensor}
-\small
 \begin{tabular}{lcc}
 \toprule
 \textbf{传感配置} & \textbf{成功率} & \textbf{路径效率} \\
@@ -80,7 +79,6 @@ $s_2$（$+$ 长程 ADCP，参照上界） & $0.856 \pm 0.204$ & $0.813 \pm 0.100
 \centering
 \caption{临界工况（$\mathrm{Re}=250$、$U_\infty=1.5$ m/s）横流穿越任务下时序访问与空间感知对可部署性能的作用，采用到达导向奖励。三行为单变量受控对照，每次只改变所标变量、冻结其余训练条件。越界率为因越出流场边界而失败的回合占比。延长历史至 $k=12$ 后该追平在重复训练间的稳健性，以及向价值网络注入特权观测的配对消融（并不缩小差距），均见正文。}
 \label{tab:ch5_online_bottleneck}
-\small
 \begin{tabular}{lcc}
 \toprule
 \textbf{配置（唯一变量）} & \textbf{成功率} & \textbf{越界率} \\

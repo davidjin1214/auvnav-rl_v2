@@ -1,6 +1,6 @@
 # 博士论文章节写作 Spec：Deployable-Sensor Offline RL for AUV Wake Navigation
 
-> 文档版本：rev.11（2026-06-17）
+> 文档版本：rev.12（2026-06-17）
 > 定位：**博士论文第 5 章 单章统一三线**（online SAC + TD3+BC/ReBRAC + FQL succession）的**核心贡献章**写作 spec。
 >
 > **✅ 写作策略（2026-06-02 用户拍板）：本 spec = 当前写作目标，不是未来蓝图。**
@@ -27,10 +27,12 @@
 
 > **rev.2（2026-05-31）修订要点**：把 spine 从"三段平铺"收紧为**单一中心命题 = 特权信息的可有可无性（privileged-information dispensability）**，并修正一处会被答辩席抓住的归因过头（见 §0.4 红线）。本节是 paper 1 自身 spine（[`rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) §0.3：*"离线 RL 可以不依赖任何 privileged simulator 信息就把性能逼近 online teacher"*）的**章级提升**，不是新发明。
 
-### 0.1 中心命题（整章只论证这一句）
-本章是博士论文的**核心贡献章**。中心命题：
+### 0.1 中心命题（整章只论证这一句；rev.12 统一到 §0.5.10 校准锚与各落地节正文）
+本章是博士论文的**核心贡献章**。中心命题（全章原话照用，与 §0.5.10 校准锚、`intro.tex` ¶7、`setup.tex` 开篇、`methodology.tex` 开篇完全一致）：
 
-> 在部署受限的单点 DVL water-track 传感器（`s0`）下，offline RL 能把策略逼近用特权 hull-integral 流 `[u_eq, v_eq]` 的 online teacher——**而不需要把特权信息喂给 critic、不需要增加空间传感器、也不需要更强表达力的生成式先验**。真正决定成败的是 (i) actor 对部署信号的**时序访问**、(ii) **BC-anchor 目标质量与数据 regime 的匹配**。该命题在 sub-critical regime 成立，并在 critical regime 撞到一个 **actor-fundamental partial-observability ceiling**。
+> 在部署约束下，提升性能的关键在于**用好已有的信息与数据**，而非**为系统增添能力**。前者落实为两条途径——在时间维度上充分利用单点观测，以及使模仿目标与数据质量相适配；后者——更多空间传感器、向价值网络注入特权观测、采用更具表达力的策略先验——则或非必需，或不普遍有效。
+
+> **轴映射（旧"特权信息可有可无 / dispensability"命题在此归位，rev.12）**：rev.2–rev.11 曾以"offline RL 不靠特权 critic、不靠更多空间传感器、不靠更强生成式先验，即可把可部署策略逼近以特权信息在线训练所得策略（性能上界/参照）"为唯一脊柱。rev.12 起，该结论**整体归入新命题反向轴"增添能力"的三项实例**——向价值网络注入特权观测、增加空间传感器、采用更具表达力的策略先验，三者**或非必需、或不普遍有效**（失效方式各异，见 §0.4 红线 3）。正向轴"用好已有信息与数据"= (i) 单点部署信号的**时序利用** + (ii) **模仿目标与数据质量的适配**。原命题"sub-critical 工况成立、critical 工况撞 actor-fundamental partial-observability ceiling"作为本命题的**适用范围与边界**保留（§5.8）。dispensability 不再是脊柱，而是反向轴的一个实例。
 
 ### 0.2 中心命题的方法入口与四个支撑（角色分明）
 
@@ -44,7 +46,7 @@
 | **边界在哪？** | broad-val v2（**边界**，§5.8） | critical regime（Re250/u15）下 s0 与 hull-integral 流弱相关，**oracle 示范 + 特权 critic 都救不了**（N2'=0.000；asym ablation = ACTOR_FUNDAMENTAL_CONFIRMED）→ actor-fundamental ceiling |
 | **换更强算法会变吗？** | FQL succession（**对照/确证**，§5.9） | 表达力更强的 flow-matching 先验（FQL）**不普遍取胜**：算法排名 regime-dependent（SAC mexp 中质量 FQL 赢、saturated 高质量 ReBRAC 赢，两 CI 各自非零）。真正的算法决定因素是 **BC-anchor 目标质量 × 数据 regime 的匹配**，不是先验表达力 |
 
-> 侧重：§5.4 是方法入口；ReBRAC 是**唯一正面核心贡献**（正面回答"能做到吗"）；online=机制铺垫，broad-val=边界，FQL=对照确证 + 真实算法决定因素。四块都在为同一句"特权信息可有可无 + 真正杠杆是 actor 时序访问 / anchor 质量"服务。
+> 侧重：§5.4 是方法入口；ReBRAC 是**唯一正面核心贡献**（正面回答"能做到吗"）；online=机制铺垫，broad-val=边界，FQL=对照确证 + 真实算法决定因素。四块都在为同一句中心命题——"用好已有的信息与数据（单点时序利用 + 模仿目标与数据质量适配）胜过为系统增添能力（特权 critic / 更多传感器 / 更强先验）"——服务。
 
 ### 0.3 统一 takeaway（章末收束）
 > 对 deployable-sensor offline RL：正向杠杆是 **actor 对部署信号的时序访问** + **BC-anchor 目标质量与数据 regime 的匹配**；几个"直觉上该有用"的东西其实**非必需或不普遍有效**——给 critic 喂特权流不闭合 gap（online §7.7 + offline §4.5 两条**独立** asym ablation）、增加空间探头有效但**非必需且不可部署**（online §7.8 时序访问可替代）、更强生成式先验**不普遍取胜**（FQL regime-dependent）。这给水下机器人这类部署受限场景一条"**不依赖任何 simulator-only 信号即可逼近 online teacher**"的配方，及其在 critical regime 的失效边界。
@@ -368,7 +370,7 @@ dissertation 章相对会议论文节多两层：
   - (ii) **deployable 0.928 追平 privileged-critic 0.922**，Welch p=0.9195（最强 sim2real narrative）
   - (iii) dual penalty cross-dataset 必需（β2=0 时 mean_target_q 漂 +46%/+98%）
   - (iv) critic LayerNorm ⊥ dual penalty（LN-off −16.2pp，远超 β2=0 的 −2.4pp，方向相反）
-- **⚠ 与 §0 dispensability 命题的接口（写 Finding (iv) 时严守，防自相矛盾，cross-ref §0.4 红线 1）**：critic LayerNorm 是**第三条独立的"表征稳定性"轴 = 必要基础设施**，与 §0 的"特权信息可有可无"命题**正交**——它**不**进 §0.3 的"可有可无"清单。两条配套红线：(a) mean 归因只在 **actor β1 vs critic β2** 之间成立（β1 carry mean、β2 carry Q-stability），**不可**升级为"actor 侧决定全部 mean"（LN 才是单项最大 mean 杠杆）；(b) LN claim 强度 n=2 seeds 仅支撑 "necessary component 存在性"，**不 claim "LN 比 dual penalty 重要"**（review §2.2.4）。
+- **⚠ 与 §0 dispensability 命题的接口（写 Finding (iv) 时严守，防自相矛盾，cross-ref §0.4 红线 1）**：critic LayerNorm 是**第三条独立的"表征稳定性"轴 = 必要基础设施**，与 §0 中心命题反向轴中的"向价值网络注入特权观测"一项**正交**——它属"必要基础设施"，**不**进反向轴"增添能力非必需"清单。两条配套红线：(a) mean 归因只在 **actor β1 vs critic β2** 之间成立（β1 carry mean、β2 carry Q-stability），**不可**升级为"actor 侧决定全部 mean"（LN 才是单项最大 mean 杠杆）；(b) LN claim 强度 n=2 seeds 仅支撑 "necessary component 存在性"，**不 claim "LN 比 dual penalty 重要"**（review §2.2.4）。
 - **复用资产**：✅ **paper 1 主干大幅可搬** — `method.tex`（rev.2，134 行）中共同算法定义前移 §5.4，本节保留 ReBRAC-Q 增量与训练口径；`experiments.tex`（rev.2，233 行，含 4 finding 子节 + 主表 + 2 ablation 表）+ **Fig 2 seed dotplot** + **Fig 3 Q-drift**。
 - **关键命名红线**：全文 **ReBRAC-Q (ours)**，§5.4 首次定义 + §5.7.4 差异表（β1=4.0 ↔ TD3+BC α≈0.25）；不裸写 "ReBRAC"。
 - **finalist**：`(β1=4.0, β2=2.0)`，是 **robustness winner（救 seed 44）**非 peak winner — 这是 §5.10 β1 reconciliation 的前提，§5.7 须埋点。

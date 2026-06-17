@@ -75,16 +75,24 @@ figs/
 # Paper figures (override above) — paper/figures/ is part of paper deliverable
 !paper/figures/
 !paper/figures/**
+!paper/thesis_ch5/figures/
+!paper/thesis_ch5/figures/**
 
-# LaTeX build artifacts (re-ignore inside paper/)
-paper/*.aux
-paper/*.bbl
-paper/*.blg
-paper/*.log
-paper/*.out
-paper/*.toc
-paper/*.fls
-paper/*.fdb_latexmk
+# LaTeX build artifacts (re-ignore inside paper/, all levels)
+paper/**/*.aux
+paper/**/*.bbl
+paper/**/*.blg
+paper/**/*.log
+paper/**/*.out
+paper/**/*.toc
+paper/**/*.fls
+paper/**/*.fdb_latexmk
+paper/**/*.xdv
+paper/**/*.synctex.gz
+
+# Python bytecode caches inside paper figure scripts
+paper/**/__pycache__/
+paper/**/*.pyc
 texput.log
 paper/figures/**/.DS_Store
 

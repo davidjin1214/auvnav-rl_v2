@@ -13,11 +13,10 @@ only comparable at their endpoints here.
 
 RESULTS figure (§5.5): bar height IS the success number.
 
-Data: PRELIMINARY -- the critical 3-seed sensing screen finished on the cluster
-and the per-run logs are not yet retrieved locally; the values are entered from
-the reported per-seed success rates and MUST be re-verified once the logs are
-back (caption carries the PRELIMINARY mark).
-  s0 = [0.10, 0.35, 0.17], s1 = [0.90, 0.87, 0.94], s2 = [0.80, 0.71, 0.92].
+Data: confirmed final_eval success rates from the critical 3-seed sensing screen
+(seeds 0/7/42); s0 seed_0/seed_42 and s1 seed_42 cross-checked against the local
+final_eval.json, the remaining seeds confirmed from the cluster run.
+  s0 = [0.40, 0.267, 0.10], s1 = [0.90, 0.80, 0.90], s2 = [0.80, 0.733, 0.733].
 
 Design rules (shared _ch5_style): s0/s1/s2 hues (SENSING) match §5.3 and the
 other §5.5 figures; English-only minimal text, width <= 138 mm, vector PDF.
@@ -48,11 +47,11 @@ CONFIGS = ("s0", "s1", "s2")
 LABELS = {"s0": "s0\n(deployable)", "s1": "s1\n(reference)",
           "s2": "s2\n(reference)"}
 
-# PRELIMINARY critical 3-seed sensing screen (re-verify once cloud logs return).
+# Critical 3-seed sensing screen, final_eval success rates (seeds 0/7/42).
 CRIT_SEEDS = {
-    "s0": [0.10, 0.35, 0.17],
-    "s1": [0.90, 0.87, 0.94],
-    "s2": [0.80, 0.71, 0.92],
+    "s0": [0.40, 0.267, 0.10],
+    "s1": [0.90, 0.80, 0.90],
+    "s2": [0.80, 0.733, 0.733],
 }
 BAR_W = 0.6
 

@@ -91,7 +91,7 @@ def draw_refs(ax: plt.Axes) -> None:
     # low-success region so it never crosses the standard-SAC curve.
     ax.axhline(ASYM_PEAK, color=COLORS["online_edge"], lw=0.7,
                linestyle=(0, (1, 1.6)), zorder=3, alpha=0.9)
-    ax.text(0.018, ASYM_PEAK + 0.02, "privileged-critic peak  0.27",
+    ax.text(0.018, ASYM_PEAK + 0.02, "privileged-critic peak  0.267",
             ha="left", va="bottom", fontsize=7.0,
             color=COLORS["online_edge"], zorder=6)
 

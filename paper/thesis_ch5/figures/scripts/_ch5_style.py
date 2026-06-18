@@ -45,6 +45,16 @@ COLORS = {
     "ghost": "#AEB8C2",
 }
 
+# Sensing-configuration colours — kept consistent across §5.3 Fig 5.1/5.2
+# (probe geometry) and §5.5 Fig 5.4/5.5 (online learnability) so the reader
+# tracks s0/s1/s2 by hue throughout the chapter. s0 = deployable single point
+# (protagonist, darkest ink); s1/s2 = spatial reference upper bounds (cool ramp).
+SENSING = {
+    "s0": "#1F2933",  # ink — deployable single-point DVL (protagonist)
+    "s1": "#5E8597",  # cool slate — + short-range ADCP (reference)
+    "s2": "#8AA4B2",  # lighter cool — + long-range ADCP (reference)
+}
+
 
 def apply_style() -> None:
     """Apply the shared Nature-leaning rcParams."""

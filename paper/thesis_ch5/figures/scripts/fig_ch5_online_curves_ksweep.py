@@ -54,7 +54,7 @@ from _ch5_style import (  # noqa: E402
     in_from_mm,
 )
 
-UPPER_BOUND = 0.900  # s1(k=4) reference == empirical ceiling 27/30
+UPPER_BOUND = 0.900  # empirical ceiling = manifest universal floor 27/30 (s1=0.87, independent)
 STEP_SCALE = 1.0e6   # x axis in 10^6 training steps
 SMOOTH_W = 3         # light rolling-mean window on the periodic-eval curve
 
@@ -101,7 +101,7 @@ def draw_ceiling(ax: plt.Axes) -> None:
     ax.axhline(UPPER_BOUND, color=COLORS["muted"], lw=0.9,
                linestyle=(0, (5, 3)), zorder=3)
     ax.text(0.018, UPPER_BOUND + 0.018,
-            "s1 reference = empirical ceiling  0.90",
+            "empirical ceiling  0.90",
             ha="left", va="bottom", fontsize=7.0, color=COLORS["muted"], zorder=7)
 
 

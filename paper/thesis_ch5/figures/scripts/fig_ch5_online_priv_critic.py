@@ -84,14 +84,15 @@ def draw_arms(ax: plt.Axes) -> None:
 def draw_refs(ax: plt.Axes) -> None:
     ax.axhline(UPPER_BOUND, color=COLORS["muted"], lw=0.9,
                linestyle=(0, (5, 3)), zorder=3)
-    ax.text(0.018, UPPER_BOUND + 0.018, "s1 reference = ceiling  0.90",
+    ax.text(0.018, UPPER_BOUND + 0.018, "empirical ceiling  0.90",
             ha="left", va="bottom", fontsize=7.0, color=COLORS["muted"], zorder=6)
     # capped privileged-critic peak: a hairline marker that the warm arm
-    # never clears, on either seed.
+    # never clears, on either seed. Label sits at the left over the empty
+    # low-success region so it never crosses the standard-SAC curve.
     ax.axhline(ASYM_PEAK, color=COLORS["online_edge"], lw=0.7,
                linestyle=(0, (1, 1.6)), zorder=3, alpha=0.9)
-    ax.text(0.985, ASYM_PEAK + 0.018, "privileged-critic peak (capped)  0.27",
-            ha="right", va="bottom", fontsize=7.0,
+    ax.text(0.018, ASYM_PEAK + 0.02, "privileged-critic peak  0.27",
+            ha="left", va="bottom", fontsize=7.0,
             color=COLORS["online_edge"], zorder=6)
 
 

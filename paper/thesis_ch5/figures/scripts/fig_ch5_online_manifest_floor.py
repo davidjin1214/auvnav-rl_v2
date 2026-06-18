@@ -60,13 +60,9 @@ def draw(ax: plt.Axes, fail: np.ndarray, n_runs: int, floor: list[int]) -> None:
                zorder=2)
     ax.text(0.7, n_runs + 0.12, f"all {n_runs} runs", ha="left", va="bottom",
             fontsize=7.0, color=COLORS["muted"], zorder=6)
-    n_ep = len(fail)
-    ax.text(0.98, 0.93,
-            f"universal floor: {len(floor)}/{n_ep} episodes fail in every run\n"
-            f"empirical ceiling = {n_ep - len(floor)}/{n_ep} = "
-            f"{(n_ep - len(floor)) / n_ep:.2f}",
-            transform=ax.transAxes, ha="right", va="top", fontsize=7.3,
-            color=COLORS["ink"], zorder=7, linespacing=1.3)
+    # The "3/30 fail -> 27/30 = 0.90 ceiling" arithmetic lives in the caption
+    # (criterion: keep explanatory text out of the figure); the orange floor
+    # bars meeting the "all runs" line carry the message visually.
 
 
 def style_axes(ax: plt.Axes, n_runs: int, n_ep: int) -> None:

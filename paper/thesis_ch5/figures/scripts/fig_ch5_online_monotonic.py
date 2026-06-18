@@ -48,14 +48,22 @@ UPPER_BOUND = 0.900
 DT_CTRL_S = 0.5
 K_SEEDS = {4: [0, 42], 8: [0, 7, 42], 12: [0, 7, 42]}
 REPRESENTATIVE_SEED = 0  # a single run that has all three k (shown unlabelled)
+# Confirmed cloud 3-seed final_eval for the deployable k=4 baseline (seeds 0/7/42).
+# seed_7 came back as a scalar (no local final_eval.json), so the k=4 aggregate
+# uses these confirmed values to stay consistent with the bottleneck table
+# (0.26 +/- 0.15). k=8/k=12 read their three local final_eval.json files.
+CRIT_K4_S0 = [0.40, 0.267, 0.10]
 
 
 def _agg() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     ks = sorted(K_SEEDS)
     means, stds = [], []
     for k in ks:
-        vals = [final_eval("sac_vanilla", k, s)["eval_success_rate"]
-                for s in K_SEEDS[k]]
+        if k == 4:
+            vals = list(CRIT_K4_S0)
+        else:
+            vals = [final_eval("sac_vanilla", k, s)["eval_success_rate"]
+                    for s in K_SEEDS[k]]
         means.append(float(np.mean(vals)))
         stds.append(float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0)
     return np.array(ks, float), np.array(means), np.array(stds)
@@ -88,7 +96,7 @@ def draw(ax: plt.Axes) -> None:
 def draw_ceiling(ax: plt.Axes) -> None:
     ax.axhline(UPPER_BOUND, color=COLORS["muted"], lw=0.9,
                linestyle=(0, (5, 3)), zorder=3)
-    ax.text(4.15, UPPER_BOUND + 0.016, "s1 reference = empirical ceiling  0.90",
+    ax.text(4.15, UPPER_BOUND + 0.016, "empirical ceiling  0.90",
             ha="left", va="bottom", fontsize=7.0, color=COLORS["muted"], zorder=6)
 
 

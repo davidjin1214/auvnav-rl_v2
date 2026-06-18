@@ -59,14 +59,19 @@ def _smooth(y: np.ndarray, w: int = SMOOTH_W) -> np.ndarray:
 
 
 def draw(ax: plt.Axes) -> None:
+    # s0 (protagonist) = heaviest solid ink; s1 solid and s2 dashed share the cool
+    # SENSING ramp, so a redundant line style keeps the two reference curves
+    # distinguishable where their close hues and seed bands overlap.
+    styles = {"s0": ("-", 1.7), "s1": ("-", 1.4), "s2": ((0, (5, 2)), 1.4)}
     for cfg in ("s0", "s1", "s2"):
         d = seed_aggregate(a0_cell("efficiency_v2", cfg, SEEDS))
         x = d["steps"] / STEP_SCALE
         m, s = _smooth(d["mean"]), _smooth(d["std"])
         c = SENSING[cfg]
-        ax.fill_between(x, m - s, m + s, color=c, alpha=0.12, lw=0, zorder=2)
-        ax.plot(x, m, color=c, lw=1.5, zorder=5, solid_capstyle="round",
-                label=LABELS[cfg])
+        ls, lw = styles[cfg]
+        ax.fill_between(x, m - s, m + s, color=c, alpha=0.10, lw=0, zorder=2)
+        ax.plot(x, m, color=c, lw=lw, linestyle=ls, zorder=5,
+                solid_capstyle="round", label=LABELS[cfg])
 
 
 def style_axes(ax: plt.Axes) -> None:

@@ -55,6 +55,18 @@ SENSING = {
     "s2": "#8AA4B2",  # lighter cool — + long-range ADCP (reference)
 }
 
+# History-length palette (§5.5 online learning-curve figures): the deployable
+# s0 sensor stays the protagonist while the actor's temporal window grows. The
+# three k curves use distinct, well-separated muted hues (not a single-hue ramp,
+# which read as "too similar") with increasing lightness->darkness so they are
+# also legible in greyscale. Warm is deliberately NOT used here — it is reserved
+# for the privileged-critic reverse-arm figure so the two never get conflated.
+HISTORY = {
+    4: "#9CB4C9",   # light steel blue — shortest window (near the floor)
+    8: "#4E8A72",   # muted teal-green — mid window
+    12: "#1F2933",  # ink — longest window (saturates the ceiling)
+}
+
 
 def apply_style() -> None:
     """Apply the shared Nature-leaning rcParams."""

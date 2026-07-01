@@ -1,6 +1,6 @@
-# 第 5 章续写 — 新对话启动 Prompt（§5.4 已成并复审闭环，续写 §5.6）
+# 第 5 章续写 — 新对话启动 Prompt（§5.1–§5.6 已闭环，续写 §5.7 ReBRAC-Q 主线）
 
-> 用法：新开对话时整段粘贴（从下方「---」开始）。本版任务 = **续写下一节（§5.6 TD3+BC 离线基线）**——§5.4 已完成独立对抗复审并落地修订（rev.2），先与我对齐再动笔。
+> 用法：新开对话时整段粘贴（从下方「---」开始）。本版任务 = **续写 §5.7 ReBRAC-Q 主线（本章重心，复用 paper 1）**——§5.1–§5.6 六节均已落地、经系统性对抗复审闭环并编译通过。**先给方案、对齐后再落 `.tex`、编译验证。**
 
 ---
 
@@ -17,14 +17,16 @@
 - **§5.1 引言（rev.9）** — `sections/intro.tex`，已完成（rev.9 仅同步末段 roadmap 到十节）。
 - **§5.2 研究背景与定位（rev.2）** — `sections/related_work.tex`，已完成。
 - **§5.3 问题设定与评估协议（rev.2）** — `sections/setup.tex`，已完成，七子节闭环（任务/动力学双工况 亚临界 Re150/u10 ↔ 临界 Re250/u15 / s0·s1·s2 传感谱系 / 特权观测 [u_eq,v_eq] / 动作·奖励双轨 efficiency_v2(40-D)↔arrival_v2(48-D)·终止 / 数据集 / 评估协议 Welch·配对自助·rule-of-three / §5.3.m 实施细节）。
-- **§5.4 强化学习方法与算法框架（rev.2）** — `sections/methodology.tex`，**已落地并完成独立对抗复审**。7 子节（§5.4.1 POMDP→异策略 / §5.4.2 异策略 Actor-Critic 共同骨架 + SAC / §5.4.3 TD3+BC / §5.4.4 ReBRAC-Q / §5.4.5 FQL / §5.4.6 训练-部署信息协议 / §5.4.7 实施细节）+ 2 表（`tab:ch5_method_framework` 方法框架总表 / `tab:ch5_method_loss` 损失·信息协议汇总）+ 11 编号公式。组织 = "共同骨架 + 带动机的增量"。公式已对照 `auv_nav/rebrac.py`/`td3bc.py`/`fql.py` 源码逐行核验。rev.2 复审修订：删黑话「旋钮」、强调引号统一弯引号、forward-looking 言说框架改机制作主语、删空 hedge 引导语、TD3+BC 系数 α→α_BC、§5.4.7 补范数因子（sum vs mean）消歧、FQL 价值网络补"同采层归一化"；复审结论 = 公式忠实度通过、§0.4 红线零踩、禁写结果零命中。
-- **§5.5–§5.10 待起草**（§5.5 online 可学性与瓶颈 / §5.6 TD3+BC 离线基线 / §5.7 ReBRAC-Q 主线（章重心）/ §5.8 泛化边界 / §5.9 算法对比 FQL+SAC collector / §5.10 统一讨论 + 本章小结）。
-- 全章工程当前编译通过（约 19 页，0 undefined ref / 0 undefined citation / bibtex 0 warning）；**§5.1–§5.4 已提交**，§5.5–§5.10 待起草。
+- **§5.4 强化学习方法与算法框架** — `sections/methodology.tex`，**已落地并完成独立对抗复审**。7 子节（§5.4.1 POMDP→异策略 / §5.4.2 异策略 Actor-Critic 共同骨架 + SAC / §5.4.3 TD3+BC / §5.4.4 ReBRAC-Q / §5.4.5 FQL / §5.4.6 训练-部署信息协议 / §5.4.7 实施细节）+ 2 表（`tab:ch5_method_framework` 方法框架总表 / `tab:ch5_method_loss` 损失·信息协议汇总）+ 11 编号公式。组织 = "共同骨架 + 带动机的增量"。公式已对照 `auv_nav/rebrac.py`/`td3bc.py`/`fql.py` 源码逐行核验。复审结论 = 公式忠实度通过、§0.4 红线零踩、禁写结果零命中。
+- **§5.5 在线情形下的可学习性与信息瓶颈** — `sections/online.tex`，**已落地并经系统性对抗复审加固**。5 子节发现链（亚临界可行 → 临界差距 + 三假设 → 特权/时序消融 + 机制 → 稳健性 + 经验上界 → 部署含义）+ 6 图 + 2 表。复审加固：样本效率改 k=12 立论、三假设各自收口、章级"终检/周期评估"命名上提 §5.3.6、图文一致性对齐。
+- **§5.6 离线基线：行为约束方法的两个瓶颈（TD3+BC）** — `sections/td3bc.tex`，**已落地并按 §5.5 标准系统性复审**。把"数据越多越差"从协议伪象纠正为真实现象，拆出数据支持集结构与可部署 critic 信息差两个瓶颈；新增结果图 `fig:ch5_td3bc_size`（TD3+BC vs 纯 BC × 三规模 + 采集成功率参照线）；离散度硬伤已修、setup 增量内联、检查点字典序规则上提 §5.4.m。
+- **§5.7–§5.10 待起草**（§5.7 ReBRAC-Q 主线（章重心，复用 paper 1）/ §5.8 泛化边界 / §5.9 算法对比 FQL+SAC collector / §5.10 统一讨论 + 本章小结）。
+- 全章工程当前编译通过（约 33 页，0 undefined ref / 0 undefined citation / bibtex 0 warning / 0 overfull >10pt）；**§5.1–§5.6 已提交**，§5.7–§5.10 待起草。
 
 ## 先读这些（按序）
 
-- 章工程 + 10 节序 + 当前哪些已 `\input`：`paper/thesis_ch5/main.tex`（现 `\input` 了 intro / related_work / setup / methodology 四节，§5.5–§5.10 为注释占位）
-- 已完成四节（语体 / 术语 / 红线 / 缝合范本，**起草余下各节的语体与公式基准**）：`sections/intro.tex`、`related_work.tex`、`setup.tex`、`methodology.tex`
+- 章工程 + 10 节序 + 当前哪些已 `\input`：`paper/thesis_ch5/main.tex`（现 `\input` 了 intro / related_work / setup / methodology / online / td3bc 六节，§5.7–§5.10 为注释占位）
+- 已完成六节（语体 / 术语 / 红线 / 缝合范本，**起草余下各节的语体与公式基准**）：`sections/intro.tex`、`related_work.tex`、`setup.tex`、`methodology.tex`、`online.tex`、`td3bc.tex`
 - §5.4 写作参考（边界与段落级蓝图）：`paper/thesis_ch5/section_5_4_methodology_review.md`、`section_5_4_paragraph_blueprint.md`
 - 写作 spec（**权威参考、但非不可改**；§0 中心命题/红线/体裁规范 §0.5.9 register·§0.5.10 术语 / §1 十节骨架 / §2 逐节素材映射 / §3 三线缝合点 / §4 可引用结果分级 / §5 figure&table 清单 / §6 复用矩阵 / §7 写作顺序 / §8 开放点）：`paper/thesis_chapter_outline.md` rev.11
 - 数字 ground truth（唯一权威，写正文实时回查、勿凭记忆）：
@@ -55,8 +57,16 @@
 - **不要 git commit，除非我明确要求。**
 - 数字一律实时回查 ground truth docs，不复制可能漂移的 headline。
 
-## 下一步任务（先与我对齐再动笔）
+## 本轮任务 —— 续写 §5.7 ReBRAC-Q 主线（本章重心）
 
-**续写 §5.6 TD3+BC 离线基线**（spec §7 #2；§5.5 online 留后段回填）。该节在 §5.4 已定义 TD3+BC 损失的基础上，只写本节增量：把"数据越多越差"从协议伪象纠正为真实现象、拆出数据支持集结构与 deployable/privileged 信息差两个瓶颈，为 §5.7 ReBRAC-Q 创造问题设定。数字源 = `docs/td3bc_phase0c_experiment_report.md` + `rebrac_line_overview.md` §1（实时回查）。§5.6.m 承担 TD3+BC 复现细节（损失基础定义已在 §5.4，本节只留实验所需）。**先给方案再起草。**
+（spec §7 #3；本章分量最重的一节）§5.7 是全章重心，直接**复用 paper 1**（ReBRAC-Q arXiv preprint draft，commit `932aca1`）。在 §5.4 已统一定义 ReBRAC-Q 损失口径的基础上，本节承载主线实证：Q 归一化双正则 TD3+BC 变体如何在可部署 s0 单点观测下，把离线策略性能逼近以特权信息在线训练所得的参照上界；四条 paper-ready findings（i）–（iv）+ 消融证据。
 
-请先通读已成四节（§5.1–§5.4）+ spec + §5.6 ground-truth 入口，给出 §5.6 写作方案（也欢迎提出我没列到的），对齐拍板后再按"先方案后 .tex、编译验证"流程执行。**先规划、后动笔。**
+**素材与复用：**
+- 主干复用 `paper/sections/method.tex` / `experiments.tex`（**勿改动 `paper/sections/` 目录本身**；复制/改写进新建 `sections/rebrac.tex`）；图 `paper/figures/output/`（fig2 seed dotplot / fig3 q-drift）。
+- 复用时须做**章级适配**：术语对齐 §0.5.10（ReBRAC-Q 完整定义为"Q 归一化双正则 TD3+BC 变体"、不裸写 ReBRAC 指代本文方法；teacher→"以特权信息在线训练所得策略（用作上界/参照）"）；记号与 §5.3 setup / §5.4 公式一致；损失基础定义已在 §5.4，本节只写主线实证增量。
+
+**数字 ground truth（实时回查、勿凭记忆）：** `docs/rebrac_experiment_report.md`（rev.8，唯一权威数字源）+ `docs/rebrac_mainline_review.md`。
+
+**§0.4 红线（本节尤须严守）：** ① critic LayerNorm 不进"可有可无"清单（LN-off −16.2pp 是单项最大 mean 杠杆，远超 β2=0 的 −2.4pp）；② mean 归因只在 actor β1 vs critic β2 之间成立，不可升级为"actor 侧决定全部 mean"；③ LN claim 强度 n=2 仅支撑"必要组件存在性"；④ **不写"ReBRAC-Q over TD3+BC 的 +23–32pp 来自 actor anchor"**；⑤ §5.8 算法发现不得嫁接到 §5.7 ceiling。§5.7.m 承担 ReBRAC-Q 复现细节（超参/检查点选择基础已在 §5.4，本节只留实验所需增量）。
+
+请先通读已成六节（§5.1–§5.6）+ spec + §5.7 ground-truth 入口 + paper 1 复用素材，**先给 §5.7 写作方案（也欢迎提出我没列到的），对齐拍板后**再按"先方案后 `.tex`、编译验证"流程起草。**先规划、后动笔。**

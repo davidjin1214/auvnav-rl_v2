@@ -101,4 +101,5 @@
 | `section_5_3_review_prompt.md` | setup/method 类节的独立审查（标识符清除 / 表格版面 / 公式忠实度） |
 | `section_5_5_restructure_prompt.md` | 结果节系统性复审重构（发现链组织 / 讲透>压缩 / 插图补全） |
 | `section_5_6_review_prompt.md` | 「按已定稿节标准」复审后续结果节（硬停语义 / 诚实分级最完整版） |
+| `chapter_acceptance_review_prompt.md` | 章级整体验收复审（跨节一致性 / 叙事弧 / 承诺-兑现对齐 / 学术分量；§5.1–§5.6 版，后续节闭环后可换参复用） |
 | 本文件 | 元层总纲：会话序列、十要素、分类型骨架、反模式 |

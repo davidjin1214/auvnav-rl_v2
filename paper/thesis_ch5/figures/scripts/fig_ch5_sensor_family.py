@@ -51,9 +51,9 @@ PROBES = {
     "s2": np.array([[0.0, 0.0], [5.0, 0.0], [8.0, 4.0], [8.0, -4.0]]),
 }
 TITLES = {
-    "s0": "S0  ·  single-point DVL",
-    "s1": "S1  ·  + forward ADCP",
-    "s2": "S2  ·  + long-range ADCP",
+    "s0": "s0  ·  single-point DVL",
+    "s1": "s1  ·  + forward ADCP",
+    "s2": "s2  ·  + long-range ADCP",
 }
 PANEL = {"s0": "(a)", "s1": "(b)", "s2": "(c)"}
 

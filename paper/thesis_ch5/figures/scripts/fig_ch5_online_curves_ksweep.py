@@ -17,10 +17,12 @@ RESULTS figure (§5.5): line height IS the success number.
 
 Data (REAL eval_log.csv, cross-checked; do not edit from memory):
   k=8/k=12  arrival_v2_experiment_report.md §7.8/§7.9, seeds {0,7,42} (n=3).
-  k=4       local prototype seeds {0,42} (n=2). The locked bottleneck table's
-            k=4=0.21 comes from a NEW cloud 3-seed sensor screen not yet
-            retrieved; this curve uses the available local n=2 and is labelled
-            as such (re-verify / lift to n=3 once the cloud logs are back).
+  k=4       periodic-eval curve uses local seeds {0,42} (n=2). The bottleneck
+            table's terminal k=4=0.26+-0.15 is the confirmed cloud 3-seed sensor
+            screen (seeds {0,7,42}); seed_7's periodic eval_log was not retrieved
+            (its final-eval scalar is consistent), so this curve stays at local
+            n=2. Curve (periodic, n=2) vs table (terminal, n=3) differ in
+            protocol, as stated in §5.5.m.
   ceiling   27/30 = 0.900 (§7.9.7 manifest universal floor) == s1(k=4) ref.
 
 Design rules (shared _ch5_style + _ch5_data): English-only minimal text,

@@ -64,7 +64,10 @@ COLLECTOR = (0.864, 0.870, 0.886)
 
 # Offline cool branch, separated by lightness so the two curves are also legible
 # in greyscale; collector is a neutral grey dashed reference (not a data curve).
-C_TD3BC = "#2F5A6E"      # dark cool (value-term method, emphasised)
+#   NB: mainline_edge (#2F5A6E) is reserved for the §5.7 ReBRAC-Q mainline
+#   figures; the TD3+BC baseline here uses the plain offline-branch edge so the
+#   two never share a hue across adjacent sections.
+C_TD3BC = COLORS["offline_edge"]  # #5E8597 cool offline-branch edge (baseline)
 C_BC = SENSING["s2"]      # light cool "#8AA4B2" (pure imitation control)
 C_REF = COLORS["muted"]   # neutral grey (collector reference)
 

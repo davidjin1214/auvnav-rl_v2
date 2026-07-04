@@ -1000,7 +1000,7 @@ driver 通过 `shutil.copy2` 把 `scripts/run_offline_rebrac_screen.sh` 复制�
 | 42 | **0.560** | -138.34 | 16.13 |
 | 43 | 0.920 | -43.63 | 13.86 |
 
-**seed 42 在 LN-off 下从 Stage C 0.92 掉到 0.56（−36pp 单点崩溃）**——这一行为在 LN-on / β2=0 ablation 下都没出现过（Stage E (a) 同 seed 42 是 0.92）。LN 关掉后某些 seed 出现训练完全失败的失稳，是 LN 必要性的最强证据。
+**seed 42 在 LN-off 下从 Stage C 0.89 掉到 0.56（−33pp 单点崩溃）**`【2026-07-05 勘误：原误写 "0.92 → 0.56（−36pp）"；Stage C crosscomp-1000 per-seed 表（§7.5）seed 42 = 0.890，0.92 系与 Stage E (a) β2=0 下同 seed 的 0.920 混淆】`——这一行为在 LN-on / β2=0 ablation 下都没出现过（Stage E (a) 同 seed 42 是 0.92）。LN 关掉后某些 seed 出现训练完全失败的失稳，是 LN 必要性的最强证据。
 
 #### 7.15.5 三向对比（β2 vs LN）
 
@@ -1025,7 +1025,7 @@ driver 通过 `shutil.copy2` 把 `scripts/run_offline_rebrac_screen.sh` 复制�
 #### 7.15.7 对 Finding 1 / Finding 2 的影响
 
 - **对 Finding 1 (dual penalty 必要性)**：不影响。LN-off 与 β2=0 是两个独立的 ablation，在 Stage C finalist 上各自展示了不同退化模式。Finding 1 修正版表述（"对 mean 贡献小但非零、对 Q 稳定性大且必要、对 outlier seed 鲁棒性必需"）保持。
-- **对 Finding 2 (seed 44 outlier)**：LN-off 的 seed 42 -36pp 单点崩溃说明 ReBRAC 在 LN 缺失下还会出现新的 seed-specific 失稳模式（不只是 seed 44）。这暗示 **outlier seed 鲁棒性依赖 critic 的多重稳定信号**——dual penalty + LN + privileged Q 都各自贡献。
+- **对 Finding 2 (seed 44 outlier)**：LN-off 的 seed 42 -33pp 单点崩溃（§7.15.4 勘误后口径）说明 ReBRAC 在 LN 缺失下还会出现新的 seed-specific 失稳模式（不只是 seed 44）。这暗示 **outlier seed 鲁棒性依赖 critic 的多重稳定信号**——dual penalty + LN + privileged Q 都各自贡献。
 
 #### 7.15.8 局限性（probe 专属）
 
@@ -1137,7 +1137,7 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 6. **Phase 2 的 privileged ≈ deployable 二阶 finding 仅在 worldcomp-1000 上成立**：是否在其它 dataset / task geometry 上仍然成立未知。这对"privileged critic 在 ReBRAC 上的总体价值"的论文级表述是个 caveat，但不影响 worldcomp-1000 的具体结论。
 7. **critic-penalty-off probe 没有覆盖 privileged 轨道**：privileged + β2=0 是否会让 Q 高估同样放大未测（详见 §7.13.8 limit 3）。优先级低，因为 privileged 的 mean 价值已经降到"outlier seed 救援"级。
 8. **Stage E (a) 没有覆盖 `crosscomp-2000`**：cross-dataset Finding 1 验证只在 `crosscomp-1000` 上做（详见 §7.14.9 limit 2）。Stage C 已经显示 ep1000 与 ep2000 在 winner finalist 下定性一致，cross-extrapolate 风险低，但严格 ablation 未做。
-9. **rev.8 Stage F (B) LN-off probe 仅 2 seeds**：详见 §7.15.8。LN-off 显著退化（-16.2pp）+ seed 42 单点崩溃 -36pp 已足够支撑"LN 是必要 component"存在性 claim，但 std=0.25 的具体数字不应作为 paper 中的 5-seed-style 严格对比；如 review 反馈想看 5-seed std，可补 seeds 44/45/46（≈3h L4，优先级低）。
+9. **rev.8 Stage F (B) LN-off probe 仅 2 seeds**：详见 §7.15.8。LN-off 显著退化（-16.2pp）+ seed 42 单点崩溃 -33pp（§7.15.4 勘误后口径）已足够支撑"LN 是必要 component"存在性 claim，但 std=0.25 的具体数字不应作为 paper 中的 5-seed-style 严格对比；如 review 反馈想看 5-seed std，可补 seeds 44/45/46（≈3h L4，优先级低）。
 10. **rev.8 Stage F (C) 统计检验 underpowered**：详见 §7.16.5 + [docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md)。5 seeds 对 0.6pp 量级 Δ 检验功效低，但这正是要量化的事实——"持平" claim 已 quantitatively 确认（Welch's p=0.92、paired bootstrap 95% CI 包含 0），不需要更多 seeds 来 disprove。
 11. **rev.8 Stage F (D) Q-normalized 变体 method 表述只在 paper 实施**：method draft 已写入 [docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md)，但 paper 写作时是否完全 follow 由作者最终决策；如果改用 "ReBRAC variant" 或其它中性表述，需同步更新 main results 表注脚。
 

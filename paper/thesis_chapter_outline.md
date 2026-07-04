@@ -55,7 +55,7 @@
 
 ### 0.4 ⚠ 机制归因红线（防答辩席反例，写作时严守）
 1. **不写"actor 侧因素*决定*全部 mean 性能"**。critic **LayerNorm** 是单项最大 mean 杠杆（LN-off **−16.2pp**，远超 β2=0 的 −2.4pp；[`rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) §5.2b）。mean 归因只在**两个 BC penalty 之间**成立：actor β1 carry mean、critic β2 carry 跨数据集 Q-stability（review §0.3 / §5.2）。LayerNorm 是**第三条独立的"表征稳定性"轴**，与"特权信息"命题正交——属"必要基础设施"，**不进** §0.3 的"可有可无"清单。
-2. **不写"ReBRAC over TD3+BC 的 +23–32pp 来自 actor anchor"**。在 β1=4.0 ↔ TD3+BC α≈0.25 actor-anchor 口径**匹配**下，recipe 差异同时含 dual penalty + critic LayerNorm + Q-norm；mean uplift 不能归给单一 actor 轴。
+2. **不写"ReBRAC over TD3+BC 的 +23–32pp 来自 actor anchor"**。在 β1=4.0 ↔ TD3+BC α≈0.25 actor-anchor 口径**匹配**下，recipe 差异同时含 critic-side dual penalty + critic LayerNorm；mean uplift 不能归给单一 actor 轴。⚠ Q-norm **不列入差异**：TD3+BC 的 actor loss（`eq:ch5_td3bc_actor`）本身含同一批量均值 |Q| 归一化，β1↔α 换算恰以两方法共享该写法为前提（2026-07-05 §5.7 复审修正；rebrac.tex rev.2 已同步）。
 3. **不写"更多传感器无用"**。s1（多一空间探头）**确实**闭合 gap；正确表述 = "**非必需、不可部署，actor 时序访问可替代**"。三个"可有可无"项失效方式**各不同**：空间传感器=有效但非必需；特权 critic=不闭合 gap / 不抬 mean；强先验=regime-dependent——**不可混为"一律无用"**。
 4. **LayerNorm claim 强度**：n=2 seeds 仅支撑 "necessary component **存在性**"，**不 claim "LN 比 dual penalty 重要"**（review §2.2.4）。
 5. **FQL 反超的口径**：SAC mexp 上 FQL > ReBRAC β1=1（Δ+0.123, CI[+0.022,+0.233]）是**同源**（sprint1+2 同 collector/manifest）干净比较；"方向翻转"里 ReBRAC > FQL 一侧落在 m_multi_mix（**异源** dataset/manifest），cross-source magnitude 不可严格比较（仅 direction robust，§4.0.10 caveat）。interaction 只 claim **方向**、不 claim 幅度比。

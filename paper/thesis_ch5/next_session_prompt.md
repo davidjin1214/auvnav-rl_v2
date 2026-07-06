@@ -1,6 +1,6 @@
-# 第 5 章续写 — 新对话启动 Prompt（§5.7 复审闭环，本轮 = §5.8 泛化边界写作方案）
+# 第 5 章续写 — 新对话启动 Prompt（§5.7 rev.2 闭环，本轮 = §5.7 写作组织与展开度评估）
 
-> 用法：直接把本文件整段扔进新对话。§5.7 已于 2026-07-05 完成 rev.1 落地（commit `e791d2d`）+ 独立对抗复审闭环（rev.2：1 CRIT + 4 HIGH + 6 MED + 7 LOW 全部落地，含超参表 γ=0.99 勘误、"双向闭环"综合句按 report §7.14.6 弱命题重写、"追平"按 §5.3.6 补 ±6pp 实践容忍界；连带勘误 report rev.8 §7.15.4 与 spec §0.4 红线 2），编译 40 页通过；§5.1–§5.6 六节此前已单节对抗复审 + 章级整体验收复审闭环（commit `238f11b`，2026-07-03）。本轮任务 = **§5.8 泛化边界写作方案**（先方案对齐、后落地）。
+> 用法：**本轮请直接整段粘贴 `section_5_7_writing_organization_review_prompt.md`**（2026-07-07 归档；§5.7 第三轮复审——评写作逻辑与展开度，与 rev.2 忠实性复审互补；四项授权边界已内嵌：结构级改动 / 对标 TD3+BC·ReBRAC·CQL 代表作 / 允许本地 results 提取出图 / 展开度取舍可重议、四项锁定仍锁）。本文件保留为章写作状态真相源。§5.7 已于 2026-07-05 完成 rev.1 落地（commit `e791d2d`）+ 忠实性对抗复审闭环（rev.2，commit `951549d`：1 CRIT + 4 HIGH + 6 MED + 7 LOW，含超参表 γ=0.99 勘误、"双向闭环"弱命题重写、±6pp 实践容忍界；连带勘误 report §7.15.4 与 spec 红线 2，commit `58ff842`），编译 40 页通过；§5.1–§5.6 此前已闭环（commit `238f11b`）。本轮闭环后的下一步 = **§5.8 泛化边界写作方案**。
 >
 > 配套：编写后续各节的新 prompt（起草 / 复审 / 插图 / 润色）前，先看 `prompt_playbook.md` —— 每节标准会话序列、prompt 十要素 checklist、分类型骨架关键句、反模式清单的元层总纲（2026-07-02 由写作期全部会话首条 prompt 回顾提炼）。
 
@@ -62,9 +62,13 @@
 - **git commit 授权（2026-07-05 更新）**：可在你认为合适的节点自行 commit，无需等我指示；`docs:` 前缀 + `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` trailer（仓库现行惯例），只暂存本轮相关文件。
 - 数字一律实时回查 ground truth docs，不复制可能漂移的 headline。
 
-## 本轮任务 —— §5.8 泛化边界写作方案
+## 本轮任务 —— §5.7 写作组织与展开度评估（prompt 已归档，直接用）
 
-§5.7 复审已闭环（2026-07-05）。本轮先产出 **§5.8 泛化边界（broad-validation v2 → actor-fundamental ceiling）写作方案**，对齐拍板后另轮落地 `.tex`（沿用"方案 → 落地 → 独立对抗复审"三轮惯例，prompt 编写参考 `prompt_playbook.md`）：
+**新对话整段粘贴 `paper/thesis_ch5/section_5_7_writing_organization_review_prompt.md`**。要点：五维度评估（发现链步进性 / 细节保真度〔对照 paper 1 experiments.tex + report 列"被压缩细节"清单〕/ claim→图表映射 / 对标 TD3+BC·ReBRAC·CQL 实验节组织 / 章内均衡）→ 分级诊断 + 结构级修改方案 → **硬停待确认** → 确认后改写 /（如需）本地 results 提取出新图 / 编译 / 提交。rev.2 忠实性修订不得回退；四项锁定决策仍锁、展开度取舍可重议；用户先验担忧"太紧凑损失细节"须认真检验但不预设成立。
+
+## 下一步（本轮闭环后）—— §5.8 泛化边界写作方案
+
+产出 **§5.8 泛化边界（broad-validation v2 → actor-fundamental ceiling）写作方案**，对齐拍板后另轮落地 `.tex`（沿用"方案 → 落地 → 独立对抗复审"三轮惯例，prompt 编写参考 `prompt_playbook.md`）：
 
 - **数字 ground truth**：`docs/rebrac_broad_validation_v2_report.md` §3–§5 + §4.5（N2′ asym-critic ablation = ACTOR_FUNDAMENTAL_CONFIRMED）；paper 1 复用素材见 spec §2/§6（Phase 6 已折叠为 §6.6 + L12，提级为独立节）。
 - **动笔前须先决/携带的登记项**（`chapter_acceptance_review_5_1_5_6_findings.md` §5 + spec §8）：N2′ 是否补种子（已登记"答辩前须补种子或极重 caveat"，动笔前决定）；承接 §5.5.5 的 k=4 scope 保险写 online↔offline 对照（在线临界 k=4 = 0.26 口径）；临界传感 3-seed 补录报告（答辩前，非阻塞）。

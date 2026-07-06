@@ -1,6 +1,6 @@
-# 第 5 章续写 — 新对话启动 Prompt（§5.7 rev.2 闭环，本轮 = §5.7 写作组织与展开度评估）
+# 第 5 章续写 — 新对话启动 Prompt（§5.7 rev.3 三轮闭环，本轮 = §5.8 泛化边界写作方案）
 
-> 用法：**本轮请直接整段粘贴 `section_5_7_writing_organization_review_prompt.md`**（2026-07-07 归档；§5.7 第三轮复审——评写作逻辑与展开度，与 rev.2 忠实性复审互补；四项授权边界已内嵌：结构级改动 / 对标 TD3+BC·ReBRAC·CQL 代表作 / 允许本地 results 提取出图 / 展开度取舍可重议、四项锁定仍锁）。本文件保留为章写作状态真相源。§5.7 已于 2026-07-05 完成 rev.1 落地（commit `e791d2d`）+ 忠实性对抗复审闭环（rev.2，commit `951549d`：1 CRIT + 4 HIGH + 6 MED + 7 LOW，含超参表 γ=0.99 勘误、"双向闭环"弱命题重写、±6pp 实践容忍界；连带勘误 report §7.15.4 与 spec 红线 2，commit `58ff842`），编译 40 页通过；§5.1–§5.6 此前已闭环（commit `238f11b`）。本轮闭环后的下一步 = **§5.8 泛化边界写作方案**。
+> 用法：本轮按下方「本轮任务」产出 §5.8 写作方案（prompt 编写参考 `prompt_playbook.md`；沿用「方案 → 落地 → 独立对抗复审」三轮惯例）。本文件保留为章写作状态真相源。§5.7 已三轮闭环：rev.1 落地（2026-07-05，commit `e791d2d`）→ rev.2 忠实性对抗复审（commit `951549d`：1 CRIT + 4 HIGH + 6 MED + 7 LOW，含 γ=0.99 勘误、弱命题重写、±6pp 容忍界；连带 report §7.15.4 与 spec 红线 2 勘误 commit `58ff842`）→ **rev.3 写作组织与展开度评估落地（2026-07-07）**：五维度诊断（发现链步进 / 细节保真 / claim→图表映射 / 对标 TD3+BC·ReBRAC·CQL / 章内均衡）判定五子节骨架健全、欠账在证据密度与段落节奏；落地 = 新增规模翻转图 `fig_ch5_rebrac_scale`（§5.7.1，mainline_edge 首用折线）+ 筛查网格全表 `tab:ch5_rebrac_screen` + 逐种子汇总表 `tab:ch5_rebrac_perseed`（兑现 spec §2 App C 融入 §5.7.m 的承诺、删「记录保留于论文外」指针句）、§5.7.2 首段拆两步闭环、§5.7.3/§5.7.4 补消融设计动机、§5.7.m 补终止类型统计（本地提取脚本 `figures/scripts/extract_ch5_rebrac_termination_stats.py`，主线三单元失败 49/41/36 几乎全为越界）与检查点分布句、report §6.4「7 次」勘误为 6 次；rev.2 忠实性修订零回退，编译 43 页通过。§5.1–§5.6 此前已闭环（commit `238f11b`）。
 >
 > 配套：编写后续各节的新 prompt（起草 / 复审 / 插图 / 润色）前，先看 `prompt_playbook.md` —— 每节标准会话序列、prompt 十要素 checklist、分类型骨架关键句、反模式清单的元层总纲（2026-07-02 由写作期全部会话首条 prompt 回顾提炼）。
 
@@ -22,9 +22,9 @@
 - **§5.4 强化学习方法与算法框架** — `sections/methodology.tex`，**已落地并完成独立对抗复审**。7 子节（§5.4.1 POMDP→异策略 / §5.4.2 异策略 Actor-Critic 共同骨架 + SAC / §5.4.3 TD3+BC / §5.4.4 ReBRAC-Q / §5.4.5 FQL / §5.4.6 训练-部署信息协议 / §5.4.7 实施细节）+ 2 表（`tab:ch5_method_framework` 方法框架总表 / `tab:ch5_method_loss` 损失·信息协议汇总）+ 11 编号公式。组织 = "共同骨架 + 带动机的增量"。公式已对照 `auv_nav/rebrac.py`/`td3bc.py`/`fql.py` 源码逐行核验。复审结论 = 公式忠实度通过、§0.4 红线零踩、禁写结果零命中。
 - **§5.5 在线情形下的可学习性与信息瓶颈** — `sections/online.tex`，**已落地并经系统性对抗复审加固**。5 子节发现链（亚临界可行 → 临界差距 + 三假设 → 特权/时序消融 + 机制 → 稳健性 + 经验上界 → 部署含义）+ 6 图 + 2 表。复审加固：样本效率改 k=12 立论、三假设各自收口、章级"终检/周期评估"命名上提 §5.3.6、图文一致性对齐。
 - **§5.6 离线基线：行为约束方法的两个瓶颈（TD3+BC）** — `sections/td3bc.tex`，**已落地并按 §5.5 标准系统性复审**。把"数据越多越差"从协议伪象纠正为真实现象，拆出数据支持集结构与可部署 critic 信息差两个瓶颈；新增结果图 `fig:ch5_td3bc_size`（TD3+BC vs 纯 BC × 三规模 + 采集成功率参照线）；离散度硬伤已修、setup 增量内联、检查点字典序规则上提 §5.4.m。
-- **§5.7 离线主线：双侧行为约束下的可部署性能（rev.2）** — `sections/rebrac.tex`，**已落地并完成独立对抗复审（2026-07-05 闭环）**。5 子节 + §5.7.m：开篇接 §5.6.5 中心问题 → §5.7.1 规模退化翻转 + 基线差距（+23.0/+32.2pp、β1=4.0↔α_BC≈0.25 公平对照锚；配方差异 = 价值侧支持惩罚 + 层归一化，Q 归一化为两方法共享写法不列差异）→ §5.7.2 可部署协议追平特权协议参照（Welch p=0.9195 / 自助 CI 含零 / 实践容忍界 ±6pp 操作化兑现 §5.3.6 承诺；特权退为难例种子救援 +12pp，TD3+BC 特权自身低位种子 0.760 已一句处理）→ §5.7.3 β2 消融（Q 漂移两数据集同向 +98%/+46%；难例种子需价值侧稳定信号——crosscomp 由 β2 承担、worldcomp 须特权补足，撤"任一存在即可稳住"）→ §5.7.4 LN 独立必要（−16.2pp、单种子 0.890→0.560、n=2 存在性）→ §5.7.5 命题落点 + finalist 稳健性优选埋点 + §5.8 伏笔 → §5.7.m（超参表 γ=0.99〔rev.1 误 0.995，源 paper 1 App B 笔误〕/ 统计全式 / std 口径说明〔特权 ReBRAC-Q 0.026 为样本口径〕/ 诚实 caveat）。3 结果表 + 超参表 + 2 图（`fig_ch5_rebrac_dotplot`、`fig_ch5_rebrac_qdrift`——复审数据零漂移、图未改）。复审修订实质项全录 `rebrac.tex` 头注 rev.2 块。
+- **§5.7 离线主线：双侧行为约束下的可部署性能（rev.3）** — `sections/rebrac.tex`，**已落地并完成两轮独立复审（rev.2 忠实性 2026-07-05 / rev.3 写作组织与展开度 2026-07-07）**。5 子节 + §5.7.m：开篇接 §5.6.5 中心问题 → §5.7.1 规模退化翻转 + 基线差距（+23.0/+32.2pp、β1=4.0↔α_BC≈0.25 公平对照锚；配方差异 = 价值侧支持惩罚 + 层归一化，Q 归一化为两方法共享写法不列差异）→ §5.7.2 可部署协议追平特权协议参照（Welch p=0.9195 / 自助 CI 含零 / 实践容忍界 ±6pp 操作化兑现 §5.3.6 承诺；特权退为难例种子救援 +12pp，TD3+BC 特权自身低位种子 0.760 已一句处理）→ §5.7.3 β2 消融（Q 漂移两数据集同向 +98%/+46%；难例种子需价值侧稳定信号——crosscomp 由 β2 承担、worldcomp 须特权补足，撤"任一存在即可稳住"）→ §5.7.4 LN 独立必要（−16.2pp、单种子 0.890→0.560、n=2 存在性）→ §5.7.5 命题落点 + finalist 稳健性优选埋点 + §5.8 伏笔 → §5.7.m（超参表 γ=0.99〔rev.1 误 0.995，源 paper 1 App B 笔误〕/ 统计全式 / std 口径说明〔特权 ReBRAC-Q 0.026 为样本口径〕/ 诚实 caveat）。5 结果表 + 超参表 + 3 图（`fig_ch5_rebrac_scale` 规模翻转〔rev.3 新增〕、`fig_ch5_rebrac_dotplot`、`fig_ch5_rebrac_qdrift`；rev.3 另增筛查网格表 `tab:ch5_rebrac_screen` 与逐种子表 `tab:ch5_rebrac_perseed`、§5.7.2 拆段、两消融设计动机、§5.7.m 终止类型统计与检查点分布句）。两轮复审修订实质项全录 `rebrac.tex` 头注 rev.2/rev.3 块。
 - **§5.8–§5.10 待起草**（§5.8 泛化边界 / §5.9 算法对比 FQL+SAC collector / §5.10 统一讨论 + 本章小结）。起草各节时须携带的登记项（贡献类型声明、生物回扣、N2′ 答辩风险、传感 3-seed 补录）见 `chapter_acceptance_review_5_1_5_6_findings.md` §5 + spec §8 开放点。
-- 全章工程当前编译通过（40 页，0 undefined ref / 0 undefined citation / bibtex 0 warning / 唯一 Overfull 3.1pt 系 methodology.tex 既有公式项）；**§5.1–§5.7 均已单节对抗复审闭环**（§5.1–§5.6 另经章级整体验收，commit `238f11b`）；§5.8–§5.10 待起草。§5.7 图表浮动漂移（表 5.10/图 5.12 漂 1–2 页）属章级登记延后项（验收 F·M2），全章拼装后统一处理。⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 已修复过一次）。
+- 全章工程当前编译通过（43 页，0 undefined ref / 0 undefined citation / bibtex 0 warning / 唯一 Overfull 3.1pt 系 methodology.tex 既有公式项）；**§5.1–§5.7 均已单节对抗复审闭环**（§5.1–§5.6 另经章级整体验收，commit `238f11b`）；§5.8–§5.10 待起草。§5.7 图表浮动漂移（表 5.10/图 5.12 漂 1–2 页）属章级登记延后项（验收 F·M2），全章拼装后统一处理。⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 已修复过一次）。
 
 ## 先读这些（按序）
 
@@ -62,13 +62,9 @@
 - **git commit 授权（2026-07-05 更新）**：可在你认为合适的节点自行 commit，无需等我指示；`docs:` 前缀 + `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` trailer（仓库现行惯例），只暂存本轮相关文件。
 - 数字一律实时回查 ground truth docs，不复制可能漂移的 headline。
 
-## 本轮任务 —— §5.7 写作组织与展开度评估（prompt 已归档，直接用）
+## 本轮任务 —— §5.8 泛化边界写作方案
 
-**新对话整段粘贴 `paper/thesis_ch5/section_5_7_writing_organization_review_prompt.md`**。要点：五维度评估（发现链步进性 / 细节保真度〔对照 paper 1 experiments.tex + report 列"被压缩细节"清单〕/ claim→图表映射 / 对标 TD3+BC·ReBRAC·CQL 实验节组织 / 章内均衡）→ 分级诊断 + 结构级修改方案 → **硬停待确认** → 确认后改写 /（如需）本地 results 提取出新图 / 编译 / 提交。rev.2 忠实性修订不得回退；四项锁定决策仍锁、展开度取舍可重议；用户先验担忧"太紧凑损失细节"须认真检验但不预设成立。
-
-## 下一步（本轮闭环后）—— §5.8 泛化边界写作方案
-
-产出 **§5.8 泛化边界（broad-validation v2 → actor-fundamental ceiling）写作方案**，对齐拍板后另轮落地 `.tex`（沿用"方案 → 落地 → 独立对抗复审"三轮惯例，prompt 编写参考 `prompt_playbook.md`）：
+产出 **§5.8 泛化边界（broad-validation v2 → actor-fundamental ceiling）写作方案**，对齐拍板后另轮落地 `.tex`（沿用「方案 → 落地 → 独立对抗复审」三轮惯例，prompt 编写参考 `prompt_playbook.md`）：
 
 - **数字 ground truth**：`docs/rebrac_broad_validation_v2_report.md` §3–§5 + §4.5（N2′ asym-critic ablation = ACTOR_FUNDAMENTAL_CONFIRMED）；paper 1 复用素材见 spec §2/§6（Phase 6 已折叠为 §6.6 + L12，提级为独立节）。
 - **动笔前须先决/携带的登记项**（`chapter_acceptance_review_5_1_5_6_findings.md` §5 + spec §8）：N2′ 是否补种子（已登记"答辩前须补种子或极重 caveat"，动笔前决定）；承接 §5.5.5 的 k=4 scope 保险写 online↔offline 对照（在线临界 k=4 = 0.26 口径）；临界传感 3-seed 补录报告（答辩前，非阻塞）。

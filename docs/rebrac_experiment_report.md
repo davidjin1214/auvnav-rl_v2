@@ -304,7 +304,7 @@ ReBRAC 实现约定见 [rebrac_experiment_plan.md §5](./rebrac_experiment_plan.
 
 **1. seed 44 的异常从 Stage B0 延伸到 Stage B**，且是系统性的。
 
-在 8 个 `β1 ∈ {1.0, 2.0}` 的格子里，seed 44 出现 7 次是三个 seed 中最弱的那个，且差距常常远超其它 seed 之间的差距（在 ep1000 上 seed 44 比 seed 42/43 平均低 `0.25~0.45`）。这与 Stage B0 用 `β1=2.0, β2=1.0` 单独观察到的 "seed 44 peak 只有 0.775" 完全一致——把 Stage B0 结论从 "β1=2.0 这一列 seed 44 是 outlier" 升级成：
+在 8 个 `β1 ∈ {1.0, 2.0}` 的格子里，seed 44 出现 7 次是三个 seed 中最弱的那个`【2026-07-07 勘误：按本节 per-seed 表逐格清点应为 6 次（ep1000/ep2000 各 3 次；两个 (β1=1.0, β2=1.0) 格的最弱均为 seed 42），"7 次"系笔误；"seed 44 是系统性难 seed"的定性结论不受影响】`，且差距常常远超其它 seed 之间的差距（在 ep1000 上 seed 44 比 seed 42/43 平均低 `0.25~0.45`）。这与 Stage B0 用 `β1=2.0, β2=1.0` 单独观察到的 "seed 44 peak 只有 0.775" 完全一致——把 Stage B0 结论从 "β1=2.0 这一列 seed 44 是 outlier" 升级成：
 
 > 在 `β1 ≤ 2.0` 的所有 ReBRAC 格子里，seed 44 是系统性难 seed。β1 要提升到 4.0，seed 44 的 test success 才能稳定进入 `0.85 ~ 0.925` 区间。
 

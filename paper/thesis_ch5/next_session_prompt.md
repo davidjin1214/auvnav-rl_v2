@@ -1,33 +1,41 @@
-# 第 5 章续写 — 本轮入口 Prompt（§5.9 算法比较 · 独立对抗复审轮）
+# 第 5 章续写 — 本轮入口 Prompt（§5.10 统一讨论 · 重流程方案轮）
 
 > 体例（2026-07-07 起）：本文件**每轮重写**，只含当轮任务与本节相关约束。章状态账本 = `status.md`（唯一真相源）；逐轮历史 = git log 与各节头注；prompt 方法论 = `prompt_playbook.md`。
-> **轻流程已转正**（2026-07-07 用户拍板）：起草轮直落，本轮为配套的**独立对抗复审收尾轮**。硬护栏（数字实时回查 / 红线子集 / 编译验证）不变。
+> **流程裁决（2026-07-07 用户拍板）**：§5.9 复审 CRIT+HIGH=4 触发轻流程门控呈报条件（详 `section_5_9_review_findings.md` §6），用户采纳选项①——**§5.10 恢复重流程**：方案先行 → **硬停待批** → 落地 → 独立对抗复审。已闭环各节不受影响。本轮 = **方案轮**。
 
 ---
 
-你是独立的对抗性复审人：不信任起草轮的任何自述（包括 `.tex` 头注 rev 块），一切以 ground truth docs 与 spec 原文为准。本次对话唯一任务：**对 `sections/algo_compare.tex`（§5.9 算法比较，rev.1）做独立对抗复审并落地修订（rev.2）**。参照 §5.8 复审轮先例（对抗 + 系统性合并；findings 存档 `section_5_8_review_findings.md`、成果录 boundary.tex rev.2 头注）。
+本次对话唯一任务：**起草 §5.10（统一讨论 + 本章小结）写作方案 `paper/thesis_ch5/section_5_10_discussion_writing_plan.md`**，参照 §5.7 先例（`section_5_7_rebrac_writing_plan.md`：逐小节论点骨架 + 每条 claim 的锚点与出处 + 红线对照 + 图表裁决）。**方案经用户批准前，不写 `sections/discussion.tex` 一个字，方案完成即硬停**。
 
 【中心命题（spec §0.1 原话，全章只论证这一句）】在部署约束下，提升性能的关键在于**用好已有的信息与数据**，而非**为系统增添能力**。前者落实为两条途径——在时间维度上充分利用单点观测，以及使模仿目标与数据质量相适配；后者——更多空间传感器、向价值网络注入特权观测、采用更具表达力的策略先验——则或非必需，或不普遍有效。
-【§5.9 的角色】回答「换更强算法会变吗」：FQL 不普遍取胜，决定因素是模仿目标质量与数据条件的匹配；第一层（privileged 采集器族内 ReBRAC-Q β1=1.0 占优）是铺垫，第二层（跨数据源排名翻转 = 算法×数据质量交互）才是章级主结论。
+
+【§5.10 的角色】全章唯一收束节，六件事：(1) 统一机制两轴（actor 对部署信号的时序利用 + 模仿目标质量与数据条件的适配）；(2) **β1 跨线 reconciliation**（主线 4.0 ↔ P2/SAC 线 1.0：四轴差异 + 统一机制解释，化矛盾为 finding）；(3) **特权 critic 四态收束**（在线临界不闭合 §5.5 / 离线亚临界 TD3+BC 方向性半程有益 §5.6 / ReBRAC-Q 不抬均值 §5.7 / 临界救不了 §5.8 → 收成"或非必需、或不普遍有效"的一致机制）；(4) sim2real implication（五重 scope tag 严格限定）；(5) limitations；(6) **本章小结**（§0.3 takeaway 复述 + 博论 spine 自足承接 + 贡献类型正面声明 + 生物回扣一次）。本节**无新实验数字**——风险全部在"散文层事实归属与跨节口径对齐"，恰是 §5.9 复审暴露的最高风险类（预登记归属 / 机制前提 / 跨节指认 / 综合句自相矛盾四类，全须在方案层就锚死出处）。
 
 ## 按序必读
 
-1. `sections/algo_compare.tex` 全文 + 头注 rev.1 块（其数字清单仅作起点，**逐项重新回查**，不作二手源）；
-2. spec `paper/thesis_chapter_outline.md` §2 §5.9 块 + §0.4 红线 5 + §0.5.6/§0.5.7/§0.5.9/§0.5.10 + §5 图表清单 (5.9) 行；
-3. **数字唯一权威**（全量回查）：`docs/fql_succession_p2_results.md` §2/§3/§4/§5/§6/§6.5/§7/§8.1 + `docs/fql_succession_p2_mechanism_diagnostic.md` §9（任何不一致以 diagnostic 为准）+ `docs/fql_succession_p2_collection_log.md`（四单元构造/规模/采集器 SR 0.632）+ `docs/arrival_v2_sac_collector_design.md` §4.0.1/§4.0.3/§4.0.7/§4.0.10（四档协议与 39-run 联合矩阵、全部 CI）；
-4. 邻节衔接锚：`sections/rebrac.tex` §5.7.5（伏笔句承接、β1=4.0 稳健性优选口径）、`sections/methodology.tex` §5.4.5（$\mathbf{a}_{\mathrm{FM}}$ / $\alpha_{\mathrm{FQL}}$ 记号一致、公式零重复）、`sections/setup.tex` §5.3.6（统计口径不被推翻）与 tab:ch5_datasets、`sections/boundary.tex`（终点检查点口径同源、FLOOR 与 §5.8 边界的呼应不越位）。
+1. spec `paper/thesis_chapter_outline.md`：§2 §5.10 块 + §0.1/§0.2/§0.3（takeaway 原文）+ §0.4 红线**全五条** + §0.5.3（章末小结体裁：dissertation 承上启下、零跨章）+ §0.5.9/§0.5.10 + §3 缝合点表（β1 / 特权 critic 四态 D-M1 / online↔offline floor）+ §8 #10（生物回扣 4 护栏原文）；
+2. 已闭环九节的收束接口（**收束引用须逐字对齐各节锁定措辞，不得复述走样**）：`intro.tex` ¶5–¶7（贡献散文与两条主线）、`online.tex` §5.5.5（k=4 scope 保险 + 在线特权消融线别限定）、`td3bc.tex` 末两小节（两瓶颈 + 特权半程有益口径）、`rebrac.tex` §5.7.5（稳健性优选=**非单点最高值**口径、特权退为种子级救援）、`boundary.tex` §5.8.5（两读法并存、❌信息论不可能、n=2 极重 caveat）、`algo_compare.tex` §5.9.5（交互方向结构承载结论、质量区间口径）；
+3. β1 reconciliation 数字源（方案中每个数字标注出处，落地轮再实时回查）：`docs/rebrac_line_overview.md` §6（四轴差异：奖励/采集器/动作噪声/种子组）+ `docs/rebrac_mainline_review.md` §2.2.6 + `docs/fql_succession_p2_results.md` §8.1；
+4. limitations 素材：`paper/sections/limitations.tex` L1–L12（只读勿改）+ 各线 report 的 caveat 段（broad-val v2 §6 / FQL P2 §7 残余 caveat / SAC collector §4.0.10 幅度 caveat）；
+5. 复审教训沉淀：`section_5_9_review_findings.md`（尤其 §2 四条 HIGH 的错误形态与 §6 门控判定）——方案须为**每个跨节/跨线 claim** 建立"claim → 节内锚（\S\ref）/ ground truth 出处"映射表，作为落地轮与复审轮的对账基准。
 
-## 复审维度（对抗优先级从高到低）
+## 方案轮必须裁决并写进方案的事项（交用户批准）
 
-1. **数字忠实性零漂移**：正文/表/图注/图脚本（`figures/scripts/fig_ch5_fql_noise_axis.py`、`fig_ch5_algo_interaction.py` 内手填数据）逐值对照 ground truth；特查：矩阵四单元 δ 与判读、机制三步（0.705→0.715 / →0.940 / 0.885→0.910）、C-1 逐种子、σ_train≈3.8pp 与全部 t 值、SAC 四档 μ±σ、六条 CI、m_multi_mix 补充 0.987±0.006、FLOOR 五数字（0.985/0.719/0.632/0.098/0.14）。
-2. **红线条对条**：两层顺序；第一层不作章级主结论；红线 5（同源 mexp 可报效应量、异源仅方向、不 claim 幅度比——含图 (b) 的呈现方式是否足够防误读）；FLOOR 不弱化主工况；n=2「带 caveat 引用」级 + 统计强度同台；β1 4.0/1.0 只线别限定、不提前 reconcile；特权 critic 四态不在本节收束。
-3. **协议如实性**：矩阵表「ReBRAC-Q」列=冻结 β1=4.0 是否处处不被误读为主线最优；噪声注入是采集时注入非事后加噪；跨源配对 = 两共同种子（与 0.987 的三种子均值并置是否会误导）；30 回合 vs 100 回合评估集差异的交代；「预登记判读门槛」表述与源文档 spec v1.3 §5.5 的对应。
-4. **语体与术语**（§0.5.9/§0.5.10）：报告体 marker、枚举暴露、teacher/regime/headline 黑话残留、「锚定强度/锚定系数」用法与 §5.7 先例一致性、每段 3–4 句。
-5. **组织与展开度**：小节切分是否服务论证；interpretation 段是否完整；与 §5.7.5 伏笔和 §5.10 供料接口是否严丝合缝；图表六条硬规范（宽≤138mm/可读/线可区分/不重叠/少字/Nature 风）。
+1. **小节切分**：统一机制 / β1 reconciliation / 四态收束 / sim2real 与 limitations / 本章小结的分节方式；§5.10.m 是否设立及承载何物（spec 指定：β1 四轴差异表 + L1–L12 合并清单 + sim2real 五重 scope tag 列表）；
+2. **图表裁决**：spec §5 清单无 5.10 行——建议以表承载（β1 四轴差异表、特权 critic 四态收束表），不新作图；须在方案中定案；
+3. **生物回扣句**：位置（本章小结收束/立意层，一句话级别）与措辞草案，4 护栏逐条对照（①仅小结层一句 ②贡献句不带生物专名 ③"功能替代而非结构仿制" ④不改命题不加 claim）；
+4. **贡献类型正面声明**：落点与措辞草案（G·H-2：规律/设计准则 + 受控判别框架 + ReBRAC-Q 方法制品；注意 §0.5.9(a) 禁反向宣告与 spec 显式解禁正向声明的边界）；
+5. **本章小结与 §5.1 的对称性**：零跨章、抽象口径承接（不点名邻章）；不写成结果节摘要堆叠（spec §7 步 7）；
+6. **claim→锚点映射表**：§5.10 每一段的每条实质 claim 对应的节内 \S\ref 与文档出处；原则上本节不引新数字，若必须引（如 β1 四轴表）逐个标注 ground truth 并在落地轮实时回查。
+
+## 红线子集（方案层即须逐条对照，落地轮复检）
+
+- §0.4 全五条在本节全部适用且密度最高：① 不写"actor 侧决定全部 mean"（LN 是第三条独立轴、必要基础设施，**不进**"可有可无"清单，只作正交定位）；② +23–32pp 不归单一 actor 轴（Q 归一化系共享写法、不列差异）；③ 三项"增添能力"失效方式**各异**（空间传感器=有效但非必需可替代；特权 critic=四态；强先验=依数据条件而异），不可混为"一律无用"；④ LN n=2 只存在性、不排序；⑤ 交互只 claim 方向、不 claim 跨源幅度比；
+- ❌ claim 边界：不下"信息论不可能 / proven actor-incapable"（§5.8 两读法并存已锁）；β1 reconciliation 不写成"某一线调错了"，而是"锚定强度无全局最优、其最优点随模仿目标质量与协议移动"的 finding（§5.7.5 稳健性优选口径 + §5.9.2 线别限定四轴为两端接口）；
+- 语体：报告体 marker 零出现、枚举溶解、术语按 §0.5.10（数据条件/质量区间、工况、弯引号"）、每段 3–4 句；N2′/FQL n=2 类结论被收束引用时连同其 caveat 一并引用，不得在收束层洗掉限定。
 
 ## 输出与工程
 
-- findings 存档 `paper/thesis_ch5/section_5_9_review_findings.md`（分级 CRIT/HIGH/MED/LOW；CRIT/HIGH 全修、MED 逐条裁决落地或记录、LOW 记录留收尾统稿）；修订直接落 `sections/algo_compare.tex`（rev.2 头注块记录实质项）。
-- **轻流程门控对照**：统计本轮 CRIT+HIGH 数，与 §5.6 基线 4、§5.7 基线 5、§5.8 试点 1 并置记入 status.md §5.9 行（若 ≥4 须向用户报告轻流程退回条件是否触发）。
-- 编译验证 `cd paper/thesis_ch5 && latexmk -pdf -xelatex -interaction=nonstopmode -halt-on-error main.tex`，0 undefined ref / 0 undefined citation / bibtex 0 warning，成功后 `latexmk -c`；若改图脚本须重跑生成并目检 PNG。
-- 数字一律实时回查 ground truth；禁凭记忆、禁以任何成稿自述为二手源。可自行 commit：`docs:` 前缀 + `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` trailer，只暂存本轮相关文件。
+- 唯一产出：`paper/thesis_ch5/section_5_10_discussion_writing_plan.md`；**不改任何 `.tex`、不编译、不动图**；方案末附"待用户裁决问题清单"（若有），完成即硬停待批。
+- `status.md` §5.10 行更新为"方案轮完成、待用户批准"；本文件在方案获批后再重写为落地轮入口。
+- 可自行 commit：`docs:` 前缀 + `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` trailer，只暂存本轮相关文件。

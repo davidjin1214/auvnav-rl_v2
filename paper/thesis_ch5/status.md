@@ -16,11 +16,11 @@
 | §5.7 离线主线 ReBRAC-Q | `sections/rebrac.tex` | ✅ 三轮闭环（rev.1 落地 `e791d2d` / rev.2 忠实性复审 `951549d` / rev.3 组织与展开度 `5034b0c`）；修订实质项全录头注 rev 块 | `section_5_7_rebrac_writing_plan.md`、`section_5_7_review_prompt.md`、`section_5_7_writing_organization_review_prompt.md` |
 | §5.8 泛化边界 | `sections/boundary.tex` | ✅ 两轮闭环（rev.1 轻流程试点落地 / rev.2 独立对抗复审：0 CRIT + 1 HIGH + 5 MED 全落地，数字零漂移、红线零踩线）；**轻流程门控判定：CRIT/HIGH=1 ≪ §5.6 基线 4、§5.7 基线 5，未触发退回条件；用户 2026-07-07 拍板采纳，轻流程转正** | `section_5_8_review_findings.md`；先决裁决 2026-07-07：N2′ 以极重 caveat 呈现（n=2 显式 + rule-of-three 上界 + 正文登记补种子，rev.2 又补预登记三种子缩水为二的如实披露）、在线特权消融不并列（散文指回 §5.5，四态收束留 §5.10） |
 | §5.9 算法对比 FQL | `sections/algo_compare.tex` | ✅ 两轮闭环（rev.1 轻流程起草 / rev.2 独立对抗复审：0 CRIT + 4 HIGH + 8 MED 全落地，三表两图数字零漂移、红线子集零踩线，4 HIGH 均为解释性散文层事实错误——预登记归属、机制前提方向、跨节指认、综合句自相矛盾）；轻流程门控：CRIT+HIGH=4 与 §5.6 基线 4 持平（§5.7 基线 5、§5.8 试点 1），触发 ≥4 呈报条件，**用户 2026-07-07 拍板采纳①——§5.10 恢复重流程**（findings §6 已录裁决） | `section_5_9_review_findings.md`；头注 rev.2 块 |
-| §5.10 统一讨论 + 本章小结 | `sections/discussion.tex` | 🟡 **重流程·落地完成（rev.1，2026-07-07），待独立对抗复审**。按已批方案执行：开篇段 + 5 子节无 .m、两表零图（β1 四轴对照 + 特权四态收束，均零新成功率数字）、三伏笔兑现、小结三段（中心命题原话回归 / 贡献三类型 / 生物回扣一句 + spine）；方案 §4 映射表 24 条逐条核锚、marker grep 干净；表 5.10-1 按"维度 × 两协议"转置呈现（排版层落地自由度，头注已注明） | `section_5_10_discussion_writing_plan.md`（§4 映射表 = 复审对账基准）；`next_session_prompt.md`（复审轮入口） |
+| §5.10 统一讨论 + 本章小结 | `sections/discussion.tex` | ✅ **重流程四步闭环**（方案获批 → rev.1 落地 → rev.2 独立对抗复审 2026-07-08：0 CRIT + 3 HIGH + 7 MED 全落地 + LOW 顺手 2 条，两表零漂移、收束引用零走样、伏笔兑现零扩权、红线零踩线；3 HIGH 均为收束层 scope 措辞——五重限定假全称、四态综合句分支越权、部署含义数据采集扩权）；**门控：CRIT+HIGH=3 < §5.9 基线 4，未触发追加轮条件，复审侧建议不追加，最终由用户裁决**；残留 LOW×3（含机体↔船体跨节术语分歧）记录 findings §4 留收尾统稿轮。**全章十节齐** | `section_5_10_discussion_writing_plan.md`；`section_5_10_review_findings.md`（复审存档 + 门控呈报 §6） |
 
 ## 工程状态
 
-- 编译：57 页通过，0 undefined ref / 0 undefined citation / bibtex 0 warning（唯一 Overfull 3.1pt 系 methodology 既有公式项）。`main.tex` 已 `\input` §5.1–§5.10 全部十节。
+- 编译：58 页通过（§5.10 rev.2 后回流 +1 页），0 undefined ref / 0 undefined citation / bibtex 0 warning（唯一 Overfull 3.1pt 系 methodology 既有公式项）。`main.tex` 已 `\input` §5.1–§5.10 全部十节。
 - ⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 修复过一次）。
 - 已定稿节 `.tex` 视为 locked：只 Edit 微修、不 Write 覆盖；`paper/sections/`（paper 1 素材）只读勿改。
 
@@ -34,7 +34,7 @@
 | 临界单元 + 非对称消融补种子配对复核 | 章定稿前 / 答辩前，非阻塞（§5.8.5 正文已登记该限定） | spec §2 §5.8 答辩风险登记；report §6.3 |
 | 临界传感 3-seed 补录 `docs/arrival_v2_experiment_report.md` | 答辩前，非阻塞 | findings E·M1 |
 | 图浮动漂移 + 半空白页 | 全章拼装后统一处理 | findings F·M2 |
-| 零散 LOW（括注清理 / refs.bib 残留等） | 收尾统稿一轮批量 | findings §3.2 |
+| 零散 LOW（括注清理 / refs.bib 残留 / 机体↔船体术语章级统一等） | 收尾统稿一轮批量 | findings §3.2；`section_5_8/5_9/5_10_review_findings.md` LOW 段 |
 
 ## 已锁决策（只列指针，内容以权威所在为准、不在此复述）
 

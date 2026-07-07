@@ -15,7 +15,7 @@
 | §5.6 离线基线 TD3+BC | `sections/td3bc.tex` | ✅ 闭环 | `section_5_6_review_prompt.md` |
 | §5.7 离线主线 ReBRAC-Q | `sections/rebrac.tex` | ✅ 三轮闭环（rev.1 落地 `e791d2d` / rev.2 忠实性复审 `951549d` / rev.3 组织与展开度 `5034b0c`）；修订实质项全录头注 rev 块 | `section_5_7_rebrac_writing_plan.md`、`section_5_7_review_prompt.md`、`section_5_7_writing_organization_review_prompt.md` |
 | §5.8 泛化边界 | `sections/boundary.tex` | ✅ 两轮闭环（rev.1 轻流程试点落地 / rev.2 独立对抗复审：0 CRIT + 1 HIGH + 5 MED 全落地，数字零漂移、红线零踩线）；**轻流程门控判定：CRIT/HIGH=1 ≪ §5.6 基线 4、§5.7 基线 5，未触发退回条件；用户 2026-07-07 拍板采纳，轻流程转正** | `section_5_8_review_findings.md`；先决裁决 2026-07-07：N2′ 以极重 caveat 呈现（n=2 显式 + rule-of-three 上界 + 正文登记补种子，rev.2 又补预登记三种子缩水为二的如实披露）、在线特权消融不并列（散文指回 §5.5，四态收束留 §5.10） |
-| §5.9 算法对比 FQL | `sections/algo_compare.tex` | ✅ rev.1 落地（轻流程起草：两层结构——数据条件矩阵 + 机制消融 + 对等调参复核为铺垫，跨数据源翻转为章级主结论；图 2 张新作 `fig_ch5_fql_noise_axis` / `fig_ch5_algo_interaction`（headline）+ 表 3 张；refs.bib 增 `fu2020d4rl` 已核验）；⏳ 待独立对抗复审（轻流程收尾轮） | spec §2 §5.9 块；头注 rev.1 块（数字 ground truth 清单） |
+| §5.9 算法对比 FQL | `sections/algo_compare.tex` | ✅ 两轮闭环（rev.1 轻流程起草 / rev.2 独立对抗复审：0 CRIT + 4 HIGH + 8 MED 全落地，三表两图数字零漂移、红线子集零踩线，4 HIGH 均为解释性散文层事实错误——预登记归属、机制前提方向、跨节指认、综合句自相矛盾）；**⚠ 轻流程门控：CRIT+HIGH=4，与 §5.6 基线 4 持平（§5.7 基线 5、§5.8 试点 1），触发 ≥4 呈报条件——§5.10 是否续用轻流程待用户拍板**（findings §6 给出判定两面与折中选项） | `section_5_9_review_findings.md`；头注 rev.2 块 |
 | §5.10 统一讨论 + 本章小结 | `sections/discussion.tex`（待建） | ⏳ 待起草；携带：贡献类型正面声明（findings G·H-2）、生物回扣一次（4 护栏，spec §8 #10） | spec §2 §5.10 块 |
 
 ## 工程状态

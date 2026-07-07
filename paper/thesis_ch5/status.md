@@ -14,13 +14,13 @@
 | §5.5 在线可学习性与信息瓶颈 | `sections/online.tex` | ✅ 闭环；§5.5.5 含 k=4 scope 保险（§5.8 须承接对照） | `section_5_5_restructure_prompt.md` |
 | §5.6 离线基线 TD3+BC | `sections/td3bc.tex` | ✅ 闭环 | `section_5_6_review_prompt.md` |
 | §5.7 离线主线 ReBRAC-Q | `sections/rebrac.tex` | ✅ 三轮闭环（rev.1 落地 `e791d2d` / rev.2 忠实性复审 `951549d` / rev.3 组织与展开度 `5034b0c`）；修订实质项全录头注 rev 块 | `section_5_7_rebrac_writing_plan.md`、`section_5_7_review_prompt.md`、`section_5_7_writing_organization_review_prompt.md` |
-| §5.8 泛化边界 | `sections/boundary.tex`（待建） | ⏳ **本轮**（轻流程试点，见 `next_session_prompt.md`） | spec §2 §5.8 块 |
+| §5.8 泛化边界 | `sections/boundary.tex` | ✅ rev.1 落地（**轻流程试点**：论点骨架直落、免硬停等确认）；独立复审待做（下一轮，兼判轻流程门控是否 load-bearing） | spec §2 §5.8 块；先决裁决 2026-07-07：N2′ 以极重 caveat 呈现（n=2 显式 + rule-of-three 上界 + 正文登记补种子）、在线特权消融不并列（散文指回 §5.5，四态收束留 §5.10） |
 | §5.9 算法对比 FQL | `sections/algo_compare.tex`（待建） | ⏳ 待起草 | spec §2 §5.9 块 |
 | §5.10 统一讨论 + 本章小结 | `sections/discussion.tex`（待建） | ⏳ 待起草；携带：贡献类型正面声明（findings G·H-2）、生物回扣一次（4 护栏，spec §8 #10） | spec §2 §5.10 块 |
 
 ## 工程状态
 
-- 编译：43 页通过，0 undefined ref / 0 undefined citation / bibtex 0 warning（唯一 Overfull 3.1pt 系 methodology 既有公式项）。`main.tex` 已 `\input` §5.1–§5.7 七节，§5.8–§5.10 注释占位。
+- 编译：47 页通过，0 undefined ref / 0 undefined citation / bibtex 0 warning（唯一 Overfull 3.1pt 系 methodology 既有公式项）。`main.tex` 已 `\input` §5.1–§5.8 八节，§5.9–§5.10 注释占位。
 - ⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 修复过一次）。
 - 已定稿节 `.tex` 视为 locked：只 Edit 微修、不 Write 覆盖；`paper/sections/`（paper 1 素材）只读勿改。
 
@@ -28,9 +28,10 @@
 
 | 项 | 时点 | 出处 |
 |---|---|---|
-| N2′ 补种子 vs 极重 caveat 呈现 | **§5.8 动笔前必决** | spec §2 §5.8 答辩风险登记 |
-| online AsymCritic 是否与 §5.8 asym ablation 并列呈现 | **§5.8 方案时定** | spec §8 #4（🟡 待拍板） |
-| online↔offline k=4 对照句 | §5.8 落地时写入 | 承接 §5.5.5 scope 保险；口径回查 ground truth |
+| ~~N2′ 补种子 vs 极重 caveat 呈现~~ | ✅ 已决 2026-07-07：极重 caveat 呈现（§5.8.5 专段 + 表注 n=2 + 零计数上界） | spec §2 §5.8 答辩风险登记 |
+| ~~online AsymCritic 是否与 §5.8 asym ablation 并列呈现~~ | ✅ 已决 2026-07-07：不并列，散文指回 §5.5（线别限定），四态收束留 §5.10 | spec §8 #4 |
+| ~~online↔offline k=4 对照句~~ | ✅ 已落地（§5.8.4 对照用 0.26±0.15，非 legacy 10%；k=4/k=12 不对称承接 §5.5.5） | 承接 §5.5.5 scope 保险 |
+| 临界单元 + 非对称消融补种子配对复核 | 章定稿前 / 答辩前，非阻塞（§5.8.5 正文已登记该限定） | spec §2 §5.8 答辩风险登记；report §6.3 |
 | 临界传感 3-seed 补录 `docs/arrival_v2_experiment_report.md` | 答辩前，非阻塞 | findings E·M1 |
 | 图浮动漂移 + 半空白页 | 全章拼装后统一处理 | findings F·M2 |
 | 零散 LOW（括注清理 / refs.bib 残留等） | 收尾统稿一轮批量 | findings §3.2 |

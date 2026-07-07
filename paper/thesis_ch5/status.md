@@ -16,11 +16,11 @@
 | §5.7 离线主线 ReBRAC-Q | `sections/rebrac.tex` | ✅ 三轮闭环（rev.1 落地 `e791d2d` / rev.2 忠实性复审 `951549d` / rev.3 组织与展开度 `5034b0c`）；修订实质项全录头注 rev 块 | `section_5_7_rebrac_writing_plan.md`、`section_5_7_review_prompt.md`、`section_5_7_writing_organization_review_prompt.md` |
 | §5.8 泛化边界 | `sections/boundary.tex` | ✅ 两轮闭环（rev.1 轻流程试点落地 / rev.2 独立对抗复审：0 CRIT + 1 HIGH + 5 MED 全落地，数字零漂移、红线零踩线）；**轻流程门控判定：CRIT/HIGH=1 ≪ §5.6 基线 4、§5.7 基线 5，未触发退回条件；用户 2026-07-07 拍板采纳，轻流程转正** | `section_5_8_review_findings.md`；先决裁决 2026-07-07：N2′ 以极重 caveat 呈现（n=2 显式 + rule-of-three 上界 + 正文登记补种子，rev.2 又补预登记三种子缩水为二的如实披露）、在线特权消融不并列（散文指回 §5.5，四态收束留 §5.10） |
 | §5.9 算法对比 FQL | `sections/algo_compare.tex` | ✅ 两轮闭环（rev.1 轻流程起草 / rev.2 独立对抗复审：0 CRIT + 4 HIGH + 8 MED 全落地，三表两图数字零漂移、红线子集零踩线，4 HIGH 均为解释性散文层事实错误——预登记归属、机制前提方向、跨节指认、综合句自相矛盾）；轻流程门控：CRIT+HIGH=4 与 §5.6 基线 4 持平（§5.7 基线 5、§5.8 试点 1），触发 ≥4 呈报条件，**用户 2026-07-07 拍板采纳①——§5.10 恢复重流程**（findings §6 已录裁决） | `section_5_9_review_findings.md`；头注 rev.2 块 |
-| §5.10 统一讨论 + 本章小结 | `sections/discussion.tex`（待建） | ⏳ **重流程·方案已批，下一轮 = 落地轮**（2026-07-07 用户"同意推荐"，六项裁决全按推荐锁定：5 子节无 .m / 节标题「综合讨论与本章小结」`sec:ch5_discussion` / 两表零图零新数字 / sim2real+limitations 合并 §5.10.4 / 生物回扣与贡献声明按草案方向）；落地轮按方案直接起草、勿重开方案讨论，落地后另起独立对抗复审轮 | `section_5_10_discussion_writing_plan.md`（已拍板执行版；§4 映射表 = 对账基准）；`next_session_prompt.md`（落地轮入口） |
+| §5.10 统一讨论 + 本章小结 | `sections/discussion.tex` | 🟡 **重流程·落地完成（rev.1，2026-07-07），待独立对抗复审**。按已批方案执行：开篇段 + 5 子节无 .m、两表零图（β1 四轴对照 + 特权四态收束，均零新成功率数字）、三伏笔兑现、小结三段（中心命题原话回归 / 贡献三类型 / 生物回扣一句 + spine）；方案 §4 映射表 24 条逐条核锚、marker grep 干净；表 5.10-1 按"维度 × 两协议"转置呈现（排版层落地自由度，头注已注明） | `section_5_10_discussion_writing_plan.md`（§4 映射表 = 复审对账基准）；`next_session_prompt.md`（复审轮入口） |
 
 ## 工程状态
 
-- 编译：53 页通过，0 undefined ref / 0 undefined citation / bibtex 0 warning（唯一 Overfull 3.1pt 系 methodology 既有公式项）。`main.tex` 已 `\input` §5.1–§5.9 九节，§5.10 注释占位。
+- 编译：57 页通过，0 undefined ref / 0 undefined citation / bibtex 0 warning（唯一 Overfull 3.1pt 系 methodology 既有公式项）。`main.tex` 已 `\input` §5.1–§5.10 全部十节。
 - ⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 修复过一次）。
 - 已定稿节 `.tex` 视为 locked：只 Edit 微修、不 Write 覆盖；`paper/sections/`（paper 1 素材）只读勿改。
 

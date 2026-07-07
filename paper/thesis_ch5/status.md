@@ -20,7 +20,8 @@
 
 ## 工程状态
 
-- 编译：58 页通过（§5.10 rev.2 后回流 +1 页），0 undefined ref / 0 undefined citation / bibtex 0 warning（唯一 Overfull 3.1pt 系 methodology 既有公式项）。`main.tex` 已 `\input` §5.1–§5.10 全部十节。
+- **收尾统稿轮已闭环（2026-07-08）**：包 A（三份复审 LOW 全清 + 章级零散 LOW：重复英文括注 ×6、refs.bib 未引 ×3、机体↔船体统一为「机体」）＋包 C（术语终检 grep 十节零违规、跨节引用抽核通过、图表编号与首引序全章对齐）＋包 B（F·M2 浮动漂移根治：fig 5.3 `[t]`→`[tp]` 解除 figure 队列堵塞、§5.5 六图回归各小节、rebrac 三表重排、全部浮动距首引 0–2 页）。零数字/零论证改动。
+- 编译：58 页通过，0 undefined ref / 0 undefined citation / 0 multiply-defined / bibtex 0 warning / 无 Overfull>10pt。`main.tex` 已 `\input` §5.1–§5.10 全部十节。
 - ⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 修复过一次）。
 - 已定稿节 `.tex` 视为 locked：只 Edit 微修、不 Write 覆盖；`paper/sections/`（paper 1 素材）只读勿改。
 
@@ -31,10 +32,10 @@
 | ~~N2′ 补种子 vs 极重 caveat 呈现~~ | ✅ 已决 2026-07-07：极重 caveat 呈现（§5.8.5 专段 + 表注 n=2 + 零计数上界） | spec §2 §5.8 答辩风险登记 |
 | ~~online AsymCritic 是否与 §5.8 asym ablation 并列呈现~~ | ✅ 已决 2026-07-07：不并列，散文指回 §5.5（线别限定），四态收束留 §5.10 | spec §8 #4 |
 | ~~online↔offline k=4 对照句~~ | ✅ 已落地（§5.8.4 对照用 0.26±0.15，非 legacy 10%；k=4/k=12 不对称承接 §5.5.5） | 承接 §5.5.5 scope 保险 |
-| 临界单元 + 非对称消融补种子配对复核 | 章定稿前 / 答辩前，非阻塞（§5.8.5 正文已登记该限定） | spec §2 §5.8 答辩风险登记；report §6.3 |
+| 临界单元 + 非对称消融补种子配对复核 | 章定稿前 / 答辩前，非阻塞（§5.8.5 正文已登记该限定；§5.8.m 已如实登记预登记三种子缩水为二） | spec §2 §5.8 答辩风险登记；report §6.3 |
 | 临界传感 3-seed 补录 `docs/arrival_v2_experiment_report.md` | 答辩前，非阻塞 | findings E·M1 |
-| 图浮动漂移 + 半空白页 | 全章拼装后统一处理 | findings F·M2 |
-| 零散 LOW（括注清理 / refs.bib 残留 / 机体↔船体术语章级统一等） | 收尾统稿一轮批量 | findings §3.2；`section_5_8/5_9/5_10_review_findings.md` LOW 段 |
+| ~~图浮动漂移 + 半空白页~~ | ✅ 已清 2026-07-08（收尾统稿轮包 B，根因与改法见 findings F·M2 追注） | findings F·M2 |
+| ~~零散 LOW（括注清理 / refs.bib 残留 / 机体↔船体术语章级统一等）~~ | ✅ 已清 2026-07-08（收尾统稿轮包 A，逐条追注在各 findings 原条目后） | findings §3.2；`section_5_8/5_9/5_10_review_findings.md` LOW 段 |
 
 ## 已锁决策（只列指针，内容以权威所在为准、不在此复述）
 
@@ -49,3 +50,4 @@
 | §5.k.m 归属（§5.3 协议之家 / §5.4 算法之家 / 结果节只写本节增量） | findings + §5.5/§5.6 先例 |
 | prompt 编写方法（会话序列 / 十要素 / 反模式） | `prompt_playbook.md` |
 | git commit 授权（自行 commit，`docs:` 前缀 + Co-Authored-By trailer） | 2026-07-05 用户授权 |
+| 特权观测载体术语统一为「机体」（「船体」废止；「艇体」备选未采） | 2026-07-08 用户拍板；setup.tex §5.3.2/§5.3.3 定义之家 + spec §0.5.10 首现规范已同步 |

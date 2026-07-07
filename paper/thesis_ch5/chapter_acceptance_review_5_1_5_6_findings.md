@@ -121,7 +121,7 @@
 | G·H-2 贡献类型正面声明 | 📋 | spec §5.10 本章小结新增 (d) + 显式解禁（防被 §0.5.9(a) 挡回）；§5.10 起草时落地 |
 | §5.8 2-seed 答辩风险 | 📋 | spec §5.8 新增"答辩风险登记"，从"caveat 级"升级为"答辩前须补种子或极重 caveat"；§5.8 动笔前决定 |
 | 生物回扣解锁 | ✅决 | 2026-07-03 已决**部分解锁**（4 护栏，见 §2.3）；spec §8 #10 resolved；仅 §5.10 落地 |
-| E·M1 临界传感 3-seed 补录报告 | ⏳ | 答辩前补录进 `arrival_v2_experiment_report.md`，使 §5.5.2 可闭环引用 |
+| E·M1 临界传感 3-seed 补录报告 | ⏳（部分落地） | 答辩前补录进 `arrival_v2_experiment_report.md`，使 §5.5.2 可闭环引用。**2026-07-08 补充验证盘点轮**：report §7.10 已增补，取证分层——3/9 读数经本机 final_eval 实核 ✅、6/9 云端文件本机不可达 ⚠（OneDrive/Drive/git 盘点无果，缺失清单见 §7.10）；勾销待六份 final_eval 取回复核或同协议补跑重取证 |
 | F·M2 图浮动漂移 + p.21 半空白 | ✅ | 收尾统稿轮（2026-07-08）落地：根因为 fig_ch5_method_framework `[t]` 过高堵塞 figure 队列（§5.5 六图被冲到节末 p.22–25）→ 改 `[tp]`；rebrac 三表重排（perseed 上移出 §5.8 版面并与首引序对齐、screen 上移至 hparams 前）；online 两图互换对齐首引序；复检全部浮动距首引 0–2 页、58 页、无病态半空白页 |
 | 零散 LOW（其一/其二溶解、图 5.1 面板 S0/S1/S2 小写化、L 级括注清理、refs.bib 残留条目） | ✅ | 收尾统稿轮（2026-07-08）：其一/其二正文层核实已无残留；图 5.1 面板小写化核实已于 7/3 修复重绘；重复英文括注 ×6 删除（critic/off-policy/privileged information/actor/epoch 各保留全章首现一处）；refs.bib 未引条目 ×3 删除（nair2020awac / carlucho2018ras / yu2017auv） |
 

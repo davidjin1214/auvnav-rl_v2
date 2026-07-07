@@ -961,6 +961,40 @@ s0 单点 + 长 history → actor 可从 DVL 时序节拍中重建：
 
 ---
 
+### 7.10 临界工况传感配置三种子比较 ground truth 补录（s0/s1/s2 @ k=4 × seeds {0, 7, 42}，2026-07-08，⚠ 取证状态 PARTIAL 3/9）
+
+**目的**：博士论文第 5 章 §5.5.2（临界传感比较）、瓶颈表 k=4 行与 §5.5.5 floor≈0.26 的刊值此前只落在 `paper/thesis_ch5/sections/online.tex` rev.5 头注、图脚本 `fig_ch5_online_sensing_crit.py` 与 commit `46e4ca0`（三处一致），未录入本报告——章级验收 findings E·M1 要求补录，使引用链（论文 → 本报告 → `final_eval.json`）闭环。本节为该补录，**并如实分层记录每个读数的取证状态**。
+
+**协议**（与 §7.1/§7.6 同口径）：`single_u15_cross_tgt15`（cross_stream / U∞=1.5 / Re=250 / target=1.5，临界工况），vanilla SAC / `arrival_v2` / `history k=4` / 1M steps / `num_envs=6`；唯一变量 = probe layout（s0/s1/s2）× seed {0, 7, 42}；读数 = 终检 `final_eval`（30 deterministic episodes）成功率。
+
+**Per-seed 终检成功率与取证状态**：
+
+| 配置 | seed 0 | seed 7 | seed 42 | mean ± std (ddof=1) |
+|---|---:|---:|---:|---:|
+| s0（10-D，DVL-only，deployable） | 0.400 ✅ | 0.267 ⚠ | 0.100 ✅ | **0.26 ± 0.15** |
+| s1（12-D，+前向短程 ADCP，reference） | 0.900 ⚠ | 0.800 ⚠ | 0.900 ✅ | **0.87 ± 0.06** |
+| s2（16-D，+长程 ADCP 含横向，reference） | 0.800 ⚠ | 0.733 ⚠ | 0.733 ⚠ | **0.76 ± 0.04** |
+
+gap(s1 − s0) = 0.61（约 60pp）。均值 / std / gap 已于 2026-07-08 按上表 per-seed 值独立重算，与论文刊值一致。
+
+**✅ = 本轮（2026-07-08）经本机 `final_eval.json` 实时复核**（`experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/` 下，gitignored）：
+
+| 读数 | 文件 | 同一 run 的既有归属 |
+|---|---|---|
+| s0 / seed_0 = 0.400 | `sac_vanilla/s0_k4/seed_0/results/final_eval.json` | §7.7 update 的 vanilla 配对臂（2026-05-18） |
+| s0 / seed_42 = 0.100 | `sac_vanilla/s0_k4/seed_42/results/final_eval.json` | §7.6 sensor envelope single_cross（2026-05-13） |
+| s1 / seed_42 = 0.900 | `sac_vanilla/s1_k4/seed_42/results/final_eval.json` | §7.1 严格控制（2026-05-08） |
+
+**⚠ = 2026-06-18 云端确认值（转录源），结果文件未落本机**。转录源 = online.tex rev.5 头注 + 图脚本 `CRIT_SEEDS` + commit `46e4ca0`，三处互核一致；但对应六份 `final_eval.json` 经 2026-07-08 盘点确认**不在本机任何可达通道**（OneDrive 本地树、Google Drive 全盘检索、git 历史均无；Drive 侧 2026-05-24 之后无任何实验文件活动，2026-06-18 当天的 Drive 浏览记录只触及上表三份 ✅ 文件的镜像）。缺失清单（取回后按此落位）：
+
+- `sac_vanilla/s0_k4/seed_7/results/final_eval.json`（0.267）
+- `sac_vanilla/s1_k4/seed_0/results/final_eval.json`（0.900）、`sac_vanilla/s1_k4/seed_7/results/final_eval.json`（0.800）
+- `sac_vanilla/s2_k4/seed_0/results/final_eval.json`（0.800）、`sac_vanilla/s2_k4/seed_7/results/final_eval.json`（0.733）、`sac_vanilla/s2_k4/seed_42/results/final_eval.json`（0.733）
+
+**引用链状态**：在六份 ⚠ 文件取回并复核（或等协议补跑重取证）之前，本节取证状态为 **PARTIAL（3/9 实核）**，章级验收 E·M1 **不勾销**。取回复核一致后：将 ⚠ 改 ✅、删除本段状态说明，E·M1 勾销。若取证发现与转录值不一致，按「新的事实性问题」先呈报再改论文刊值。
+
+---
+
 ## 8. 后续可选工作
 
 §7 4-way strict-control + §7.6 s0 sensor envelope + §7.7 AsymCritic ablation（**2-seed × 2-algo paired hardened**）+ §7.8 history k=8 actor-side breakthrough（PASS — 闭合 80pp gap, single-seed anchor）+ **§7.9 multi-seed × k-monotonicity closure（k=12 cross-seed sweet spot, 2/2 strict 5/5 PASS, seed=0 CROSS-SEED-RESCUE）** 共同覆盖了 arrival_v2 在 production-difficulty regime 下的关键 cell：原 §7.6 catastrophic FAIL cell `single_cross_s0` 在 §7.8 通过单变量 actor-side temporal info upgrade 完全闭合（单 seed），在 §7.9 升格为 cross-seed thesis-grade（k=12 strict-PASS on 2/2 seeds, σ_final=0.064）。本研究 deployment-realistic 路径从「升级 sensor 到 s1」最终升格为「**保持 s0 + 升级 actor 时序访问到 k=12（~6 s ≈ 涡街周期 30–60%）**」。若 thesis 重启或 offline 线决定升级 reward preset，剩余可选工作按以下优先级：

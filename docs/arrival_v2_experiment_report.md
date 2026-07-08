@@ -993,6 +993,8 @@ gap(s1 − s0) = 0.61（约 60pp）。均值 / std / gap 已于 2026-07-08 按�
 
 **引用链状态**：在六份 ⚠ 文件取回并复核（或等协议补跑重取证）之前，本节取证状态为 **PARTIAL（3/9 实核）**，章级验收 E·M1 **不勾销**。取回复核一致后：将 ⚠ 改 ✅、删除本段状态说明，E·M1 勾销。若取证发现与转录值不一致，按「新的事实性问题」先呈报再改论文刊值。
 
+> **处置决定（2026-07-08，用户拍板）**：原件应在 Mac 本地但暂不可取，走**同协议补跑重取证**，与 §5.8 补种子并为一个 Colab 执行轮。补跑矩阵、预登记判读语义与 notebook（`sac_arrival_v2_sensing_crit_rescue_seed{0,7,42}.ipynb` × 3 道）见 [`rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md) 附录 A。补跑值即新 ground truth；六格全 EXACT_MATCH → 本节 ⚠→✅；任何偏差 → 呈报硬停。
+
 ---
 
 ## 8. 后续可选工作

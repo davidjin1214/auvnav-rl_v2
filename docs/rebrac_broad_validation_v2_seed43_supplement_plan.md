@@ -1,6 +1,8 @@
 # ReBRAC Broad Validation v2 — 补种子（seed 43）Supplement Plan
 
-> **Status: 呈批稿（PENDING USER APPROVAL），2026-07-08 补充验证盘点轮产出。获批前不起 notebook、不跑任何实验。**
+> **Status: ✅ APPROVED（用户批准 2026-07-08）**——按推荐方案（最小矩阵 +seed 43 × 3 单元全补）执行；同日用户追加批准**附录 A**：临界传感 6-cell 同协议补跑（道 1 rescue，Mac 不在身边、云端 final_eval 不可达）并入本执行轮。
+> 执行 notebook（已建，2026-07-08）：`notebooks/rebrac_broad_validation_v2_seed43_supplement.ipynb` + `notebooks/sac_arrival_v2_sensing_crit_rescue_seed{0,7,42}.ipynb`（builder：`scripts/_build_supplementary_verification_notebooks.py`）。
+> 原呈批稿正文（§1–§5）内容不变，作为已批协议保留。
 >
 > **来源**：博士论文第 5 章定稿前补充验证事项——§5.8 两单元与消融现为 2 seed `[42, 0]`，所依计划预登记为 3 seed `[42, 43, 44]`（[`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) §6.2 / 行 147）。缺口出处：spec §2 §5.8 答辩风险登记；[`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) 头部 seed-count caveat + §6.3 follow-up backlog；`paper/thesis_ch5/section_5_8_review_findings.md` H1（预登记种子缩水披露）。§5.8.m 已如实登记该缺额。
 >
@@ -57,8 +59,35 @@
 
 配套勾销：spec §2 §5.8 答辩风险登记降级、`status.md` 登记项勾销、`section_5_8_review_findings.md` H1 追注。
 
-## 5. 待批点
+## 5. 待批点（✅ 已全部裁决 2026-07-08）
 
-1. **矩阵规模**：最小矩阵（+43，3 单元，推荐）还是预登记组补全（+43+44，6 单元）；
-2. **是否三单元全补**：也可只补 N2′ + 消融（N0 判定余量大）——但 H1 披露与 §5.8.m 登记语覆盖全部三行，推荐全补以免登记语出现「部分三种子、部分两种子」的碎口径；
-3. Colab session 安排（获批后另起执行轮：建 notebook → 跑 → 按 §2 判读 → 按 §4 微修或呈报）。
+1. **矩阵规模**：~~最小矩阵 vs 预登记组补全~~ → **最小矩阵（+43，3 单元）**；
+2. **是否三单元全补**：→ **全补**（N0 / N2′ / 消融）；
+3. Colab session 安排：→ 执行轮 notebook 已建（见头注），用户在 Colab 跑完后由回读轮按 §2 判读、§4 微修或呈报。
+
+---
+
+## 附录 A：临界传感 6-cell 同协议补跑（道 1 rescue，用户批准 2026-07-08 并入本执行轮）
+
+**背景**：`docs/arrival_v2_experiment_report.md` §7.10 取证缺口——§5.5.2 九读数中六份云端 `final_eval.json` 本机不可达（详见该节）；原件应在 Mac 上但 Mac 不在身边，用户裁决走**同协议补跑重取证**。
+
+**矩阵（6 个 1M-step 在线训练单元，按 seed 分 3 道并行）**：
+
+| 道（notebook） | 单元 | 转录期望值 | 预估 L4 |
+|---|---|---|---:|
+| `sac_arrival_v2_sensing_crit_rescue_seed0.ipynb` | s1_k4/seed_0、s2_k4/seed_0 | 0.900、0.800 | ~5h |
+| `sac_arrival_v2_sensing_crit_rescue_seed7.ipynb` | s0_k4/seed_7、s1_k4/seed_7、s2_k4/seed_7 | 0.267、0.800、0.733 | ~7.5h（可 `[skip]`/resume 跨 2 session） |
+| `sac_arrival_v2_sensing_crit_rescue_seed42.ipynb` | s2_k4/seed_42 | 0.733 | ~2.5h |
+
+合计 ~15h L4（1M ≈ 2.5h/run）；与附正文 3 个离线单元（≤2h）互不依赖，可并行。
+
+**协议**：与 §7.1/§7.6/§7.7 逐项一致（vanilla SAC / arrival_v2 / k=4 / 1M / num_envs=6 / random=update_after=5000 / eval 25k×30ep / 终检 30 deterministic ep / flow wake_v8_U1p50_Re250 / 固定 manifest `single_u15_cross_tgt15.json` 禁止再生成），唯一变量 = probe layout × seed；输出落 §7.10 缺失清单的 canonical 路径。
+
+**预登记判读语义（跑前锁定）**：
+
+- 补跑 `final_eval.json` 即该 cell 的**新 ground truth**（可追溯证据）；
+- 六格全部与转录值逐位一致 → §7.10 ⚠→✅、E·M1 勾销（零论证改动）；
+- **任何偏差 → 呈报硬停**：`.tex` 刊值与 §7.10 数值一字不动，由用户裁决（预期处置 = 以补跑值为准重排 §5.5.2/瓶颈表/floor 刊值，属「新的事实性问题」流程）；
+- 若 Mac 文件先行同步到 Drive/本地，notebook 的 `[skip]` 判定自动跳过对应 cell，不覆盖原件。
+
+**验尸输出**：每道写 `experiments/arrival_v2_prototype/sensing_crit_rescue_summary/rescue_verdict_seed{N}.json`（per-cell 补跑值 / 转录值 / EXACT_MATCH / 终止构成 / obs_dim 核对）。

@@ -32,8 +32,8 @@
 | ~~N2′ 补种子 vs 极重 caveat 呈现~~ | ✅ 已决 2026-07-07：极重 caveat 呈现（§5.8.5 专段 + 表注 n=2 + 零计数上界） | spec §2 §5.8 答辩风险登记 |
 | ~~online AsymCritic 是否与 §5.8 asym ablation 并列呈现~~ | ✅ 已决 2026-07-07：不并列，散文指回 §5.5（线别限定），四态收束留 §5.10 | spec §8 #4 |
 | ~~online↔offline k=4 对照句~~ | ✅ 已落地（§5.8.4 对照用 0.26±0.15，非 legacy 10%；k=4/k=12 不对称承接 §5.5.5） | 承接 §5.5.5 scope 保险 |
-| 临界单元 + 非对称消融补种子配对复核 | ✅ 方案已批（2026-07-08，推荐案：+seed 43 × 3 单元全补）；执行 notebook 已建（`rebrac_broad_validation_v2_seed43_supplement.ipynb`），**待 Colab 执行 + 回读判读轮**（预登记门槛与零论证微修清单锁定在 plan §2/§4） | spec §2 §5.8 答辩风险登记；report §6.3；`docs/rebrac_broad_validation_v2_seed43_supplement_plan.md` |
-| 临界传感 3-seed 补录 `docs/arrival_v2_experiment_report.md` | ⚠ 部分落地 2026-07-08：report §7.10 已增补（3/9 本机实核）；六缺格用户拍板走**同协议补跑重取证**（Mac 原件暂不可取），notebook 已建（`sac_arrival_v2_sensing_crit_rescue_seed{0,7,42}.ipynb` × 3 道，~15h L4），**待 Colab 执行 + 回读判读轮**；全 EXACT_MATCH → §7.10 ⚠→✅ + E·M1 勾销，任何偏差 → 呈报硬停 | findings E·M1；plan 附录 A |
+| 临界单元 + 非对称消融补种子配对复核 | ⛔ Colab 已执行、回读完成（2026-07-10）：三门槛按 plan §2 判读全过，但 N0 第三种子越过主线锚点、per-seed 同向退化叙事失效，plan §4 零论证清单不足以自洽落地 → **微修全冻结，呈报待裁决**（明细与待裁决点见 plan 附录 B.2）；v2 report 与 `boundary.tex` 一字未动 | spec §2 §5.8 答辩风险登记；report §6.3；`docs/rebrac_broad_validation_v2_seed43_supplement_plan.md` 附录 B.2 |
+| 临界传感 3-seed 补录 `docs/arrival_v2_experiment_report.md` | ⛔ Colab 补跑已执行、回读完成（2026-07-10）：六格 5/6 与转录值不一致（含 s0/seed_7 重大偏差）→ 按附录 A 预登记语义**呈报硬停待裁决**（偏差明细、影响面分析与待裁决点见 plan 附录 B.1）；§7.10 维持 PARTIAL 3/9、论文 `.tex` 一字未动、E·M1 不勾销 | findings E·M1；plan 附录 A / B.1 |
 | ~~图浮动漂移 + 半空白页~~ | ✅ 已清 2026-07-08（收尾统稿轮包 B，根因与改法见 findings F·M2 追注） | findings F·M2 |
 | ~~零散 LOW（括注清理 / refs.bib 残留 / 机体↔船体术语章级统一等）~~ | ✅ 已清 2026-07-08（收尾统稿轮包 A，逐条追注在各 findings 原条目后） | findings §3.2；`section_5_8/5_9/5_10_review_findings.md` LOW 段 |
 

@@ -1,51 +1,43 @@
-# 第 5 章续写 — 本轮入口 Prompt（补充验证执行轮 · Colab 回读判读）
+# 第 5 章续写 — 本轮入口 Prompt（补充验证呈报裁决轮 · 等用户拍板）
 
 > 体例（2026-07-07 起）：本文件**每轮重写**，只含当轮任务与相关约束。章状态账本 = `status.md`（唯一真相源）；逐轮历史 = git log 与各节头注；prompt 方法论 = `prompt_playbook.md`。
-> **流程状态**：补充验证盘点轮已闭环（2026-07-08）——道 1 部分落地（report §7.10 增补，3/9 本机实核，六缺格取证缺口成立）；道 2 方案获批（推荐案全批）。用户同日拍板：六缺格走**同协议补跑重取证**并入执行轮。执行 notebook 已建 4 份（builder `scripts/_build_supplementary_verification_notebooks.py`）。
-> **先决条件（本轮动笔前确认）**：用户已在 Colab 跑完下述 4 个 notebook 并把 results 同步回本地。未跑完则本文件继续等待，不做任何判读。
+> **流程状态**：回读判读轮已闭环（2026-07-10）——4 个 Colab notebook 结果经 Google Drive 直读 raw 原件回查（目录链溯源），**两道均呈报硬停**：道 1 六格 5/6 与转录值不一致；道 2 三门槛全过但 N0 seed 43 越过主线锚点、同向退化叙事失效。**论文 `.tex` 十节、report §7.10、v2 report 全部一字未动**。呈报单全文：`docs/rebrac_broad_validation_v2_seed43_supplement_plan.md` **附录 B**。
 
 ---
 
-本轮任务：**回读 Colab 执行结果，按预登记门槛判读，一致则落地零论证微修、不一致则呈报硬停。**
+本轮任务：**用户逐道裁决附录 B 的待裁决点；裁决前不得对论文与两份 ground truth report 做任何改动。**
 
-## 执行物（用户 Colab 侧，本轮回读对象）
+## 待裁决点（原文见 plan 附录 B，此处只列选项）
 
-| notebook | 单元 | 验尸输出 |
-|---|---|---|
-| `sac_arrival_v2_sensing_crit_rescue_seed0.ipynb` | s1_k4/s2_k4 × seed 0（在线 1M ×2） | `experiments/arrival_v2_prototype/sensing_crit_rescue_summary/rescue_verdict_seed0.json` |
-| `sac_arrival_v2_sensing_crit_rescue_seed7.ipynb` | s0/s1/s2_k4 × seed 7（×3） | `…/rescue_verdict_seed7.json` |
-| `sac_arrival_v2_sensing_crit_rescue_seed42.ipynb` | s2_k4 × seed 42（×1） | `…/rescue_verdict_seed42.json` |
-| `rebrac_broad_validation_v2_seed43_supplement.ipynb` | N0/N2′/N2′-asym × seed 43（离线 ×3） | `results/offline/rebrac/broad_validation_v2/summaries/seed43_supplement_verdict.json` |
+### 道 1（临界传感 6-cell 补跑，B.1）
 
-## 道 1 回读：临界传感 6-cell 补跑（E·M1）
+偏差核心：五格全部向上偏（+0.067～+0.600），s0_k4/seed_7 补跑 0.867 vs 转录 0.267（+60pp）。若采补跑值，s0 三种子变 {0.400, 0.867, 0.100}（mean 0.456 / std 0.385），gap(s1−s0) 0.61→约 0.44，「floor≈0.26」叙事不再稳定。
 
-1. **数字一律回查 raw `final_eval.json`**（六个 canonical run dir），verdict JSON 只作索引；
-2. 六格全部与转录值**逐位一致** → `docs/arrival_v2_experiment_report.md` §7.10：⚠ 全改 ✅（证据列改指补跑文件）、删 PARTIAL 状态段与处置决定引注；`chapter_acceptance_review_5_1_5_6_findings.md` E·M1 勾销；`status.md` 登记项勾销。**`.tex` 零改动**；
-3. **任何偏差（含 1 episode 之差）→ 呈报硬停**：§7.10 与 `.tex` 一字不动，列出偏差明细（cell / 补跑值 / 转录值 / Δ）等用户裁决。预期后续 = 以补跑值为准重排 §5.5.2、瓶颈表 k=4 与 s1 行、§5.5.5 floor、fig sensing_crit、§5.8.4 对照句（0.26）——属「新的事实性问题」流程，**本轮不得先行动手**。
+- **(a)** 接受补跑值为新 ground truth → 启动「新的事实性问题」专轮重排 §5.5（影响面：§5.5.2 表、瓶颈表 k=4/s1 行、§5.5.5 floor、fig sensing_crit、§5.8.4 对照句、§5.10 相关收束；建议专轮方案先呈批再动笔）；
+- **(b)** 暂缓，等 Mac 原件可取时先取证比对 2026-06-18 转录值来源；
+- **(c)** 其它。裁决前 §7.10 维持 PARTIAL 3/9、E·M1 不勾销。
 
-## 道 2 回读：§5.8 补种子（seed 43）
+### 道 2（§5.8 补种子 seed 43，B.2）
 
-1. 数字回查三份 `test_result.json`（N0/N2p/N2p_asym 的 `seed_43`）；
-2. 按 plan §2 预登记门槛判读（N0 均值 ∈ [0.70, 0.902)；N2′ 0/30；消融 0/30 且越界主导）；
-3. **三者全一致** → 按 plan §4 清单落地（顺序固定）：① ground truth 先行——v2 report 头部 caveat、§2/§4.5 表补 seed 43 列、§6.3 勾销；② `boundary.tex` 定点 Edit（caption 种子数、per-seed 列、0/60→0/90、上界 0.05→约 0.033、层级表标注、§5.8.m 登记语换三种子如实登记含 {42, 0, 43} 与预登记组不重合披露）；③ latexmk 编译 + `latexmk -c`；④ spec §2 §5.8 答辩风险登记降级、`status.md` 勾销、`section_5_8_review_findings.md` H1 追注；
-4. **任一 ESCALATE** → 全部微修冻结，呈报。
+判读核心：N2′/消融 seed 43 均 0/30（零成功叙事完好）；N0 seed 43 = 0.933 **高于**主线锚点 0.902，per-seed 方向 −3.5/−6.9/**+3.1**pp——「两种子同向退化非噪声」段（`boundary.tex` §5.8.1 + v2 report §2.4）失实，如实改写超出 plan §4 零论证清单；且清单遗漏 §5.8 开篇种子数句与 §5.8.1 正文锚点数字两处定点。
 
-## 红线（本轮特有）
+- **(a)** 批准扩权清单一次性落地：原 §4 清单 + §5.8.1 同向段/report §2.4 如实改写（三种子 Δ=−2.4pp、方向不一、同向性论据撤销）+ 两处遗漏定点 → 落地后编译验证 + spec/status/H1 配套勾销；
+- **(b)** 其它。
 
-- 预登记门槛不允许 post-hoc 调整；判读只按 plan §2 / 附录 A 原文执行；
-- `.tex` 十节 locked：道 1 一致时零 `.tex` 改动；道 2 一致时只碰 plan §4 清单内的 `boundary.tex` 定点（超出清单一字不动）；
-- 数字不从 notebook 打印或 verdict JSON 誊抄，一律回查 raw 结果文件；
-- 两道判读互相独立：一道呈报不冻结另一道的落地。
+## 红线（裁决后落地轮适用）
+
+- 道 2 若批 (a)：编辑面 = 附录 B.2 列明的扩权清单，仍**超出即停**；数字一律回查 raw（Drive 原件或同步回本机后核对）；改写段语体遵守 spec §0.5.9（不反向宣告），「同向性撤销」如实呈现即可、不得引申「主线锚点可疑」等新论点；
+- 道 1 若批 (a)：属「新的事实性问题」重流程——先方案呈批（重排矩阵、刊值来源分层、✅ 原件格与补跑格混用规则），硬停获批后方可动 `.tex`；
+- 两道处置仍互相独立。
 
 ## 按序必读
 
-1. `status.md` 登记项表两行（当前状态与勾销条件）；
-2. `docs/rebrac_broad_validation_v2_seed43_supplement_plan.md` §2/§4 + 附录 A（预登记门槛与微修清单原文）；
-3. `docs/arrival_v2_experiment_report.md` §7.10（九宫格、⚠/✅ 现状、缺失清单）；
-4. `sections/boundary.tex` 头注 + §5.8.5/§5.8.m（道 2 一致时的编辑面现状）。
+1. `docs/rebrac_broad_validation_v2_seed43_supplement_plan.md` 附录 B（呈报单全文，含偏差明细表与独立重算值）;
+2. `status.md` 登记项表两行（⛔ 状态与指针）;
+3. 道 2 落地时：`sections/boundary.tex` 头注 + §5.8 开篇段 + §5.8.1 + §5.8.5 + §5.8.m + 两表；v2 report 头部 caveat + §2 + §4.5 + §6.3 + §7.2 留痕表。
 
 ## 输出与工程
 
-- 道 1 产出：§7.10 状态翻转（或呈报单）+ E·M1/status 勾销；
-- 道 2 产出：v2 report 增补 + `boundary.tex` 定点微修 + 编译验证（或呈报单）；
+- 道 2 (a) 产出：v2 report 增补 + `boundary.tex` 扩权清单落地 + latexmk 编译（编后 `latexmk -c`）+ spec §2 §5.8 答辩风险降级 + `status.md` 勾销 + `section_5_8_review_findings.md` H1 追注；
+- 道 1 (a) 产出：重排方案呈批稿（不动 `.tex`）；
 - 可自行 commit：`docs:` 前缀 + `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` trailer，只暂存本轮相关文件。

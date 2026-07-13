@@ -4,19 +4,21 @@
 >
 > **Addendum (2026-05-27)**: N2' **asym-critic ablation 完成**（2 seed [42, 0]，唯一变量 `--use-asymmetric-critic`，逐 episode 配对 vanilla N2'）。Verdict **ACTOR_FUNDAMENTAL_CONFIRMED** — 把完美 hull-integral flow `[u_eq,v_eq]` 喂给 critic 算 TD target，s0 actor success 仍 **0.000 / 0.000**（recovery 0% of oracle 0.70），部署行为与 vanilla 近乎不可区分。详见 **§4.5**。Raw: `results/offline/rebrac/broad_validation_v2_n2p_asym/{seed_42,seed_0}/test_result.json` + `summaries/asym_verdict.json`；notebook `notebooks/rebrac_broad_validation_v2_n2p_asym_critic_completed.ipynb`。
 >
+> **Addendum (2026-07-12)**: **+seed 43 supplement 完成**（N0 / N2' / asym 三单元全补，同协议 30-ep 终检；plan+呈报+裁决全档 [`rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md)）。N2'/asym seed 43 均 **0.000**（各三种子合计 **0/90**，rule-of-three 上界 ≈ 0.033）——零成功结论不变、只更强；N0 seed 43 = **0.933**，3-seed anchor **0.878 ± 0.051**（Δ vs 0.902 = −2.42pp），**per-seed 退化方向不再一致**（−3.5 / −6.9 / **+3.1**pp）——首轮「两种子同向退化非噪声」的读法已撤销，§2.4 已按三种子改写。种子组 {42, 0, 43} 与预登记 {42, 43, 44} 不完全重合（首轮以 0 替换 44）。Raw: `results/offline/rebrac/broad_validation_v2/{N0,N2p}/seed_43/test_result.json`、`broad_validation_v2_n2p_asym/seed_43/test_result.json` + `summaries/seed43_supplement_verdict.json`。
+>
 > **Branch**: `codex-arrival-v2-prototype`
 > **Plan**: [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) rev.3
-> **Raw outputs**: `results/offline/rebrac/broad_validation_v2/{N0,N2p}/seed_{42,0}/test_result.json` + `summaries/verdict_decision.json` + `summaries/p1_overview.csv`
+> **Raw outputs**: `results/offline/rebrac/broad_validation_v2/{N0,N2p}/seed_{42,0,43}/test_result.json` + `summaries/verdict_decision.json` + `summaries/seed43_supplement_verdict.json` + `summaries/p1_overview.csv`
 > **Cross-link**: [`docs/arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §7.6（online catastrophic floor），[`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md)（main paper efficiency_v2 anchor）
 >
-> **Seed count caveat**: 2 seed（plan §6.2 实际首轮缩水，详见 §6 limitations）；预登记 3 seed 在 backlog（§9 5-seed 补全条目继续保留）。
+> **Seed count**: 3 seed {42, 0, 43}（首轮 2 seed 缩水，2026-07-12 supplement 补齐第三种子；与预登记组 {42, 43, 44} 不完全重合——首轮以 0 替换 44，详见 §6 limitations）；5-seed 补全条目继续保留 backlog（§6.3）。
 
 ---
 
 ## 目录
 
 - [§1 Abstract](#1-abstract)
-- [§2 N0 reward bridge — 5.2pp paired degradation analysis](#2-n0-reward-bridge--52pp-paired-degradation-analysis)
+- [§2 N0 reward bridge — anchor drift analysis（3-seed 更新 2026-07-12）](#2-n0-reward-bridge--anchor-drift-analysis3-seed-更新-2026-07-12)
 - [§3 N2' failure mechanism — raw-field decomposition](#3-n2-failure-mechanism--raw-field-decomposition)
 - [§4 Anomaly explanation — why N2' falls 10pp below the online floor](#4-anomaly-explanation--why-n2-falls-10pp-below-the-online-floor)
 - [§5 Paper claim — actor-fundamental partial-observability ceiling under s0](#5-paper-claim--actor-fundamental-partial-observability-ceiling-under-s0)
@@ -27,28 +29,28 @@
 
 ## 1. Abstract
 
-ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N0 sub-critical anchor + N2' critical-regime oracle-teacher probe），共 4 run（2 seeds × 2 cells，~30 min L4）。所有 verdict gates 均在跑实验前预登记于 plan §5.2 / §5.3。
+ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N0 sub-critical anchor + N2' critical-regime oracle-teacher probe），首轮共 4 run（2 seeds × 2 cells，~30 min L4），2026-07-12 supplement 补齐第三种子（+seed 43 × 3 单元，含 §4.5 asym ablation）。所有 verdict gates 均在跑实验前预登记于 plan §5.2 / §5.3（supplement 判读门槛预登记于 supplement plan §2）。
 
-**核心结果**：
+**核心结果（3-seed，2026-07-12 更新）**：
 
-| Cell | Setup | success (2-seed) | per-seed [42, 0] | verdict gate (§5) | Verdict |
+| Cell | Setup | success (3-seed) | per-seed [42, 0, 43] | verdict gate (§5) | Verdict |
 |---|---|---:|---|---|---|
-| **N0** | crosscomp / s0 / cross_u10 / Re150 / arrival_v2 | **0.850 ± 0.024** | [0.867, 0.833] | §5.2: ≥ 0.70 = "reward bridge holds" | **HOLDS** |
-| **N2'** | privileged / s0 / cross_u15 / Re250 / arrival_v2 | **0.000 ± 0.000** | [0.000, 0.000] | §5.3: < 0.15 + recovery < 21% of oracle = strong negative | **STRONG_NEGATIVE** |
+| **N0** | crosscomp / s0 / cross_u10 / Re150 / arrival_v2 | **0.878 ± 0.051** | [0.867, 0.833, 0.933] | §5.2: ≥ 0.70 = "reward bridge holds" | **HOLDS** |
+| **N2'** | privileged / s0 / cross_u15 / Re250 / arrival_v2 | **0.000 ± 0.000** | [0.000, 0.000, 0.000] | §5.3: < 0.15 + recovery < 21% of oracle = strong negative | **STRONG_NEGATIVE** |
 
 **M1 BC penalty sweep**：N2' = 0.0 不在 §5.4 trigger zone `[0.15, 0.40]`，**not triggered**。
 
 **三句话结论**：
 
-1. **reward bridge HOLDS but with paired degradation**：N0 在新 reward 下保持 0.85 anchor，Δ vs efficiency_v2 main-line anchor (0.902) = **−5.20pp**；两个 seed 同向退化（42: −3.5pp / 0: −6.9pp），不是 noise。Paper 写作时必须明标。
-2. **N2' STRONG_NEGATIVE confirms actor-fundamental partial-obs ceiling**：60 episode 全 out_of_bounds / timeout，progress_ratio ≈ 0，path_eff ≈ 0.10；零成功彻底跌破 online §7.6 catastrophic floor 10%。即便 oracle teacher (70% direct success) 提供 demonstrations，**s0-conditioned BC 在 critical regime 不能传递 hull-integral flow 知识**。
+1. **reward bridge HOLDS；退化幅度收窄且方向存疑（3-seed 改写 2026-07-12）**：N0 在新 reward 下 3-seed anchor 0.878 ± 0.051，Δ vs efficiency_v2 main-line anchor (0.902) = **−2.42pp**；per-seed 方向不一致（42: −3.5pp / 0: −6.9pp / 43: **+3.1pp**，第三种子高于 anchor）——首轮两种子的同向退化在三种子下不再成立，该差异应按种子间波动解读（§2.4）。Paper 写作时仍须明标该跨口径对照只作量级参考。
+2. **N2' STRONG_NEGATIVE confirms actor-fundamental partial-obs ceiling**：90 episode 全部失败（88 out_of_bounds + 1 timeout + 1 depth_hold_failure），progress_ratio ≈ 0，path_eff ≈ 0.09；零成功彻底跌破 online §7.6 catastrophic floor 10%。即便 oracle teacher (70% direct success) 提供 demonstrations，**s0-conditioned BC 在 critical regime 不能传递 hull-integral flow 知识**。
 3. **paper-quality claim** (§8.2 ceiling decomposition)：在 critical regime + deployable s0 actor 下，offline RL with oracle demonstrations 不仅 fails to bridge partial-obs gap，且 underperforms 同 setup 下的 online SAC — 这是 plan rev.3 §2.4 "actor-fundamental partial-obs ceiling" caveat 的直接实证。
 
 **Addendum 结论 (2026-05-27，§4.5)**：N2' asym-critic ablation 把 candidate B 的 critic 侧解释**排除**——即便 critic 在训练全程拿到完美 hull-integral flow，s0 actor success 仍 0.000，部署行为与 vanilla 配对近乎相同（paired median Δprogress ≈ 0）。天花板**不在 critic 价值估计**，与 actor-fundamental 一致并 **HARDENS** §5 主 claim。
 
 ---
 
-## 2. N0 reward bridge — 5.2pp paired degradation analysis
+## 2. N0 reward bridge — anchor drift analysis（3-seed 更新 2026-07-12）
 
 **Setup**: crosscomp / s0 / cross_u10 / Re150 / arrival_v2 / 30 eval episodes per seed / manifest `single_u10_cross_tgt15`。
 
@@ -58,19 +60,20 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 |---:|---:|---|---:|---:|---:|---:|
 | 42 | 0.867 (26/30) | goal:26 / OOB:3 / timeout:1 | 0.825 ± 0.234 | 0.628 ± 0.192 | 71.3 ± 121.3 | 15.3 ± 17.1 |
 | 0 | 0.833 (25/30) | goal:25 / OOB:5 / timeout:0 | 0.824 ± 0.192 | 0.605 ± 0.161 | 55.9 ± 123.8 | 16.1 ± 14.6 |
-| **mean** | **0.850 ± 0.024** | dominated by `goal` (success) + `OOB` (failure) | 0.824 | 0.616 | 63.6 | 15.7 |
+| 43 (supplement 2026-07-12) | 0.933 (28/30) | goal:28 / OOB:2 / timeout:0 | 0.869 ± 0.148 | 0.646 ± 0.139 | 89.2 ± 87.2 | 15.9 ± 10.8 |
+| **mean (3-seed)** | **0.878 ± 0.051** | dominated by `goal` (success) + `OOB` (failure) | 0.839 | 0.626 | 72.1 | 15.8 |
 
 ### 2.2 Anchor comparison
 
 | Reference | Anchor | Source |
 |---|---:|---|
 | main paper anchor (efficiency_v2 / cross_u10 / s0 / 5-seed) | **0.902 ± 0.021** | [`rebrac_experiment_report.md`](rebrac_experiment_report.md) rev.8 |
-| v2 N0 (arrival_v2 / cross_u10 / s0 / 2-seed) | **0.850 ± 0.024** | this report |
-| **Δ** | **−5.20pp** | paired same-direction |
+| v2 N0 (arrival_v2 / cross_u10 / s0 / 3-seed) | **0.878 ± 0.051** | this report |
+| **Δ** | **−2.42pp** | per-seed direction NOT consistent（§2.4） |
 
 ### 2.3 Verdict per plan §5.2
 
-| §5.2 阈值 | N0 mean 0.850 落在 |
+| §5.2 阈值 | N0 mean 0.878 落在 |
 |---|---|
 | ≥ 0.70 = reward bridge holds | ✓ |
 | 0.50–0.70 = weak bridge | — |
@@ -78,11 +81,15 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 
 **Verdict**: **HOLDS** — proceed to N2'.
 
-### 2.4 Why the 5.2pp drop is not noise
+### 2.4 Anchor drift re-read under 3 seeds — 同向性不再成立（rewritten 2026-07-12）
 
-两个 seed 都比 5-seed efficiency_v2 anchor (0.902) **同向**退化：seed=42 → 86.7%（Δ=−3.5pp），seed=0 → 83.3%（Δ=−6.9pp）。同向退化两次的 binomial 概率 ≈ 0.25 — 个体 seed 上不严苛，但两 seed 退化方向一致 + termination 分布从 main-line 的「goal 主导 + 少量 OOB」漂向「goal 主导 + 略多 OOB」（v1 main-line N0 等价 cell 是 27.4 goal / 2.6 OOB / 0 timeout，本轮平均 25.5 goal / 4.0 OOB / 0.5 timeout）—— 暗示 `arrival_v2` reward shaping 让 actor 略微更激进，在 cross_u10 sub-critical regime 下 marginally 增加越界。
+> 本节原题为 "Why the 5.2pp drop is not noise"，其论证依赖首轮两种子的同向退化；+seed 43 supplement 后该前提失效，按用户裁决（supplement plan 附录 B.2 (a)）如实改写。原两种子判读保留在下方作历史记录。
 
-**与 main paper claim 不冲突**：main paper claim "ReBRAC +23pp on crosscomp / cross_u10 / s0 / efficiency_v2" 在 efficiency_v2 anchor 下成立；arrival_v2 下退化 5pp 是 **reward-specific calibration effect**，不影响 algorithm-level finding 的有效性。但 paper §experiments appendix 必须明标 "the +23pp advantage is reported under efficiency_v2; under arrival_v2 the absolute success drops 5.2pp while still substantially exceeding the catastrophic baseline (0.0%)".
+**3-seed 判读（现行）**：per-seed Δ vs 5-seed efficiency_v2 anchor (0.902)：seed 42 → 86.7%（−3.5pp）、seed 0 → 83.3%（−6.9pp）、seed 43 → **93.3%（+3.1pp，高于 anchor）**。三种子方向不一致，均值差 −2.42pp 小于种子间标准差（0.051）——**「系统性退化」的读法不再被支持，anchor drift 应按种子间波动解读**。termination 侧同样弱化：seed 43 为 28 goal / 2 OOB / 0 timeout，比首轮两种子更接近 main-line 形态（三种子均值 26.3 goal / 3.3 OOB / 0.3 timeout，vs v1 main-line 等价 cell 27.4 goal / 2.6 OOB / 0 timeout），「arrival_v2 使 actor 更激进、越界略增」的机制暗示同步降级为未定。
+
+**首轮两种子判读（已撤销，仅存档）**：两 seed 同向退化 + 同向 binomial ≈ 0.25 + termination 漂移，曾被读为「非 noise 的 reward-specific calibration effect」。该读法在第三种子反向后撤销。
+
+**与 main paper claim 不冲突（更新）**：main paper claim "ReBRAC +23pp on crosscomp / cross_u10 / s0 / efficiency_v2" 在 efficiency_v2 anchor 下成立；arrival_v2 下 3-seed anchor 0.878 ± 0.051 与 0.902 的差异方向存疑、幅度 −2.4pp，不影响 algorithm-level finding 的有效性。Paper §experiments appendix 明标语句相应更新为 "the +23pp advantage is reported under efficiency_v2; under arrival_v2 the 3-seed absolute success is 0.878 ± 0.051 (−2.4pp vs the efficiency_v2 anchor, per-seed direction not consistent), still substantially exceeding the catastrophic baseline (0.0%)".
 
 ---
 
@@ -96,33 +103,34 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 |---:|---:|---|---:|---:|---:|---:|---:|
 | 42 | 0.000 (0/30) | OOB:29 / timeout:1 | 0.041 ± 0.509 | 0.107 ± 0.248 | 88.6 ± 55.9 | −247.5 ± 41.2 | 18.4 ± 13.8 |
 | 0 | 0.000 (0/30) | **OOB:30** | −0.005 ± 0.618 | 0.093 ± 0.235 | 88.2 ± 55.3 | −248.8 ± 46.4 | 15.5 ± 10.1 |
-| **mean** | **0.000 ± 0.000** | **OOB dominates 59/60** | 0.018 | 0.100 | 88.4 | −248.2 | 17.0 |
+| 43 (supplement 2026-07-12) | 0.000 (0/30) | OOB:29 / depth_hold_failure:1 | −0.021 ± 0.453 | 0.062 ± 0.222 | 94.0 ± 55.0 | −258.5 ± 46.5 | 20.3 ± 14.6 |
+| **mean (3-seed)** | **0.000 ± 0.000** | **OOB dominates 88/90** | 0.005 | 0.087 | 90.3 | −251.6 | 18.1 |
 
 ### 3.2 Ceiling decomposition (post-N2', plan §8.2 table fully populated)
 
 | Layer | Setup | Performance | progress_ratio | path_eff |
 |---|---|---:|---:|---:|
 | hand-coded baseline | crosscomp / s0 / cross_u15 / arrival_v2 | **0.0%** (0/30) | −0.682 | −0.269 |
-| **offline RL + oracle teacher** | **ReBRAC β1=4 / s0 / privileged dataset (N2')** | **0.0%** (0/60) | **+0.018** | **+0.100** |
+| **offline RL + oracle teacher** | **ReBRAC β1=4 / s0 / privileged dataset (N2')** | **0.0%** (0/90) | **+0.005** | **+0.087** |
 | online RL (vanilla SAC, 1M steps) | vanilla SAC / s0 / cross_u15 / arrival_v2 | **10.0%** | — (catastrophic, see online §7.6) | — |
 | oracle direct (privileged baseline) | privileged actor + hull-integral flow `[u_eq, v_eq]` | **70.0%** (21/30) | +0.685 | 0.293 |
 
 **关键 raw-field 对比 (N2' vs crosscomp sanity)**：
 
-| 量 | crosscomp sanity (S/log) | N2' (ReBRAC β1=4) | 含义 |
+| 量 | crosscomp sanity (S/log) | N2' (ReBRAC β1=4，3-seed) | 含义 |
 |---|---:|---:|---|
 | `success_rate` | 0.0% | 0.0% | 数字相同但下层 mechanism 不同 |
-| `avg_progress_ratio` | **−0.682** | **+0.018** | N2' 略微净接近目标（不是远离）— BC penalty 让 actor 学到「朝目标方向倾向」 |
-| `avg_path_efficiency` | −0.269 | +0.100 | N2' 比 hand-coded 高 37pp — actor 学到 partial 的 motor pattern |
-| termination `timeout` | 8 | 1 | N2' actor 不像 crosscomp 那样原地撞墙保守 — 它**主动游**，但方向不够准 |
-| termination `out_of_bounds` | 22 | **59/60** | N2' 几乎 100% 出图 — actor 学到 motor pattern 但在 critical flow 下不能 closed-loop 校正 |
+| `avg_progress_ratio` | **−0.682** | **+0.005** | N2' 净距变化近零（不是被推离）— BC penalty 让 actor 学到「朝目标方向倾向」 |
+| `avg_path_efficiency` | −0.269 | +0.087 | N2' 比 hand-coded 高约 36pp — actor 学到 partial 的 motor pattern |
+| termination `timeout` | 8 | 1（另 depth_hold_failure 1） | N2' actor 不像 crosscomp 那样原地撞墙保守 — 它**主动游**，但方向不够准 |
+| termination `out_of_bounds` | 22 | **88/90** | N2' 几乎 100% 出图 — actor 学到 motor pattern 但在 critical flow 下不能 closed-loop 校正 |
 
 **Mechanism 描述**：
 
 - crosscomp at u15 是 "frozen" — hand-coded controller 用 nominal heading + speed 在 critical flow 下被 wake 推搡，无法 closed-loop 校正，常 timeout 或 OOB
 - N2' actor 学到了 privileged teacher 在 s0_obs 条件下的 **average action pattern**（即 `E[π_priv(a | privileged_obs) | s0_obs]`），所以它**会动**（progress ≈ 0、path_length ≈ 88m），但 critical regime 下 `s0_obs` 与 `privileged_obs = [u_eq, v_eq]` weakly correlated（plan §2.4 caveat），actor 拿不到 closed-loop 校正所需的 hull-integral flow 信号 → 朝大致方向开但 trajectory 振荡到 boundary → out_of_bounds
 
-**N2' 不是 "noisy 0"**：60 episodes 中 timeout 仅 1，progress_ratio std 0.5–0.6 表明 actor 在不同初始条件下 trajectory 行为高度可变（有的负 progress 远离目标，有的正 progress 推到 boundary），这是 closed-loop 失稳 footprint，不是 stuck-policy footprint。
+**N2' 不是 "noisy 0"**：90 episodes 中 timeout 仅 1、depth_hold_failure 仅 1，progress_ratio std 0.45–0.6 表明 actor 在不同初始条件下 trajectory 行为高度可变（有的负 progress 远离目标，有的正 progress 推到 boundary），这是 closed-loop 失稳 footprint，不是 stuck-policy footprint。
 
 ### 3.3 Verdict per plan §5.3
 
@@ -182,18 +190,18 @@ ReBRAC broad validation v2 在 `arrival_v2` reward 下完成 2 个 core cell（N
 
 ### 4.5 Asym-critic ablation — actor-fundamental vs critic-fundamental 机制判别 (completed 2026-05-27)
 
-vanilla N2' 中 actor 和 critic **都只看 s0**，0% 失败有两个无法区分的解释：(a) **actor-fundamental** — s0 actor 物理上还原不了 privileged 决策规则；(b) **critic-fundamental** — s0 critic 价值估计塌掉 → TD target 烂 → 训练失败。本 ablation 在**唯一变量** `--use-asymmetric-critic` 下隔离两者：critic 训练全程拿 hull-integral flow `privileged_obs=[u_eq,v_eq]` (dim=2) 算 TD target / critic loss，actor 改进时 priv 通道 zero-pad（`--privileged-actor-update-mode zeros`，mimic deployment，CLAUDE.md §3 默认）。dataset / manifest / β1=4 / β2=2 / seeds [42,0] 与 vanilla N2' **逐项相同**，eval 命令逐字一致（同 `--seed 123`，同 manifest，actor eval 仍只 s0）→ **逐 episode 配对**。
+vanilla N2' 中 actor 和 critic **都只看 s0**，0% 失败有两个无法区分的解释：(a) **actor-fundamental** — s0 actor 物理上还原不了 privileged 决策规则；(b) **critic-fundamental** — s0 critic 价值估计塌掉 → TD target 烂 → 训练失败。本 ablation 在**唯一变量** `--use-asymmetric-critic` 下隔离两者：critic 训练全程拿 hull-integral flow `privileged_obs=[u_eq,v_eq]` (dim=2) 算 TD target / critic loss，actor 改进时 priv 通道 zero-pad（`--privileged-actor-update-mode zeros`，mimic deployment，CLAUDE.md §3 默认）。dataset / manifest / β1=4 / β2=2 / seeds [42, 0]（+seed 43，2026-07-12 supplement 双侧同补）与 vanilla N2' **逐项相同**，eval 命令逐字一致（同 `--seed 123`，同 manifest，actor eval 仍只 s0）→ **逐 episode 配对**。
 
-**主结果（配对，2 seed × 30 ep）：**
+**主结果（配对，3 seed × 30 ep；seed 43 为 2026-07-12 supplement）：**
 
 | | vanilla N2' (s0 critic) | **asym N2' (priv critic)** | Δ |
 |---|---:|---:|---:|
-| success seed 42 / seed 0 | 0.000 / 0.000 | **0.000 / 0.000** | +0.00pp |
+| success seed 42 / seed 0 / seed 43 | 0.000 / 0.000 / 0.000 | **0.000 / 0.000 / 0.000** | +0.00pp |
 | mean success | 0.000 | **0.000 ± 0.000** | +0.00pp |
 | recovery of oracle 0.70 | — | **0.0%** | — |
-| termination (asym) | — | seed42 OOB 30；seed0 OOB 29 + timeout 1 | — |
+| termination (asym) | — | seed42 OOB 30；seed0 OOB 29 + timeout 1；seed43 OOB 30 | — |
 
-合计 **0 / 60 episodes 成功** → rule-of-three 95% 上界 ≈ 3/60 = **0.05**，远低于 online floor 0.10、oracle 0.70。即便给 critic 完美 hull-integral flow，**也不能把 s0 actor 抬过 catastrophic floor**。
+合计 **0 / 90 episodes 成功** → rule-of-three 95% 上界 ≈ 3/90 ≈ **0.033**，远低于 online floor 0.10、oracle 0.70。即便给 critic 完美 hull-integral flow，**也不能把 s0 actor 抬过 catastrophic floor**。
 
 **配对 episode-level 诊断（关键：排除"asym 改善了行为"的假象）。** 表面上 mean progress_ratio 从 vanilla 0.041→asym 0.143 (seed 42) 似有提升，但逐 episode 配对后：
 
@@ -211,7 +219,7 @@ termination 差异跨 seed **方向相反**（seed 42：vanilla 1 timeout→asym
 **诚实的因果范围（写 paper 必须遵守）：**
 - ✅ **可下的强 claim**：privileged-flow critic **不能挽救** N2' 天花板；**排除了"纯 critic 价值估计失败"(critic-fundamental) 的解释**。这是项目自身 asymmetric-critic 方法（CLAUDE.md §3）在 offline critical-regime 下的直接负结果。
 - ⚠ **不能下的 claim**：本实验**不证明** s0 actor 信息论上不可能学到该策略。asym=0 同时兼容 "actor 表征上不可能" 与 "asym-critic 这一机制（含 zeros actor-update）在 offline 下没把 privileged 信息有效转化给 actor" 两种读法。措辞用 **"not rescued by a privileged critic / consistent with & HARDENS actor-fundamental"**，**不写** "proven actor-incapable"。
-- 统计上 2 seed 在此**充分**：双双 degenerate-0（强信号非 no-power），落在 ≤0.10 gate 区，**不触发**预登记的"补 seed 43 + stratified bootstrap"（该条件只在落入 MIXED [0.10,0.40] / REFRAME [≥0.40] 时触发）。
+- 统计上首轮 2 seed 已**充分**：双双 degenerate-0（强信号非 no-power），落在 ≤0.10 gate 区，**不触发**预登记的"补 seed 43 + stratified bootstrap"（该条件只在落入 MIXED [0.10,0.40] / REFRAME [≥0.40] 时触发）。**2026-07-12 update**：论文定稿前补充验证仍按同协议补跑了 seed 43（vanilla 与 asym 双侧），结果仍 degenerate-0（0/30 / 0/30，asym 全越界）——三种子合计 0/90，结论不变、只更强。配对 episode-level 诊断（上文均值/中位数/离群点分析）基于首轮两种子，未对 seed 43 重做；其终检结果与两种子完全一致，不改变诊断结论。
 
 ---
 
@@ -240,7 +248,7 @@ termination 差异跨 seed **方向相反**（seed 42：vanilla 1 timeout→asym
 
 | Main paper claim | v2 N2' finding | 关系 |
 |---|---|---|
-| ReBRAC +23pp over TD3+BC on **sub-critical / efficiency_v2 / s0** | N0 holds with −5.2pp anchor drift under `arrival_v2`；algorithm-level claim 不变 | **不冲突** |
+| ReBRAC +23pp over TD3+BC on **sub-critical / efficiency_v2 / s0** | N0 holds with −2.4pp anchor drift under `arrival_v2`（3-seed，per-seed 方向不一，§2.4）；algorithm-level claim 不变 | **不冲突** |
 | (implicit) ReBRAC inherits its advantage from BC + critic regularization on **closely matched (s0_obs, action) distribution** | N2' shows **critical regime breaks the (s0_obs, privileged action) correspondence**，violates the assumption | **互补 — 划定 boundary condition** |
 
 Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset action **strongly correlated** 时 effective（sub-critical / cross_u10）；critical regime 下 `s0_obs` 与 oracle action correspondence **弱化**到 BC penalty 把 actor 拉向 dataset conditional mean 这个**非 closed-loop 信号**，actor 行为退化。
@@ -250,7 +258,7 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 - **不 claim** ReBRAC algorithm 是"差的" — algorithm 本身在 sub-critical 仍 +23pp（v1 main paper）+ N0 0.85（v2 anchor holds）
 - **不 claim** offline RL 在 critical regime 完全 hopeless — 但 asym-critic ablation（§4.5，2026-05-27 完成）已证明**本项目自身的 privileged-critic 机制不能 bridge**；可探索方向退到 recurrent/history actor、显式 flow-estimation head 等 actor 侧改造，不在本闭环
 - **不 claim** asym=0 证明 s0 actor 信息论上不可能（§4.5 因果范围）；只 claim 排除 critic-fundamental + HARDENS actor-fundamental
-- **不 claim** 10pp gap (N2' vs online) 是 sharp finding — 2-seed × 30 ep underpowered，paper 保留 §4 三 candidate mechanism 作为 alternative explanation
+- **不 claim** 10pp gap (N2' vs online) 是 sharp finding — 3-seed × 30 ep 仍 underpowered（online 侧亦少 seed），paper 保留 §4 三 candidate mechanism 作为 alternative explanation
 
 ---
 
@@ -260,9 +268,9 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 
 | Limitation | Severity | 缓解措施 |
 |---|---|---|
-| 2 seed 而非 plan §6.2 预登记的 3 seed | Medium — N2' 0.000/0.000 deterministic 给出 strong signal；N0 0.867/0.833 同向 informative | Backlog §9 5-seed 补全；rev.4 可补 seed=43 at least for N0 |
+| ~~2 seed 而非 plan §6.2 预登记的 3 seed~~ → **3 seed 已补齐（2026-07-12 supplement，+seed 43 × 三单元）**；种子组 {42, 0, 43} 与预登记 {42, 43, 44} 不完全重合（首轮以 0 替换 44） | Low（降级）— N2'/asym 三种子 deterministic 0.000；N0 第三种子方向反转（+3.1pp），见 §2.4 改写 | 5-seed 补全条目保留 backlog（§6.3）；supplement plan 附录 B 存判读与裁决全档 |
 | 30 eval episodes per seed | Low — broad val convention 一致 | 与 main paper / v1 broad val 一致 |
-| `arrival_v2` reward 与 main paper anchor (`efficiency_v2`) Δ = −5.2pp 退化未做 mechanism diagnostic | Medium | Paper §experiments appendix 明标；future work：N0 + efficiency_v2 / arrival_v2 paired seed comparison |
+| `arrival_v2` reward 与 main paper anchor (`efficiency_v2`) 的 Δ（3-seed 后收窄为 −2.4pp 且 per-seed 方向不一，§2.4）未做 mechanism diagnostic | Low（降级——drift 本身已不支持系统性读法） | Paper §experiments appendix 明标；future work：N0 + efficiency_v2 / arrival_v2 paired seed comparison |
 | ~~candidate A/B/C 三选一未做 mechanism discriminator~~ → **actor-vs-critic 轴已判别** | Low（升级） | **asym-critic ablation 已完成（§4.5，2026-05-27）= ACTOR_FUNDAMENTAL_CONFIRMED**，排除 critic-fundamental；candidate A（OOD shift）/ B 的 β1 轴仍 open 但优先级低 |
 | 与 online §7.6 vanilla SAC s0 cross_u15 = 0.10 的比较是 cross-source（不同 seed 集 + 不同实施细节） | Low — paper 明标 | §4 candidate C 已列 |
 
@@ -280,8 +288,8 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 
 | Item | Priority | Trigger |
 |---|---|---|
-| 5-seed 补全 N0（+seed 43, 44, 45） | Medium | 审稿人 push back 3 seed power |
-| 5-seed 补全 N2'（+seed 43, 44, 45） | Low | N2' deterministic 0.000，5 seed 不太可能反转 |
+| 5-seed 补全 N0（+seed 44, 45；~~43~~ ✓ 已补 2026-07-12） | Low（3-seed 已达预登记数；第三种子方向反转后均值差已收窄） | 审稿人 push back seed power |
+| 5-seed 补全 N2'（+seed 44, 45；~~43~~ ✓ 已补 2026-07-12，仍 0.000） | Low | N2' 三种子 deterministic 0.000，5 seed 不太可能反转 |
 | ~~Asym-critic ablation on N2'~~ → **✓ COMPLETED 2026-05-27 (§4.5)** | — | verdict ACTOR_FUNDAMENTAL_CONFIRMED；区分 actor-vs-critic-fundamental 已落地，喂 paper §discussion/robustness |
 | M1 BC sweep (β1 ∈ {0, 1, 2, 4, 8} × 3 seed) | Low — N2' 不在 trigger zone | Bypassed |
 | online §7.6 candidate-C 验证（3 success episode trajectory 分析） | Medium | Paper §discussion 想 strengthen anomaly section |
@@ -308,10 +316,15 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 | `results/offline/rebrac/broad_validation_v2/N0/seed_0/test_result.json` | N0 seed 0 raw eval (success 0.833) |
 | `results/offline/rebrac/broad_validation_v2/N2p/seed_42/test_result.json` | N2' seed 42 raw eval (success 0.000) |
 | `results/offline/rebrac/broad_validation_v2/N2p/seed_0/test_result.json` | N2' seed 0 raw eval (success 0.000) |
-| `results/offline/rebrac/broad_validation_v2/summaries/verdict_decision.json` | anchor + per-cell mean/std/per-seed + verdict block |
+| `results/offline/rebrac/broad_validation_v2/N0/seed_43/test_result.json` | N0 seed 43 raw eval (success 0.933) — 2026-07-12 supplement |
+| `results/offline/rebrac/broad_validation_v2/N2p/seed_43/test_result.json` | N2' seed 43 raw eval (success 0.000) — 2026-07-12 supplement |
+| `results/offline/rebrac/broad_validation_v2_n2p_asym/seed_43/test_result.json` | asym N2' seed 43 raw eval (success 0.000) — 2026-07-12 supplement |
+| `results/offline/rebrac/broad_validation_v2/summaries/seed43_supplement_verdict.json` | supplement 三门槛预登记判读 verdict（CONSISTENT ×3） |
+| `results/offline/rebrac/broad_validation_v2/summaries/verdict_decision.json` | anchor + per-cell mean/std/per-seed + verdict block（首轮 2-seed） |
 | `results/offline/rebrac/broad_validation_v2/summaries/p1_overview.csv` | 7-col overview table |
 | `experiments/offline/rebrac/broad_validation_v2/S_sanity/sanity_card_*.json` | S sanity baseline (DONE 2026-05-18) |
 | `notebooks/rebrac_broad_validation_v2_core_completed_new.ipynb` | Colab execution notebook (2026-05-19 run) |
+| `notebooks/rebrac_broad_validation_v2_seed43_supplement.ipynb` | +seed 43 supplement execution notebook (2026-07-08 Colab run，回读 2026-07-12) |
 
 ### 7.3 与其它 line 的 cross-link
 
@@ -321,6 +334,6 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 
 ---
 
-**Report 起草**: 2026-05-19
-**Plan rev**: rev.3 (with §6.2 2-seed note appended)
-**Reproducibility**: notebook `notebooks/rebrac_broad_validation_v2_core_completed_new.ipynb` + raw `results/offline/rebrac/broad_validation_v2/`
+**Report 起草**: 2026-05-19（+seed 43 supplement 增补 2026-07-12）
+**Plan rev**: rev.3 (with §6.2 2-seed note appended)；supplement plan+呈报+裁决 = [`rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md)
+**Reproducibility**: notebooks `rebrac_broad_validation_v2_core_completed_new.ipynb` + `rebrac_broad_validation_v2_seed43_supplement.ipynb` + raw `results/offline/rebrac/broad_validation_v2*/`

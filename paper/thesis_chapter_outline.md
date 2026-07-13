@@ -386,14 +386,15 @@ dissertation 章相对会议论文节多两层：
 
 ### §5.8 泛化边界：broad-val v2 → actor-fundamental ceiling
 - **写什么**：broad-val v2 两 cell — N0（sub-critical）HOLDS；N2'（critical Re250）STRONG_NEGATIVE → **deployable s0 actor-fundamental partial-observability ceiling**；asym-critic ablation 排除 critic-fundamental 解释。
-- **数字源**：[`rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3–§5（N0 0.850 HOLDS / N2' 0.000 STRONG_NEGATIVE，低于在线 k=4 参照水平约 0.26）+ §4.5（asym-critic ablation，verdict **ACTOR_FUNDAMENTAL_CONFIRMED**：完美 hull-integral flow 喂 critic，s0 actor 仍 0.000）。
+- **数字源**：[`rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3–§5（N0 0.878 HOLDS（3-seed，2026-07-12 补种子后；旧 2-seed 值 0.850 作废）/ N2' 0.000 STRONG_NEGATIVE，低于在线 k=4 参照水平约 0.26）+ §4.5（asym-critic ablation，verdict **ACTOR_FUNDAMENTAL_CONFIRMED**：完美 hull-integral flow 喂 critic，s0 actor 仍 0.000）。
 - **复用资产**：paper 1 Phase 6 已把这部分折叠为 `discussion.tex` §6.6 + `limitations.tex` L12 → 本章**提级为独立节**（dissertation 容量允许，§0.5.3 + §0.5.6 负面结果作 finding 不降级 limitation）。
 - **叙事作用（§0.5.6）**：这是本章**最强负面 finding**，与 §5.7 正面 finding 同台呈现统计 evidence（n / verdict / CI），**不**降级为 limitation 段；mechanism explanation 与正面 finding 同等深度（"为何会失败 = 也是机制贡献"）。
 - **⚠ 答辩风险登记（复审维度 G/A 升级，2026-07-03）**：N2' 边界仅 **2 seed**，却是全章**最强负面结论**，且 §5.5 已为其埋了在线↔离线 floor 伏笔（放大暴露面）。原 §4 分级把它列为"带 caveat 引用"**低估**了其答辩风险——**答辩前须补种子，或以远重于常规 report §6.1 的 caveat 呈现**（显式标 n=2；asym=0.000 兼容"表征不可能"与"asym 机制未把信息转给 actor"两读法，守 claim 边界红线、不下"信息论不可能"）。此项不阻塞 §5.7 起草，但须在 §5.8 动笔前决定补种子与否。
+  **✅ 风险降级（2026-07-12）**：+seed 43 × 3 单元同协议补种子完成并落稿（`boundary.tex` rev.3）——N2'/asym 三种子 0/90（零计数上界 ≈0.033），零成功结论不变；N0 三种子 0.878±0.051，第三种子（0.933）高于主线锚点、「两种子同向退化」叙事撤销（v2 report §2.4 已改写）；种子组 {42, 0, 43} 与预登记 {42, 43, 44} 不重合已在 §5.8.5/§5.8.m 如实披露。残余暴露面 = 三种子仍为全章最少 + 种子组与预登记不重合，均已成稿显式披露。判读与裁决全档：`docs/rebrac_broad_validation_v2_seed43_supplement_plan.md` 附录 B。
 - **⚠ claim 边界红线**（[`fql_succession_paper_writing_index`](../docs/fql_succession_paper_writing_index.md) 同源原则，broad-val v2 report §4.5 明确）：
   - ✅ **可下**："privileged-flow critic 不能挽救 N2' 天花板；**排除 critic-fundamental**；HARDENS actor-fundamental"
   - ❌ **不可下**："proven actor-incapable / s0 actor 信息论上不可能" — asym=0 同时兼容"表征不可能"与"asym-critic 机制没把信息转化给 actor"两种读法。
-- **§5.8.m 实施细节与可复现性**：broad-val v2 manifest（u15_cross / u15_upstream）+ N0/N2' 2-seed 协议 + asym-critic ablation 实验设置（特权流喂 critic 通道，actor 保持 s0）+ verdict ACTOR_FUNDAMENTAL_CONFIRMED 推导链 + N2' 与在线 k=4 参照水平（约 0.26，非 legacy 10%）的对照（§5.5 online ↔ §5.8 offline 比对表，须承接 §5.5.5 的 k=4 scope）。
+- **§5.8.m 实施细节与可复现性**：broad-val v2 manifest（u15_cross / u15_upstream）+ N0/N2' 3-seed 协议（{42, 0, 43}，与预登记组不重合披露）+ asym-critic ablation 实验设置（特权流喂 critic 通道，actor 保持 s0）+ verdict ACTOR_FUNDAMENTAL_CONFIRMED 推导链 + N2' 与在线 k=4 参照水平（约 0.26，非 legacy 10%）的对照（§5.5 online ↔ §5.8 offline 比对表，须承接 §5.5.5 的 k=4 scope）。
 
 ### §5.9 算法对比：FQL vs ReBRAC-Q — 先验表达力 vs anchor 目标质量
 - **写什么（两层结论，必须按此顺序，否则会过头）**：

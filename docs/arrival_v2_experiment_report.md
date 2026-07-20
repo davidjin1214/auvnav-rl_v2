@@ -961,39 +961,36 @@ s0 单点 + 长 history → actor 可从 DVL 时序节拍中重建：
 
 ---
 
-### 7.10 临界工况传感配置三种子比较 ground truth 补录（s0/s1/s2 @ k=4 × seeds {0, 7, 42}，2026-07-08，⚠ 取证状态 PARTIAL 3/9）
+### 7.10 临界工况传感配置三种子比较 ground truth（s0/s1/s2 @ k=4 × seeds {0, 7, 42}，2026-07-08 补跑重取证，✅ 9/9 实核）
 
-**目的**：博士论文第 5 章 §5.5.2（临界传感比较）、瓶颈表 k=4 行与 §5.5.5 floor≈0.26 的刊值此前只落在 `paper/thesis_ch5/sections/online.tex` rev.5 头注、图脚本 `fig_ch5_online_sensing_crit.py` 与 commit `46e4ca0`（三处一致），未录入本报告——章级验收 findings E·M1 要求补录，使引用链（论文 → 本报告 → `final_eval.json`）闭环。本节为该补录，**并如实分层记录每个读数的取证状态**。
+**目的**：博士论文第 5 章 §5.5.2（临界传感比较）、瓶颈表 k=4 行与 §5.5.5 在线参照的刊值此前只落在 `paper/thesis_ch5/sections/online.tex` 头注、图脚本 `fig_ch5_online_sensing_crit.py` 与 commit 记录，未录入本报告——章级验收 findings E·M1 要求补录，使引用链（论文 → 本报告 → `final_eval.json`）闭环。本节为该 ground truth 的正式落档。
 
-**协议**（与 §7.1/§7.6 同口径）：`single_u15_cross_tgt15`（cross_stream / U∞=1.5 / Re=250 / target=1.5，临界工况），vanilla SAC / `arrival_v2` / `history k=4` / 1M steps / `num_envs=6`；唯一变量 = probe layout（s0/s1/s2）× seed {0, 7, 42}；读数 = 终检 `final_eval`（30 deterministic episodes）成功率。
+**协议**（与 §7.1/§7.6 同口径）：`single_u15_cross_tgt15`（cross_stream / U∞=1.5 / Re=250 / target=1.5，临界工况），vanilla SAC / `arrival_v2` / `history k=4` / 1M steps / `num_envs=6`；唯一变量 = probe layout（s0/s1/s2）× seed {0, 7, 42}；读数 = 终检 `final_eval`（30 deterministic episodes）成功率；manifest 均为 `single_u15_cross_tgt15`，obs_dim 核对全部通过（s0/s1/s2 × k4 = 48/56/72）。
 
-**Per-seed 终检成功率与取证状态**：
+**Per-seed 终检成功率（九读数全部经本机 `final_eval.json` 实核）**：
 
 | 配置 | seed 0 | seed 7 | seed 42 | mean ± std (ddof=1) |
 |---|---:|---:|---:|---:|
-| s0（10-D，DVL-only，deployable） | 0.400 ✅ | 0.267 ⚠ | 0.100 ✅ | **0.26 ± 0.15** |
-| s1（12-D，+前向短程 ADCP，reference） | 0.900 ⚠ | 0.800 ⚠ | 0.900 ✅ | **0.87 ± 0.06** |
-| s2（16-D，+长程 ADCP 含横向，reference） | 0.800 ⚠ | 0.733 ⚠ | 0.733 ⚠ | **0.76 ± 0.04** |
+| s0（10-D，DVL-only，deployable） | 0.400 | 0.867 | 0.100 | **0.46 ± 0.39** |
+| s1（12-D，+前向短程 ADCP，reference） | 0.900 | 0.900 | 0.900 | **0.90 ± 0.00** |
+| s2（16-D，+长程 ADCP 含横向，reference） | 0.867 | 0.833 | 0.900 | **0.87 ± 0.03** |
 
-gap(s1 − s0) = 0.61（约 60pp）。均值 / std / gap 已于 2026-07-08 按上表 per-seed 值独立重算，与论文刊值一致。
+gap(s1 − s0) = 0.44（约 44pp）。s1 三种子终检同值 0.900（= 27/30，恰为 §7.9.7 的 manifest 经验上界），std = 0.00 如实报。均值 / std / gap 于 2026-07-19 按本机 raw 逐格独立重算。
 
-**✅ = 本轮（2026-07-08）经本机 `final_eval.json` 实时复核**（`experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/` 下，gitignored）：
+**证据链（canonical 路径，`experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/` 下，gitignored）**：
 
-| 读数 | 文件 | 同一 run 的既有归属 |
+| 格 | 文件 | run 来源 |
 |---|---|---|
-| s0 / seed_0 = 0.400 | `sac_vanilla/s0_k4/seed_0/results/final_eval.json` | §7.7 update 的 vanilla 配对臂（2026-05-18） |
-| s0 / seed_42 = 0.100 | `sac_vanilla/s0_k4/seed_42/results/final_eval.json` | §7.6 sensor envelope single_cross（2026-05-13） |
-| s1 / seed_42 = 0.900 | `sac_vanilla/s1_k4/seed_42/results/final_eval.json` | §7.1 严格控制（2026-05-08） |
+| s0/seed_0 = 0.400 | `s0_k4/seed_0/results/final_eval.json` | §7.7 update vanilla 配对臂原件（2026-05-18） |
+| s0/seed_42 = 0.100 | `s0_k4/seed_42/results/final_eval.json` | §7.6 sensor envelope single_cross 原件（2026-05-13） |
+| s1/seed_42 = 0.900 | `s1_k4/seed_42/results/final_eval.json` | §7.1 严格控制原件（2026-05-08） |
+| 其余六格 | `s0_k4/seed_7`、`s1_k4/seed_{0,7}`、`s2_k4/seed_{0,7,42}` 各自 `results/final_eval.json` | 2026-07-08 同协议补跑（Colab，`sac_arrival_v2_sensing_crit_rescue_seed{0,7,42}.ipynb` 三道；原件产于 Drive `rl_v2_5` 树，2026-07-19 经父目录链溯源确认归属后同步回本机 canonical 树） |
 
-**⚠ = 2026-06-18 云端确认值（转录源），结果文件未落本机**。转录源 = online.tex rev.5 头注 + 图脚本 `CRIT_SEEDS` + commit `46e4ca0`，三处互核一致；但对应六份 `final_eval.json` 经 2026-07-08 盘点确认**不在本机任何可达通道**（OneDrive 本地树、Google Drive 全盘检索、git 历史均无；Drive 侧 2026-05-24 之后无任何实验文件活动，2026-06-18 当天的 Drive 浏览记录只触及上表三份 ✅ 文件的镜像）。缺失清单（取回后按此落位）：
+补跑判读留痕：`experiments/arrival_v2_prototype/sensing_crit_rescue_summary/rescue_verdict_seed{0,7,42}.json`（per-cell 值 / 终止构成 / obs_dim 核对，与上表逐位一致）。
 
-- `sac_vanilla/s0_k4/seed_7/results/final_eval.json`（0.267）
-- `sac_vanilla/s1_k4/seed_0/results/final_eval.json`（0.900）、`sac_vanilla/s1_k4/seed_7/results/final_eval.json`（0.800）
-- `sac_vanilla/s2_k4/seed_0/results/final_eval.json`（0.800）、`sac_vanilla/s2_k4/seed_7/results/final_eval.json`（0.733）、`sac_vanilla/s2_k4/seed_42/results/final_eval.json`（0.733）
+**旧转录值作废存档**：2026-06-18 曾以「云端确认值」转录一批九宫格读数进论文与图脚本，其中六格的结果文件从未落本机、事后盘点在任何可达通道均无原件（2026-07-08，本节旧版记录）；2026-07-08 同协议补跑重取证后，经 2026-07-12 呈报与用户裁决（2026-07-19 确认），该批转录值定性为**引用错误、完全作废**——视作占位数字，不再对其作任何解读；上表即唯一 ground truth。呈报与裁决过程见 [`rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md) 附录 B.1 / 附录 C。
 
-**引用链状态**：在六份 ⚠ 文件取回并复核（或等协议补跑重取证）之前，本节取证状态为 **PARTIAL（3/9 实核）**，章级验收 E·M1 **不勾销**。取回复核一致后：将 ⚠ 改 ✅、删除本段状态说明，E·M1 勾销。若取证发现与转录值不一致，按「新的事实性问题」先呈报再改论文刊值。
-
-> **处置决定（2026-07-08，用户拍板）**：原件应在 Mac 本地但暂不可取，走**同协议补跑重取证**，与 §5.8 补种子并为一个 Colab 执行轮。补跑矩阵、预登记判读语义与 notebook（`sac_arrival_v2_sensing_crit_rescue_seed{0,7,42}.ipynb` × 3 道）见 [`rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md) 附录 A。补跑值即新 ground truth；六格全 EXACT_MATCH → 本节 ⚠→✅；任何偏差 → 呈报硬停。
+**引用链状态**：✅ **9/9 实核**（3 格 2026-05 训练原件 + 6 格 2026-07-08 补跑件），章级验收 E·M1 勾销。论文侧联动改写（§5.5.2/瓶颈表/§5.5.3/§5.5.4 caption/§5.5.5、§5.8.2/§5.8.4、fig sensing_crit 与 fig monotonic）于 2026-07-19 落地。
 
 ---
 

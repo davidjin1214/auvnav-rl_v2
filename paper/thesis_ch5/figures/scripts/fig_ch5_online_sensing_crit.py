@@ -2,10 +2,11 @@
 paper/thesis_ch5/figures/scripts/fig_ch5_online_sensing_crit.py
 
 Figure (§5.5, Fig 5.5): the sensing gap in the critical regime. With only the
-deployable single point s0 the task nearly fails; adding one forward probe (s1)
-restores success, and the information-richest s2 sits between the two while
-training less stably. This is the gap the rest of the section sets out to
-attribute -- to actor-side temporal access rather than to the sensing hardware.
+deployable single point s0, success is strongly seed-dependent (0.10-0.87,
+mean 0.46); adding one forward probe (s1) yields uniformly high success, and
+the information-richest s2 sits on par with s1. This is the gap the rest of
+the section sets out to attribute -- to actor-side temporal access rather
+than to the sensing hardware.
 
 A bar figure rather than learning curves: s2 in the critical regime has no
 trajectory logs (only end-of-training success), so the three configurations are
@@ -13,10 +14,10 @@ only comparable at their endpoints here.
 
 RESULTS figure (§5.5): bar height IS the success number.
 
-Data: confirmed final_eval success rates from the critical 3-seed sensing screen
-(seeds 0/7/42); s0 seed_0/seed_42 and s1 seed_42 cross-checked against the local
-final_eval.json, the remaining seeds confirmed from the cluster run.
-  s0 = [0.40, 0.267, 0.10], s1 = [0.90, 0.80, 0.90], s2 = [0.80, 0.733, 0.733].
+Data: final_eval success rates from the critical 3-seed sensing screen
+(seeds 0/7/42); all nine cells verified against the local final_eval.json
+files (ground truth: docs/arrival_v2_experiment_report.md §7.10).
+  s0 = [0.40, 0.867, 0.10], s1 = [0.90, 0.90, 0.90], s2 = [0.867, 0.833, 0.90].
 
 Design rules (shared _ch5_style): s0/s1/s2 hues (SENSING) match §5.3 and the
 other §5.5 figures; English-only minimal text, width <= 138 mm, vector PDF.
@@ -48,10 +49,11 @@ LABELS = {"s0": "s0\n(deployable)", "s1": "s1\n(reference)",
           "s2": "s2\n(reference)"}
 
 # Critical 3-seed sensing screen, final_eval success rates (seeds 0/7/42).
+# Ground truth: docs/arrival_v2_experiment_report.md §7.10 (9/9 verified).
 CRIT_SEEDS = {
-    "s0": [0.40, 0.267, 0.10],
-    "s1": [0.90, 0.80, 0.90],
-    "s2": [0.80, 0.733, 0.733],
+    "s0": [0.40, 0.867, 0.10],
+    "s1": [0.90, 0.90, 0.90],
+    "s2": [0.867, 0.833, 0.90],
 }
 BAR_W = 0.6
 

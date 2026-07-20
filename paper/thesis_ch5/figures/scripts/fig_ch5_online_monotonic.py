@@ -14,10 +14,10 @@ dose-response over the controlled variable.
 RESULTS figure (§5.5): marker height IS the success number.
 
 Data (REAL final_eval.json, the locked-table 'final' convention; cross-checked):
-  aggregate  k=4 seeds {0,42}; k=8/k=12 seeds {0,7,42}.
+  aggregate  k=4/k=8/k=12 seeds {0,7,42}.
   representative run climbs 0.40 -> 0.50 -> 0.90 across k (a single run, shown
   as a thin trajectory; not foregrounded as an individual seed in the prose).
-  ceiling 0.90 = s1(k=4) reference = manifest empirical ceiling (27/30).
+  ceiling 0.90 = manifest empirical ceiling (27/30).
 
 Design rules (shared _ch5_style + _ch5_data).
 
@@ -46,13 +46,13 @@ from _ch5_style import (  # noqa: E402
 
 UPPER_BOUND = 0.900
 DT_CTRL_S = 0.5
-K_SEEDS = {4: [0, 42], 8: [0, 7, 42], 12: [0, 7, 42]}
+K_SEEDS = {4: [0, 7, 42], 8: [0, 7, 42], 12: [0, 7, 42]}
 REPRESENTATIVE_SEED = 0  # a single run that has all three k (shown unlabelled)
-# Confirmed cloud 3-seed final_eval for the deployable k=4 baseline (seeds 0/7/42).
-# seed_7 came back as a scalar (no local final_eval.json), so the k=4 aggregate
-# uses these confirmed values to stay consistent with the bottleneck table
-# (0.26 +/- 0.15). k=8/k=12 read their three local final_eval.json files.
-CRIT_K4_S0 = [0.40, 0.267, 0.10]
+# Critical 3-seed final_eval for the deployable k=4 baseline (seeds 0/7/42),
+# kept as an explicit locked list so the k=4 aggregate matches the bottleneck
+# table (0.46 +/- 0.39). Ground truth: docs/arrival_v2_experiment_report.md
+# §7.10 (9/9 verified). k=8/k=12 read their three local final_eval.json files.
+CRIT_K4_S0 = [0.40, 0.867, 0.10]
 
 
 def _agg() -> tuple[np.ndarray, np.ndarray, np.ndarray]:

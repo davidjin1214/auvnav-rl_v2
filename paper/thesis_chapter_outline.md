@@ -41,7 +41,7 @@
 | 子问 | 由谁回答（角色） | 结论（精确版，已过 §0.4 红线） |
 |---|---|---|
 | **方法坐标是什么？** | 强化学习方法与算法框架（**共同 methodology**，§5.4） | 统一定义 online/offline、异策略 Actor-Critic、SAC、TD3+BC、ReBRAC-Q、FQL 与 privileged-critic 协议；后续结果节只写增量机制与实验协议，不再重复算法基础。 |
-| **靠什么机制？** | Online SAC（**铺垫/机制**，§5.5） | 难流场下 s0→s1 的约 60pp gap（多种子实测；旧 80pp 已弃用）**不是空间传感器瓶颈、是 actor 时序访问瓶颈**：s0+history k=12（~6s≈涡街周期 30–60%）单变量闭合到 s1 上界（§7.8/§7.9）。给 critic 喂特权流在 online 同样**不闭合 gap**（§7.7）——offline §4.5 asym ablation 的独立 echo |
+| **靠什么机制？** | Online SAC（**铺垫/机制**，§5.5） | 难流场下 s0→s1 的约 44pp gap（多种子实测，2026-07-19 九宫格重排后值；旧 80pp/60pp 已弃用）**不是空间传感器瓶颈、是 actor 时序访问瓶颈**：s0+history k=12（~6s≈涡街周期 30–60%）单变量闭合到 s1 上界（§7.8/§7.9）。给 critic 喂特权流在 online 同样**不闭合 gap**（§7.7）——offline §4.5 asym ablation 的独立 echo |
 | **能做到吗？** | ReBRAC 主线（**核心**，§5.7） | deployable-only ReBRAC-Q 在统计意义上**追平** privileged-critic 协议（worldcomp 0.928 vs 0.922, Welch p=0.92），并优于 vanilla TD3+BC 23–32pp。→ 特权信息喂 critic 对 **mean 不贡献**（5-seed Δ priv−dep=+0.6pp），只救 outlier seed 44（+12pp） |
 | **边界在哪？** | broad-val v2（**边界**，§5.8） | critical regime（Re250/u15）下 s0 与 hull-integral 流弱相关，**oracle 示范 + 特权 critic 都救不了**（N2'=0.000；asym ablation = ACTOR_FUNDAMENTAL_CONFIRMED）→ actor-fundamental ceiling |
 | **换更强算法会变吗？** | FQL succession（**对照/确证**，§5.9） | 表达力更强的 flow-matching 先验（FQL）**不普遍取胜**：算法排名 regime-dependent（SAC mexp 中质量 FQL 赢、saturated 高质量 ReBRAC 赢，两 CI 各自非零）。真正的算法决定因素是 **BC-anchor 目标质量 × 数据 regime 的匹配**，不是先验表达力 |
@@ -349,10 +349,10 @@ dissertation 章相对会议论文节多两层：
 - **§5.4.m 实施细节与可复现性**：共同符号表、损失函数汇总表、核心超参数含义（α/β1/β2/temperature）、训练/部署信息可用性表、方法原文献引用清单。具体 seed、manifest、dataset 和结果统计不放在本节，留给各结果节。
 
 ### §5.5 Online RL：可学性与信息瓶颈
-- **写什么**：(1) A0 sensor screen — deployable s0 在简单 wake viable；(2) arrival_v2 prototype — H_information-bottleneck（s0+history k=12 闭合约 60pp 的 s0→s1 gap）+ manifest universal-floor 概念。
+- **写什么**：(1) A0 sensor screen — deployable s0 在简单 wake viable；(2) arrival_v2 prototype — H_information-bottleneck（s0+history k=12 闭合约 44pp 的 s0→s1 gap，2026-07-19 九宫格重排后值）+ manifest universal-floor 概念。
 - **数字源（thesis-grade）**：[`online_rl_line_summary.md`](../docs/online_rl_line_summary.md) §1.1（A0：efficiency_v2 s1 0.967 / s0 0.789 / s2 0.856）；[`arrival_v2_experiment_report.md`](../docs/arrival_v2_experiment_report.md) §7.9 / §7.9.7（k=12 在 2/3 seed saturate manifest floor 27/30=0.900；3-seed σ_final=0.038 << target 0.10）。
 - **复用资产**：无 LaTeX，**全新写**。可新作 figure（A0 三 sensor bar + arrival_v2 k-monotonicity 相位跃迁图）。
-- **叙事作用**：为全章奠定"瓶颈在 actor 信息访问，不在传感器硬件"的基调，**为 §5.8 actor-fundamental ceiling 埋伏笔**（online 难流场 k=4 参照约 0.26、k=12 可闭合 ↔ offline k=4 N2' 0%）。⚠ 落地正文（online.tex rev.5+）已把在线低水平从 legacy 10% 更新为约 0.26，并在 §5.5.5 加了 k=4 scope 保险（离线只能用 k=4 既采数据、k=12 救援能否迁移属 §5.8 待答）；§5.8 起草的 online↔offline 对照须用 0.26、且承接此 k=4 scope。
+- **叙事作用**：为全章奠定"瓶颈在 actor 信息访问，不在传感器硬件"的基调，**为 §5.8 actor-fundamental ceiling 埋伏笔**（online 难流场 k=4 参照约 0.46 且跨种子剧烈分化、k=12 可稳定闭合 ↔ offline k=4 N2' 0%）。⚠ 落地正文（online.tex rev.7，2026-07-19 九宫格重排）已把在线 k=4 参照定为 0.46±0.39（2026-06-18 转录值 0.26 系引用错误、已作废；ground truth = arrival_v2 report §7.10），并在 §5.5.5 加了 k=4 scope 保险（离线只能用 k=4 既采数据、k=12 救援能否迁移属 §5.8 待答）；§5.8 起草的 online↔offline 对照须用 0.46、且承接此 k=4 scope。
 - **caveat**：reward preset sweep（27 run×200k）**绝对数字不可引用**，仅作 `efficiency_v2` 选择的方法学依据；Sprint 0 preflight 不可作性能基线。坑（200k 假性否决 / flow 不一致 bug / efficiency_v2 OOB-suicide）可入方法论或 limitations。
 - **§5.5.m 实施细节与可复现性**：A0 sensor screen 3-seed 协议 + arrival_v2 prototype k-sweep 协议 + manifest universal-floor 计算 + reward preset sweep 方法学（数字不引、仅作 viability 论证）；online §7.7 AsymCritic ablation 复现细节（若 §8 开放点 3 决定保留 cross-line 旁证）。
 
@@ -386,7 +386,7 @@ dissertation 章相对会议论文节多两层：
 
 ### §5.8 泛化边界：broad-val v2 → actor-fundamental ceiling
 - **写什么**：broad-val v2 两 cell — N0（sub-critical）HOLDS；N2'（critical Re250）STRONG_NEGATIVE → **deployable s0 actor-fundamental partial-observability ceiling**；asym-critic ablation 排除 critic-fundamental 解释。
-- **数字源**：[`rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3–§5（N0 0.878 HOLDS（3-seed，2026-07-12 补种子后；旧 2-seed 值 0.850 作废）/ N2' 0.000 STRONG_NEGATIVE，低于在线 k=4 参照水平约 0.26）+ §4.5（asym-critic ablation，verdict **ACTOR_FUNDAMENTAL_CONFIRMED**：完美 hull-integral flow 喂 critic，s0 actor 仍 0.000）。
+- **数字源**：[`rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3–§5（N0 0.878 HOLDS（3-seed，2026-07-12 补种子后；旧 2-seed 值 0.850 作废）/ N2' 0.000 STRONG_NEGATIVE，低于在线 k=4 参照水平约 0.46）+ §4.5（asym-critic ablation，verdict **ACTOR_FUNDAMENTAL_CONFIRMED**：完美 hull-integral flow 喂 critic，s0 actor 仍 0.000）。
 - **复用资产**：paper 1 Phase 6 已把这部分折叠为 `discussion.tex` §6.6 + `limitations.tex` L12 → 本章**提级为独立节**（dissertation 容量允许，§0.5.3 + §0.5.6 负面结果作 finding 不降级 limitation）。
 - **叙事作用（§0.5.6）**：这是本章**最强负面 finding**，与 §5.7 正面 finding 同台呈现统计 evidence（n / verdict / CI），**不**降级为 limitation 段；mechanism explanation 与正面 finding 同等深度（"为何会失败 = 也是机制贡献"）。
 - **⚠ 答辩风险登记（复审维度 G/A 升级，2026-07-03）**：N2' 边界仅 **2 seed**，却是全章**最强负面结论**，且 §5.5 已为其埋了在线↔离线 floor 伏笔（放大暴露面）。原 §4 分级把它列为"带 caveat 引用"**低估**了其答辩风险——**答辩前须补种子，或以远重于常规 report §6.1 的 caveat 呈现**（显式标 n=2；asym=0.000 兼容"表征不可能"与"asym 机制未把信息转给 actor"两读法，守 claim 边界红线、不下"信息论不可能"）。此项不阻塞 §5.7 起草，但须在 §5.8 动笔前决定补种子与否。
@@ -394,7 +394,7 @@ dissertation 章相对会议论文节多两层：
 - **⚠ claim 边界红线**（[`fql_succession_paper_writing_index`](../docs/fql_succession_paper_writing_index.md) 同源原则，broad-val v2 report §4.5 明确）：
   - ✅ **可下**："privileged-flow critic 不能挽救 N2' 天花板；**排除 critic-fundamental**；HARDENS actor-fundamental"
   - ❌ **不可下**："proven actor-incapable / s0 actor 信息论上不可能" — asym=0 同时兼容"表征不可能"与"asym-critic 机制没把信息转化给 actor"两种读法。
-- **§5.8.m 实施细节与可复现性**：broad-val v2 manifest（u15_cross / u15_upstream）+ N0/N2' 3-seed 协议（{42, 0, 43}，与预登记组不重合披露）+ asym-critic ablation 实验设置（特权流喂 critic 通道，actor 保持 s0）+ verdict ACTOR_FUNDAMENTAL_CONFIRMED 推导链 + N2' 与在线 k=4 参照水平（约 0.26，非 legacy 10%）的对照（§5.5 online ↔ §5.8 offline 比对表，须承接 §5.5.5 的 k=4 scope）。
+- **§5.8.m 实施细节与可复现性**：broad-val v2 manifest（u15_cross / u15_upstream）+ N0/N2' 3-seed 协议（{42, 0, 43}，与预登记组不重合披露）+ asym-critic ablation 实验设置（特权流喂 critic 通道，actor 保持 s0）+ verdict ACTOR_FUNDAMENTAL_CONFIRMED 推导链 + N2' 与在线 k=4 参照水平（约 0.46，非 legacy 10%）的对照（§5.5 online ↔ §5.8 offline 比对表，须承接 §5.5.5 的 k=4 scope）。
 
 ### §5.9 算法对比：FQL vs ReBRAC-Q — 先验表达力 vs anchor 目标质量
 - **写什么（两层结论，必须按此顺序，否则会过头）**：
@@ -425,7 +425,7 @@ dissertation 章相对会议论文节多两层：
 | **reward 双轨** | efficiency_v2（paper 1/TD3BC）vs arrival_v2（broad-val v2/FQL），obs 40-D vs 48-D | §5.3 setup 显式交代两套 reward + 各自 obs 维度；每个 results 表标注 reward regime |
 | **共同方法入口** | TD3+BC / ReBRAC-Q / FQL 若各自展开，读者会在多个结果节之间拼算法 | §5.4 集中定义方法框架、损失函数、特权信息协议；§5.6–§5.9 只讲各节增量和实验协议 |
 | **β1 = 4.0 vs 1.0** | 两线最优 β1 不同会被审稿人当矛盾 | §5.7 埋点（finalist 是 robustness winner）；§5.10 统一 reconciliation（四轴差异 + 统一机制）→ 化矛盾为 finding |
-| **online ↔ offline floor 呼应** | 在线 k=4 约 0.26（k=12 可闭合）↔ offline k=4 N2' 0% | §5.5 埋伏笔（k=4 scope 已在 §5.5.5 注明），§5.8 收束："offline + oracle 示范反而 underperform online SAC"；⚠ 对照须用 0.26、并承接 k=4 vs k=12 不对称 |
+| **online ↔ offline floor 呼应** | 在线 k=4 约 0.46 且跨种子剧烈分化（k=12 可稳定闭合）↔ offline k=4 N2' 0% | §5.5 埋伏笔（k=4 scope 已在 §5.5.5 注明），§5.8 收束："offline + oracle 示范反而 underperform online SAC"；⚠ 对照须用 0.46（2026-07-19 重排后值）、并承接 k=4 vs k=12 不对称 |
 | **FQL Method 去重** | FQL 与 ReBRAC-Q 的 loss 公式若各写一遍会冗余 | §5.4 定义共同算法基础，§5.7 给 ReBRAC-Q 增量，§5.9 只讲 FQL distill / flow-matching 差异 |
 | **AsymCritic 两处出现** | online §7.7 AsymCritic ablation ↔ offline N2' asym-critic ablation | 统一术语；§5.8 主用 offline 版（actor-fundamental），online §7.7 版在 §5.5 作 cross-line 旁证或在 §5.8 承接（§8 开放点 3 待定是否独立呈现） |
 | **特权 critic 方向四态**（复审 D-M1 新增，2026-07-03） | 在线临界=不闭合（§5.5.5）／离线亚临界 TD3+BC=方向性半程有益（§5.6.4）／§5.7 ReBRAC=不抬 mean／§5.8 临界=救不了 | §5.5.5 与 §5.6.4 已各就近作线别限定、不并列下结论；§5.10 统一 reconciliation 把四态收成"特权信息或非必需、或不普遍有效"的一致机制（对齐 §0.1 析取式命题） |

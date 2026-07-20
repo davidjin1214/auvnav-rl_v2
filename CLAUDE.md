@@ -30,118 +30,11 @@ L4 wallclock for a 600k-step SAC run with `num_envs=6` is ~1.5h. Notebook-driven
 
 ## Common Commands
 
-```bash
-# Basic SAC training (uses synthetic wake data if no flow file found)
-python -m scripts.train_sac
-
-# Training with key options (A0 sensor-screen / SAC collector defaults)
-python -m scripts.train_sac \
-  --total-steps 600000 \
-  --batch-size 256 \
-  --device cuda \
-  --seed 46 \
-  --task-geometry upstream \
-  --target-speed 1.5 \
-  --probe-layout s0 \
-  --history-length 4 \
-  --num-envs 6 \
-  --eval-every 10000 \
-  --eval-manifest benchmarks/single_u15_upstream_tgt15.json \
-  --eval-episodes 30 \
-  --objective efficiency_v2 \
-  --save-dir experiments/<study>/<cell>/seed_46
-
-# Asymmetric Critic + LayerNorm + UTD=4 (ablation lever; still used by offline line)
-python -m scripts.train_sac \
-  --use-asymmetric-critic \
-  --use-layernorm \
-  --updates-per-step 4 \
-  ... # other args as above
-
-# Resume from checkpoint
-python -m scripts.train_sac --resume <save-dir>
-
-# Evaluate a saved checkpoint against a benchmark manifest
-python -m scripts.evaluate --checkpoint <save-dir> \
-  --eval-manifest benchmarks/tandem_u15_upstream_tgt15.json \
-  --episodes 30
-
-# Run baseline policies (goal-seek, current-compensation, etc.)
-python -m scripts.demo --policy all --episodes 10
-
-# Generate synthetic wake field data
-python -m scripts.generate_wake
-
-# Generate (or refresh) a fixed evaluation manifest
-python -m scripts.generate_standard_benchmarks \
-  --benchmarks single_u15_upstream_tgt15 --episodes 30
-
-# Collect offline data from baseline policies (for RLPD / offline RL)
-python -m scripts.collect_offline_data \
-  --policy worldcomp \
-  --flow wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy \
-  --probe-layout s0 --task-geometry cross_stream --target-speed 1.5 \
-  --history-length 4 --objective efficiency_v2 \
-  --episodes 1000 --seed 0 --num-workers 8 \
-  --output-dir offline_data/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
-
-# RLPD training (SAC + offline data; reserved for offline line, not the cancelled online thesis)
-python -m scripts.train_sac \
-  --offline-data offline_data/<dataset>/transitions.npz \
-  --offline-ratio 0.5 \
-  --use-asymmetric-critic   # critic gets privileged_obs from offline + online streams
-  ... # other args
-
-# Visualize trajectories and plot training curves
-python -m scripts.visualize --checkpoint <save-dir>
-python -m scripts.plot_training --log-dir <save-dir>
-```
-
-All scripts are run as modules from the repo root (`python -m scripts.<name>`).
-
-### Stage scripts (sweep launchers)
-
-`[skip]` resume logic in each launcher: re-running after a Colab session restart picks up where it left off (skip is keyed on `agent_final.pt`, not `trainer_state.json`).
-
-| Stage | Status | Run script | Summarize script |
-|---|---|---|---|
-| A0 (cross_u10 sensor screen) | ✅ thesis-grade result, citable | [`scripts/run_stage_a0_layout_screen.sh`](scripts/run_stage_a0_layout_screen.sh) | [`scripts/summarize_stage_a0_layout_screen.sh`](scripts/summarize_stage_a0_layout_screen.sh) |
-| A1 (layout main) | ⚠ archived; thesis matrix cancelled 2026-05-06 | [`scripts/run_stage_a1_layout_main.sh`](scripts/run_stage_a1_layout_main.sh) | [`scripts/summarize_stage_a1_layout_main.sh`](scripts/summarize_stage_a1_layout_main.sh) |
-
-[`scripts/run_protocol_stage_common.sh`](scripts/run_protocol_stage_common.sh) is the shared sweep launcher; current online sprints (sanity + SAC collector) drive it via env-var overrides from each notebook (no per-stage wrapper needed). The previously planned `s2`–`s7` thesis stage wrappers were never created (matrix cancelled).
+Full CLI reference (training/eval/offline-collection invocations, sweep launcher table, `[skip]`-resume semantics) moved to the `rl-v2-commands` skill — see [`.claude/skills/rl-v2-commands/SKILL.md`](.claude/skills/rl-v2-commands/SKILL.md). All scripts are run as modules from the repo root (`python -m scripts.<name>`).
 
 ## Architecture
 
-### Package: `auv_nav/`
-
-The core library. Components are loosely coupled; non-ML parts work without PyTorch.
-
-| Module | Role |
-|--------|------|
-| `vehicle.py` | REMUS-100 6-DOF nonlinear dynamics (RK4 integrator, ~850 lines) |
-| `flow.py` | Memory-mapped wake field dataset; flow sampling at body-relative positions |
-| `autopilot.py` | Inner-loop PID controllers + `EquivalentCurrentModel` (hull-integral flow estimator) |
-| `env.py` | `PlanarRemusEnv` — Gymnasium environment (obs: 8-base + n_probes×2; emits `privileged_obs` in info) |
-| `sac.py` | SAC agent: `SquashedGaussianActor`, `QNetwork`, **`AsymmetricQNetwork` (privileged-input critic)**, auto-tuned temperature |
-| `networks.py` | MLP building blocks used by SAC |
-| `replay.py` | `TransitionReplay` off-policy buffer (with optional `privileged_obs` / `next_privileged_obs`); `DualBufferSampler` for RLPD symmetric sampling |
-| `reward.py` | `RewardModel` (progress, success, timeout) + `SafetyCostModel` |
-| `baselines.py` | Non-learning policies (goal-seek, crosscomp, worldcomp, privileged) used for offline data collection |
-| `rebrac.py` | ReBRAC agent (TD3+BC variant with critic-side BC penalty); used by the offline RL line |
-| `offline_registry.py` | Registry of offline dataset configurations (probe / objective / policy / episodes) |
-
-### Scripts: `scripts/`
-
-| Script | Role |
-|--------|------|
-| `train_sac.py` | Main online training entry point; supports vanilla SAC, LayerNorm/Dropout/UTD, asymmetric critic, and RLPD via `--offline-data` |
-| `train_utils.py` | Shared helpers: env creation, checkpointing, evaluation loop, CSV/JSONL logging |
-| `train_offline.py` | Offline training entry point (`--algo {rebrac,td3bc,fql}`) |
-| `run_suite.py` | Coordinates multi-seed experiment sweeps; defines `METHOD_SPECS` and `SUITE_PRESETS` |
-| `collect_offline_data.py` | Collects transition data from baseline policies (records `privileged_obs` for AsymCritic) |
-| `evaluate.py` | Loads a checkpoint and runs deterministic evaluation against a manifest |
-| `generate_standard_benchmarks.py` | Builds fixed evaluation manifests (`benchmarks/<key>.json`) for reproducible `--eval-manifest` |
-| `run_protocol_stage_common.sh` | Shared sweep launcher used by A0 and current online sprints (sanity + SAC collector); env-var-driven |
+Module/script layout is derivable by reading `auv_nav/` and `scripts/` directly; not repeated here.
 
 ### Key Architectural Patterns
 
@@ -187,7 +80,7 @@ Offline transition data lives in `offline_data/` (gitignored). Each subdirectory
 
 ### Default Hyperparameters (SACConfig)
 
-`hidden_dim=256`, `gamma=0.995`, `tau=0.005`, `actor/critic/alpha_lr=3e-4`, `init_alpha=0.2`, `grad_clip_norm=10.0`. Training defaults: `batch_size=256`, `random_steps=2000`, `update_after=2000`, `updates_per_step=1`. A0 sensor screen / SAC collector runs use `random_steps=5000`, `update_after=5000` (per `run_protocol_stage_common.sh`).
+Defaults are the `SACConfig` dataclass fields in `auv_nav/sac.py`. A0 sensor screen / SAC collector runs override `random_steps=5000`, `update_after=5000` (per `run_protocol_stage_common.sh`) — not the dataclass default.
 
 ## Documentation Index
 

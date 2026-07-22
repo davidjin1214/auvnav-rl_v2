@@ -42,8 +42,8 @@
 |---|---|---|
 | **方法坐标是什么？** | 强化学习方法与算法框架（**共同 methodology**，§5.4） | 统一定义 online/offline、异策略 Actor-Critic、SAC、TD3+BC、ReBRAC-Q、FQL 与 privileged-critic 协议；后续结果节只写增量机制与实验协议，不再重复算法基础。 |
 | **靠什么机制？** | Online SAC（**铺垫/机制**，§5.5） | 难流场下 s0→s1 的约 44pp gap（多种子实测，2026-07-19 九宫格重排后值；旧 80pp/60pp 已弃用）**不是空间传感器瓶颈、是 actor 时序访问瓶颈**：s0+history k=12（~6s≈涡街周期 30–60%）单变量闭合到 s1 上界（§7.8/§7.9）。给 critic 喂特权流在 online 同样**不闭合 gap**（§7.7）——offline §4.5 asym ablation 的独立 echo |
-| **能做到吗？** | ReBRAC 主线（**核心**，§5.7） | deployable-only ReBRAC-Q 在统计意义上**追平** privileged-critic 协议（worldcomp 0.928 vs 0.922, Welch p=0.92），并优于 vanilla TD3+BC 23–32pp。→ 特权信息喂 critic 对 **mean 不贡献**（5-seed Δ priv−dep=+0.6pp），只救 outlier seed 44（+12pp） |
-| **边界在哪？** | broad-val v2（**边界**，§5.8） | critical regime（Re250/u15）下 s0 与 hull-integral 流弱相关，**oracle 示范 + 特权 critic 都救不了**（N2'=0.000；asym ablation = ACTOR_FUNDAMENTAL_CONFIRMED）→ actor-fundamental ceiling |
+| **能做到吗？** | ReBRAC 主线（**核心**，§5.7） | deployable-only ReBRAC-Q 与 privileged-critic 协议之间**未检测到统计显著差异**（worldcomp 0.928 vs 0.922, Welch p=0.92；⚠ 2026-07-22 第 3 批整改：**不写「追平／统计意义上持平」**——种子级 95% CI = [−0.127, +0.139]，本章不作等价判断，正面结论锚在可部署一侧自身水平上），并优于 vanilla TD3+BC 23–32pp。→ 特权信息喂 critic 对 **mean 不贡献**（5-seed Δ priv−dep=+0.6pp），只救 outlier seed 44（+12pp） |
+| **边界在哪？** | broad-val v2（**边界**，§5.8） | critical regime（Re250/u15）下 s0 与 hull-integral 流弱相关，**oracle 示范 + 特权 critic 都救不了**（N2'=0.000；asym ablation = ACTOR_FUNDAMENTAL_CONFIRMED）→ actor-fundamental ceiling。⚠ **措辞锁（2026-07-22 第 3 批整改，N1）**：成稿 §5.8 节标题已去「上限」（改「失效与归因」）——「ceiling」暗示所观测最高值，而 §5.9.5 同工况 β1=1.0 读数 0.14 高于本节零计数上界 0.033；正文只在带 **k=4 + β1=4.0 双限定**处使用「经验上限」，且「策略侧解释得到加固」须条件于「非对称通道确能把价值侧信息传导至策略改进」这一未检验前提 |
 | **换更强算法会变吗？** | FQL succession（**对照/确证**，§5.9） | 表达力更强的 flow-matching 先验（FQL）**不普遍取胜**：算法排名 regime-dependent（SAC mexp 中质量 FQL 赢、saturated 高质量 ReBRAC 赢，两 CI 各自非零）。真正的算法决定因素是 **BC-anchor 目标质量 × 数据 regime 的匹配**，不是先验表达力 |
 
 > 侧重：§5.4 是方法入口；ReBRAC 是**唯一正面核心贡献**（正面回答"能做到吗"）；online=机制铺垫，broad-val=边界，FQL=对照确证 + 真实算法决定因素。四块都在为同一句中心命题——"用好已有的信息与数据（单点时序利用 + 模仿目标与数据质量适配）胜过为系统增添能力（特权 critic / 更多传感器 / 更强先验）"——服务。
@@ -367,7 +367,7 @@ dissertation 章相对会议论文节多两层：
 - **写什么**：在 §5.4 已定义 ReBRAC-Q 损失的基础上，说明相对 TD3+BC 的关键增量、实验协议和四条 paper-level finding。避免把共同方法框架重复写成一个长 method paper。
 - **四 findings 数字锚**（实时回查 [`rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md)；镜像见 paper 1 progress.md §3）：
   - (i) crosscomp +23.0pp（1000）/ +32.2pp（2000），翻转"more data hurts"，std 不增反降
-  - (ii) **deployable 0.928 追平 privileged-critic 0.922**，Welch p=0.9195（最强 sim2real narrative）
+  - (ii) **deployable 0.928 与 privileged-critic 0.922 之间未检测到统计显著差异**，Welch p=0.9195（最强 sim2real narrative）。⚠ **措辞锁（2026-07-22 第 3 批整改，H2）**：禁「追平／持平／相当」，种子级 95% CI = [−0.127, +0.139]（半宽 13.3pp，为 §5.6 约 6pp 抬升的两倍以上），§5.3.6 的等价判断附加要求**不予触发**；肯定回答须锚在可部署一侧自身的正向量（相对纯 BC +7.0pp、差距闭合 53.0%、点估计不低于特权参照），**不得挂在未检出结果上**
   - (iii) dual penalty cross-dataset 必需（β2=0 时 mean_target_q 漂 +46%/+98%）
   - (iv) critic LayerNorm ⊥ dual penalty（LN-off −16.2pp，远超 β2=0 的 −2.4pp，方向相反）
 - **⚠ 与 §0 dispensability 命题的接口（写 Finding (iv) 时严守，防自相矛盾，cross-ref §0.4 红线 1）**：critic LayerNorm 是**第三条独立的"表征稳定性"轴 = 必要基础设施**，与 §0 中心命题反向轴中的"向价值网络注入特权观测"一项**正交**——它属"必要基础设施"，**不**进反向轴"增添能力非必需"清单。两条配套红线：(a) mean 归因只在 **actor β1 vs critic β2** 之间成立（β1 carry mean、β2 carry Q-stability），**不可**升级为"actor 侧决定全部 mean"（LN 才是单项最大 mean 杠杆）；(b) LN claim 强度 n=2 seeds 仅支撑 "necessary component 存在性"，**不 claim "LN 比 dual penalty 重要"**（review §2.2.4）。

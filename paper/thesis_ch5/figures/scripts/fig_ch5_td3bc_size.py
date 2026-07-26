@@ -79,7 +79,7 @@ def draw(ax: plt.Axes) -> None:
     ax.plot(xs, COLLECTOR, color=C_REF, lw=1.0, linestyle=(0, (5, 3)),
             marker="^", markersize=4.0, markerfacecolor="white",
             markeredgecolor=C_REF, markeredgewidth=0.8, zorder=4,
-            label="collector (reference)")
+            label="dataset collection succ.")
 
     # TD3+BC and pure BC with std error bars.
     ax.errorbar(xs, TD3BC_MEAN, yerr=TD3BC_STD, color=C_TD3BC, lw=1.7,

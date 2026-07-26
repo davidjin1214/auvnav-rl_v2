@@ -73,7 +73,7 @@ TD3BC_PRIV = (0.970, 0.980, 0.910, 0.990, 0.760)
 REBRAC_DEP = (0.990, 0.930, 0.780, 0.980, 0.960)
 REBRAC_PRIV = (0.960, 0.920, 0.900, 0.930, 0.960)
 HARD_SEED_IDX = 2          # anonymised in-figure ("hard seed"), named only in SS5.7.m
-COLLECTOR = 0.990          # collector's own trajectory success (reference level)
+COLLECTOR = 0.990          # collector executed directly on the same fixed eval manifest
 
 C_TD3BC = COLORS["offline_edge"]     # #5E8597 baseline (as in SS5.6 figure)
 C_REBRAC = COLORS["mainline_edge"]   # #2F5A6E mainline (reserved for SS5.7)
@@ -93,7 +93,7 @@ def draw(ax: plt.Axes) -> None:
 
     # Collector reference first (sits behind everything).
     ax.axhline(COLLECTOR, color=C_REF, lw=0.9, linestyle=(0, (5, 3)), zorder=1)
-    ax.text(n_prot - 0.52, COLLECTOR + 0.006, "collector (reference)",
+    ax.text(n_prot - 0.52, COLLECTOR + 0.006, "collector on eval manifest",
             ha="right", va="bottom", fontsize=7.0, color=C_REF)
 
     # Same-seed connectors (hard seed darker so the rescue is traceable).

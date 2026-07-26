@@ -2,11 +2,18 @@
 paper/thesis_ch5/figures/scripts/fig_ch5_online_monotonic.py
 
 Figure (§5.5, Fig C): the dose-response view of the temporal-access ablation.
-Final success rate rises monotonically with history length k, both in the
-seed-aggregate trend and along a single representative run that climbs across
-k = 4 -> 8 -> 12. A monotone rise with the controlled variable (information in
-time), reproduced within one run, is what excludes a seed-specific local optimum
-or pure optimisation noise as the explanation for the closing gap.
+Final success rate rises with history length k in the seed-aggregate trend, and
+the spread across repeated runs contracts. ALL THREE per-seed trajectories are
+drawn: two never fall back across k = 4 -> 8 -> 12, one sits flat at a high
+level and then dips slightly. The discriminating evidence is the SAME-SEED
+cross-k comparison (seed 0: stalled at 0.50 with k = 8, lifted to the 0.90
+ceiling at k = 12 with the initialisation and every other condition held fixed)
+-- an initialisation-induced local optimum is not undone by changing the history
+length, and optimisation noise does not produce a jump of that form. The
+contraction of spread is consistent with this picture but is confounded near
+k = 12 by the manifest ceiling and by the evaluation's own sampling floor
+(sqrt(0.9*0.1/30) = 0.055 > the reported 0.04), so it is reported as a
+robustness side-observation, not as the discriminator.
 
 Complements Fig A (learning curves over training steps): this is the summary
 dose-response over the controlled variable.
@@ -15,9 +22,17 @@ RESULTS figure (§5.5): marker height IS the success number.
 
 Data (REAL final_eval.json, the locked-table 'final' convention; cross-checked):
   aggregate  k=4/k=8/k=12 seeds {0,7,42}.
-  representative run climbs 0.40 -> 0.50 -> 0.90 across k (a single run, shown
-  as a thin trajectory; not foregrounded as an individual seed in the prose).
+  per-seed    seed 0:  0.40 -> 0.50  -> 0.90  (strictly increasing)
+              seed 7:  0.867 -> 0.867 -> 0.833 (flat, then a slight dip)
+              seed 42: 0.10 -> 0.90  -> 0.90  (rises, then flat at the ceiling)
   ceiling 0.90 = manifest empirical ceiling (27/30).
+
+rev (2026-07-24, chapter-review batch 4, finding H7): the earlier version drew a
+single "representative run" -- which was seed 0, the ONLY strictly monotone seed
+of the three -- while the prose leaned on "the climb recurs within a single run"
+to exclude the competing explanations. That foregrounded a hand-picked best
+case. All three seeds are now drawn and the argument in §5.5.4 rests on the
+variance contraction (sigma 0.39 -> 0.22 -> 0.04) instead.
 
 Design rules (shared _ch5_style + _ch5_data).
 
@@ -46,8 +61,8 @@ from _ch5_style import (  # noqa: E402
 
 UPPER_BOUND = 0.900
 DT_CTRL_S = 0.5
-K_SEEDS = {4: [0, 7, 42], 8: [0, 7, 42], 12: [0, 7, 42]}
-REPRESENTATIVE_SEED = 0  # a single run that has all three k (shown unlabelled)
+SEEDS = [0, 7, 42]
+K_VALUES = [4, 8, 12]
 # Critical 3-seed final_eval for the deployable k=4 baseline (seeds 0/7/42),
 # kept as an explicit locked list so the k=4 aggregate matches the bottleneck
 # table (0.46 +/- 0.39). Ground truth: docs/arrival_v2_experiment_report.md
@@ -55,25 +70,21 @@ REPRESENTATIVE_SEED = 0  # a single run that has all three k (shown unlabelled)
 CRIT_K4_S0 = [0.40, 0.867, 0.10]
 
 
+def _per_seed() -> tuple[np.ndarray, np.ndarray]:
+    """(ks, matrix[n_seeds, n_ks]) of final success rate."""
+    rows = []
+    for i, s in enumerate(SEEDS):
+        rows.append([
+            CRIT_K4_S0[i] if k == 4
+            else final_eval("sac_vanilla", k, s)["eval_success_rate"]
+            for k in K_VALUES
+        ])
+    return np.array(K_VALUES, float), np.asarray(rows, float)
+
+
 def _agg() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    ks = sorted(K_SEEDS)
-    means, stds = [], []
-    for k in ks:
-        if k == 4:
-            vals = list(CRIT_K4_S0)
-        else:
-            vals = [final_eval("sac_vanilla", k, s)["eval_success_rate"]
-                    for s in K_SEEDS[k]]
-        means.append(float(np.mean(vals)))
-        stds.append(float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0)
-    return np.array(ks, float), np.array(means), np.array(stds)
-
-
-def _representative() -> tuple[np.ndarray, np.ndarray]:
-    ks = sorted(K_SEEDS)
-    vals = [final_eval("sac_vanilla", k, REPRESENTATIVE_SEED)["eval_success_rate"]
-            for k in ks]
-    return np.array(ks, float), np.array(vals)
+    ks, mat = _per_seed()
+    return ks, mat.mean(axis=0), mat.std(axis=0, ddof=1)
 
 
 def draw(ax: plt.Axes) -> None:
@@ -87,10 +98,12 @@ def draw(ax: plt.Axes) -> None:
         ax.text(x, y + 0.045, f"{y:.2f}", ha="center", va="bottom",
                 fontsize=7.0, color=COLORS["ink"], zorder=8)
 
-    rk, rv = _representative()
-    ax.plot(rk, rv, color=COLORS["muted"], lw=1.0, marker="o", ms=3.4,
-            mfc="white", mec=COLORS["muted"], mew=0.9, linestyle=(0, (4, 2)),
-            zorder=5, label="representative run")
+    rk, mat = _per_seed()
+    for j, row in enumerate(mat):
+        ax.plot(rk, row, color=COLORS["muted"], lw=0.9, marker="o", ms=3.2,
+                mfc="white", mec=COLORS["muted"], mew=0.8,
+                linestyle=(0, (4, 2)), zorder=5,
+                label="individual runs" if j == 0 else None)
 
 
 def draw_ceiling(ax: plt.Axes) -> None:

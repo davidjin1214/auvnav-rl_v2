@@ -314,3 +314,95 @@
   series    = {Monographs on Statistics and Applied Probability},
   year      = {1993}
 }
+
+% =====================================================================
+% §5.2 部分可观测与记忆策略 landscape 第五支（rev.5，2026-07-24，第 4 批 H4）。
+% 病因：全章正向轴第一途径（时序利用）零文献坐标——refs.bib 原 31 条无一涉
+% POMDP 记忆策略／循环网络／观测帧堆叠，§5.4.1 引入 POMDP 无 cite。
+% 用途：§5.2 新增一段 landscape（记忆策略是已知通用手段）＋ §5.4.1 POMDP 补 cite
+% ＋ §5.5.3 机制段把本章增量定位为「时序窗恢复涡街脱落相位、足以替代空间探针」。
+% 著录全部联网实检（不凭记忆；凭记忆写出的引用卷期页码与 DOI 几乎必错）：
+%   kaelbling1998pomdp   Artificial Intelligence 101(1-2):99-134（Google Scholar
+%                        lookup + ACM DL 5555/1643275.1643301；DOI 前缀 S0004-3702）
+%   hausknecht2015drqn   arXiv:1507.06527；AAAI Fall Symp. on Sequential Decision
+%                        Making for Intelligent Agents (SDMIA), Nov 2015
+%   heess2015recurrent   arXiv:1512.04455（RDPG；含"噪声传感器的短时信息整合"）
+%   mnih2015dqn          Nature 518(7540):529-533（DOI 10.1038/nature14236；
+%                        最近四帧堆叠作为通行做法的来源）
+%   colvert2017local     J. Fluid Mech. 818:366-381（Crossref 实核：作者为
+%                        Colvert / Chen / Kanso，非 Alsalman；年份 2017 非 2019）
+%   colvert2018wakes     Bioinspiration & Biomimetics 13(2):025003（Crossref 实核）
+% 转述忠实性：前四条只用于"记忆策略缓解部分可观测性是已知通用手段"；本章增量
+% （把被恢复的物理量指向涡街脱落相位）不挂在这六条上。
+% ⚠ 后两条的转述曾在第 4 批初稿中出错，经独立复审（维度 A）与出版社原文实核订正：
+%   - colvert2017local 是**空间传感阵列**方法——"a local sensory array"读取同时刻的
+%     速度差、经速度梯度张量的标架无关参数化给出流动类型与强度，**全文不含时序成分**。
+%     初稿把它与 colvert2018 并列引作"仅凭局部传感的**时序信号**"先例，方向读反：它
+%     论证的恰是本章主张"可被时序窗替代"的那一方。现拆开两条 cite，各归其位，
+%     §5.2 改为"空间与时间两条路径各有先例"——如实分置后反而给本章"空间多设探针 ↔
+%     时间延长历史是两条途径"的核心对照补上了对称的文献坐标。
+%   - colvert2018wakes 确为单点 + 时序（N=210 采样、Δt=0.012），但所测物理量是
+%     **涡量 ω**，不是流速；§5.5.3 已如实写明"所测为涡量而非本章可部署传感所能提供
+%     的流速"，据实说明后本章增量的定位反而更清楚。
+% 教训：著录字段（作者/年份/卷期页/DOI）经 Crossref 核对无一错项，六条无一虚构；
+% 错全部出在**转述侧**——存在性核实不等于机制核实，后者须读摘要/正文的方法段。
+% =====================================================================
+
+@article{kaelbling1998pomdp,
+  title   = {Planning and Acting in Partially Observable Stochastic Domains},
+  author  = {Kaelbling, Leslie Pack and Littman, Michael L. and Cassandra, Anthony R.},
+  journal = {Artificial Intelligence},
+  volume  = {101},
+  number  = {1--2},
+  pages   = {99--134},
+  year    = {1998},
+  doi     = {10.1016/S0004-3702(98)00023-X}
+}
+
+@inproceedings{hausknecht2015drqn,
+  title     = {Deep Recurrent {Q}-Learning for Partially Observable {MDPs}},
+  author    = {Hausknecht, Matthew and Stone, Peter},
+  booktitle = {AAAI Fall Symposium on Sequential Decision Making for Intelligent Agents},
+  year      = {2015}
+}
+
+@misc{heess2015recurrent,
+  title         = {Memory-Based Control with Recurrent Neural Networks},
+  author        = {Heess, Nicolas and Hunt, Jonathan J. and Lillicrap, Timothy P. and Silver, David},
+  year          = {2015},
+  eprint        = {1512.04455},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@article{mnih2015dqn,
+  title   = {Human-Level Control through Deep Reinforcement Learning},
+  author  = {Mnih, Volodymyr and Kavukcuoglu, Koray and Silver, David and Rusu, Andrei A. and Veness, Joel and Bellemare, Marc G. and Graves, Alex and Riedmiller, Martin and Fidjeland, Andreas K. and Ostrovski, Georg and others},
+  journal = {Nature},
+  volume  = {518},
+  number  = {7540},
+  pages   = {529--533},
+  year    = {2015},
+  doi     = {10.1038/nature14236}
+}
+
+@article{colvert2017local,
+  title   = {Local Flow Characterization Using Bioinspired Sensory Information},
+  author  = {Colvert, Brendan and Chen, Kevin and Kanso, Eva},
+  journal = {Journal of Fluid Mechanics},
+  volume  = {818},
+  pages   = {366--381},
+  year    = {2017},
+  doi     = {10.1017/jfm.2017.137}
+}
+
+@article{colvert2018wakes,
+  title   = {Classifying Vortex Wakes Using Neural Networks},
+  author  = {Colvert, Brendan and Alsalman, Mohamad and Kanso, Eva},
+  journal = {Bioinspiration {\&} Biomimetics},
+  volume  = {13},
+  number  = {2},
+  pages   = {025003},
+  year    = {2018},
+  doi     = {10.1088/1748-3190/aaa787}
+}

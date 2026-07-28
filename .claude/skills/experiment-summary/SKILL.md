@@ -26,44 +26,12 @@ The repo uses three CSV layouts; identify which one before parsing.
 
 Always check column headers with `head -1` before computing.
 
-## Standard summary pipeline
+## What the report table carries
 
-```python
-import pandas as pd
-from pathlib import Path
-
-csv = Path("experiments/<study>/<sprint>/ablation_summary.csv")
-df = pd.read_csv(csv)
-
-# Drop columns you don't need for the report table
-keep = [
-    "method", "num_runs",
-    "eval_return_mean", "eval_return_std",
-    "eval_success_rate_mean", "eval_success_rate_std",
-    "eval_path_efficiency_mean", "eval_path_efficiency_std",
-]
-print(df[keep].round(3).to_markdown(index=False))
-```
-
-For per-seed (`ablation_runs.csv` or per-run JSON):
-
-```python
-g = df.groupby(["method"]).agg(
-    n_seeds=("seed", "nunique"),
-    success_mean=("eval_success_rate", "mean"),
-    success_std=("eval_success_rate", "std"),
-    return_mean=("eval_return", "mean"),
-    return_std=("eval_return", "std"),
-).round(3)
-print(g.to_markdown())
-```
-
-For Gate B / offline RL (`gate_*_overview.csv`):
-
-```python
-df = pd.read_csv("results/offline/fql_succession/gate_b/summaries/gate_b_overview.csv")
-df.groupby("algo")[["last3_eval_success_mean", "last30pct_eval_slope"]].agg(["mean", "std"]).round(3)
-```
+Report `method`, `num_runs`, then mean/std pairs for `eval_return`, `eval_success_rate`, and
+`eval_path_efficiency` — drop the rest. From `ablation_runs.csv` (per-seed rows) the same table is
+reached by grouping on `method` with `nunique` on `seed`; from `gate_*_overview.csv` group on `algo`
+and carry `last3_eval_success_mean` and `last30pct_eval_slope`.
 
 ## Report section template
 
@@ -100,12 +68,9 @@ Section skeleton:
 
 ## Conventions to enforce
 
-1. **Round to 3 decimals** for success rate / efficiency; **2 decimals** for return; match existing report style.
-2. **±std notation** in prose (`0.225 ± 0.005`) matches `docs/rebrac_experiment_report.md` C1 P1 anchor row.
-3. **Commit short SHA** in Artifacts — readers chase reproducibility through git, not Drive paths.
-4. **Never edit `*_completed.ipynb`** — the PreToolUse hook blocks this. If the notebook needs corrections, edit the builder under `scripts/_build_*_notebook.py` and regenerate.
-5. **Verdict noun must be one of**: pass / partial / fail. No invented categories.
-6. **Date is absolute** (`2026-05-20`), not relative — memory rule for this project.
+1. **Rounding and ±std notation follow the rows already in the target report** — open it and match. `docs/rebrac_experiment_report.md` C1 P1 is the anchor row for the offline line.
+2. **Commit short SHA** in Artifacts — readers chase reproducibility through git, not Drive paths.
+3. **Verdict noun must be one of**: pass / partial / fail. No invented categories.
 
 ## Cross-check before posting the section
 

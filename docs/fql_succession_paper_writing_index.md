@@ -5,6 +5,8 @@
 > - **§N.6 写作纪律**：带 spec §0.4 红线 5 cross-source magnitude caveat（同源 SAC mexp 干净，异源 m_multi_mix 仅 direction-robust）。
 > - 不要按 §6 "投稿前 TODO" 推进任何 standalone 投稿动作；该 TODO 已停。
 >
+> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
+>
 > 文档版本：rev.1（2026-05-24，P4 收尾）
 > 用途：把 FQL-vs-ReBRAC negative/mechanism 结果写成论文（现为 thesis 第 5 章 §N.6 节）时的"读哪一份、抄哪一段"地图。
 > **本身不持有任何实验数字 ground truth**；所有数字以 [`fql_succession_p2_results.md`](./fql_succession_p2_results.md)

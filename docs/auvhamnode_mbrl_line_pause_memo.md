@@ -178,6 +178,7 @@
 - [x] [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) §3.4 + §4.4 — 状态从"v2.0 locked, 待 fire"改为"paused 2026-05-13, 见本备忘"
 - [x] [`docs/offline_rl_implementation_plan.md`](offline_rl_implementation_plan.md) DEPRECATED banner — 追加 "AUVHamNODE 后续也已 paused" 的说明
 - [x] `.gitignore` — 加入 `phnode_full_oc_clean/`(formalize "暂时不入 git")
+- [x] **[2026-07-28 指针体检补收]** [`docs/offline_mbrl_plan/`](offline_mbrl_plan/) 全部 6 份草案 — 归档时漏收：其 DEPRECATED 横幅当时写"**唯一活跃入口**是 v2.0 plan",而 v2.0 plan 五天后即 paused,该句遂全部失真。已逐份追注"该接替者已整线 PAUSED、本线现无活跃入口"
 
 ---
 

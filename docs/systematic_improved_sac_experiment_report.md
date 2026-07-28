@@ -1,7 +1,8 @@
 # 改进 SAC 的系统实验报告【DEPRECATED】
 
 > **⚠️ 此报告已 deprecated（2026-04-26）。**  
-> **新计划见 [`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md)**；新结果将累积在 [`docs/online_rl_thesis_report.md`](online_rl_thesis_report.md)。  
+> **新计划见 [`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md)**；新结果将累积在 `docs/online_rl_thesis_report.md`。  
+> **📍 2026-07-28 指针体检补注**：上面这两个去向都已失效——`online_rl_thesis_plan.md` 自身已 **DEPRECATED 2026-05-06**（thesis-grade 47-run 矩阵撤销），`online_rl_thesis_report.md` **从未创建、也不会再创建**（故上文已去掉它的链接）。现行 online 线入口是 [`docs/online_rl_line_summary.md`](online_rl_line_summary.md)。  
 > A0 阶段（cross_u10）的实测数据仍有效，本文件保留作为 A0 单一信源，但新的 thesis-grade 实验从 §2 sensor envelope 开始重启。
 >
 > ---

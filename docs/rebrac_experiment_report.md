@@ -1185,6 +1185,8 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 >
 > ### 广验证据的 standalone 入口
 >
+> **📍 2026-07-28 指针体检补注**：本小节写于 2026-05-07，下表两份 v1 文档已于 **2026-05-18 SUPERSEDED**。现行广验是 **v2**（[`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)，2026-05-19 COMPLETED；N2′ asym-critic ablation 2026-05-27 `ACTOR_FUNDAMENTAL_CONFIRMED`；+seed 43 supplement 2026-07-12），进第 5 章 §5.8。下表保留是因为 v1 的 8 spoke + C1 deep-dive 数据作为 v2 的对照基线仍需可查——但 **v1 finding 不进 finding spine / 不进论文**（见 [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md)）。本补注只改指针，不动本节任何数字或论述。
+>
 > | 文档 | 内容 |
 > |---|---|
 > | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) | 三轴广验全表（A/B/C × 8 spoke × 5-seed parity）+ C1 deep-dive（§3.5：5 个 ablation 全部钉在 0.195–0.225 → task-fundamental floor 候选） |

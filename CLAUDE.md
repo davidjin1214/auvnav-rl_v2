@@ -13,7 +13,7 @@ Bridges between the two lines: shared `auv_nav` env, probe layouts, offline data
 
 **Current focus: PhD dissertation Chapter 5 writing** — all standalone papers cancelled, material folded into the single chapter; central thesis = *under deployment constraints, the lever is using existing information/data better, not adding capability*. Live writing status ledger: [`paper/thesis_ch5/status.md`](paper/thesis_ch5/status.md) — **single source of truth; do not duplicate writing status here or in memory**; per-round task entry: [`paper/thesis_ch5/next_session_prompt.md`](paper/thesis_ch5/next_session_prompt.md) (rewritten each round, current-round scope only). Spec: [`paper/thesis_chapter_outline.md`](paper/thesis_chapter_outline.md). **Never write thesis numbers from memory** — trace every figure to the ground-truth docs below.
 
-**Language convention for the thesis audit chain (user-confirmed 2026-07-28):** the `.tex` rev blocks under `paper/thesis_ch5/sections/` and the `docs:` commit messages are written in **Chinese**, and stay that way. They form a cross-referenced revision ledger — `status.md` indexes commits by hash and描述, findings追注 quote the rev blocks — so anglicizing new entries would break a chain that spans five整改 batches. This is a deliberate, confirmed exception to the global "comments and commit messages in English" rule; that rule still holds for **Python** (see `paper/thesis_ch5/tools/` and `figures/scripts/`, which are English-dominant with Chinese only for spec terms).
+**Language convention for the thesis audit chain (user-confirmed 2026-07-28):** the `.tex` rev blocks under `paper/thesis_ch5/sections/` and the `docs:` commit messages are written in **Chinese**, and stay that way. They form a cross-referenced revision ledger — `status.md` indexes commits by hash and描述, findings追注 quote the rev blocks — so anglicizing new entries would break a chain that spans five整改 batches. This is a deliberate, confirmed exception to the global "comments and commit messages in English" rule; that rule still holds for **Python** (see `paper/thesis_ch5/tools/` and `paper/thesis_ch5/figures/scripts/`, which are English-dominant with Chinese only for spec terms).
 
 **Out of scope (do not propose without explicit user request):** AUVHamNODE / MBRL work (paused, user-confirmed); thesis-grade Online RL matrix expansion (cancelled); new standalone papers.
 
@@ -87,6 +87,8 @@ Defaults are the `SACConfig` dataclass fields in `auv_nav/sac.py`. A0 sensor scr
 ## Documentation Index
 
 **Two line-summary docs are the canonical index** — phase timelines, full doc routing, archive status, retrofit triggers all live there. Read them first; only fall back to the short list below for the highest-traffic entry points.
+
+**Pointer rot is the standing failure mode of this index.** Version numbers, section numbers, and deprecation status embedded in prose go stale silently and then get quoted as fact (2026-07-28 sweep found the spec rev pointer two revisions behind, six docs still citing the chapter's superseded 8-section `§N.k` numbering, and the authoritative ReBRAC report routing readers to broad-validation v1 with no mention that v2 exists). Run `python -m scripts.check_doc_pointers` after any doc reshuffle — it resolves every markdown link and bare `docs/foo.md` reference repo-wide. It only proves targets *exist*; whether a banner, a rev number, or a dated claim is still *true* stays human work. **Never write a live spec's rev number into another doc — point at this index instead.**
 
 | Doc | Role |
 |---|---|

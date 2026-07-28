@@ -1,5 +1,7 @@
 # FQL Succession Gate B — Interim Report (seed=42 single-seed)
 
+> **⚠ SUPERSEDED（2026-07-28 指针体检补注）** — 下面这行 Status 写于 2026-05-19，其中的「pending」**早已不 pending**：Gate B 已收口，正式结论见 [`docs/fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md)（该报告 §头注即把本文件定性为 "rev.1 single-seed interim, superseded, kept for traceability"）。整条 FQL succession 线已于 **2026-05-23 NEGATIVE 闭环**（[`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md)）。本文件仅保留作可追溯性存档，**不要据此认为有待跑实验**。
+>
 > **Status (2026-05-19)**: INTERIM — 3/4 PASS marginal-fail on `seed=42` single seed; **Option B re-run with `seed=0` + Bug 1 fix pending** on Colab L4.
 >
 > **Branch**: `codex-arrival-v2-prototype`

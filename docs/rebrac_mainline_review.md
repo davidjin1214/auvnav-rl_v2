@@ -305,7 +305,7 @@ ReBRAC 主线已经 "够发"。继续在它上面投入的边际收益曲线已�
 
 1. ~~**本周内**：按 §3.1 完成 4 项必做~~ → ✅ **完成（rev.2，~4h L4 + 0.5h 本地分析；详见 §3.1 表）**；
 2. **当前**：开始 paper drafting（method + main results + discussion），用 §0.3 的 narrative spine + 直接 import [docs/rebrac_method_section_draft.md](./rebrac_method_section_draft.md) + [docs/rebrac_statistical_test_followup.md](./rebrac_statistical_test_followup.md) 的现成段落与表注脚；
-3. **并行启动**：online thesis 线（[online_rl_thesis_plan.md](./online_rl_thesis_plan.md)）的 Sprint 0 / Sprint 1 实验。两条线在 paper 时间表上是互补的——offline RL paper 写作可以与 online thesis 实验并行。
+3. ~~**并行启动**：online thesis 线（[online_rl_thesis_plan.md](./online_rl_thesis_plan.md)）的 Sprint 0 / Sprint 1 实验。两条线在 paper 时间表上是互补的——offline RL paper 写作可以与 online thesis 实验并行。~~ **（2026-05-06 已撤销：thesis-grade 47-run 矩阵取消，该 plan 随之 DEPRECATED；online 线现存角色见 [`online_rl_line_summary.md`](./online_rl_line_summary.md)。2026-07-28 指针体检补注）**
 
 ### 3.5 Broad validation 结论回写 `【rev.3 新增 2026-05-07；v2 PASS 2026-05-19】`
 
@@ -418,5 +418,5 @@ selection_rule = success_rate → return → -safety_cost → -time
 - [notebooks/rebrac_paper_followup_completed.ipynb](../notebooks/rebrac_paper_followup_completed.ipynb)：**rev.2 新增**——4 项必做 (A/B/C/D) 合并执行归档
 - [td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)：crosscomp baseline
 - [td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)：worldcomp baseline
-- [online_rl_thesis_plan.md](./online_rl_thesis_plan.md)：下一阶段（asymmetric critic + privileged hull-integral）
+- [online_rl_thesis_plan.md](./online_rl_thesis_plan.md)：**DEPRECATED 2026-05-06**——曾列为"下一阶段（asymmetric critic + privileged hull-integral）"，thesis-grade 矩阵已撤销；asym critic 幸存为 offline 线 N2′ ablation（`ACTOR_FUNDAMENTAL_CONFIRMED` 2026-05-27）
 - 本文（rebrac_mainline_review.md）：**rev.2，paper-readiness 4 项必做全部 closed**，paper drafting 可正式启动

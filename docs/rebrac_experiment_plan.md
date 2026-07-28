@@ -2,7 +2,7 @@
 
 > 文档版本：2026-05-01 rev.8
 > 适用范围：当前仓库中已完成实现的 ReBRAC 离线主线，以及它与 `phase0c / worldcomp teacher-gap` 结论之间的衔接
-> 当前前提：请先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)、[td3bc_mainline_closure_plan.md](./td3bc_mainline_closure_plan.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)、[td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
+> 当前前提：请先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)（**⚠ 已 DEPRECATED 2026-05-08**，仅作历史阶梯参考；现行线总览去 [`offline_rl_line_summary.md`](./offline_rl_line_summary.md)）、[td3bc_mainline_closure_plan.md](./td3bc_mainline_closure_plan.md)、[td3bc_phase0c_experiment_report.md](./td3bc_phase0c_experiment_report.md)、[td3bc_worldcomp_teacher_gap_experiment_report.md](./td3bc_worldcomp_teacher_gap_experiment_report.md)
 
 ---
 

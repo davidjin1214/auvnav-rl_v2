@@ -5,6 +5,8 @@
 > - **不再据本 plan 推进任何写作动作**；写作方向去 [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.6。
 > - 已闭环结果数字 ground truth 见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md) + [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9。
 >
+> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
+>
 > **文档版本**：v1.4（2026-05-21,P2 sprint 0 collection 实测 + audit 降级 advisory)
 > **作用**：把"重启 FQL 作 ReBRAC 后续"的 framing、scope、phase plan 与 gate 条件落地为可执行计划。**v1 相对 v0 砍掉约 50% validation insurance**（6 tier → 3 cell；4 audit 指标 → 1；4 ablation → 1；anchor 5-seed → 1-seed smoke），保留全部 core paper claim 支撑实验。
 > **状态**：**Plan v1.2** — P0+P1 closed（Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 audit dry-run + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL seed-driven, progress with caveat）；P2 main comparison spec drafting (Session A 2026-05-20)。

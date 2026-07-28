@@ -2,6 +2,8 @@
 
 > ⚠ **写作出口 LOCKED 2026-06-02**：本线全部素材的写作出口 = **博士论文第 5 章**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4）；ReBRAC 主线 → §N.4 主干（[`../paper/main.pdf`](../paper/main.pdf) 31pp arXiv preprint draft commit `932aca1` 直接复用），FQL succession → §N.6 节，broad-val v2 + asym-critic ablation → §N.5 节 + §N.4 paper 1 §6.6/L12。**不另起任何 standalone paper**（paper 1 ReBRAC / paper 2 FQL standalone 均撤销）。本文中"paper 1 / paper 2"用法是历史 / 线索内部 shorthand，**实际写作去向是上述 §N.k 节**。
 >
+> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
+>
 > 文档版本：2026-05-07
 > 作用：Offline RL 线的**总览入口**——给不熟悉本仓库的新读者一份时间轴 + 当前位置 + 下一步走向，**不重复任何 ground-truth 数字**（数字一律链接到源文档）。
 > 镜像姊妹文档：[`docs/online_rl_line_summary.md`](online_rl_line_summary.md)。
@@ -77,7 +79,7 @@
 
 ### 3.2 Phase 2 — ReBRAC 主线（核心算法 + paper-readiness）
 
-**核心 plan / report / review 三层文档**（详见 [`project_offline_rl_docs_audit memory`](../../../.claude/projects/-Users-xiangjin-Library-CloudStorage-OneDrive-Personal----Code-new-off-rl-rl-v2/memory/project_offline_rl_docs_audit.md)）：
+**核心 plan / report / review 三层文档**（分工另记在 Claude 侧 auto-memory `project_offline_rl_docs_audit`；原链接指向 Mac 本机 memory 目录的绝对路径，仓外且逐机不同，2026-07-28 体检时改为纯提及）：
 
 | 文档 | 角色 | 持数字 ground truth？ |
 |---|---|---|

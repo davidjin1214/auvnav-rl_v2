@@ -5,6 +5,8 @@
 > - 本 outline 的 venue 分析（§0.1）、narrative spine（§0.3）、结构骨架（§1）、写作纪律（§8 R*）等**历史价值仍在**，作为 §N.4 节级写作时的参考；但**投稿口径相关段落**（venue 选择、CoRL/RA-L 8pp / IROS 6pp / 双栏切换等）请直接跳过。
 > - 仅保留作存档；新动作请去 `thesis_chapter_outline.md`（rev.4）。
 >
+> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
+>
 > 文档版本：rev.1（2026-05-01）
 > 基于材料：[`docs/rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) rev.2、[`docs/rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md) rev.8、[`docs/rebrac_method_section_draft.md`](../docs/rebrac_method_section_draft.md)、[`docs/rebrac_statistical_test_followup.md`](../docs/rebrac_statistical_test_followup.md)、[`docs/rebrac_paper_writing_index.md`](../docs/rebrac_paper_writing_index.md)
 > 作者视角：从 offline-RL × sim2real-robotics 交叉领域审稿人 / chair 的角度反推写作骨架。

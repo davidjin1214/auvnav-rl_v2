@@ -144,7 +144,8 @@ if __name__ == "__main__":
 3. **Markdown sections use 中文标题 + 英文 metric names** to match existing notebook voice.
 4. **§4 sweep cell uses `!bash`, not `%%bash`** — `%%bash` buffers output and breaks real-time streaming (fix in commit `9685b0f`).
 5. **Paths with spaces (`Colab Notebooks`) need backslash escaping in `!`/`%cd`**, not quoting (fix in commit `e6e23ec`).
-6. **Gate thresholds committed in §0 before the run starts** — non-negotiable; documented in `docs/rebrac_experiment_plan.md` (the online-line precedent lived in `docs/online_rl_thesis_plan.md`, DEPRECATED 2026-05-06 — read it as a historical example only).
+6. **When a cell invokes `python` directly instead of a sweep script, use `!python -m scripts.<name>`, never `subprocess.run`/`Popen`** — piped stdout is block-buffered (4 KB), so per-1000-step `actor_loss`/`critic_loss` lines only surface in late bursts and stalls become invisible. Interpolate Python values with `{var}`, wrap path arguments in single quotes (`'{path_str}'`) to survive shell-split, continue long commands with a trailing backslash, and bracket the call with a start banner + `[done] ... {(time.time()-t0)/60:.1f} min` for wallclock feedback.
+7. **Gate thresholds committed in §0 before the run starts** — non-negotiable; documented in `docs/rebrac_experiment_plan.md` (the online-line precedent lived in `docs/online_rl_thesis_plan.md`, DEPRECATED 2026-05-06 — read it as a historical example only).
 
 ## Build + verify
 

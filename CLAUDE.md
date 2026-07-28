@@ -90,7 +90,7 @@ Defaults are the `SACConfig` dataclass fields in `auv_nav/sac.py`. A0 sensor scr
 |---|---|
 | [`docs/offline_rl_line_summary.md`](docs/offline_rl_line_summary.md) | Offline RL line entry (primary) — phases, citable results, full doc index |
 | [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) | Online RL line entry (support) — A0 + SAC collector roles, thesis-matrix closure |
-| [`paper/thesis_chapter_outline.md`](paper/thesis_chapter_outline.md) | **Dissertation Ch5 writing spec (rev.12)** — central thesis, §0.4 red lines, register/terminology conventions, 10-section skeleton, reuse matrix |
+| [`paper/thesis_chapter_outline.md`](paper/thesis_chapter_outline.md) | **Dissertation Ch5 writing spec (rev.14)** — central thesis, §0.4 red lines, register/terminology conventions (§0.5.9 (d) register metrics caliber, §0.5.11 four-layer collation search), 10-section skeleton, reuse matrix |
 | [`paper/thesis_ch5/status.md`](paper/thesis_ch5/status.md) | Ch5 writing status ledger — per-section state, pending decisions, locked-decision pointers |
 | [`paper/thesis_ch5/next_session_prompt.md`](paper/thesis_ch5/next_session_prompt.md) | Per-round thesis-writing entry — current round's task, section-specific red lines (rewritten each round) |
 | [`docs/environment_design.md`](docs/environment_design.md) / [`docs/rlpd_design.md`](docs/rlpd_design.md) | Env / RLPD design spec (cross-line) |

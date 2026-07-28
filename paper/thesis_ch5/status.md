@@ -5,6 +5,8 @@
 
 ## 节状态
 
+> **2026-07-28 收尾统稿轮后**：十节**全部送审就绪**，无一节留有待办。本轮触及 5 节且**均为语言／版面层**（`related_work` §5.2 一处换词、`methodology` §5.4.m 拆段、`online` §5.5.1 补限定、`rebrac` §5.7.1/§5.7.2 措辞 ＋ 表块移位、`boundary` §5.8.m 拆句拆段），**零论证、零数字**，故下表各节状态不变；逐处改动与理由见各节 `.tex` 头注「收尾统稿轮（2026-07-28）」块与 findings §12。`setup`／`td3bc`／`algo_compare`／`discussion` 四节本轮**零改动**。
+
 | 节 | 文件 | 状态 | 方案/复审存档 |
 |---|---|---|---|
 | §5.1 引言 | `sections/intro.tex` | ✅ 闭环（含章级验收 `238f11b`） | `chapter_acceptance_review_5_1_5_6_findings.md` |
@@ -80,8 +82,8 @@
 
 ## 工程状态
 
-- **收尾统稿轮已闭环（2026-07-08）**：包 A（三份复审 LOW 全清 + 章级零散 LOW：重复英文括注 ×6、refs.bib 未引 ×3、机体↔船体统一为「机体」）＋包 C（术语终检 grep 十节零违规、跨节引用抽核通过、图表编号与首引序全章对齐）＋包 B（F·M2 浮动漂移根治：fig 5.3 `[t]`→`[tp]` 解除 figure 队列堵塞、§5.5 六图回归各小节、rebrac 三表重排、全部浮动距首引 0–2 页）。零数字/零论证改动。
-- 编译：58 页通过，0 undefined ref / 0 undefined citation / 0 multiply-defined / bibtex 0 warning / 无 Overfull>10pt。`main.tex` 已 `\input` §5.1–§5.10 全部十节。
+- **编译现状（2026-07-28 收尾统稿轮落地后，唯一有效值）**：**62 页**（正文 58 ＋ 文献 4），0 undefined ref / 0 undefined citation / 0 multiply-defined / bibtex 0 warning / Overfull 2 处（3.1251pt、4.31058pt，均 <10pt）/ **浮动距首引 ≤2 页 36/36** / **图表编号与首引序零逆序** / 无纯浮动页。`main.tex` 已 `\input` §5.1–§5.10 全部十节，并含 6 条浮动放置参数（rev.14 §0.5.9 (d) 相关，头注载病因与实测效果）。
+- ~~**旧「收尾统稿轮已闭环（2026-07-08）」条目**~~ ⚠ **该条已作废、只留作教训**：它当时声称「全部浮动距首引 0–2 页」「图表编号与首引序全章对齐」「编译 58 页」，而 2026-07-28 实测为**浮动越线 4 处、编号序逆序 1 处、63 页**——三项声明**全部与实测脱节**（其中编号逆序此前从未被报出）。前一条（2026-07-08 包 A/包 C）的 LOW 清理与术语终检结论本身仍成立。**教训：版面类声明会随后续任何文本改动失效，凡引用须以最近一次实测为准，不得沿用历史声明**（本轮 prompt 的主项 4 即因此被误导过一次）。
 - ⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 修复过一次）。
 - 已定稿节 `.tex` 视为 locked：只 Edit 微修、不 Write 覆盖；`paper/sections/`（paper 1 素材）只读勿改。
 

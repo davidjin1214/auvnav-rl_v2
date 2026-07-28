@@ -80,8 +80,27 @@
 
 **本轮新登记的两条流程教训**（写入 spec §0.5.11 第 4 层）：① 全称／唯一性断言的检索面须与断言射程等宽；② **档案记录不得先于证据**——凡引述他方复核结论，须等结论到手后再写。
 
+## 全仓文档指针体检（2026-07-28）✅ 已闭环 —— 章内零失效，**章外 ground-truth 路由查出并修复 1 处 HIGH**
+
+起因是上一条「工程状态」记的教训：2026-07-08 那三项脱节声明与 `CLAUDE.md` 滞后两版的 spec 指针，**都是顺手撞见的、不是搜出来的**。故把同一失效类推到全仓穷举。做法为机械层（自写解析器，123 份 markdown、3218 个指针，含 inline link／refdef／裸路径三形式）＋ 语义层（横幅一致性子 agent），两层交叉验证，agent 每条 HIGH 均回原文实核。
+
+**与本章直接相关的三项**：
+
+| 查出 | 影响本章之处 | 处置 |
+|---|---|---|
+| [`docs/rebrac_experiment_report.md`](../../docs/rebrac_experiment_report.md) §10A「广验证据的 standalone 入口」表，指向两份 **2026-05-18 已 SUPERSEDED** 的广验 v1 文档，**全文未提 v2 存在** | 这是 `CLAUDE.md` 指定的唯一权威数字源，§5.7／§5.8 的数字溯源起点 | ✅ 补 v2 指针（v2 report ／ N2′ `ACTOR_FUNDAMENTAL_CONFIRMED` ／ seed 43 supplement），并写明 v1 finding 不进 finding spine。只改指针，不动该节任何数字或论述 |
+| 六份文档头注仍写 spec `rev.4` 与 8 节方案的 `§N.k` 记法（两份 line summary、两份 writing index、`fql plan_v0`、[`paper/outline.md`](../outline.md)） | 这六份是本章素材来源的入口层；`§N.k` 已被两次重编号（rev.8 8→9、rev.11 9→10）架空 | ✅ 每份加一行节号与版本对照：**§N.2→§5.5、§N.4→§5.7、§N.5→§5.8、§N.6→§5.9**（四条均由文档内容互证，非按 +3 算术推导；§N.1／§N.3／§N.7 无直接证据故未写）。正文 31 处 `§N.k` **不逐处改写**；对照行**刻意不写死现行 rev 号** |
+| [`docs/arrival_v2_sac_collector_design.md`](../../docs/arrival_v2_sac_collector_design.md)（§5.9 SAC collector 素材源，active rev.3）目录第 4 条**连条目文字带锚点**停在 rev.2 的「双路径 路径1 cross_u15 + 路径2 cross_u10」 | §4 早已改为「Plan A 4-tier」、§4.1 路径 1 自身标着 rev.2 SUPERSEDED——目录在描述一个已作废的结构 | ✅ 文字与锚点一并更正 |
+
+**章内自身：`paper/thesis_ch5/` 全部 markdown 内部链接零失效**（独立复扫确认）。本轮**未触碰任何 `.tex`**，编译产物与上表 62 页门槛不变，送审就绪判定不受影响。
+
+**新写入 `CLAUDE.md` 文档索引的一条规矩**：**不得把活 spec 的 rev 号写进别的文档——指向索引即可。** 写死 rev 号正是本次查出的腐化源头（`CLAUDE.md` 自己就滞后了两版）。
+
+**未修、有意留下**：66 条真失效全在 PAUSED／DEPRECATED 文档里指向从未写过的计划文件（AUVHamNODE 线的 `auvhamnode.py` / `dynamics_ensemble.py`、online thesis 线的 `sac_thesis_s*.ipynb` 等；此处刻意不写完整路径，否则本行自身会被检查脚本计为一处失效指针）——给已停的线做指针美容无意义；9 处锚点未命中全在已闭环 spec 内，成因单一（CJK 全角标点在 GitHub slug 规则下消失），且本仓文档不在 GitHub 渲染。另 `docs/offline_mbrl_plan/` 与 `.claude/settings*.json` 仍 gitignored，前者的 6 处追注只走 OneDrive、不随 `git pull` 到 Mac。
+
 ## 工程状态
 
+- **全仓指针体检工具（2026-07-28 新增）**：`python -m scripts.check_doc_pointers`（[`scripts/check_doc_pointers.py`](../../scripts/check_doc_pointers.py)）。解析全仓 markdown 的三类指针，并把未解析项分流为「真失效／计划表预告／产物路径／示例占位／绝对路径」五类——不分流的话 gitignored 产物路径会淹掉真问题。`--anchors`／`--orphans` 展开次要项，`--strict` 时真失效即退 1。⚠ 它**只验目标是否存在**；指向是否恰当、横幅与引用方是否一致、prose 里的版本号与日期声明是否仍为真，都是人的活。
 - **机械门槛复核工具（2026-07-28 新增）**：[`tools/`](tools/README.md)。`python tools/ch5_check_all.py` 一键复核编译门槛 ＋ 浮动落位 ＋ 编号首引序 ＋ 禁用词基线 ＋ 交叉引用（须先 `latexmk`、后 `latexmk -c`）；`tools/ch5_metrics.py` 为 spec §0.5.9 (d) 九条语体计量口径的**可执行副本**（支持 `--baseline <commit>` 用同一实现重测 git 基线出趋势）。⚠ **任何版面或计量数字，引用前重跑，不要引用历史结果**——见下条。
 - **编译现状（2026-07-28 收尾统稿轮落地后，唯一有效值）**：**62 页**（正文 58 ＋ 文献 4），0 undefined ref / 0 undefined citation / 0 multiply-defined / bibtex 0 warning / Overfull 2 处（3.1251pt、4.31058pt，均 <10pt）/ **浮动距首引 ≤2 页 36/36** / **图表编号与首引序零逆序** / 无纯浮动页。`main.tex` 已 `\input` §5.1–§5.10 全部十节，并含 6 条浮动放置参数（rev.14 §0.5.9 (d) 相关，头注载病因与实测效果）。
 - ~~**旧「收尾统稿轮已闭环（2026-07-08）」条目**~~ ⚠ **该条已作废、只留作教训**：它当时声称「全部浮动距首引 0–2 页」「图表编号与首引序全章对齐」「编译 58 页」，而 2026-07-28 实测为**浮动越线 4 处、编号序逆序 1 处、63 页**——三项声明**全部与实测脱节**（其中编号逆序此前从未被报出）。前一条（2026-07-08 包 A/包 C）的 LOW 清理与术语终检结论本身仍成立。**教训：版面类声明会随后续任何文本改动失效，凡引用须以最近一次实测为准，不得沿用历史声明**（本轮 prompt 的主项 4 即因此被误导过一次）。

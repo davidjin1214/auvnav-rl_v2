@@ -45,6 +45,20 @@
 \usepackage{subcaption}
 \usepackage{float}
 
+% ---------- 浮动放置参数（收尾统稿轮 2026-07-28 新增；纯版面、零内容改动）----------
+% 病因：本章 caption 普遍 200–290 净字，表 + 长 caption 常越过 LaTeX 默认
+%   \topfraction=0.7 而被整体推迟，在浮动密集的 §5.4/§5.5/§5.7 形成队列积压。
+%   第 5 批试过的单浮动 [t]→[tp] 治的是一个浮动，治不了队列。
+% 实测效果：浮动距首引 >2 页者 4 处 → 0 处（36/36 全部 ≤2）；图表编号与首引序逆序
+%   1 处 → 0 处（配合 rebrac.tex 表块搬家）；全章 63 → 62 页；Overfull 仍为原两处
+%   （3.13pt / 4.31pt）；0 undefined / bibtex 0 warning；无纯浮动页。
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{4}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.5}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.75}
+
 % ---------- references / hyperlinks ----------
 \usepackage[hidelinks, breaklinks=true]{hyperref}
 \usepackage{cleveref}

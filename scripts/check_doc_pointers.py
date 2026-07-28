@@ -22,9 +22,9 @@ Unresolvable pointers are triaged, because most are not defects:
             doing inline, two M1-conditional files that correctly never existed
             because M1 never triggered, and one the plan itself records deleting.
   artifact  under a gitignored产物 dir; absent on this machine by design
-  example   an <angle>/glob/foo placeholder, or any path inside an agent
-            definition (agents illustrate output formats with invented
-            filenames). Skills are checked like any other doc.
+  example   an <angle>/glob/foo stand-in rather than a real path. No source
+            directory is exempt -- .claude/agents/ and .claude/skills/ are
+            walked like any other doc.
   abs       absolute file:// style path baked in by an old tool
 
 Anchors are checked with GitHub's slug rules. Note that CJK headings with
@@ -65,13 +65,12 @@ HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.M)
 
 ARTIFACT_DIR = re.compile(
     r"(?:^|/)(results|offline_data|wake_data|checkpoints|figures)/")
-# Agent definitions illustrate report formats with invented filenames
-# (`docs/sprint_5_results.md`, ...) that no placeholder pattern can catch, so the
-# whole source file stays exempt. Skills are NOT exempt: since the CLI reference
-# moved out of CLAUDE.md and into .claude/skills/, they carry real invocations
-# whose paths must resolve. Their genuine templates use <angle> or glob forms and
-# are covered by PLACEHOLDER below.
-EXAMPLE_SRC = (".claude/agents/",)
+# No source directory is exempt. `.claude/` used to be: agents and skills were
+# assumed to be all illustration. That stopped being true once the CLI reference
+# moved out of CLAUDE.md and into .claude/skills/ -- the exempt area was holding
+# real script paths and manifest keys that nothing checked. Both agent definitions
+# now write their examples in <angle>/glob form, so PLACEHOLDER alone covers every
+# legitimate stand-in and every concrete path gets resolved.
 PLACEHOLDER = re.compile(r"(foo|bar|baz|<[a-zA-Z]|\*|\.\.\.|^path$|^archive/$)")
 
 # A heading that makes every table row beneath it a forecast rather than a claim.
@@ -132,7 +131,7 @@ def resolve(raw: str, kind: str, src: str) -> str:
 def triage(src: str, raw: str, line: str, heading: str) -> str:
     if raw.startswith("/") or re.match(r"^[A-Za-z]:", raw):
         return "abs"
-    if src.startswith(EXAMPLE_SRC) or PLACEHOLDER.search(raw):
+    if PLACEHOLDER.search(raw):
         return "example"
     if line.lstrip().startswith("|") and (PLAN_ROW.search(line.rstrip())
                                           or PLAN_HEADING.search(heading)):
@@ -201,7 +200,7 @@ def main() -> int:
                                  "是预测不是指针）"),
                         ("artifact", "产物路径（gitignored，本机缺席属正常；按源文件折叠）"),
                         ("abs", "绝对路径链接（旧工具烘进去的 file:// 式路径；按源文件折叠）"),
-                        ("example", "示例占位符（<>/glob 模板，或 agent 定义内的假路径）")):
+                        ("example", "示例占位符（<>/glob 模板；无目录豁免）")):
         rows = buckets[name]
         print(f"\n--- {label}：{len(rows)} ---")
         if name == "real" or len(rows) <= 12:

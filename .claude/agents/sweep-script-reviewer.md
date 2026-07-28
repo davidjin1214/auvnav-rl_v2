@@ -32,9 +32,9 @@ These are the actual fix categories from recent commits — review for each one 
 - **Check**: §4 sweep cells must use `!bash` (line magic), not `%%bash`.
 - **Check**: no `>(tee logfile)` constructs unless the file path is local (Colab tee to Drive can stall).
 
-### 3. `[skip] already complete` resume logic (recurring across stage scripts)
-- Each `(probe, seed)` iteration short-circuits via `[skip] already complete: <ckpt path>` if a final checkpoint already exists. This is what makes restart-after-Colab-disconnect cheap.
-- **Check**: the skip condition compares against the **final** checkpoint marker (e.g. `last.pt` or `done.flag`), not against the directory existing.
+### 3. `[skip]` resume logic (recurring across stage scripts)
+- Each `(probe, seed)` iteration short-circuits when the run already finished, so restart-after-Colab-disconnect is cheap. Echo prefixes in this repo are `[skip]`, `[skip-train]`, `[skip-eval]`; the wording after the prefix varies per launcher, so match on the prefix, not on a full sentence.
+- **Check**: the skip condition keys on **`agent_final.pt`** — written only by `agent.save(...)` at the end of the train function. Keying on `trainer_state.json` is the bug: best-checkpoint saves write it too, so a run that died mid-sweep looks complete. Some launchers require both; requiring only `trainer_state.json` is always wrong.
 - **Check**: if `--total-steps` changes, the skip must NOT short-circuit a stale shorter run. Look for skip checks that compare step count against expected.
 - **Check**: the `[skip]` echo line uses the same path the training script writes to (no `/` vs `//` drift).
 
@@ -97,9 +97,8 @@ files scanned: <n> · CRITICAL: <n> · HIGH: <n> · MEDIUM: <n>
 
 ## What you must NOT do
 
-- Do not edit files. You are a read-only reviewer.
-- Do not propose architectural rewrites of the sweep system; only flag concrete bugs in existing files.
-- Do not flag style preferences unrelated to the six bug classes above.
+- Do not edit files. You are a read-only reviewer — the `Bash` grant is for inspection (`bash -n`, `grep`), never for `sed -i` or redirection into a tracked file.
+- Confine findings to concrete bugs in the six classes above, in files that already exist.
 
 ## Stop condition
 

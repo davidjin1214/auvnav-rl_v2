@@ -16,6 +16,11 @@ paper/thesis_ch5/figures/scripts/x.py, and root-anchoring alone false-positives 
 
 Unresolvable pointers are triaged, because most are not defects:
   real      a doc pointing at something that should exist  <- the actionable bucket
+  plan      a forecast, not a pointer: a row in a 待创建 / 已删除 table, or a table
+            row still marked TBD. `rebrac_broad_validation_v2_plan.md` §11 alone
+            accounts for seven of these -- four infra files the notebook ended up
+            doing inline, two M1-conditional files that correctly never existed
+            because M1 never triggered, and one the plan itself records deleting.
   artifact  under a gitignored产物 dir; absent on this machine by design
   example   placeholder inside an agent/skill definition or a spec template
   abs       absolute file:// style path baked in by an old tool
@@ -31,6 +36,8 @@ What this canNOT check, and stays human work:
 
 Usage:
     python -m scripts.check_doc_pointers            # triaged report
+    python -m scripts.check_doc_pointers --anchors  # + anchor misses
+    python -m scripts.check_doc_pointers --orphans  # + docs nobody links to
     python -m scripts.check_doc_pointers --strict   # exit 1 on any `real` miss
 """
 
@@ -58,6 +65,12 @@ ARTIFACT_DIR = re.compile(
     r"(?:^|/)(results|offline_data|wake_data|checkpoints|figures)/")
 EXAMPLE_SRC = (".claude/agents/", ".claude/skills/")
 PLACEHOLDER = re.compile(r"(foo|bar|baz|<[a-zA-Z]|\.\.\.|^path$|^archive/$)")
+
+# A heading that makes every table row beneath it a forecast rather than a claim.
+PLAN_HEADING = re.compile(r"(待创建|待建|已删除|已弃用|计划创建|planned|to be created|deleted)",
+                          re.I)
+# ...or a row that still carries its planning-time status cell.
+PLAN_ROW = re.compile(r"\|\s*(TBD|待定|计划中|planned)\s*\|?\s*$", re.I)
 
 
 def md_files() -> list[str]:
@@ -108,11 +121,14 @@ def resolve(raw: str, kind: str, src: str) -> str:
     return target
 
 
-def triage(src: str, raw: str) -> str:
+def triage(src: str, raw: str, line: str, heading: str) -> str:
     if raw.startswith("/") or re.match(r"^[A-Za-z]:", raw):
         return "abs"
     if src.startswith(EXAMPLE_SRC) or PLACEHOLDER.search(raw):
         return "example"
+    if line.lstrip().startswith("|") and (PLAN_ROW.search(line.rstrip())
+                                          or PLAN_HEADING.search(heading)):
+        return "plan"
     if ARTIFACT_DIR.search("/" + raw):
         return "artifact"
     return "real"
@@ -124,11 +140,16 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="repo-wide markdown pointer sweep")
     ap.add_argument("--strict", action="store_true",
                     help="exit 1 when any `real` miss is found")
+    ap.add_argument("--anchors", action="store_true",
+                    help="also list #anchor misses (mostly CJK slug drift)")
+    ap.add_argument("--orphans", action="store_true",
+                    help="also list docs/ and paper/ files nothing links to")
     args = ap.parse_args()
 
     files = md_files()
     anchor_cache: dict[str, set[str]] = {}
-    buckets: dict[str, list] = {"real": [], "artifact": [], "example": [], "abs": []}
+    buckets: dict[str, list] = {"real": [], "plan": [], "artifact": [],
+                                "example": [], "abs": []}
     bad_anchor: list[tuple[str, int, str]] = []
     cited: set[str] = set()
     total = 0
@@ -136,7 +157,10 @@ def main() -> int:
     for src in files:
         with open(src, encoding="utf-8") as fh:
             lines = fh.read().split("\n")
+        heading = ""
         for lineno, line in enumerate(lines, 1):
+            if line.startswith("#"):
+                heading = line
             found = ([(m.group(2), "link") for m in INLINE.finditer(line)]
                      + [(m.group(2), "refdef") for m in REFDEF.finditer(line)]
                      + [(m.group(1), "bare") for m in BARE.finditer(line)])
@@ -146,7 +170,8 @@ def main() -> int:
                 total += 1
                 target = (src if raw.startswith("#") else resolve(raw, kind, src))
                 if not os.path.exists(target):
-                    buckets[triage(rel(src), raw)].append((rel(src), lineno, raw, kind))
+                    bucket = triage(rel(src), raw, line, heading)
+                    buckets[bucket].append((rel(src), lineno, raw, kind))
                     continue
                 cited.add(rel(target))
                 anchor = raw.partition("#")[2]
@@ -159,11 +184,13 @@ def main() -> int:
     miss = sum(len(v) for v in buckets.values())
     print(f"扫描 {len(files)} 个 markdown；解析到 {total} 个仓内指针")
     print("=" * 96)
-    print(f"未解析 {miss} = 真失效 {len(buckets['real'])} / 产物路径 "
-          f"{len(buckets['artifact'])} / 示例占位 {len(buckets['example'])} / "
-          f"绝对路径 {len(buckets['abs'])}")
+    print(f"未解析 {miss} = 真失效 {len(buckets['real'])} / 计划表预告 "
+          f"{len(buckets['plan'])} / 产物路径 {len(buckets['artifact'])} / 示例占位 "
+          f"{len(buckets['example'])} / 绝对路径 {len(buckets['abs'])}")
     print("=" * 96)
     for name, label in (("real", "★ 真失效（文档指向本应存在的东西）"),
+                        ("plan", "计划表预告（待创建/已删除表内，或 Status 仍为 TBD 的行；"
+                                 "是预测不是指针）"),
                         ("artifact", "产物路径（gitignored，本机缺席属正常；按源文件折叠）"),
                         ("abs", "绝对路径链接（旧工具烘进去的 file:// 式路径；按源文件折叠）"),
                         ("example", "示例占位符（agent/skill 定义或模板内的假路径）")):
@@ -179,17 +206,24 @@ def main() -> int:
             for f, n in sorted(counts.items()):
                 print(f"  {f}  ({n} 处)")
 
-    print(f"\n--- 锚点未命中：{len(bad_anchor)}（目标文件在，#anchor 无对应标题；"
-          f"CJK 全角标点导致的偏差多为观感问题）---")
-    for s, ln, raw in bad_anchor:
-        print(f"  {s}:{ln}  -> {raw}")
+    # Anchor misses in this repo are near-uniformly CJK slug drift (a heading's
+    # full-width （）： vanish under GitHub's rules, hand-written TOC links assume
+    # they don't), and the docs are read in editors, not on GitHub. Kept behind a
+    # flag so a real finding is never buried under thirteen cosmetic ones.
+    print(f"\n--- 锚点未命中：{len(bad_anchor)}"
+          + ("（--anchors 展开）" if bad_anchor and not args.anchors else ""))
+    if args.anchors:
+        for s, ln, raw in bad_anchor:
+            print(f"  {s}:{ln}  -> {raw}")
 
     orphans = [rel(f) for f in files
                if rel(f).startswith(("docs/", "paper/")) and rel(f) not in cited]
-    print(f"\n--- docs/ 与 paper/ 下无人指向：{len(orphans)}（未必是问题，"
-          f"逐轮 prompt / 复审存档天然无入链）---")
-    for o in orphans:
-        print(f"  {o}")
+    print(f"--- docs/ 与 paper/ 下无人指向：{len(orphans)}（逐轮 prompt / 复审存档"
+          f"天然无入链，未必是问题）"
+          + ("（--orphans 展开）" if orphans and not args.orphans else ""))
+    if args.orphans:
+        for o in orphans:
+            print(f"  {o}")
 
     print("\n⚠ 本脚本只验「目标是否存在」。指向是否**恰当**、deprecated 横幅与引用方是否"
           "一致、prose 里的版本号与日期声明是否仍然为真——机器验不了，是人的活。")

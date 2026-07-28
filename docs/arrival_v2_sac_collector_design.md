@@ -17,9 +17,9 @@
 1. [SAC collector vs rule-based baseline collector — 本质差异](#1-sac-collector-vs-rule-based-baseline-collector--本质差异)
 2. [arrival_v2 SAC ckpt 完整清单 + s0_k4 双约束子集](#2-arrival_v2-sac-ckpt-完整清单)
 3. [按 D4RL quality tier 的重新视角（s0_k4 双约束 8 ckpt）](#3-按-d4rl-quality-tier-的重新视角)
-4. [推荐数据收集双路径（路径 1 cross_u15 + 路径 2 cross_u10）](#4-推荐用于数据收集的子集按使用情景)
+4. [推荐数据收集 — Plan A 4-tier（rev.3 主推）](#4-推荐数据收集--plan-a-4-tierrev3-主推)
 5. [工程实施要点](#5-工程实施要点)
-6. [触发条件 + open questions](#6-open-questions--等待-offline-线确认的事项)
+6. [触发条件 + open questions](#6-触发条件--open-questions)
 
 ---
 

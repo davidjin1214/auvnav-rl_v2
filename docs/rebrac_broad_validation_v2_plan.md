@@ -464,6 +464,13 @@ only 0.10 in critical regime), we conduct two experiments:
 
 ### 11.1 待创建（NEW）
 
+> **📍 2026-07-28 指针体检收口**：下表 Status 列停在计划期的 `TBD`，未随落地更新，读起来像一批应存在而缺失的文件。实核结论：
+> - 四个 infra 文件（`broad_validation_v2_cell_registry.py` / `run_offline_rebrac_broad_v2.sh` / `summarize_broad_validation_v2.py` / `rebrac_broad_validation_v2_pretrain.ipynb`）**未创建**——[`notebooks/rebrac_broad_validation_v2_core.ipynb`](../notebooks/rebrac_broad_validation_v2_core.ipynb) 直接调 `scripts.train_offline_rebrac` 内联完成，无 registry / shell driver / summarize 环节。
+> - `run_broad_validation_v2_bc_sweep.sh` 与 `rebrac_broad_validation_v2_conditional.ipynb` 是 M1 conditional，而 M1 **not triggered**（§5.4 / v2 report）；两者不存在是设计生效，不是缺失。
+> - `rebrac_broad_validation_v2_core.ipynb` 已创建并闭环；另有计划外的 `_n2p_asym_critic` 与 `_seed43_supplement` 两册。
+>
+> 本注只记录落地实况，不改本表任何一行，也不动本 plan 的任何设计论述或数字。
+
 | Path | Role | Status |
 |---|---|---|
 | `scripts/broad_validation_v2_cell_registry.py` | N0 / N2' / S / M1 配置 single source of truth | TBD |

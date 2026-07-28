@@ -105,7 +105,13 @@ temp/
 .omc/
 wake_data/
 offline_data/
-.claude/
+# .claude/ was ignored wholesale until 2026-07-28. That also hid skills/ and
+# agents/, which are machine-independent project tooling -- and CLAUDE.md points
+# at `.claude/skills/rl-v2-commands/SKILL.md` as the CLI reference, so a fresh
+# clone got a CLAUDE.md citing a file the clone did not contain. Only the two
+# machine-local settings files stay out.
+.claude/settings.json
+.claude/settings.local.json
 docs/offline_mbrl_plan
 
 # AUVHamNODE checkpoint + reference simulator (kept on-disk but not tracked;

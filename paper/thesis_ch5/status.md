@@ -87,7 +87,9 @@
 
 同文第 2 条（transitions 数字）本章已于 `setup.tex` rev.3 用实测值纠正、不构成待办。
 
-**两条的处置均未决**（重采/重跑 vs 正文如实披露），**须在答辩前裁决**；动正文即触发 `prompt_playbook.md` 的重流程复审义务（见本文件顶部与 `next_session_prompt.md` 第 1 条）。
+**两条的处置均未决**（重采/重跑 vs 正文如实披露），**须在答辩前裁决**；动正文即触发 `prompt_playbook.md` 的重流程复审义务。
+
+裁决依据的波及面评估（逐处列出必然要改的／可能被推翻的／守得住的）：[`data_integrity_impact_assessment.md`](data_integrity_impact_assessment.md) —— **初稿，未经独立复核**，复核轮入口见 [`next_session_prompt.md`](next_session_prompt.md)。其核心判断：中心命题与四条主要发现均不在污染面上，真正押在受污染数据格上的只有 §5.7.1「数据规模退化的翻转」一条论述。
 
 ## 全仓文档指针体检（2026-07-28）✅ 已闭环 —— 章内零失效，**章外 ground-truth 路由查出并修复 1 处 HIGH**
 

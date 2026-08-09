@@ -5,6 +5,19 @@ description: CLI invocation reference for rl_v2 — online SAC training, offline
 
 # rl_v2 command reference
 
+## Colab sprint workflow
+
+Training runs on **Google Colab Pro / L4 GPU** with the codebase mounted from Google Drive. The standard workflow:
+
+1. Author / edit code locally; commit to git.
+2. Sync the project directory to Google Drive (`drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5/`).
+3. Open a notebook (one per experimental sprint) in Colab; mount Drive; `cd` into the project; set env overrides; invoke training via IPython shell magic (`!python -m scripts.train_*`, **not** `subprocess.run` — needed for realtime stdout in Colab).
+4. Results land in `experiments/<study>/...` (small) and `checkpoints/<study>/...` (large) on Drive; sync back to git for analysis docs only.
+
+L4 wallclock for a 600k-step SAC run with `num_envs=6` is ~1.5h. Notebook-driven sprints are sized so each sprint fits in 1-2 Colab sessions.
+
+## Invocations
+
 All scripts are run as modules from the repo root (`python -m scripts.<name>`).
 
 ```bash

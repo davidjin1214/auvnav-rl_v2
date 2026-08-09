@@ -80,6 +80,8 @@
 
 **本轮新登记的两条流程教训**（写入 spec §0.5.11 第 4 层）：① 全称／唯一性断言的检索面须与断言射程等宽；② **档案记录不得先于证据**——凡引述他方复核结论，须等结论到手后再写。
 
+⚠ **章外另有一条未核项，不在上表七条敞口内**：[`docs/data_integrity_open_items.md`](../../docs/data_integrity_open_items.md)（2026-08-02 记录，未处理）第 1 条怀疑 `crosscomp-2000` 的采集种子区间完整包含评估 manifest 的 100 条。**若成立**，§5.7 结果表中横流补偿参照 $2000$ 回合一格（$0.918$）与 §5.6「$2000<1000$」论证的证据基础都会受影响。上表七条是**已披露**敞口，此条是**未核事实问题**，性质不同，故单列。同文第 2 条（transitions 数字）本章已于 `setup.tex` rev.3 纠正、不构成待办；第 3 条（验证／测试集是否互斥）本章 §5.3.6 rev.6 已写清口径，但所指 manifest 文件身份仍未核。**答辩前须查，查法见该文件。**
+
 ## 全仓文档指针体检（2026-07-28）✅ 已闭环 —— 章内零失效，**章外 ground-truth 路由查出并修复 1 处 HIGH**
 
 起因是上一条「工程状态」记的教训：2026-07-08 那三项脱节声明与 `CLAUDE.md` 滞后两版的 spec 指针，**都是顺手撞见的、不是搜出来的**。故把同一失效类推到全仓穷举。做法为机械层（自写解析器，123 份 markdown、3218 个指针，含 inline link／refdef／裸路径三形式）＋ 语义层（横幅一致性子 agent），两层交叉验证，agent 每条 HIGH 均回原文实核。
@@ -118,6 +120,8 @@
 | ~~临界传感 3-seed 补录 `docs/arrival_v2_experiment_report.md`~~ | ✅ 全流程闭环（2026-07-19）：用户批附录 C 四点（C.1 按用户修正——旧转录值定性为**引用错误、完全作废（占位数字）**，不作分批论证、不比对新旧差异；C.2 措辞照批；C.3 ⑧ 定点复审加；C.4 六份补跑 raw 从 Drive 溯源同步回本机 canonical 树）。落地：§7.10 重写（✅ 9/9 实核）→ 两图重绘（CRIT_SEEDS/CRIT_K4_S0 新值）→ `online.tex` rev.7（§5.5.2/caption/§5.5.3 补方差收缩 0.39→0.22→0.04/瓶颈表/§5.5.4 caption/§5.5.5）→ `boundary.tex` rev.4（§5.8.2「稳定支撑」限定 + §5.8.4 0.46±0.39）→ spec 六处同步 → latexmk 58 页零警告 + `-c` + 残留 grep 全清。新 ground truth：s0 0.46±0.39、s1 0.90±0.00、s2 0.87±0.03、gap 44pp；k=8/k=12 与 manifest floor 27/30、特权消融 0.267、`discussion.tex` 经核零波及 | findings E·M1（✅ 已勾销）；plan 附录 B.1（呈报）/ C（方案）；report §7.10（ground truth） |
 | ~~图浮动漂移 + 半空白页~~ | ✅ 已清 2026-07-08（收尾统稿轮包 B，根因与改法见 findings F·M2 追注） | findings F·M2 |
 | ~~零散 LOW（括注清理 / refs.bib 残留 / 机体↔船体术语章级统一等）~~ | ✅ 已清 2026-07-08（收尾统稿轮包 A，逐条追注在各 findings 原条目后） | findings §3.2；`section_5_8/5_9/5_10_review_findings.md` LOW 段 |
+| ⚠ **`crosscomp-2000` 采集种子是否覆盖评估 manifest** —— 未核；若成立，§5.7 的 $2000$ 回合一格与 §5.6「$2000<1000$」论证受影响。本机无该数据集，需查 Mac 侧 `metadata.json` 或 `td3bc_phase0c` 报告里那次采集的命令行 | 2026-08-02 记录，答辩前须查 | [`docs/data_integrity_open_items.md`](../../docs/data_integrity_open_items.md) §1；本文「送审就绪判定」节末 |
+| ⚠ **选 checkpoint 的验证集与终报测试集是否互斥** —— §5.3.6 rev.6 已写清口径，但「$40$ 回合」对应哪个 manifest 文件未核（`benchmarks/` 下同前缀两份为 30 ep ⊂ 100 ep）。查法：主线 run `trainer_state.json` 的 `eval_manifest` 字段 | 2026-08-02 记录，答辩前须查 | [`docs/data_integrity_open_items.md`](../../docs/data_integrity_open_items.md) §3 |
 
 ## 已锁决策（只列指针，内容以权威所在为准、不在此复述）
 

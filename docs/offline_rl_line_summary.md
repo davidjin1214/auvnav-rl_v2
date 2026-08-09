@@ -306,6 +306,15 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 
 短期不需要的工作:Path 1B spike-lite 实施、Path 2 finetune 评估、Path 4 vehicle.py oracle plan 起草、AUVHamNODE 上游 dataset 取回。这些都在 pause memo §5 留作债务表。
 
+### 4.5 数据完整性待核项（2026-08-02 记录，⚠ 未处理）
+
+清单在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)：三条记账问题 + 一条会被问到的对照，均已在本机核过证据、路径与数字可直接复用。**不影响方法本身，但第 1 条一旦成立会直接推翻一格主结果。**
+
+- **① `crosscomp-2000` 采集种子可能覆盖评估 manifest 的 1250..1349**（⚠ 最高优先，未核）。现存 9 个数据集的 `base_seed` 无一例外为 0；若 2000 回合那次沿用同样调用，训练区间 0..1999 完整包含评估的 100 条。命中 ReBRAC 主线 `cross-2000` 一格，同时波及"2000<1000"这条论证。查法：该数据集 `metadata.json`（本机无，需 Mac 侧）或 [`td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) 里那次采集的命令行。
+- **② paper Table 1 的 transitions 数字与本机 metadata 对不上** —— 仅影响已撤销的 standalone paper 旧稿（`paper/sections/setup.tex`）；论文第 5 章已于 rev.3（2026-06-18）用实测值 1.5e5 / 3.0e5 / 1.0e5 纠正过，四源互证。
+- **③ 两个同前缀评估 manifest 种子区间成包含关系**（30 ep ⊂ 100 ep），需确认选 checkpoint 与最终报告用的 episode 是否互斥。第 5 章 §5.3.6 已在 rev.6（2026-07-26）把口径写清（验证集选点、独立测试集评估），但"40 回合那份到底是哪个文件"仍未核。查法：主线 run 的 `trainer_state.json` 的 `eval_manifest` 字段。
+- **④ 行为策略 success_rate 0.958 vs ReBRAC-Q 0.928** —— 非缺陷，建议把两个 behaviour policy 在评估 manifest 上的成功率补成一行，纯 eval 开销。
+
 ---
 
 ## 5. 仓库 offline 线文件索引
@@ -317,6 +326,7 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 | 想找... | 看这里 |
 |---|---|
 | Offline 线整体状态、时间轴、下一步 | **本文件**（[`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md)） |
+| ⚠ 已知未核的数据完整性问题（种子重叠 / 表格数字 / manifest 口径） | [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)（本文 §4.5 为摘要） |
 | ReBRAC 这一条线串线总览（TD3+BC→ReBRAC→FQL，含 β1 跨线 reconciliation） | [`docs/rebrac_line_overview.md`](rebrac_line_overview.md) |
 | ReBRAC One Page 摘要 + 4 finding spine | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §0 + §1.5 |
 | ReBRAC 任何具体数字 / per-seed | [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §1–§10（按 stage 索引） |

@@ -206,9 +206,11 @@
 
 ## 4. 当前活跃 backlog 与下一步
 
-### 4.1 ReBRAC paper revision (active)
+> 📍 **本节写于 2026-05，2026-08-09 复核补注**：§4.1–§4.4 **均已闭环**，本节已无「活跃 backlog」——写作出口（博士论文第 5 章）于 **2026-07-28 收口、送审就绪**，状态以 [`../paper/thesis_ch5/status.md`](../paper/thesis_ch5/status.md) 为准（**不在此复述章状态**）。唯一未结项是新增的 **§4.5 数据完整性待核项**。各小节原文保留作历史决策记录。
 
-paper drafting Phase 5 → revision 阶段，主要锚点：
+### 4.1 ~~ReBRAC paper revision (active)~~ ✅ 已随第 5 章收口闭环（2026-07-28）
+
+⚠ 「revision (active)」是 2026-05 的状态。standalone paper 已撤销（见本文头注），素材写作出口 = 第 5 章 §5.7；该章十节成文、五批整改与收尾统稿轮均已闭环。**本小节两份锚点文档仍是素材源、角色不变**：
 - [`docs/rebrac_method_section_draft.md`](rebrac_method_section_draft.md) Method 节
 - [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §0/§1.5 是写作期反复回看的 One Page
 
@@ -459,3 +461,5 @@ paper drafting Phase 5 → revision 阶段，主要锚点：
 ## 7. 一句话总结
 
 Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 broad validation 已于 2026-05-19 PASS**(arrival_v2 cross-only 2-seed 4-run 闭环 — N0 HOLDS / N2' STRONG_NEGATIVE，paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md));**FQL Succession（FQL vs ReBRAC，Paper 2 候选）已于 2026-05-23 NEGATIVE 闭环**("FQL > ReBRAC iff sub-optimal AND multi-modal" 证伪 → 机制发现 + 诚实负面:noise 是 discriminator、ReBRAC β1=1.0 双轴 dominate、BC-anchor 目标质量决定鲁棒性;详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md))。
+
+**2026-08-09 补注（本段以上写于 2026-05-07，其中"主线 paper drafting 进入 revision 阶段"已过期）**：2026-05 之后本线**没有新增实验**，全部工作转入写作出口——博士论文第 5 章于 **2026-07-28 收口、送审就绪**（章状态唯一真相源 = [`../paper/thesis_ch5/status.md`](../paper/thesis_ch5/status.md)，**此处不复述**）。本线现存唯一未结事项是本文 **§4.5 数据完整性待核项**（清单 [`data_integrity_open_items.md`](data_integrity_open_items.md)）。

@@ -308,14 +308,16 @@
 
 短期不需要的工作:Path 1B spike-lite 实施、Path 2 finetune 评估、Path 4 vehicle.py oracle plan 起草、AUVHamNODE 上游 dataset 取回。这些都在 pause memo §5 留作债务表。
 
-### 4.5 数据完整性待核项（2026-08-02 记录，⚠ 未处理）
+### 4.5 数据完整性问题（2026-08-02 记录 → 2026-08-09 核实，⚠ 处置未决）
 
-清单在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)：三条记账问题 + 一条会被问到的对照，均已在本机核过证据、路径与数字可直接复用。**不影响方法本身，但第 1 条一旦成立会直接推翻一格主结果。**
+清单与完整证据在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)。**第 1、3 条已核实成立**（第 3 条比原怀疑更强），**处置待裁决**；不影响方法本身，但都会在答辩/返修时被问到。
 
-- **① `crosscomp-2000` 采集种子可能覆盖评估 manifest 的 1250..1349**（⚠ 最高优先，未核）。现存 9 个数据集的 `base_seed` 无一例外为 0；若 2000 回合那次沿用同样调用，训练区间 0..1999 完整包含评估的 100 条。命中 ReBRAC 主线 `cross-2000` 一格，同时波及"2000<1000"这条论证。查法：该数据集 `metadata.json`（本机无，需 Mac 侧）或 [`td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) 里那次采集的命令行。
+- **① `crosscomp-2000` 训练与评估用的是同一批任务实例**（⚠ 最高优先，**已确证**）。数据集 `seed=0`、2000 回合 → 训练种子 0..1999 完整包含评估 manifest 的 1250..1349；reset RNG 重放确认 **100/100 实例逐条相同**。成因是 `collect_offline_data.py` 的 `--seed` 默认值为 0 加上规模跨过 1250。**全仓仅此一个数据集受影响**（其余 9 个止于种子 999，低于最小 `manifest_seed`=1100）。波及 ReBRAC 主线 `cross-2000` 一格与"2000 不再劣于 1000"这条翻转论述；反向的"2000<1000"结论不受威胁（污染只会抬高 2000）。
 - **② paper Table 1 的 transitions 数字与本机 metadata 对不上** —— 仅影响已撤销的 standalone paper 旧稿（`paper/sections/setup.tex`）；论文第 5 章已于 rev.3（2026-06-18）用实测值 1.5e5 / 3.0e5 / 1.0e5 纠正过，四源互证。
-- **③ 两个同前缀评估 manifest 种子区间成包含关系**（30 ep ⊂ 100 ep），需确认选 checkpoint 与最终报告用的 episode 是否互斥。第 5 章 §5.3.6 已在 rev.6（2026-07-26）把口径写清（验证集选点、独立测试集评估），但"40 回合那份到底是哪个文件"仍未核。查法：主线 run 的 `trainer_state.json` 的 `eval_manifest` 字段。
+- **③ 选点验证集是终报测试集的前缀子集**（**已确证**，强于原怀疑）。manifest 生成器无 seed 偏移，val/test 用同一 benchmark key → `val_40` = `test_100` 的前 40 条；40+40 的单元里两份 manifest 完全相同。即报告的 100 回合测试集中有 40 条正是选 checkpoint 用的那批。
 - **④ 行为策略 success_rate 0.958 vs ReBRAC-Q 0.928** —— 非缺陷，建议把两个 behaviour policy 在评估 manifest 上的成功率补成一行，纯 eval 开销。
+
+**复核工具（2026-08-09 入库）**：[`scripts/audit_seed_overlap.py`](../scripts/audit_seed_overlap.py)。默认扫全部数据集 × 全部 manifest 的种子区间相交（只在流场／几何／目标速度三项一致时才判定），`--verify DATASET MANIFEST` 重放 reset RNG 逐条比对任务实例。任何**新采集的数据集或新评估 manifest 落地后都该跑一次**。
 
 ---
 

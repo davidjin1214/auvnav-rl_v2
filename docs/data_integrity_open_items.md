@@ -1,4 +1,21 @@
-# 数据完整性待核项（2026-08-02 记录，暂未处理）
+# 数据完整性待核项（2026-08-02 记录）
+
+> ## 核实结论（2026-08-09）
+>
+> **第 1 条与第 3 条均已核实成立**，第 3 条比原怀疑更强。第 2、4 条状态不变。逐条追注见各节末。
+>
+> | 条目 | 结论 | 证据 |
+> |---|---|---|
+> | ① `crosscomp-2000` 种子重叠 | ⚠ **成立**。评估 manifest 的 **100/100** 条 episode 是训练 episode，任务实例逐条相同 | 数据集 `metadata.json` + reset RNG 重放（[`scripts/audit_seed_overlap.py`](../scripts/audit_seed_overlap.py)） |
+> | ② Table 1 transitions 数字 | 仅影响已撤销的 standalone paper 旧稿；论文第 5 章 `setup.tex` rev.3 已用实测值纠正 | 第 5 章 rev 头注四源互证 |
+> | ③ 验证集 ⊄ 测试集 | ⚠ **成立且更强**：val **不是重叠而是前缀子集**，40/40 配置下两份 manifest 完全相同 | manifest 生成器无 seed 偏移 + 三个 launcher + notebook 实际启动命令 |
+> | ④ 行为策略 vs ReBRAC 成功率 | 未动，仍是建议项 | — |
+>
+> **全仓污染面已封闭**：`offline_data/` 下 10 个数据集，**只有 `crosscomp-2000` 一个受影响**。其余 9 个均为 `seed=0 / 1000 回合`（种子 0..999），而全部 8 个 benchmark key 的 `manifest_seed` 最小为 **1100**，故不可能相交。复核命令：
+>
+> ```bash
+> python -m scripts.audit_seed_overlap
+> ```
 
 三条在别的工作里顺带撞见、**已在本机核实过证据但尚未处理**的记账问题。都不影响方法本身，
 但都会在投稿/返修阶段被审稿人问到，且第 1 条一旦成立会直接推翻一格主结果。
@@ -39,6 +56,38 @@
 
 若 `base_seed` 是 1000 / 2000 → 不相交，只需在正文写明种子机制即可。
 若是 0 → 需换 base_seed 重采并重跑该单元。
+
+### ✅ 核实结论（2026-08-09）：**`base_seed` = 0，重叠成立**
+
+数据集已从 Drive 取回（`offline_data/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/`）：
+
+```
+"seed": 0, "num_episodes": 2000, "num_transitions": 304967, "success_rate": 0.8855
+```
+
+→ 训练 episode 种子 **0..1999**，完整包含评估的 1250..1349。种子层面 **100/100 相交**；
+reset RNG 重放（不跑仿真）确认任务实例**逐条相同** —— `flow_time` / `start_xy` / `goal_xy` /
+`initial_heading` 四项在 `1e-6` 容差下 **100/100 一致**（30 回合的
+`single_u10_cross_tgt15.json` 同样 30/30）。工具与复现命令：
+
+```bash
+python -m scripts.audit_seed_overlap --verify crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000 single_u10_cross_tgt15_ep100
+```
+
+**成因**：`collect_offline_data.py` 的 `--seed` 默认值就是 `0`，采集命令从未传过它——这也是现存
+10 个数据集 `seed` 全部为 0 的原因。**不是某次操作失误，是默认值 + 数据规模跨过 1250 的必然结果。**
+
+**影响面（限本条）**：只波及 2000 回合一格。第 5 章 §5.7 结果表该行（ReBRAC-Q $0.918\pm0.030$ /
+TD3+BC $0.596\pm0.036$）与 §5.7.1「数据规模退化的翻转」（$0.918$ 对 1000 回合的 $0.902$）都建立在
+这一格上，**最脆弱的是"翻转"这条论述**——它本身就只有 $+1.6$pp。
+
+**但 §5.6 的「$2000<1000$」结论方向相反、不受威胁**：污染只会**抬高** 2000 格的表现，而 TD3+BC
+与纯 BC 在该格上均**更差**；污染制造不出这个方向的结果，至多说明真实差距比报告的更大。（这是定性
+推断，非实测。）
+
+**处置选项**：(a) 换 `base_seed`（如 `--seed 5000`）重采 2000 回合数据集并重跑该单元；
+(b) 保留数字，在正文与表注显式披露该格的训练/评估任务实例重合，并把 §5.7.1 的翻转论述降级为
+不可用。**未决，需用户裁决。**
 
 ### 顺带建议
 
@@ -82,6 +131,36 @@ episodes 一次性报告。**40 这个数字对不上上面任何一个文件，
 需要确认的是：**选 checkpoint 用的那批 episode 与最终报告用的那批是否互斥。**
 若 val 用的是 30ep 文件、test 用的是 100ep 文件，则 val ⊂ test，等于在测试集上选模型。
 查法：ReBRAC 主线 run 的 `trainer_state.json` 里的 `eval_manifest` 字段。
+
+### ✅ 核实结论（2026-08-09）：**不互斥，且不是"重叠"而是"前缀子集"**
+
+不必等 Drive 侧的 `trainer_state.json` —— 从生成器代码与实际启动命令两头就能对上：
+
+1. [`scripts/generate_standard_benchmarks.py`](../scripts/generate_standard_benchmarks.py) **没有任何
+   seed 偏移参数**（只有 `--benchmarks / --episodes / --output-dir / --output-name`），种子恒为
+   `manifest_seed + idx`。**同一个 benchmark key 生成的任何 manifest，都从同一个种子起算。**
+2. 三个 launcher 的 val 与 test manifest 都用**同一个** `BENCHMARK_KEY` 调它，只是落到不同目录
+   （`run_offline_rebrac_screen.sh` 的 `ensure_manifest`，`run_offline_rebrac_broad.sh`、
+   `run_offline_td3bc_phase0c.sh` 同构）。
+3. notebook 里的实际启动命令：**39 处全部**是 `BENCHMARK_KEY=single_u10_cross_tgt15`
+   （`manifest_seed = 1250`），配 `VAL_MANIFEST_EPISODES=40` 与 `TEST_MANIFEST_EPISODES=100`（或 `40`）。
+
+于是：
+
+| 配置 | 出处 | val 种子 | test 种子 | 关系 |
+|---|---|---|---|---|
+| 40 + 100 | broad / phase0c Stage C / worldcomp final | 1250..1289 | 1250..1349 | val = test 的**前 40 条** |
+| 40 + 40 | screen / phase0c Stage B / epoch probe | 1250..1289 | 1250..1289 | **两份 manifest 逐条相同** |
+
+即：**报告的 100 回合测试集里，有 40 条正是用来选 checkpoint 的那批**；在 40+40 的单元里两者完全重合。
+第 5 章 §5.3.6（rev.6）写的「在验证集上按字典序规则选点、在**独立**测试集上评估」，**"独立"不成立**。
+
+「40 回合」的出处也随之明确：不是某个 `benchmarks/` 下的文件，而是 launcher 的
+`VAL_MANIFEST_EPISODES` 默认值现场生成的 `benchmarks/<root>/val_40/single_u10_cross_tgt15.json`
+（本机无，只在 Drive）。
+
+**处置选项**：(a) 给 test manifest 换一段种子（生成器加 `--seed-offset`）并重跑终检评估；
+(b) 保留数字，在 §5.3.6 把"独立"改为如实描述选点集与测试集的包含关系。**未决，需用户裁决。**
 
 ---
 

@@ -61,6 +61,7 @@ That orphan set closed on 2026-08-17. Ten of the eleven were FQL-line files, and
 
 | Doc | Role |
 |---|---|
+| [`docs/doc_cleanup_status.md`](docs/doc_cleanup_status.md) | 🔧 **In-flight** — the repo-wide documentation cleanup: what the three layers are, which are done, the priority rule for the remaining one, and the traps. Sole status ledger for that work; delete when it closes |
 | [`docs/DOC_INDEX.md`](docs/DOC_INDEX.md) | **Generated file map** — every markdown in the repo with its H1 and self-declared status. Use it to locate a doc; use the two line summaries below to understand a research line |
 | [`docs/offline_rl_line_summary.md`](docs/offline_rl_line_summary.md) | Offline RL line entry (primary) — phases, citable results, full doc index |
 | [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) | Online RL line entry (support) — A0 + SAC collector roles, thesis-matrix closure |

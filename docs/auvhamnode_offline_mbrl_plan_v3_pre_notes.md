@@ -204,7 +204,7 @@ PlanarRemusEnv:
    - speed magnitude 分布(min/median/p95/max)
    - spatial gradient 分布(涡核检测)
 3. 报告:speed shift ratio(wake_max / AUVHamNODE_max)+ spatial structure 差异(AUVHamNODE 是 spatially uniform,wake 是 spatially varying)
-4. 写入 `experiments/auvhamnode_spike/flow_distribution_audit.md`
+4. 写入 `docs/auvhamnode_spike/flow_distribution_audit.md`
 
 **判断**:
 - speed ratio < 2× → §4.2 A 可能可行,继续

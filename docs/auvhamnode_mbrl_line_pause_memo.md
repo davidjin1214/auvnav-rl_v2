@@ -46,18 +46,18 @@
 | [`auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) | 252 | α 路径交接备忘(发现 4 项硬接口差异;ReBRAC 战略下调) | PAUSED;banner 已加 |
 | 本备忘 `auvhamnode_mbrl_line_pause_memo.md` | (本文) | pause anchor + resume manual | active |
 
-### 3.2 预 spike 工作区(`experiments/auvhamnode_spike/`)
+### 3.2 预 spike 工作区(`docs/auvhamnode_spike/`)
 
 | 文件 | 描述 | 状态 |
 |---|---|---|
-| [`README.md`](../experiments/auvhamnode_spike/README.md) | 工作区 index + 一页 TL;DR | banner 已加 |
-| [`00_smoke_test_log.md`](../experiments/auvhamnode_spike/00_smoke_test_log.md) | Step 0 ✅:`mytorch1` env + torchdiffeq + checkpoint + ODE solver 全绿 | complete |
-| [`01_static_distribution_audit.md`](../experiments/auvhamnode_spike/01_static_distribution_audit.md) | Step 1 ✅:7 维分布审计 + 4 条路径决策矩阵 | complete |
-| [`02_spike_lite_design.md`](../experiments/auvhamnode_spike/02_spike_lite_design.md) | Path 1B 蓝图(~5h kill-test,**未执行**) | designed only |
-| [`03_dynamics_consistency_audit.md`](../experiments/auvhamnode_spike/03_dynamics_consistency_audit.md) | Step 3 ✅:`vehicle.py` 与 `remus100_core.py` 7 个公式分歧 | complete |
-| [`04_swap_vehicle_decision_memo.md`](../experiments/auvhamnode_spike/04_swap_vehicle_decision_memo.md) | Step 4 ✅:是否要把 `vehicle.py` 换成 `remus100_core.py`?结论=不要 | complete |
-| [`_wake_stats.py`](../experiments/auvhamnode_spike/_wake_stats.py) | wake_data 速度统计脚本(可复用) | reusable |
-| [`_wake_stats.out`](../experiments/auvhamnode_spike/_wake_stats.out) | 3/6 文件原始统计(剩余 3 个 OneDrive 卡住) | partial |
+| [`README.md`](auvhamnode_spike/README.md) | 工作区 index + 一页 TL;DR | banner 已加 |
+| [`00_smoke_test_log.md`](auvhamnode_spike/00_smoke_test_log.md) | Step 0 ✅:`mytorch1` env + torchdiffeq + checkpoint + ODE solver 全绿 | complete |
+| [`01_static_distribution_audit.md`](auvhamnode_spike/01_static_distribution_audit.md) | Step 1 ✅:7 维分布审计 + 4 条路径决策矩阵 | complete |
+| [`02_spike_lite_design.md`](auvhamnode_spike/02_spike_lite_design.md) | Path 1B 蓝图(~5h kill-test,**未执行**) | designed only |
+| [`03_dynamics_consistency_audit.md`](auvhamnode_spike/03_dynamics_consistency_audit.md) | Step 3 ✅:`vehicle.py` 与 `remus100_core.py` 7 个公式分歧 | complete |
+| [`04_swap_vehicle_decision_memo.md`](auvhamnode_spike/04_swap_vehicle_decision_memo.md) | Step 4 ✅:是否要把 `vehicle.py` 换成 `remus100_core.py`?结论=不要 | complete |
+| [`_wake_stats.py`](auvhamnode_spike/_wake_stats.py) | wake_data 速度统计脚本(可复用) | reusable |
+| [`_wake_stats.out`](auvhamnode_spike/_wake_stats.out) | 3/6 文件原始统计(剩余 3 个 OneDrive 卡住) | partial |
 
 ### 3.3 Worktree 中未入 git 的资产
 
@@ -110,7 +110,7 @@
 | 路径 | 一句话 | 这次的状态 |
 |---|---|---|
 | **Path 1** | 限定 v3.0 到 U=1.0 wakes,recommended first | 未执行(spike 未开) |
-| Path 1B | spike-lite ~5h kill-test 验 Path 1 | 蓝图已就位([`02_spike_lite_design.md`](../experiments/auvhamnode_spike/02_spike_lite_design.md)),未执行 |
+| Path 1B | spike-lite ~5h kill-test 验 Path 1 | 蓝图已就位([`02_spike_lite_design.md`](auvhamnode_spike/02_spike_lite_design.md)),未执行 |
 | Path 2 | finetune NODE 到 wake-compatible flow | 未评估(需上游训练 repo 访问) |
 | Path 3 | rescale wake ≤0.5 m/s | 论证为劣选(破坏 Re/St 相似性) |
 | Path 4 | 弃 NODE,用 `vehicle.py` oracle 当 dynamics aug source | 提及但未设计 |
@@ -121,7 +121,7 @@
 
 直接列出来,未来回到这条线时不需要重新猜测:
 
-1. **Spike-lite (Path 1B) 未执行** — [`02_spike_lite_design.md`](../experiments/auvhamnode_spike/02_spike_lite_design.md) 给出了完整蓝图(lift/project hand-rolled、5h 预算、go/no-go 阈值),实施前不需要再设计。
+1. **Spike-lite (Path 1B) 未执行** — [`02_spike_lite_design.md`](auvhamnode_spike/02_spike_lite_design.md) 给出了完整蓝图(lift/project hand-rolled、5h 预算、go/no-go 阈值),实施前不需要再设计。
 2. **完整 adapter spike 未启动** — pre-notes §7 动作 1 的 1-2 天版本。
 3. **3/6 wake 文件统计缺失** — `tandem_U1.5`, `sbs_U1.0`, `sbs_U1.5` 因 OneDrive 按需同步超时未跑通;trend 可推断但未实测。在 Colab 上 wake_data fully cached 时可秒级补全。
 4. **Path 2 (finetune) 可行性未确认** — 需要回到上游 repo (`g3_5_5` / `g3_5_7`) 看训练 pipeline + dataset 生成代码是否可访问。
@@ -142,7 +142,7 @@
 | (c) 项目转向其他低速 AUV 任务 | thesis scope 变更 | AUVHamNODE 训练域立即变 in-distribution |
 | (d) 出现替代 physics-structured dynamics prior 且训练流场含强 wake | 文献监测 | 同效但不绑 AUVHamNODE |
 | (e) 用户主动想恢复 | (任何时候) | 默认路径 |
-| (f) Path 1B spike-lite 在 5h 内可以执行的时间窗口出现 | (用户判断) | 走 [`02_spike_lite_design.md`](../experiments/auvhamnode_spike/02_spike_lite_design.md) |
+| (f) Path 1B spike-lite 在 5h 内可以执行的时间窗口出现 | (用户判断) | 走 [`02_spike_lite_design.md`](auvhamnode_spike/02_spike_lite_design.md) |
 
 ---
 
@@ -151,10 +151,10 @@
 如果 (a)/(b)/(c)/(d)/(e)/(f) 任一触发,**第一步不需要重读 plan v2.1 全文**,按以下顺序:
 
 1. 重读本备忘 §4(累计决策)和 §5(未做的事),确认初始状态没变
-2. 重跑 [`experiments/auvhamnode_spike/_wake_stats.py`](../experiments/auvhamnode_spike/_wake_stats.py) 把 3 个缺失行补上(验证 wake_data 还在 + OneDrive 通)
+2. 重跑 [`docs/auvhamnode_spike/_wake_stats.py`](auvhamnode_spike/_wake_stats.py) 把 3 个缺失行补上(验证 wake_data 还在 + OneDrive 通)
 3. 视触发条件选下一动作:
    - (a) → 启动 Path 2 finetune,本备忘暂停期间 plan v2.1 不动,新写 plan v3.0
-   - (b)/(c) → 启动 Path 1B spike-lite([`02_spike_lite_design.md`](../experiments/auvhamnode_spike/02_spike_lite_design.md))
+   - (b)/(c) → 启动 Path 1B spike-lite([`02_spike_lite_design.md`](auvhamnode_spike/02_spike_lite_design.md))
    - (d) → 重新评估 paper framing,plan v2.1 重写
    - (e)/(f) → 直接走 Path 1B
 
@@ -174,7 +174,7 @@
 
 - [x] [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) — 顶部加 PAUSED banner
 - [x] [`docs/auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) — 顶部加 PAUSED banner
-- [x] [`experiments/auvhamnode_spike/README.md`](../experiments/auvhamnode_spike/README.md) — 顶部加 PAUSED banner
+- [x] [`docs/auvhamnode_spike/README.md`](auvhamnode_spike/README.md) — 顶部加 PAUSED banner
 - [x] [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) §3.4 + §4.4 — 状态从"v2.0 locked, 待 fire"改为"paused 2026-05-13, 见本备忘"
 - [x] [`docs/offline_rl_implementation_plan.md`](offline_rl_implementation_plan.md) DEPRECATED banner — 追加 "AUVHamNODE 后续也已 paused" 的说明
 - [x] `.gitignore` — 加入 `phnode_full_oc_clean/`(formalize "暂时不入 git")

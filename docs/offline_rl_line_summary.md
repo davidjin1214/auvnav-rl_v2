@@ -162,7 +162,7 @@
 - 2026-05-08: v2.0 locked(升级到 cross-domain transfer framing,Plan B 算法栈撤销)
 - 2026-05-09 ~ 05-10: v2.1 + amendment(RL 专家 meta-review;§11.1.0 零号前置增补)
 - 2026-05-12: 战略转折——ReBRAC mainline + paper + broad_validation 暂停;主线试图转 MBRL+arrival_v2;v3 pre-notes 落地(α 路径)
-- 2026-05-13: Step 0-4 廉价审计完成(详见 [`experiments/auvhamnode_spike/`](../experiments/auvhamnode_spike/));**4 项硬接口差异 + wake current 2-4× OOD 暴露**;用户决定暂停整条线
+- 2026-05-13: Step 0-4 廉价审计完成(详见 [`docs/auvhamnode_spike/`](auvhamnode_spike/));**4 项硬接口差异 + wake current 2-4× OOD 暴露**;用户决定暂停整条线
 
 **累计决策**(pause memo §4):
 - ✅ `mytorch1` env 可驱动 AUVHamNODE checkpoint
@@ -338,7 +338,7 @@
 | C1 spoke task-fundamental floor 候选证据链 | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3.5 + [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) |
 | TD3+BC baseline 详细收口 | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
 | AUVHamNODE Offline MBRL 线为何 paused / 累计决策 / 恢复条件 | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★(pause anchor) |
-| AUVHamNODE Offline MBRL 历史 plan(paused) | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md)(v2.1, paused) + [`auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) + [`experiments/auvhamnode_spike/`](../experiments/auvhamnode_spike/) |
+| AUVHamNODE Offline MBRL 历史 plan(paused) | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md)(v2.1, paused) + [`auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) + [`docs/auvhamnode_spike/`](auvhamnode_spike/) |
 | Env / sensor / reward / benchmark 规格 | [`docs/environment_design.md`](environment_design.md) |
 | World model + offline RL 综述 | [`docs/world_model_and_offline_rl_survey.md`](world_model_and_offline_rl_survey.md) |
 | RLPD 设计（offline-to-online，跨线复用） | [`docs/rlpd_design.md`](rlpd_design.md) |
@@ -396,7 +396,7 @@
 | [`auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★ | **pause anchor**(累计决策 + 恢复条件 + 未做的事 + 文件清单)。**任何 resume 工作必读** |
 | [`auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md)(v2.1) | ⏸ paused;原 v1.0 → v2.0 → v2.1 三轮迭代 plan;顶部 banner 已加 |
 | [`auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) | ⏸ paused;α 路径交接备忘(4 项硬接口差异);顶部 banner 已加 |
-| [`experiments/auvhamnode_spike/`](../experiments/auvhamnode_spike/)(Step 0-4 审计 + spike-lite 设计 + decision memo) | ⏸ Step 0-4 ✅;Path 1B spike 未执行 |
+| [`docs/auvhamnode_spike/`](auvhamnode_spike/)(Step 0-4 审计 + spike-lite 设计 + decision memo) | ⏸ Step 0-4 ✅;Path 1B spike 未执行 |
 | [`offline_mbrl_plan/`](offline_mbrl_plan/) 下 6 份草案 | 已被 v2.0 批判性合并/选择性吸收;6 份均已加 deprecated banner |
 | [`offline_rl_implementation_plan.md`](offline_rl_implementation_plan.md)(rev.5, 2026-04-22) | 已 deprecated(XQL/FQL 主线撤销);TD3+BC / ReBRAC 段落仍可作论文引用源 |
 

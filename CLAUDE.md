@@ -49,10 +49,13 @@ Offline transition data lives in `offline_data/` (gitignored). Each subdirectory
 
 **Two line-summary docs are the canonical index** — phase timelines, full doc routing, archive status, retrofit triggers all live there. Read them first; only fall back to the short list below for the highest-traffic entry points.
 
+**They index the research narrative, not the file tree.** An audit on 2026-08-16 found 11 of the 52 top-level `docs/` files reachable from no entry point at all, and 20 whose validity could not be told without opening them — markdown lives in 21 directories here. [`docs/DOC_INDEX.md`](docs/DOC_INDEX.md) is the generated file map that closes that gap: every markdown in the repo, its H1, and its own status banner. Rebuild it with `python -m scripts.build_doc_index` after adding or moving docs; `--check` fails when it has drifted. Its status column reads `—` for "this doc does not label itself", **which is not the same as "still current"** — that call stays human work.
+
 **Pointer rot is the standing failure mode of this index.** Version numbers, section numbers, and deprecation status embedded in prose go stale silently and then get quoted as fact (2026-07-28 sweep found the spec rev pointer two revisions behind, six docs still citing the chapter's superseded 8-section `§N.k` numbering, and the authoritative ReBRAC report routing readers to broad-validation v1 with no mention that v2 exists). Run `python -m scripts.check_doc_pointers` after any doc reshuffle — it resolves every markdown link and bare `docs/foo.md` reference repo-wide, with no directory exempt — `.claude/` included. It only proves targets *exist*; whether a banner, a rev number, or a dated claim is still *true* stays human work. **Never write a live spec's rev number into another doc** — including this table; each doc carries its own version in its header.
 
 | Doc | Role |
 |---|---|
+| [`docs/DOC_INDEX.md`](docs/DOC_INDEX.md) | **Generated file map** — every markdown in the repo with its H1 and self-declared status. Use it to locate a doc; use the two line summaries below to understand a research line |
 | [`docs/offline_rl_line_summary.md`](docs/offline_rl_line_summary.md) | Offline RL line entry (primary) — phases, citable results, full doc index |
 | [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) | Online RL line entry (support) — A0 + SAC collector roles, thesis-matrix closure |
 | [`paper/thesis_chapter_outline.md`](paper/thesis_chapter_outline.md) | **Dissertation Ch5 writing spec** — central thesis, §0.4 red lines, register/terminology conventions, 10-section skeleton, reuse matrix |

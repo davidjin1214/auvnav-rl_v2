@@ -1,7 +1,7 @@
 # ReBRAC Broad Validation v2 — Cross-Only Spotlight under `arrival_v2`
 
 > **文档版本**：2026-05-18 rev.3（pivot 版；rev.2 的 crosscomp-based N2 被 S sanity 证伪）
-> **状态**：✅ **PASS — completed 2026-05-19**。N0 HOLDS (0.850 ± 0.024) / N2' STRONG_NEGATIVE (0.000 ± 0.000) / M1 not triggered；actor-fundamental partial-obs ceiling 实证确认。报告见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。
+> **状态**：✅ **PASS — 首轮 completed 2026-05-19，三种子收口 2026-07-12**。N0 HOLDS (**0.878 ± 0.051**，3 seed {42, 0, 43}) / N2' STRONG_NEGATIVE (0.000 ± 0.000，0/90) / M1 not triggered；actor-fundamental partial-obs ceiling 实证确认。报告见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。⚠ **本行原写首轮 2-seed 的 0.850 ± 0.024，2026-08-16 订正**。
 > **作用**：取代 v1 broad validation 全部产出（spec / plan / report），把广验从「efficiency_v2 三轴 8 spoke + C1 deep-dive」收敛成「arrival_v2 cross-only **2 core cell + 1 conditional sweep**」。**Rev.3 关键改动**：S sanity 实测显示 crosscomp 在 cross_u15/s0/arrival_v2 下 success=0%（与 online §7.6 vanilla SAC = 0.10 共同证伪 "simple baseline 可救 critical regime"），privileged 同 setup 下 70%。因此 N2 collector 从 crosscomp 改为 privileged，N2 与 rev.2 原 N4 合并为单一 cell N2'，narrative 重 framing 为 "**actor-fundamental partial-observability ceiling under deployable s0 sensor**"。
 >
 > **取代的 v1 文档**（已加 SUPERSEDED banner）：
@@ -422,9 +422,9 @@ only 0.10 in critical regime), we conduct two experiments:
 
 ## 10. Cross-link 与文档影响
 
-> **Status (2026-05-19)**: ✅ **PASS** — broad val v2 4-run 闭环完成（2 seed [42, 0]，非预登记的 3 seed — 见 report §6.1 limitations）。
-> - **N0** (sub-critical, crosscomp/Re150): success = **0.850 ± 0.024**, per-seed [42=0.867, 0=0.833] → §5.2 verdict **HOLDS** (Δ vs efficiency_v2 anchor 0.902 = **−5.20pp**, paired same-direction)
-> - **N2'** (critical, privileged/Re250): success = **0.000 ± 0.000**, per-seed [42=0.000, 0=0.000] → §5.3 verdict **STRONG_NEGATIVE** (recovery_of_oracle = 0%, lift_vs_online_floor = **−10pp**)
+> **Status (2026-05-19 首轮 → 2026-07-12 三种子收口；本块 2026-08-16 订正)**: ✅ **PASS** — 首轮 4-run（2 seed [42, 0]），2026-07-12 seed 43 supplement 补齐第三种子；种子组 {42, 0, 43} 与预登记 {42, 43, 44} 不重合，见 report §6.1 limitations。
+> - **N0** (sub-critical, crosscomp/Re150): success = **0.878 ± 0.051**, per-seed [42=0.867, 0=0.833, 43=0.933] → §5.2 verdict **HOLDS** (Δ vs efficiency_v2 anchor 0.902 = **−2.42pp**)。⚠ 原写 **0.850 ± 0.024 / −5.20pp / paired same-direction**——第三种子反向 +3.1pp，**同向退化的读法已在 report §2.4 撤销**
+> - **N2'** (critical, privileged/Re250): success = **0.000 ± 0.000**, per-seed [42=0.000, 0=0.000, 43=0.000] → §5.3 verdict **STRONG_NEGATIVE** (recovery_of_oracle = 0%，0/90 episode，rule-of-three 上界 ≈ 0.033)
 > - **M1** BC sweep §5.4: **NOT triggered** (N2' ∉ [0.15, 0.40] partial zone)
 > - **Paper claim ready**: actor-fundamental partial-obs ceiling under s0 in critical regime — 详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)
 > - **Raw outputs**: `results/offline/rebrac/broad_validation_v2/{N0,N2p}/seed_{42,0}/test_result.json` + `summaries/{verdict_decision.json, p1_overview.csv}`

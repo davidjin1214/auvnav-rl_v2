@@ -75,8 +75,8 @@ report §6.4 明确：在 crosscomp-1000 上，winner `(β1=4.0, β2=2.0)` 的 *
 ## 3. 泛化广验（段 1.5）
 
 - **v1（`efficiency_v2`，三轴 8 spoke × 5-seed parity，~30h L4）**：8 spoke 中只有 B1（s1 传感器）clean positive，其余 7 spoke 欠功效（A1 p≈0.11 / A2 mode-collapse 仅假设 / C1 task-fundamental floor 钉在 0.195–0.225）。**2026-05-18 整套 SUPERSEDED**——`efficiency_v2` 被 [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) 证有 OOB-suicide failure mode（reward 失配），且 online §7.6 已产出更强 sensor envelope finding。v1 archive 保留、不重跑、不进 paper。
-- **v2（`arrival_v2`，cross-only spotlight，✅ 2026-05-19 PASS，2-seed 4-run）**：
-  - **N0**（crosscomp / sub-critical Re150）：**0.850 ± 0.024 → HOLDS**（vs anchor 仅 −5.2pp）
+- **v2（`arrival_v2`，cross-only spotlight，✅ PASS；首轮 2-seed 4-run 2026-05-19，2026-07-12 补齐第三种子）**：
+  - **N0**（crosscomp / sub-critical Re150）：**0.878 ± 0.051 → HOLDS**（3 seed {42, 0, 43}，vs anchor 仅 −2.4pp）。⚠ 原写 2-seed 的 `0.850 ± 0.024 / −5.2pp` 并读作「同向退化」，该读法已随第三种子（0.933，反向 +3.1pp）撤销，见 v2 report §2.4
   - **N2'**（privileged / critical Re250）：**0.000 ± 0.000 → STRONG_NEGATIVE**，甚至跌破 online catastrophic floor 10pp
   - **paper headline**：即便 oracle teacher（privileged 70% 直接成功）提供示范，critical regime 下 `s0`-conditioned BC 也传不了 hull-integral flow 知识 → **deployable s0 传感器下的 actor-fundamental partial-observability ceiling**（作 paper §experiments 的 deployability boundary map）。
 

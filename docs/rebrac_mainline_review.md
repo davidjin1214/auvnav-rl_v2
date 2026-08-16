@@ -309,13 +309,13 @@ ReBRAC 主线已经 "够发"。继续在它上面投入的边际收益曲线已�
 
 ### 3.5 Broad validation 结论回写 `【rev.3 新增 2026-05-07；v2 PASS 2026-05-19】`
 
-> **⚠ 2026-05-19 update — v2 PASS**: v2 broad validation 4-run 闭环完成（2 seed × 2 cell × 30 ep）。完整报告 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。**Paper drafting 时本节 §experiments 应直接引用 v2 report（不引用本节以下 v1 archive 内容）**。
-> - **N0** (sub-critical, crosscomp/Re150, `arrival_v2`): success = **0.850 ± 0.024**（per-seed [42=0.867, 0=0.833]）→ plan §5.2 verdict **HOLDS**；Δ vs efficiency_v2 main-line anchor 0.902 = **−5.20pp**（paired same-direction，paper 写作时需明标）
+> **⚠ 2026-05-19 update — v2 PASS｜2026-08-16 追注：数字已按三种子更新**: v2 broad validation 首轮 4-run 闭环（2 seed × 2 cell × 30 ep），2026-07-12 seed 43 supplement 补齐第三种子。完整报告 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。**Paper drafting 时本节 §experiments 应直接引用 v2 report（不引用本节以下 v1 archive 内容）**。
+> - **N0** (sub-critical, crosscomp/Re150, `arrival_v2`): success = **0.878 ± 0.051**（3 seed，per-seed [42=0.867, 0=0.833, 43=0.933]）→ plan §5.2 verdict **HOLDS**；Δ vs efficiency_v2 main-line anchor 0.902 = **−2.42pp**。⚠ **本行原写 0.850 ± 0.024 / −5.20pp /「paired same-direction，paper 写作时需明标」——该读法已随第三种子撤销**（seed 43 反向 +3.1pp，report §2.4）。`boundary.tex` rev.3 已于 2026-07-12 改写，本文 2026-08-16 才跟上
 > - **N2'** (critical, privileged/Re250, `arrival_v2`): success = **0.000 ± 0.000**（per-seed [42=0.000, 0=0.000]）→ plan §5.3 verdict **STRONG_NEGATIVE**；recovery_of_oracle = 0%, lift_vs_online_floor = **−10pp**（跌破 online §7.6 catastrophic floor，三 candidate mechanism 见 v2 report §4）
 > - **M1** BC sweep §5.4: **NOT triggered**（N2' ∉ [0.15, 0.40] partial zone）
-> - **Paper-level claim**: **actor-fundamental partial-observability ceiling under s0 in critical regime** — 即便 oracle teacher 提供 demonstrations，s0-conditioned BC 不能传递 hull-integral flow 知识。这条 claim **不冲突**主 paper claim（main paper +23pp 限定在 sub-critical / efficiency_v2，本节 v2 N0 anchor holds 0.85 仍远超 catastrophic floor），且为 paper §experiments 增加 deployability boundary map
+> - **Paper-level claim**: **actor-fundamental partial-observability ceiling under s0 in critical regime** — 即便 oracle teacher 提供 demonstrations，s0-conditioned BC 不能传递 hull-integral flow 知识。这条 claim **不冲突**主 paper claim（main paper +23pp 限定在 sub-critical / efficiency_v2，本节 v2 N0 anchor holds 0.88 仍远超 catastrophic floor），且为 paper §experiments 增加 deployability boundary map
 > - **下游待 paper drafting 时整合**: §experiments appendix 入口指向 v2 report；§discussion ceiling decomposition 表（4 行：hand-coded 0% / offline+oracle 0% / online RL 10% / oracle direct 70%）；§robustness 1 段
-> - **Seed-count caveat**: 2 seed 而非 plan §6.2 预登记 3 seed（详见 v2 report §6.1）；3rd seed 补全已转 backlog 不立即跑
+> - **Seed-count caveat**: 现为 3 seed {42, 0, 43}（首轮 2 seed，2026-07-12 supplement 补齐），但与 plan §6.2 预登记的 {42, 43, 44} **不重合**——首轮以 0 替换 44，须在稿中如实披露（详见 v2 report §6.1 + supplement plan 附录 B）
 
 > **以下是 v1 broad validation archive（保留供历史参考，paper drafting 不再引用）。**
 

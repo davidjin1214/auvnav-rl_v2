@@ -275,6 +275,10 @@ slope = −0.0133 (matches verdict.json，ReBRAC 无污染)
 
 ## 7. 与 broad val v2 N0 anchor 对比
 
+> ⚠ **追注（2026-08-16）**：本表的 v2 N0 列是**当时**的两种子值 `0.850 ± 0.024`。该 anchor 已于
+> 2026-07-12 补齐第三种子，现为 **0.878 ± 0.051（3 seed {42, 0, 43}）**（report §2.4）。
+> 本文档已 SUPERSEDED，表值作为当时对照的历史记录**保留不改**；引用当前 anchor 请用 0.878。
+
 | metric | broad val v2 N0 (crosscomp, 2 seed) | Task E ReBRAC (privileged, 1 seed) | Task E FQL |
 |---|---:|---:|---:|
 | final test success | **0.850 ± 0.024** | 0.667 (30 ep) | 0.533 (30 ep) |

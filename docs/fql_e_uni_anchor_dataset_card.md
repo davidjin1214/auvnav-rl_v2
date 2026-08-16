@@ -123,6 +123,11 @@ obs_dim=48 = base_8 × 4 history + s0_2D × 4 history + episode-context_8 (`incl
 | ReBRAC broad val v2 N0 (arrival_v2, this manifold) | crosscomp / s0 / cross_u10 / arrival_v2 / 2-seed [42, 0] | **0.850 ± 0.024** | [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) §2 |
 | **Behavior policy on dataset** | privileged / cross_u10 / arrival_v2 / seed=0 | **0.985** | this dataset |
 
+> ⚠ **追注（2026-08-16）**：表中 v2 N0 的 `0.850 ± 0.024` 是**当时**的两种子值。该 anchor 已于
+> 2026-07-12 由 seed 43 supplement 更新为 **0.878 ± 0.051（3 seed {42, 0, 43}）**，且首轮「两种子同向退化」
+> 的读法已在 report §2.4 撤销。**此处保留原值不改**——下方 Gate B 门槛是按当时 anchor 预登记的，
+> 改数字等于篡改预登记判据。引用当前 anchor 请用 0.878。
+
 **FQL Gate B target**：在 E-uni 1000-ep 上跑 64-epoch FQL 1-seed，eval success ≥ ReBRAC broad val v2 N0 anchor (≈ 0.85) — 即"FQL 在 sub-critical / s0 anchor 上至少 holds ReBRAC parity"。若 FQL 显著高于 ReBRAC（e.g. ≥ 0.90），则解锁 paper claim "FQL beats ReBRAC on uni-modal expert" 的 anchor evidence。
 
 **注意 reward 差异**：

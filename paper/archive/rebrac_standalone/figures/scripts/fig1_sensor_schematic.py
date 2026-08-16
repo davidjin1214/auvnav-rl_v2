@@ -46,10 +46,10 @@ from matplotlib.patches import Ellipse
 # Paths
 # ---------------------------------------------------------------------------
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[5]
 WAKE_NPY = REPO_ROOT / "wake_data" / "wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy"
 WAKE_META = REPO_ROOT / "wake_data" / "wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi_meta.json"
-OUTPUT_DIR = REPO_ROOT / "paper" / "figures" / "output"
+OUTPUT_DIR = REPO_ROOT / "paper" / "archive" / "rebrac_standalone" / "figures" / "output"
 OUTPUT_PDF = OUTPUT_DIR / "fig1_sensor_schematic.pdf"
 OUTPUT_PNG = OUTPUT_DIR / "fig1_sensor_schematic.png"
 

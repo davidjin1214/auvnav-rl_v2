@@ -62,7 +62,7 @@
 - `auv_nav/baselines.py`——四类采集器（GoalSeek / CrossCurrentCompensation / WorldFrameCurrentCompensation / PrivilegedCorridor）的真实定义；核对 §5.3.5 ¶1 描述与"privileged = oracle 读全场、不可部署"的判断。
 
 **复用源 + 语体/红线范本：**
-- `paper/sections/setup.tex`——§5.3 主骨架的 paper 1 复用源（rev.2）。核对泛化是否忠实、有无搬运时引入的错误或语体倒退。
+- `paper/archive/rebrac_standalone/sections/setup.tex`——§5.3 主骨架的 paper 1 复用源（rev.2）。核对泛化是否忠实、有无搬运时引入的错误或语体倒退。
 - `paper/thesis_ch5/sections/intro.tex`（§5.1）、`paper/thesis_ch5/sections/related_work.tex`（§5.2）——**已定稿两节**，作语体、术语、红线的对照范本；核对 §5.3 与之的衔接与一致性（尤其"特权信息"首次出现：§5.1 ¶2 抽象引入 → §5.3.3 给具体所指 `[u_eq,v_eq]` + cite，是否口径一致、有无重复或断裂）。
 
 **写作 spec（权威，但允许质疑）：**

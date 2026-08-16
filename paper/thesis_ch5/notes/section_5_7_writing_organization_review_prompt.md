@@ -34,7 +34,7 @@
 - §5.7.5 收束是否配得上"全章唯一正面核心贡献"的份量。
 
 ### 2. 细节保真度（对照素材上游，列"被压缩掉的细节"清单）
-对照 paper 1 `paper/sections/experiments.tex`（233 行 4-finding 结构 + per-seed 特权对照表 Tab 4）与 report rev.8，逐项列出：哪些证据/细节在压缩进 §5.7 时被丢掉或降为半句，其中哪些**值得恢复**（以"外审不翻报告能否复核这一步推理"为判据）。候选清单（不限于）：
+对照 paper 1 `paper/archive/rebrac_standalone/sections/experiments.tex`（233 行 4-finding 结构 + per-seed 特权对照表 Tab 4）与 report rev.8，逐项列出：哪些证据/细节在压缩进 §5.7 时被丢掉或降为半句，其中哪些**值得恢复**（以"外审不翻报告能否复核这一步推理"为判据）。候选清单（不限于）：
 - 筛查网格 12 格全景（report §6.3/§6.4：β1×β2 网格的 mean/std/per-seed，"robustness winner 非 peak winner"现在只有一句话，没有表）；
 - per-seed 分布表（Stage C §7.5 / worldcomp §7.10.4 / §7.12.4；paper 1 Tab 4 曾拍板不进正文——可重议）；
 - 训练侧诊断的更多维度（β2·ratio、检查点选择分布/训练曲线非单调性 §7.10.4 观察 4、return 与 success 解耦 §7.12.9）；
@@ -69,7 +69,7 @@
 
 - **复审对象**：`paper/thesis_ch5/sections/rebrac.tex`（rev.2；头注 rev.1/rev.2 两块 = 起草取舍与忠实性修订全记录）。
 - **写作方案（重议取舍前必读其原始理由）**：`paper/thesis_ch5/notes/section_5_7_rebrac_writing_plan.md`。
-- **素材上游（"被压缩掉的细节"对照源）**：paper 1 `paper/sections/experiments.tex`（只读，勿改 `paper/sections/`）+ `docs/rebrac_experiment_report.md`（rev.8，唯一权威数字源；§6.2–§6.8 筛查、§7.3–§7.16 正式/消融/统计）+ `docs/rebrac_statistical_test_followup.md` §1。
+- **素材上游（"被压缩掉的细节"对照源）**：paper 1 `paper/archive/rebrac_standalone/sections/experiments.tex`（只读，勿改 `paper/archive/rebrac_standalone/sections/`）+ `docs/rebrac_experiment_report.md`（rev.8，唯一权威数字源；§6.2–§6.8 筛查、§7.3–§7.16 正式/消融/统计）+ `docs/rebrac_statistical_test_followup.md` §1。
 - **章内均衡参照**：`sections/online.tex`（§5.5）、`sections/td3bc.tex`（§5.6）。
 - **体裁与红线**：`paper/thesis_chapter_outline.md` rev.12（§0.4 红线 / §0.5 体裁规范尤其 0.5.2/0.5.3/0.5.7/0.5.8 / §2 §5.7 素材映射 / §5 图表清单）。
 - **章级登记项**：`paper/thesis_ch5/notes/chapter_acceptance_review_5_1_5_6_findings.md` §5（图浮动漂移 F·M2 系全章拼装后统一处理的延后项——本轮扩写会加剧浮动，登记即可、不在本轮解决）。

@@ -8,7 +8,7 @@
 
 理由是第 5 章已经不再是单一算法实验报告，而是同时整合在线 SAC、TD3+BC 离线基线、ReBRAC-Q 离线主线、FQL 继承线、特权信息协议和泛化边界。若缺少一个独立方法入口，算法定义、损失函数、训练/部署信息边界会被迫分散在 §5.6、§5.7、§5.9 中，读者必须在多个结果节之间自行拼接方法关系。这不符合博士论文对“统一问题设定 - 方法框架 - 证据展开”的结构要求。
 
-同时，本次复核补充一个比上一轮更精确的警示：不能直接照搬 `paper/sections/method.tex` 中 ReBRAC-Q critic-side penalty 的旧公式表述。当前实现口径以 `auv_nav/rebrac.py` 为准，critic target 中的惩罚项比较的是 target actor next action 与数据集中的 next action，而不是简单的 target smoothing 噪声项本身。§5.4 写作前必须先把公式口径统一。
+同时，本次复核补充一个比上一轮更精确的警示：不能直接照搬 `paper/archive/rebrac_standalone/sections/method.tex` 中 ReBRAC-Q critic-side penalty 的旧公式表述。当前实现口径以 `auv_nav/rebrac.py` 为准，critic target 中的惩罚项比较的是 target actor next action 与数据集中的 next action，而不是简单的 target smoothing 噪声项本身。§5.4 写作前必须先把公式口径统一。
 
 ## 1. 证据基础
 

@@ -1,6 +1,6 @@
 # Offline RL 线总结报告
 
-> ⚠ **写作出口 LOCKED 2026-06-02**：本线全部素材的写作出口 = **博士论文第 5 章**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4）；ReBRAC 主线 → §N.4 主干（[`../paper/main.pdf`](../paper/main.pdf) 31pp arXiv preprint draft commit `932aca1` 直接复用），FQL succession → §N.6 节，broad-val v2 + asym-critic ablation → §N.5 节 + §N.4 paper 1 §6.6/L12。**不另起任何 standalone paper**（paper 1 ReBRAC / paper 2 FQL standalone 均撤销）。本文中"paper 1 / paper 2"用法是历史 / 线索内部 shorthand，**实际写作去向是上述 §N.k 节**。
+> ⚠ **写作出口 LOCKED 2026-06-02**：本线全部素材的写作出口 = **博士论文第 5 章**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4）；ReBRAC 主线 → §N.4 主干（[`../paper/archive/rebrac_standalone/main.pdf`](../paper/archive/rebrac_standalone/main.pdf) 31pp arXiv preprint draft commit `932aca1` 直接复用），FQL succession → §N.6 节，broad-val v2 + asym-critic ablation → §N.5 节 + §N.4 paper 1 §6.6/L12。**不另起任何 standalone paper**（paper 1 ReBRAC / paper 2 FQL standalone 均撤销）。本文中"paper 1 / paper 2"用法是历史 / 线索内部 shorthand，**实际写作去向是上述 §N.k 节**。
 >
 > 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
 >
@@ -313,7 +313,7 @@
 清单与完整证据在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)。**第 1、3 条已核实成立**（第 3 条比原怀疑更强），**处置待裁决**；不影响方法本身，但都会在答辩/返修时被问到。
 
 - **① `crosscomp-2000` 训练与评估用的是同一批任务实例**（⚠ 最高优先，**已确证**）。数据集 `seed=0`、2000 回合 → 训练种子 0..1999 完整包含评估 manifest 的 1250..1349；reset RNG 重放确认 **100/100 实例逐条相同**。成因是 `collect_offline_data.py` 的 `--seed` 默认值为 0 加上规模跨过 1250。**全仓仅此一个数据集受影响**（其余 9 个止于种子 999，低于最小 `manifest_seed`=1100）。波及 ReBRAC 主线 `cross-2000` 一格与"2000 不再劣于 1000"这条翻转论述；反向的"2000<1000"结论不受威胁（污染只会抬高 2000）。
-- **② paper Table 1 的 transitions 数字与本机 metadata 对不上** —— 仅影响已撤销的 standalone paper 旧稿（`paper/sections/setup.tex`）；论文第 5 章已于 rev.3（2026-06-18）用实测值 1.5e5 / 3.0e5 / 1.0e5 纠正过，四源互证。
+- **② paper Table 1 的 transitions 数字与本机 metadata 对不上** —— 仅影响已撤销的 standalone paper 旧稿（`paper/archive/rebrac_standalone/sections/setup.tex`）；论文第 5 章已于 rev.3（2026-06-18）用实测值 1.5e5 / 3.0e5 / 1.0e5 纠正过，四源互证。
 - **③ 选点验证集是终报测试集的前缀子集**（**已确证**，强于原怀疑）。manifest 生成器无 seed 偏移，val/test 用同一 benchmark key → `val_40` = `test_100` 的前 40 条；40+40 的单元里两份 manifest 完全相同。即报告的 100 回合测试集中有 40 条正是选 checkpoint 用的那批。
 - **④ 行为策略 success_rate 0.958 vs ReBRAC-Q 0.928** —— 非缺陷，建议把两个 behaviour policy 在评估 manifest 上的成功率补成一行，纯 eval 开销。
 

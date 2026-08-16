@@ -153,7 +153,7 @@
 ## 7. 勿改动项
 
 - 已闭环九节 `.tex` 视为 locked：本节落地若发现跨节接口问题（如伏笔句与兑现句对不齐），**先提出再改**，不静默联动。
-- `paper/sections/`（paper 1 原稿）只读；`discussion.tex`/`conclusion.tex`/`limitations.tex` 素材以转写方式进入本节，不直接复制英文混排原文。
+- `paper/archive/rebrac_standalone/sections/`（paper 1 原稿）只读；`discussion.tex`/`conclusion.tex`/`limitations.tex` 素材以转写方式进入本节，不直接复制英文混排原文。
 - 本方案轮不改任何 `.tex`、不编译、不动图。
 
 ---

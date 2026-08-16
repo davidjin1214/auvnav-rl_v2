@@ -2760,7 +2760,7 @@ Per spec §12, broad-validation closure requires:
 4. ✅ `docs/rebrac_broad_validation_report.md` complete §1–§5 (Task 11).
 5. ✅ C1 task-fundamental floor ablation chain (4 ablations: reward / asym critic / 4× epochs / sensor upgrade s0→s1) closed and reflected in spec §13 + report §10A (Task 11A Step 8 closed 2026-05-07; verdict = task-fundamental floor, < 0.30); C1-s2 and target_speed=2.0 backlogged as non-blocking.
 6. ✅ `docs/rebrac_mainline_review.md` §3.5 cross-link added (Task 12).
-7. ✅ `paper/sections/experiments.tex` broad-validation subsection drafted (out of scope for this plan; follows from Task 11 + 11A + 12).
+7. ✅ `paper/archive/rebrac_standalone/sections/experiments.tex` broad-validation subsection drafted (out of scope for this plan; follows from Task 11 + 11A + 12).
 
 After all 7 conditions are met → broad validation phase closed; paper drafting can ingest new findings.
 

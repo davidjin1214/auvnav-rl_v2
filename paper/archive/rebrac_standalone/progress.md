@@ -16,7 +16,7 @@
 >   - `sections/discussion.tex` **新增 §6.6 Scope: A Critical-Regime Boundary Probe Identifies the Bottleneck as Actor-Side**（关 critic-vs-actor mechanism 问题；指回 L12 + standalone 报告脚注）
 >   - `sections/conclusion.tex` 末句 scope tag 显式化（``sub-critical regime + efficiency-v2 reward''）+ 指回 L12 / §6.6
 >   - Headline / Abstract / 4 main findings / §5 / Method **不动**
->   - 数字源：[`docs/rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §3--§5 (broad-val v2 N0+N2$'$) 与 §4.5 (asym-critic ablation)
+>   - 数字源：[`docs/rebrac_broad_validation_v2_report.md`](../../../docs/rebrac_broad_validation_v2_report.md) §3--§5 (broad-val v2 N0+N2$'$) 与 §4.5 (asym-critic ablation)
 >
 > **Phase 6.1 (2026-06-02)** — arXiv / thesis venue 重定向后的**残余 stale 项清理 + R10 一致性 sweep**（共 5 处编辑，纯 venue / naming 自洽性，无内容/数字改动）：
 >   - `sections/limitations.tex` **L7 末句删去 stale `in-progress 的 online thesis line` 引用**（online RL 线 2026-05-06 战略下调；保留 sensor protocol coverage 边界本身）
@@ -27,7 +27,7 @@
 >   - main.pdf 重编 **31 页 612 KB**（page count 与 Phase 6 一致；naming 修补后 byte 微浮动）
 >
 > **R10 一致性 checklist 结果 (Phase 6.1, run on 31pp post-Phase 6 build):**
->   - ✅ 数字一致性 — L12 全部 5 个核心数 (0.000/0.000, rule-of-three 0.05, ~10pp 反低, 1.15 SEM, median -0.016) 与 [`docs/rebrac_broad_validation_v2_report.md`](../docs/rebrac_broad_validation_v2_report.md) §4.5 源对齐
+>   - ✅ 数字一致性 — L12 全部 5 个核心数 (0.000/0.000, rule-of-three 0.05, ~10pp 反低, 1.15 SEM, median -0.016) 与 [`docs/rebrac_broad_validation_v2_report.md`](../../../docs/rebrac_broad_validation_v2_report.md) §4.5 源对齐
 >   - ✅ 算法命名 — §6.6 / L12 全部 ReBRAC-Q；bare `ReBRAC` 仅在引述 Tarasov \citet{} 简化叙述的引号内（正确用法）
 >   - ✅ asym-critic 命名 — body italicized 首处 `asymmetric-critic ablation`、abbreviation 一律 `asym-critic`（§6.6 footnote + L12 inner + L12 footnote）；code identifier `\texttt{AsymmetricQNetwork}` verbatim 保留
 >   - ✅ Dataset 命名 — worldcomp-1000 / crosscomp-1000 / crosscomp-2000 + 家族级裸 worldcomp / crosscomp 用法在 §6.1/§6.2 上下文合理
@@ -122,7 +122,7 @@
 
 ## 5. References 进度
 
-`paper/refs.bib`：**12 entries，0 placeholder**
+`paper/archive/rebrac_standalone/refs.bib`：**12 entries，0 placeholder**
 
 | Cite key | Type | Status |
 |---|---|---|
@@ -148,7 +148,7 @@
 ## 6. 下一步计划（Phase 4，priority-ordered）
 
 ### ~~P0 — Figure 1 sensor schematic~~（✅ done）
-- ✅ 写好 `paper/figures/scripts/fig1_sensor_schematic.py`（rev.2，2×1 vertical layout）
+- ✅ 写好 `paper/archive/rebrac_standalone/figures/scripts/fig1_sensor_schematic.py`（rev.2，2×1 vertical layout）
 - ✅ 从 `wake_data/wake_v8_U1p00_Re150_*.npy` 取 frame 600 涡量场底图
 - ✅ 输出 `fig1_sensor_schematic.{pdf,png}`
 - ✅ `setup.tex` 在 §3.3 末尾插入 figure 块 `\label{fig:sensor_schematic}`，正文 forward-ref `图~\ref{fig:sensor_schematic}`

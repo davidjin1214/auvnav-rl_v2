@@ -469,8 +469,8 @@ results/offline/rebrac/broad_validation/
 
 ### 10.3 Paper section 落点
 
-- `paper/sections/experiments.tex`：新增 subsection "Broad validation across data quality, sensor, and task geometry"
-- `paper/sections/discussion.tex`：新增段落引用 §8.4 sim2real narrative 解读
+- `paper/archive/rebrac_standalone/sections/experiments.tex`：新增 subsection "Broad validation across data quality, sensor, and task geometry"
+- `paper/archive/rebrac_standalone/sections/discussion.tex`：新增段落引用 §8.4 sim2real narrative 解读
 - 主结果表 caption：声明 anchor → spoke 关系
 
 ---
@@ -497,7 +497,7 @@ results/offline/rebrac/broad_validation/
 2. ✅ P1 全部 16 run 完成且 `summaries/p1_overview.csv` 生成；
 3. ✅ P2 触发的所有 spoke 完成 β refit + 5-seed 扩展（或显式声明触发数 = 0）；
 4. ✅ `docs/rebrac_broad_validation_report.md` 完成 §1–§5（动机 / 矩阵 / P1 结果 / P2 结果 / discussion）；
-5. ✅ `paper/sections/experiments.tex` 新增 broad-validation subsection 第一稿；
+5. ✅ `paper/archive/rebrac_standalone/sections/experiments.tex` 新增 broad-validation subsection 第一稿；
 6. ✅ `docs/rebrac_mainline_review.md` 添加广验 cross-link。
 
 满足上述 6 条 + 没有未解释的 P2 触发为开放项 → 广验阶段 closed，paper drafting 可吸收新 finding。

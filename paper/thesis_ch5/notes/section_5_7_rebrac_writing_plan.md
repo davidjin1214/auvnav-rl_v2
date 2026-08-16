@@ -51,7 +51,7 @@
 - **§5.8 伏笔（散文、不 \ref、不预报结果）**：本节结论限亚临界工况 + 历史效率导向奖励 + 横流几何；临界工况下这一可行性的边界留待下节考察。红线⑤：不嫁接 §5.8 发现（N2'/临界结果零出现）。
 
 ### §5.7.m 实施细节与可复现性（全章最长 .m 之一，承 paper 1 App A–F 主线部分）
-- 超参表：β1=4.0 / β2=2.0、hidden 256×3、critic LN on / actor LN off、Q 归一化 on、lr 3e-4（Adam）、γ=0.995、τ=0.005、batch 256、64 epochs、检查点每 8 epoch、val=40 / test=100、五随机种子。**源 = `paper/sections/appendix.tex` App B（行 ~100–115）+ `auv_nav/rebrac.py` 核对**。
+- 超参表：β1=4.0 / β2=2.0、hidden 256×3、critic LN on / actor LN off、Q 归一化 on、lr 3e-4（Adam）、γ=0.995、τ=0.005、batch 256、64 epochs、检查点每 8 epoch、val=40 / test=100、五随机种子。**源 = `paper/archive/rebrac_standalone/sections/appendix.tex` App B（行 ~100–115）+ `auv_nav/rebrac.py` 核对**。
 - 筛查→正式流程一段：3-seed 网格 β1∈{1,2,4}×β2∈{1,2} 筛查 → finalist 升 5-seed 正式（检查点字典序规则引 §5.4.m 指针，不复述）。
 - 统计检验全式：Welch / 配对自助 B=10⁴ / 差距闭合定义 (method−dep)/(采集器−dep)。
 - 难例种子编号（seed 44）在此具名一次。
@@ -107,6 +107,6 @@
 
 ## 7. 勿改动项
 
-- `paper/sections/` 目录（paper 1 原稿）只读，复用素材复制/改写进 `sections/rebrac.tex`。
+- `paper/archive/rebrac_standalone/sections/` 目录（paper 1 原稿）只读，复用素材复制/改写进 `sections/rebrac.tex`。
 - 已锁六节（intro/related_work/setup/methodology/online/td3bc）不动；如发现须跨节联动的接口问题，先提出再改。
 - 不 git commit，除非用户明确要求。

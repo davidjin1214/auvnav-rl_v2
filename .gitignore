@@ -72,9 +72,12 @@ figures/
 events.out.tfevents.*
 figs/
 
-# Paper figures (override above) — paper/figures/ is part of paper deliverable
-!paper/figures/
-!paper/figures/**
+# Paper figures (override above) — these are paper deliverables, not run outputs.
+# `figures/` above matches at every level, and git will not descend into an
+# excluded directory, so each negation must name the directory itself before
+# its contents.
+!paper/archive/rebrac_standalone/figures/
+!paper/archive/rebrac_standalone/figures/**
 !paper/thesis_ch5/figures/
 !paper/thesis_ch5/figures/**
 
@@ -94,7 +97,7 @@ paper/**/*.synctex.gz
 paper/**/__pycache__/
 paper/**/*.pyc
 texput.log
-paper/figures/**/.DS_Store
+paper/archive/rebrac_standalone/figures/**/.DS_Store
 
 # Temp files
 tmp/

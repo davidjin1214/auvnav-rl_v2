@@ -60,7 +60,7 @@
   - `docs/rebrac_mainline_review.md`：审稿人视角的已知弱点清单（§4），可用作对抗性素材。
 - **图脚本与成图**：`figures/scripts/fig_ch5_rebrac_dotplot.py`、`fig_ch5_rebrac_qdrift.py`（数据手填、
   头注列明出处）+ `_ch5_style.py`；成图 `figures/fig_ch5_rebrac_dotplot.pdf`、`fig_ch5_rebrac_qdrift.pdf`。
-- **paper 1 对照（只读，勿改动 `paper/sections/`）**：`method.tex` / `experiments.tex` / `appendix.tex`。
+- **paper 1 对照（只读，勿改动 `paper/archive/rebrac_standalone/sections/`）**：`method.tex` / `experiments.tex` / `appendix.tex`。
   ⚠ 注意 paper 1 若干表述与本章口径**不同且不得回流**：其「唯一改动是引入 critic-side 双侧惩罚」
   措辞踩本章红线④（TD3+BC 同时无 LayerNorm）；其表格 std 为 Bessel 样本口径（0.902±0.024 一系），
   本章锁定报告刊值口径（0.902±0.021 一系）。

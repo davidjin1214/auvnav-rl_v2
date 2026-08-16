@@ -115,7 +115,7 @@
 | 查出 | 影响本章之处 | 处置 |
 |---|---|---|
 | [`docs/rebrac_experiment_report.md`](../../docs/rebrac_experiment_report.md) §10A「广验证据的 standalone 入口」表，指向两份 **2026-05-18 已 SUPERSEDED** 的广验 v1 文档，**全文未提 v2 存在** | 这是 `CLAUDE.md` 指定的唯一权威数字源，§5.7／§5.8 的数字溯源起点 | ✅ 补 v2 指针（v2 report ／ N2′ `ACTOR_FUNDAMENTAL_CONFIRMED` ／ seed 43 supplement），并写明 v1 finding 不进 finding spine。只改指针，不动该节任何数字或论述 |
-| 六份文档头注仍写 spec `rev.4` 与 8 节方案的 `§N.k` 记法（两份 line summary、两份 writing index、`fql plan_v0`、[`paper/outline.md`](../outline.md)） | 这六份是本章素材来源的入口层；`§N.k` 已被两次重编号（rev.8 8→9、rev.11 9→10）架空 | ✅ 每份加一行节号与版本对照：**§N.2→§5.5、§N.4→§5.7、§N.5→§5.8、§N.6→§5.9**（四条均由文档内容互证，非按 +3 算术推导；§N.1／§N.3／§N.7 无直接证据故未写）。正文 31 处 `§N.k` **不逐处改写**；对照行**刻意不写死现行 rev 号** |
+| 六份文档头注仍写 spec `rev.4` 与 8 节方案的 `§N.k` 记法（两份 line summary、两份 writing index、`fql plan_v0`、[`paper/archive/rebrac_standalone/outline.md`](../archive/rebrac_standalone/outline.md)） | 这六份是本章素材来源的入口层；`§N.k` 已被两次重编号（rev.8 8→9、rev.11 9→10）架空 | ✅ 每份加一行节号与版本对照：**§N.2→§5.5、§N.4→§5.7、§N.5→§5.8、§N.6→§5.9**（四条均由文档内容互证，非按 +3 算术推导；§N.1／§N.3／§N.7 无直接证据故未写）。正文 31 处 `§N.k` **不逐处改写**；对照行**刻意不写死现行 rev 号** |
 | [`docs/arrival_v2_sac_collector_design.md`](../../docs/arrival_v2_sac_collector_design.md)（§5.9 SAC collector 素材源，active rev.3）目录第 4 条**连条目文字带锚点**停在 rev.2 的「双路径 路径1 cross_u15 + 路径2 cross_u10」 | §4 早已改为「Plan A 4-tier」、§4.1 路径 1 自身标着 rev.2 SUPERSEDED——目录在描述一个已作废的结构 | ✅ 文字与锚点一并更正 |
 
 **章内自身：`paper/thesis_ch5/` 全部 markdown 内部链接零失效**（独立复扫确认）。本轮**未触碰任何 `.tex`**，编译产物与上表 62 页门槛不变，送审就绪判定不受影响。
@@ -131,7 +131,7 @@
 - **编译现状（2026-07-28 收尾统稿轮落地后，唯一有效值）**：**62 页**（正文 58 ＋ 文献 4），0 undefined ref / 0 undefined citation / 0 multiply-defined / bibtex 0 warning / Overfull 2 处（3.1251pt、4.31058pt，均 <10pt）/ **浮动距首引 ≤2 页 36/36** / **图表编号与首引序零逆序** / 无纯浮动页。`main.tex` 已 `\input` §5.1–§5.10 全部十节，并含 6 条浮动放置参数（rev.14 §0.5.9 (d) 相关，头注载病因与实测效果）。
 - ~~**旧「收尾统稿轮已闭环（2026-07-08）」条目**~~ ⚠ **该条已作废、只留作教训**：它当时声称「全部浮动距首引 0–2 页」「图表编号与首引序全章对齐」「编译 58 页」，而 2026-07-28 实测为**浮动越线 4 处、编号序逆序 1 处、63 页**——三项声明**全部与实测脱节**（其中编号逆序此前从未被报出）。前一条（2026-07-08 包 A/包 C）的 LOW 清理与术语终检结论本身仍成立。**教训：版面类声明会随后续任何文本改动失效，凡引用须以最近一次实测为准，不得沿用历史声明**（本轮 prompt 的主项 4 即因此被误导过一次）。
 - ⚠ Windows 副机 MiKTeX 若报「siunitx: expl3 too old」：`miktex packages update l3kernel l3backend l3packages` + `initexmf --dump=xelatex`（2026-07-05 修复过一次）。
-- 已定稿节 `.tex` 视为 locked：只 Edit 微修、不 Write 覆盖；`paper/sections/`（paper 1 素材）只读勿改。
+- 已定稿节 `.tex` 视为 locked：只 Edit 微修、不 Write 覆盖；`paper/archive/rebrac_standalone/sections/`（paper 1 素材）只读勿改。
 
 ## 待决与登记项（源：`chapter_acceptance_review_5_1_5_6_findings.md` §5 + spec §8）
 

@@ -1,8 +1,8 @@
 # ReBRAC Paper 写作文档索引
 
-> ⚠ **去向更新 2026-06-02 (rev.1 head note)**：写作出口 LOCKED 为**博士论文第 5 章 §N.4 主干**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.4）。ReBRAC paper **不另起独立投稿**——31pp arXiv preprint draft（[`../paper/main.pdf`](../paper/main.pdf)，Phase 6.1 commit `932aca1`）作为 §N.4 主干**直接复用**；不再投 CoRL/RA-L，也不单独上 arXiv（除非用户后续另议）。
+> ⚠ **去向更新 2026-06-02 (rev.1 head note)**：写作出口 LOCKED 为**博士论文第 5 章 §N.4 主干**（spec [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.4）。ReBRAC paper **不另起独立投稿**——31pp arXiv preprint draft（[`../paper/archive/rebrac_standalone/main.pdf`](../paper/archive/rebrac_standalone/main.pdf)，Phase 6.1 commit `932aca1`）作为 §N.4 主干**直接复用**；不再投 CoRL/RA-L，也不单独上 arXiv（除非用户后续另议）。
 > - 本索引「读哪份 / 抄哪段」映射在 §N.4 写作上下文中**完全适用**（method.tex / experiments.tex / discussion.tex / limitations.tex 整段搬入即可）；§N.5 critical-regime boundary 提级独立节请用 paper 1 §6.6 + L12 + standalone broad-validation report §3–§5 + §4.5。
-> - 写作前必读：[`../paper/progress.md`](../paper/progress.md) §1 Phase 时间轴（已到 Phase 6.1 R10 sweep）+ [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4。
+> - 写作前必读：[`../paper/archive/rebrac_standalone/progress.md`](../paper/archive/rebrac_standalone/progress.md) §1 Phase 时间轴（已到 Phase 6.1 R10 sweep）+ [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4。
 >
 > 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
 >

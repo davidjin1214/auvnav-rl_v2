@@ -374,7 +374,7 @@ Memory 提到 "D4RL-style SAC collector 拟定为 broad validation 平行第四�
 
 ### 4.5 论文写作中的 online 线落字位置
 
-[`paper/outline.md`](../paper/outline.md) 当前对 online 线的安排已经合理（review 后确认）：
+[`paper/archive/rebrac_standalone/outline.md`](../paper/archive/rebrac_standalone/outline.md) 当前对 online 线的安排已经合理（review 后确认）：
 
 - **§3.2 Observation: deployable s0** — 复用 online 线定义的 10-D obs space
 - **§3.3 Privileged observation (critic-only)** — 复用 [`online_rl_thesis_plan.md`](online_rl_thesis_plan.md) §2 的精确语义

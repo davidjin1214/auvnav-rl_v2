@@ -1,14 +1,14 @@
 # ReBRAC AUV Wake Navigation — 论文写作大纲
 
-> ⚠ **SUPERSEDED 2026-06-02**：本 outline 按 8 页 CoRL/RA-L 独立投稿设计；已被 [`thesis_chapter_outline.md`](thesis_chapter_outline.md) rev.4 取代。
+> ⚠ **SUPERSEDED 2026-06-02**：本 outline 按 8 页 CoRL/RA-L 独立投稿设计；已被 [`thesis_chapter_outline.md`](../../thesis_chapter_outline.md) rev.4 取代。
 > - paper 1 ReBRAC **不再独立投稿** — 31pp arXiv preprint draft（Phase 6.1 commit `932aca1`）作为博士论文**第 5 章 §N.4 主干直接复用**。
 > - 本 outline 的 venue 分析（§0.1）、narrative spine（§0.3）、结构骨架（§1）、写作纪律（§8 R*）等**历史价值仍在**，作为 §N.4 节级写作时的参考；但**投稿口径相关段落**（venue 选择、CoRL/RA-L 8pp / IROS 6pp / 双栏切换等）请直接跳过。
 > - 仅保留作存档；新动作请去 `thesis_chapter_outline.md`（rev.4）。
 >
-> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
+> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../../../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
 >
 > 文档版本：rev.1（2026-05-01）
-> 基于材料：[`docs/rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md) rev.2、[`docs/rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md) rev.8、[`docs/rebrac_method_section_draft.md`](../docs/rebrac_method_section_draft.md)、[`docs/rebrac_statistical_test_followup.md`](../docs/rebrac_statistical_test_followup.md)、[`docs/rebrac_paper_writing_index.md`](../docs/rebrac_paper_writing_index.md)
+> 基于材料：[`docs/rebrac_mainline_review.md`](../../../docs/rebrac_mainline_review.md) rev.2、[`docs/rebrac_experiment_report.md`](../../../docs/rebrac_experiment_report.md) rev.8、[`docs/rebrac_method_section_draft.md`](../../../docs/rebrac_method_section_draft.md)、[`docs/rebrac_statistical_test_followup.md`](../../../docs/rebrac_statistical_test_followup.md)、[`docs/rebrac_paper_writing_index.md`](../../../docs/rebrac_paper_writing_index.md)
 > 作者视角：从 offline-RL × sim2real-robotics 交叉领域审稿人 / chair 的角度反推写作骨架。
 > **本文不是 paper 草稿；是让作者按图作业的写作 spec。每节给出"写什么 / 数字哪里查 / 长度上限 / 审稿风险"。**
 
@@ -37,7 +37,7 @@
 
 **默认假设**：本大纲按候选 1 写。
 
-### 0.3 narrative spine（贯穿全文的三句话；改自 [review §0.3](../docs/rebrac_mainline_review.md)）
+### 0.3 narrative spine（贯穿全文的三句话；改自 [review §0.3](../../../docs/rebrac_mainline_review.md)）
 
 > 我们用一个 Q-normalized 的 dual-penalty TD3+BC 变体（实现上对应 ReBRAC 的 minimal recipe），在水下 AUV wake navigation 这个 sim2real 任务上把 deployable-only 的离线策略性能拉到了与 privileged-critic 协议持平的水平，且优于 vanilla TD3+BC 23~32pp。机制上，actor-side BC penalty 主导了 mean 性能的提升，critic-side penalty 不贡献 mean 但通过 target-Q 抑制 Q 高估、并对 outlier seed 提供 dataset-invariant 的稳定性。这一结果意味着，对水下机器人这种 deployable sensor 严重受限的场景，离线 RL 可以不依赖任何 privileged simulator 信息就把性能逼近 online teacher。
 
@@ -158,7 +158,7 @@
 
 #### 目标
 
-公式化 + 与 TD3+BC、原 ReBRAC 三方差别表 + implementation note。**几乎逐字拷自 [`docs/rebrac_method_section_draft.md`](../docs/rebrac_method_section_draft.md)**。
+公式化 + 与 TD3+BC、原 ReBRAC 三方差别表 + implementation note。**几乎逐字拷自 [`docs/rebrac_method_section_draft.md`](../../../docs/rebrac_method_section_draft.md)**。
 
 #### 写作段落 checklist
 
@@ -216,7 +216,7 @@ reproducibility 必备最小集合。让读者知道：seeds 多少、test episo
 
 依次展开 4 个 finding，每个 finding 一节，每节有：标题 = finding 内容 / 1 段叙述 / 1 表 or 1 图 / 1 句机制注脚。
 
-> **写作纪律**：所有数字从 [`docs/rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md) 实时查；不要从 review 或本大纲拷数字（review 与本大纲是镜像，可能滞后）。
+> **写作纪律**：所有数字从 [`docs/rebrac_experiment_report.md`](../../../docs/rebrac_experiment_report.md) 实时查；不要从 review 或本大纲拷数字（review 与本大纲是镜像，可能滞后）。
 
 #### §6.1 Finding ①: ReBRAC-Q outperforms TD3+BC by +23.0~+32.2pp on crosscomp（半 pp）
 
@@ -232,7 +232,7 @@ reproducibility 必备最小集合。让读者知道：seeds 多少、test episo
 - **图 (Figure 2)**：seed-wise success rate dot plot（5 seeds × 3 protocols），强调 seed 44 在 privileged 上被 +12pp 救回。**素材**：review §5.3 seed 44 表。
 - **关键数字**：`Welch's p = 0.9195`；`paired bootstrap 95% CI = [-3.0pp, +4.2pp]`；`seed 44 dep=0.78 → priv=0.90 (+12pp)`。
 - **机制句**：actor-side BC penalty 主导 mean；privileged critic 仅救 outlier seed 44 → see §8。
-- **统计注脚**：拷 [`docs/rebrac_statistical_test_followup.md`](../docs/rebrac_statistical_test_followup.md) §2-§3 数字到 Table 2 caption。
+- **统计注脚**：拷 [`docs/rebrac_statistical_test_followup.md`](../../../docs/rebrac_statistical_test_followup.md) §2-§3 数字到 Table 2 caption。
 
 #### §6.3 Finding ③: Dual penalty is dataset-invariant necessary（半 pp）
 
@@ -270,19 +270,19 @@ reproducibility 必备最小集合。让读者知道：seeds 多少、test episo
 #### §7.1 critic-penalty-off ablation（拓 §6.3）（半 pp）
 
 - 引出："we now show how the critic penalty contributes mechanistically by setting β2=0 across datasets and seeds"
-- 数据：[`report §7.13–§7.14`](../docs/rebrac_experiment_report.md)（worldcomp probe + crosscomp Stage E (a)）。
+- 数据：[`report §7.13–§7.14`](../../../docs/rebrac_experiment_report.md)（worldcomp probe + crosscomp Stage E (a)）。
 - 关键 figure：`mean_target_q` 跨 dataset & 跨 β2 4-bar plot。
 
 #### §7.2 LayerNorm ablation（拓 §6.4）（1/3 pp）
 
 - 引出："since the original ReBRAC paper highlights critic LayerNorm as a key recipe component, we test its independent contribution"
-- 数据：[`report §7.15`](../docs/rebrac_experiment_report.md) LN-off probe。
+- 数据：[`report §7.15`](../../../docs/rebrac_experiment_report.md) LN-off probe。
 - 关键句："LN-off and β2=0 retreat in opposite Q-drift directions, indicating two independent stabilization mechanisms"。
 
 #### §7.3 Privileged-critic ablation（拓 §6.2）（1/3 pp）
 
 - 引出："we further verify that privileged-critic does not raise mean but only rescues outlier seeds"
-- 数据：[`report §7.10–§7.12`](../docs/rebrac_experiment_report.md) Phase 2 5-seed。
+- 数据：[`report §7.10–§7.12`](../../../docs/rebrac_experiment_report.md) Phase 2 5-seed。
 - 关键 figure：seed-wise scatter，clearly showing seed 44 +12pp rescue, others ≈ 0。
 
 #### 长度
@@ -318,7 +318,7 @@ reproducibility 必备最小集合。让读者知道：seeds 多少、test episo
 
 ### §9. Limitations（0.25 pp）
 
-#### 直接拷自 [review §4](../docs/rebrac_mainline_review.md) + [report §9](../docs/rebrac_experiment_report.md)。bullet 形式，5–7 项：
+#### 直接拷自 [review §4](../../../docs/rebrac_mainline_review.md) + [report §9](../../../docs/rebrac_experiment_report.md)。bullet 形式，5–7 项：
 
 - [ ] L1: Q-normalized variant ≠ vanilla ReBRAC；β1 / β2 数字 not directly comparable to Tarasov et al. (2023)。
 - [ ] L2: Single benchmark (`single_u10_cross_tgt15`)；evaluation manifest 与 dataset 同分布。
@@ -355,10 +355,10 @@ reproducibility 必备最小集合。让读者知道：seeds 多少、test episo
 
 ### Appendix（移到 supplementary，不计 8 页内）
 
-- **A1 Reproducibility — file paths & notebooks**：拷 [`docs/rebrac_experiment_report.md`](../docs/rebrac_experiment_report.md) §11 + [paper writing index §3](../docs/rebrac_paper_writing_index.md) Notebooks 列表。
-- **A2 Hyperparameters**：winner config（[review §5.4](../docs/rebrac_mainline_review.md)）+ 完整 SAC / TD3+BC / ReBRAC-Q 表。
+- **A1 Reproducibility — file paths & notebooks**：拷 [`docs/rebrac_experiment_report.md`](../../../docs/rebrac_experiment_report.md) §11 + [paper writing index §3](../../../docs/rebrac_paper_writing_index.md) Notebooks 列表。
+- **A2 Hyperparameters**：winner config（[review §5.4](../../../docs/rebrac_mainline_review.md)）+ 完整 SAC / TD3+BC / ReBRAC-Q 表。
 - **A3 Full results tables**：5-seed × test=100 raw numbers per stage（拷 report §7 中各表）。
-- **A4 Statistical test details**：拷 [`docs/rebrac_statistical_test_followup.md`](../docs/rebrac_statistical_test_followup.md) §1-§5 全文。
+- **A4 Statistical test details**：拷 [`docs/rebrac_statistical_test_followup.md`](../../../docs/rebrac_statistical_test_followup.md) §1-§5 全文。
 - **A5 Method derivations**：β1 ↔ TD3+BC α 等价关系推导（拷 method_section_draft §4）。
 - **A6 Training curves**：典型 seed 的 success_rate / mean_target_q / actor_loss / critic_loss vs epoch。
 - **A7 Sensor / observation full spec**：拷 environment_design.md observation 节。
@@ -430,4 +430,4 @@ reproducibility 必备最小集合。让读者知道：seeds 多少、test episo
 
 ## 7. 一句话执行建议
 
-**今天 D1**：先拷 [`docs/rebrac_method_section_draft.md`](../docs/rebrac_method_section_draft.md) 全文到 `paper/draft.md` §4，再通读 [`docs/rebrac_mainline_review.md`](../docs/rebrac_mainline_review.md)，回头按本大纲 §2.§4 顺序逐节展开。所有数字写到 `[TODO: from report §X.Y]` placeholder，最后一次性从 [report rev.8](../docs/rebrac_experiment_report.md) 实时核对 — 不要边写边查，会拖节奏。
+**今天 D1**：先拷 [`docs/rebrac_method_section_draft.md`](../../../docs/rebrac_method_section_draft.md) 全文到 `paper/draft.md` §4，再通读 [`docs/rebrac_mainline_review.md`](../../../docs/rebrac_mainline_review.md)，回头按本大纲 §2.§4 顺序逐节展开。所有数字写到 `[TODO: from report §X.Y]` placeholder，最后一次性从 [report rev.8](../../../docs/rebrac_experiment_report.md) 实时核对 — 不要边写边查，会拖节奏。

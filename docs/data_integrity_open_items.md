@@ -189,7 +189,7 @@ OVERLAP 100/100  single_u10_cross_tgt15_ep100.json                           (12
 
 ## 2. `paper` Table 1 的 transitions 数字与本机 metadata 对不上
 
-`paper/sections/setup.tex:89-91`（`tab:dataset_matrix`）写的是：
+`paper/archive/rebrac_standalone/sections/setup.tex:89-91`（`tab:dataset_matrix`）写的是：
 
 | Alias | 论文 Transitions | 本机实测 | 比值 |
 |---|---|---|---|
@@ -214,7 +214,7 @@ OVERLAP 100/100  single_u10_cross_tgt15_ep100.json                           (12
 前者的种子区间是后者的**子集**。`docs/fql_succession_bug2_fix_decision.md:27` 记着
 `single_u10_cross_tgt15.json` 曾经是 30 ep、导致"所有 in-training eval + final test 都是 30 ep"。
 
-`paper/sections/experiments.tex` §5.1 写的是 val = 40 episodes 选 checkpoint、test = 100
+`paper/archive/rebrac_standalone/sections/experiments.tex` §5.1 写的是 val = 40 episodes 选 checkpoint、test = 100
 episodes 一次性报告。**40 这个数字对不上上面任何一个文件，未确认它来自哪里。**
 
 需要确认的是：**选 checkpoint 用的那批 episode 与最终报告用的那批是否互斥。**

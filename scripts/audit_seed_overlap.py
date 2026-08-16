@@ -41,9 +41,12 @@ TOL = 1e-6
 
 
 def _load_datasets() -> dict[str, dict[str, Any]]:
+    # Recursive: collections such as fql_succession/ nest their datasets one level deeper, and a
+    # single-level glob skipped them silently -- an audit that under-reports is worse than none.
     datasets: dict[str, dict[str, Any]] = {}
-    for meta_path in sorted(OFFLINE_DATA_DIR.glob("*/metadata.json")):
-        datasets[meta_path.parent.name] = json.loads(meta_path.read_text(encoding="utf-8"))
+    for meta_path in sorted(OFFLINE_DATA_DIR.rglob("metadata.json")):
+        name = str(meta_path.parent.relative_to(OFFLINE_DATA_DIR)).replace("\\", "/")
+        datasets[name] = json.loads(meta_path.read_text(encoding="utf-8"))
     return datasets
 
 

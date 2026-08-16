@@ -1,5 +1,7 @@
 # c4 阈值改造决策 — slope ≥ 0 → no-major-collapse
 
+> 📦 **已归档** — P2 之前的施工记录，2026-08-17 迁入 `docs/archive/fql_succession/`；归档只改位置与标注，**不含有效性判断**。缘由与本目录清单见 [`README.md`](README.md)。
+
 > **状态**:DECIDED — **方案 α (slope ≥ −2 × SE_agg)** 推荐;Session A 在 P2 spec 起草时 patch `fql_succession_p0p1_spec.md` §5.3
 > **背景**:[`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) §5.4
 > **依赖**:[`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md)(决定 noise floor)
@@ -124,7 +126,7 @@ threshold             = −2.0 × SE_slope_aggregated
 
 ## 6. spec patch 草稿(留 Session A 在 P2 spec 写作时 apply)
 
-在 [`docs/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §5.3 把下面这一行 patch:
+在 [`docs/archive/fql_succession/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §5.3 把下面这一行 patch:
 
 ```diff
 - | FQL eval 曲线 monotonicity | 末 30% 训练 success rate trend ≥ 0(无 collapse) |

@@ -1,5 +1,7 @@
 # Bug 2 修复方向决策 — `--episodes` vs manifest size
 
+> 📦 **已归档** — P2 之前的施工记录，2026-08-17 迁入 `docs/archive/fql_succession/`；归档只改位置与标注，**不含有效性判断**。缘由与本目录清单见 [`README.md`](README.md)。
+
 > **状态**：DECIDED — **方案 (a) 大 manifest** 落地;(b) CLI honor 作为 follow-up cleanup,**本 session 不做**
 > **背景**：[`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) §6.2、[`fql_succession_gate_b_interim_report.md`](fql_succession_gate_b_interim_report.md) §5.2
 > **目的**：为 P2 main comparison 解锁充足 eval episode 数,降低 c4 slope 噪声底
@@ -12,7 +14,7 @@
 
 CLI `--episodes 100` (`evaluate_offline.py`) 和 `--eval-episodes 100` (`train_offline.py`) 在 `--manifest` 给定时**被静默 override 至 manifest size**。
 
-**根因定位**:[`scripts/train_utils.py:185-213`](../scripts/train_utils.py:185) `_resolved_eval_episodes()`
+**根因定位**:[`scripts/train_utils.py:185-213`](../../../scripts/train_utils.py:185) `_resolved_eval_episodes()`
 
 ```python
 def _resolved_eval_episodes(*, reset_options, seed, num_episodes, benchmark_manifest):

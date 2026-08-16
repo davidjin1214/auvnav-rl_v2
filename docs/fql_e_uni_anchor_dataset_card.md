@@ -3,10 +3,10 @@
 > **Status (2026-05-19)**: COLLECTED — privileged / cross_u10 / s0 / h4 / arrival_v2 / 1000-ep。FQL P0+P1 spec Task D 完成。
 >
 > **Branch**: `codex-arrival-v2-prototype`
-> **Spec**: [`docs/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) Task D
-> **Plan**: [`docs/fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §3 (E-uni anchor cell)
+> **Spec**: [`docs/archive/fql_succession/fql_succession_p0p1_spec.md`](archive/fql_succession/fql_succession_p0p1_spec.md) Task D
+> **Plan**: [`docs/archive/fql_succession/fql_succession_plan_v0.md`](archive/fql_succession/fql_succession_plan_v0.md) §3 (E-uni anchor cell)
 > **Path**: `offline_data/privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/`
-> **Pre-flight**: [`docs/fql_audit_dryrun_report.md`](fql_audit_dryrun_report.md) (Task A — audit tool verified on 200-ep dry-run of same manifold)
+> **Pre-flight**: [`docs/archive/fql_succession/fql_audit_dryrun_report.md`](archive/fql_succession/fql_audit_dryrun_report.md) (Task A — audit tool verified on 200-ep dry-run of same manifold)
 
 ---
 

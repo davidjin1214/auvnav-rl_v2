@@ -1,18 +1,20 @@
 # FQL Succession Gate B — Interim Report (seed=42 single-seed)
 
-> **⚠ SUPERSEDED（2026-07-28 指针体检补注）** — 下面这行 Status 写于 2026-05-19，其中的「pending」**早已不 pending**：Gate B 已收口，正式结论见 [`docs/fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md)（该报告 §头注即把本文件定性为 "rev.1 single-seed interim, superseded, kept for traceability"）。整条 FQL succession 线已于 **2026-05-23 NEGATIVE 闭环**（[`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md)）。本文件仅保留作可追溯性存档，**不要据此认为有待跑实验**。
+> 📦 **已归档** — P2 之前的施工记录，2026-08-17 迁入 `docs/archive/fql_succession/`；归档只改位置与标注，**不含有效性判断**。缘由与本目录清单见 [`README.md`](README.md)。
+
+> **⚠ SUPERSEDED（2026-07-28 指针体检补注）** — 下面这行 Status 写于 2026-05-19，其中的「pending」**早已不 pending**：Gate B 已收口，正式结论见 [`docs/archive/fql_succession/fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md)（该报告 §头注即把本文件定性为 "rev.1 single-seed interim, superseded, kept for traceability"）。整条 FQL succession 线已于 **2026-05-23 NEGATIVE 闭环**（[`docs/fql_succession_p2_results.md`](../../fql_succession_p2_results.md)）。本文件仅保留作可追溯性存档，**不要据此认为有待跑实验**。
 >
 > **Status (2026-05-19)**: INTERIM — 3/4 PASS marginal-fail on `seed=42` single seed; **Option B re-run with `seed=0` + Bug 1 fix pending** on Colab L4.
 >
 > **Branch**: `codex-arrival-v2-prototype`
-> **Notebook**: [`notebooks/fql_succession_gate_b.ipynb`](../notebooks/fql_succession_gate_b.ipynb) (rev.1 commit `5a72587`)
-> **Spec**: [`docs/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §5 (Task E)
-> **Plan**: [`docs/fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §3 Lean MVP
+> **Notebook**: [`notebooks/fql_succession_gate_b.ipynb`](../../../notebooks/fql_succession_gate_b.ipynb) (rev.1 commit `5a72587`)
+> **Spec**: [`docs/archive/fql_succession/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §5 (Task E)
+> **Plan**: [`docs/archive/fql_succession/fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §3 Lean MVP
 > **Raw outputs**:
 > - `results/offline/fql_succession/gate_b/{rebrac,fql}_e_uni_seed42/{test_result.json, eval_log.csv}`
 > - `results/offline/fql_succession/gate_b/summaries/{gate_b_verdict.json, gate_b_overview.csv}`
 > - `notebooks/fql_succession_gate_b_completed.ipynb` (Colab pass artifact)
-> **Cross-link**: [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) (N0 anchor 0.85 reference)
+> **Cross-link**: [`docs/rebrac_broad_validation_v2_report.md`](../../rebrac_broad_validation_v2_report.md) (N0 anchor 0.85 reference)
 
 ---
 

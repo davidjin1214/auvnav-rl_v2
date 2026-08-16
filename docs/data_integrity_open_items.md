@@ -211,7 +211,7 @@ OVERLAP 100/100  single_u10_cross_tgt15_ep100.json                           (12
 - `benchmarks/single_u10_cross_tgt15.json` —— **30 条**，种子 1250..1279
 - `benchmarks/single_u10_cross_tgt15_ep100.json` —— **100 条**，种子 1250..1349
 
-前者的种子区间是后者的**子集**。`docs/fql_succession_bug2_fix_decision.md:27` 记着
+前者的种子区间是后者的**子集**。`docs/archive/fql_succession/fql_succession_bug2_fix_decision.md:29` 记着
 `single_u10_cross_tgt15.json` 曾经是 30 ep、导致"所有 in-training eval + final test 都是 30 ep"。
 
 `paper/archive/rebrac_standalone/sections/experiments.tex` §5.1 写的是 val = 40 episodes 选 checkpoint、test = 100

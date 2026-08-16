@@ -1,7 +1,7 @@
 # FQL Succession — P2 Main Comparison Spec
 
 > **文档版本**：v1.4（2026-05-23,P2 全部实验闭环 → 核心 iff 假设证伪 → 机制发现 + 诚实负面）
-> **作用**：把 [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §4.2 P2 main comparison（3-cell × 2-algo × 2-seed primary = **12 runs**, 可扩 3-seed = 18 runs）拆成可执行的 collection / audit / run / verdict 协议。
+> **作用**：把 [`fql_succession_plan_v0.md`](archive/fql_succession/fql_succession_plan_v0.md) §4.2 P2 main comparison（3-cell × 2-algo × 2-seed primary = **12 runs**, 可扩 3-seed = 18 runs）拆成可执行的 collection / audit / run / verdict 协议。
 > **状态**：**CLOSED (2026-05-23)** — 12-run 主矩阵 + Q1/Q1b/Q1c/E-multi/C-1 全部闭环。**核心 conditional iff 假设证伪**(§1.4 的 "Null iff" 分支命中,且机制三连进一步把它收紧为**全面证伪**);P2 的产出是**机制发现 + 诚实负面**(NOT "FQL wins")。主报告 → [`fql_succession_p2_results.md`](fql_succession_p2_results.md);完整 lab 记录 → [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9;verdict notebook → [`../notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb)。本 spec 以下章节为**历史设计记录**,假设性内容已逐节标注 SUPERSEDED/RESOLVED。
 >
 > **版本历史**:
@@ -12,14 +12,14 @@
 > - **v1.4 (2026-05-23 closure)** — P2 全部实验闭环后的 verdict 落地 + 假设证伪标注:(a) 顶部 STATUS banner + §1.1/§1.4 标 SUPERSEDED — 核心 conditional iff 假设**证伪**(实测命中 §1.4 "Null iff" 分支:M-multi-mix δ=−0.035 非 positive);(b) **机制三连**(Q1 critic 排除 → Q1b actor β1=4→1 是关键, +23.5pp → Q1c β1=1.0 在 clean+noisy 双轴 dominate FQL)进一步把 "Null iff" 收紧为**全面证伪**:连唯一的 positive cell(M-uni-noise +20.5pp)也是 ReBRAC mis-tuned β1=4.0 的 artifact;(c) **C-1 公平复赛 RESCUE-FAIL** — FQL 自己的 `distill_alpha_bc` 扫描在 clean 上最高 0.858,离 ReBRAC β1=1.0 的 0.910 杆差 −5.2pp,公平性 caveat 关闭;(d) §3/§5.4/§6.3 标 RESOLVED + 指向 results 主报告;(e) §3/§10.5 加注 **modality 轴本身不是 discriminator**,正确的 stress 变量是 conditional action variance `E_s[Var(a|s)]`(diagnostic §5);(f) §6.4 verdict report 文件名修正为实际产出 `fql_succession_p2_results.md`。**决策锁定 B+A(机制发现 + 诚实负面)。**
 > **范围**：仅覆盖 P2（约 1.5-2 周）。P3 mix ratio ablation 与 P4 writing 的 spec 在 P2 闭环后另写。
 > **前置阅读**：
-> - [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) v1.2 — plan 总览 + §3 spectrum + §6 D17/D18/D19
-> - [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) v1.1 — P0+P1 spec（共享参数 + Gate A.1/A.2/B 历史 + Bug 2 / c4 patch）
-> - [`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) — Gate B closure (3/4 PASS + c4 marginal-FAIL seed-driven)
-> - [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) — D18 ep100 manifest pre-requisite
-> - [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) — D19 c4 阈值 Option α
+> - [`fql_succession_plan_v0.md`](archive/fql_succession/fql_succession_plan_v0.md) v1.2 — plan 总览 + §3 spectrum + §6 D17/D18/D19
+> - [`fql_succession_p0p1_spec.md`](archive/fql_succession/fql_succession_p0p1_spec.md) v1.1 — P0+P1 spec（共享参数 + Gate A.1/A.2/B 历史 + Bug 2 / c4 patch）
+> - [`fql_succession_gate_b_report.md`](archive/fql_succession/fql_succession_gate_b_report.md) — Gate B closure (3/4 PASS + c4 marginal-FAIL seed-driven)
+> - [`fql_succession_bug2_fix_decision.md`](archive/fql_succession/fql_succession_bug2_fix_decision.md) — D18 ep100 manifest pre-requisite
+> - [`fql_succession_c4_threshold_revision.md`](archive/fql_succession/fql_succession_c4_threshold_revision.md) — D19 c4 阈值 Option α
 > - [`fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) — E-uni 1000-ep dataset (Task D 闭环)
 > - [`fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md) — audit 工具 design
-> - [`fql_audit_dryrun_report.md`](fql_audit_dryrun_report.md) — audit dry-run Gate A.2 PASS 4/4
+> - [`fql_audit_dryrun_report.md`](archive/fql_succession/fql_audit_dryrun_report.md) — audit dry-run Gate A.2 PASS 4/4
 
 ---
 
@@ -74,7 +74,7 @@
 
 ### 1.2 与 P0+P1 的关系
 
-P0+P1 完成 [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) 的 5 个 task:Gate A.1 (cite) + Gate A.2 (audit dry-run PASS 4/4) + FQL 实现 + E-uni 1000-ep collection + Gate B sanity。P2 在此基础上:
+P0+P1 完成 [`fql_succession_p0p1_spec.md`](archive/fql_succession/fql_succession_p0p1_spec.md) 的 5 个 task:Gate A.1 (cite) + Gate A.2 (audit dry-run PASS 4/4) + FQL 实现 + E-uni 1000-ep collection + Gate B sanity。P2 在此基础上:
 
 | P0+P1 产物 | P2 复用方式 |
 |---|---|
@@ -89,7 +89,7 @@ P0+P1 完成 [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) 的 5 
 
 ### 1.3 Gate B caveat 承接
 
-Gate B Option B (2-seed) 闭环 verdict: **3/4 PASS + c4 marginal-FAIL (seed-driven)**。详见 [`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md):
+Gate B Option B (2-seed) 闭环 verdict: **3/4 PASS + c4 marginal-FAIL (seed-driven)**。详见 [`fql_succession_gate_b_report.md`](archive/fql_succession/fql_succession_gate_b_report.md):
 
 - **c1/c2/c3 PASS**:FQL implementation healthy (loss_flow 0.026, actor_loss ratio 1.011, last-3 mean only −4.4pp vs ReBRAC)
 - **c4 marginal-FAIL**:aggregated slope −0.0038 is **statistically indistinguishable from 0** (z=−0.27 against 30-ep manifest noise floor); **seed-driven**(both algos positive on seed=0, negative on seed=42); **not** FQL-driven
@@ -989,7 +989,7 @@ Gate B Option B 实测 c4 marginal-FAIL (aggregated slope −0.0038,30-ep manife
 
 ### 10.2 Noise floor 更新 (Bug 2 fix 后)
 
-直接复用 [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) §3.1:
+直接复用 [`fql_succession_c4_threshold_revision.md`](archive/fql_succession/fql_succession_c4_threshold_revision.md) §3.1:
 
 | 量 | 30-ep manifest (Gate B) | 100-ep manifest (P2 default) | 改善 |
 |---|---:|---:|---:|

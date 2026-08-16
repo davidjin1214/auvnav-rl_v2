@@ -63,6 +63,8 @@ DATE_RE = re.compile(r"(20\d{2}-\d{2}-\d{2})")
 GROUPS: list[tuple[str, str]] = [
     ("入口与总纲", "^(README|CLAUDE|AGENTS)\\.md$"),
     ("docs/ — 研究与实现文档", "^docs/[^/]+\\.md$"),
+    ("docs/archive/fql_succession/ — FQL succession P2 之前的施工记录（归档=移位+标注，非有效性判断）",
+     "^docs/archive/fql_succession/"),
     ("docs/auvhamnode_spike/ — AUVHamNODE 预 spike 审计（⏸ 线已暂停）", "^docs/auvhamnode_spike/"),
     ("docs/offline_mbrl_plan/ — 已废弃的 MBRL 草案（未纳入 git）", "^docs/offline_mbrl_plan/"),
     ("docs/superpowers/ — 早期 plan/spec 存档", "^docs/superpowers/"),
@@ -115,15 +117,28 @@ def status_of(lines: list[str]) -> str:
     if not head:
         return "—"
     for label, pat in STATUS_PATTERNS:
-        m = re.search(rf"(\*\*[^*]{{0,12}}|⚠\s*)?({pat})", head)
-        if not m:
-            continue
-        # require emphasis or a warning glyph adjacent -- plain prose mentions don't count
-        ctx = head[max(0, m.start() - 4) : m.end() + 4]
-        if "**" not in ctx and "⚠" not in ctx:
-            continue
-        d = DATE_RE.search(head[m.start() : m.start() + 120])
-        return f"{label} {d.group(1)}" if d else label
+        for m in re.finditer(rf"(\*\*[^*]{{0,12}}|⚠\s*)?({pat})", head):
+            # A banner keyword is prose; inside a path it is just a directory name.
+            # Once the pre-P2 FQL records moved under docs/archive/, every banner
+            # citing one carried a literal "archive" whose neighbouring `**Spec**:`
+            # label satisfied the emphasis test below -- tagging a live dataset card
+            # ARCHIVE, the exact opposite of its state. A slash on either side means
+            # path, not banner. Kept per-occurrence rather than per-doc so a real
+            # banner further down the same blockquote still registers.
+            kw_start, kw_end = m.start(2), m.end(2)
+            tail = re.match(r"[^\s`)\]]*", head[kw_end:]).group(0)
+            looks_like_path = head[kw_start - 1 : kw_start] == "/" or (
+                tail.startswith("/")
+                and (tail.count("/") >= 2 or re.search(r"\.\w+$", tail))
+            )
+            if looks_like_path:
+                continue
+            # require emphasis or a warning glyph adjacent -- plain prose mentions don't count
+            ctx = head[max(0, m.start() - 4) : m.end() + 4]
+            if "**" not in ctx and "⚠" not in ctx:
+                continue
+            d = DATE_RE.search(head[m.start() : m.start() + 120])
+            return f"{label} {d.group(1)}" if d else label
     return "—"
 
 

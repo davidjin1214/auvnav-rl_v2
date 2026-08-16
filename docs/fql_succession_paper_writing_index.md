@@ -54,10 +54,10 @@ FQL Succession P2 已 **NEGATIVE 闭环（B+A：机制发现 + 诚实负面，NO
 
 ### 1.3 Tier 3 — 历史 / 旁路（仅审稿人追问时回查）
 
-- [fql_succession_gate_b_report.md](./fql_succession_gate_b_report.md) / [..._interim_report.md](./fql_succession_gate_b_interim_report.md) — **冻结超参的来源**（flow_steps=10 / distill_alpha_bc=1.0 / β1=4 β2=2）。仅当审稿人问 "FQL/ReBRAC 怎么调的" 时回查。
+- [fql_succession_gate_b_report.md](./archive/fql_succession/fql_succession_gate_b_report.md) / [..._interim_report.md](./archive/fql_succession/fql_succession_gate_b_interim_report.md) — **冻结超参的来源**（flow_steps=10 / distill_alpha_bc=1.0 / β1=4 β2=2）。仅当审稿人问 "FQL/ReBRAC 怎么调的" 时回查。
 - [fql_succession_p2_xbench_spec.md](./fql_succession_p2_xbench_spec.md)（FLOOR-closed） — 跨-benchmark 泛化探测的 spec + 实测 FLOOR；**Limitations §6.5 的依据**。
-- [fql_succession_p0p1_spec.md](./fql_succession_p0p1_spec.md) / [fql_succession_plan_v0.md](./fql_succession_plan_v0.md) — 早期 plan / spectrum。
-- [fql_succession_bug2_fix_decision.md](./fql_succession_bug2_fix_decision.md) / [fql_succession_c4_threshold_revision.md](./fql_succession_c4_threshold_revision.md) — 方法学决策（ep100 manifest、c4 阈值）。
+- [fql_succession_p0p1_spec.md](./archive/fql_succession/fql_succession_p0p1_spec.md) / [fql_succession_plan_v0.md](./archive/fql_succession/fql_succession_plan_v0.md) — 早期 plan / spectrum。
+- [fql_succession_bug2_fix_decision.md](./archive/fql_succession/fql_succession_bug2_fix_decision.md) / [fql_succession_c4_threshold_revision.md](./archive/fql_succession/fql_succession_c4_threshold_revision.md) — 方法学决策（ep100 manifest、c4 阈值）。
 - **与本 paper 无关**：`auv_nav/{fql,rebrac}.py` 是冻结生产代码（只在 Method 引公式 + 行号）；online 线 / AUVHamNODE 线另属其它 paper。
 
 ---

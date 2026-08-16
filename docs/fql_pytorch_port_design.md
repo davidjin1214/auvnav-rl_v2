@@ -1,8 +1,8 @@
 # `auv_nav/fql.py` — PyTorch Port Design Doc
 
 > **文档版本**：v1.0（2026-05-19）
-> **作用**：把 [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §2 (Task B) 的 FQL 实现拆成 tensor-shape-level 可实现的 design contract。
-> **状态**：**Active design**，待 executor 按此 doc 实现 + 评审。
+> **作用**：把 [`fql_succession_p0p1_spec.md`](archive/fql_succession/fql_succession_p0p1_spec.md) §2 (Task B) 的 FQL 实现拆成 tensor-shape-level 可实现的 design contract。
+> **状态**：**IMPLEMENTED**（2026-08-17 订正——原写「Active design，待 executor 实现」，代码早已落地）。本文是 `auv_nav/fql.py` 的**现行 design contract**：模块头注与 [`../tests/test_fql.py`](../tests/test_fql.py)（§13 的 12 个测试）都指回本文。FQL succession 线虽已 NEGATIVE 闭环，该模块仍在仓库内、仍被测试覆盖，且论文 §5.4 核对 loss 口径要读它——故本文留在 `docs/` 顶层，未随该线迁入 [`docs/archive/fql_succession/`](archive/fql_succession/README.md)。
 > **范围**：仅 `auv_nav/fql.py` 内的算法与接口设计 + `auv_nav/offline_registry.py` 的 dispatch 改动；不涉及 audit / collection / training entry CLI（在 P0+P1 spec 内已覆盖）。
 > **目标读者**：implementer（executor agent 或人），需要按此 doc 写出能跑通 P0+P1 spec §3.4 smoke test 的实现。
 >

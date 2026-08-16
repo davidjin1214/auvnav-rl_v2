@@ -1,8 +1,8 @@
 # `scripts/audit_multimodality.py` — Detail Design Doc
 
 > **文档版本**：v1.0（2026-05-19）
-> **作用**：把 [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §1 Task A audit 步骤拆成算法、CLI、判定逻辑、产出 schema 可实现的契约。
-> **状态**：**Active design**，待 executor 按此 doc 实现。
+> **作用**：把 [`fql_succession_p0p1_spec.md`](archive/fql_succession/fql_succession_p0p1_spec.md) §1 Task A audit 步骤拆成算法、CLI、判定逻辑、产出 schema 可实现的契约。
+> **状态**：**IMPLEMENTED**（2026-08-17 订正——原写「Active design，待 executor 实现」，代码早已落地）。本文是 `scripts/audit_multimodality.py` 的**现行 design contract**：脚本头注与 [`../tests/test_audit_multimodality.py`](../tests/test_audit_multimodality.py)（§9 测试计划）都指回本文，故本文留在 `docs/` 顶层，未随该线迁入 [`docs/archive/fql_succession/`](archive/fql_succession/README.md)。
 > **范围**：仅 `scripts/audit_multimodality.py` 内的算法 + CLI + 产出；不涉及数据收集（在 P0+P1 spec §1.2 内已覆盖）。
 > **依赖约束**：本脚本是**分离 dev-time 工具**，允许使用 `scikit-learn`（仓库主依赖未引入）；implementer 在脚本顶部加 import guard 并在 README 注明 `pip install scikit-learn`。**不**把 sklearn 加进主 training requirements。
 

@@ -1,17 +1,19 @@
 # FQL Succession Gate B — Final Report (Option B 2-seed)
 
+> 📦 **已归档** — P2 之前的施工记录，2026-08-17 迁入 `docs/archive/fql_succession/`；归档只改位置与标注，**不含有效性判断**。缘由与本目录清单见 [`README.md`](README.md)。
+
 > **Status (2026-05-20)**: FINAL — **3/4 PASS + c4 marginal-FAIL (statistically indistinguishable from 0)**, seed-driven, not FQL-driven → **progress to P2 with caveat**
 >
 > **Branch**: `codex-arrival-v2-prototype`
-> **Notebook**: [`notebooks/fql_succession_gate_b.ipynb`](../notebooks/fql_succession_gate_b.ipynb) (rev.3.1 commit `e6e23ec`)
-> **Colab pass artifact**: [`notebooks/fql_succession_gate_b_completed_new.ipynb`](../notebooks/fql_succession_gate_b_completed_new.ipynb) (Option B 4-run output)
-> **Interim report (rev.1 single-seed, superseded)**: [`docs/fql_succession_gate_b_interim_report.md`](fql_succession_gate_b_interim_report.md)
-> **Spec**: [`docs/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §5 (Task E)
-> **Plan**: [`docs/fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §3 Lean MVP
+> **Notebook**: [`notebooks/fql_succession_gate_b.ipynb`](../../../notebooks/fql_succession_gate_b.ipynb) (rev.3.1 commit `e6e23ec`)
+> **Colab pass artifact**: [`notebooks/fql_succession_gate_b_completed_new.ipynb`](../../../notebooks/fql_succession_gate_b_completed_new.ipynb) (Option B 4-run output)
+> **Interim report (rev.1 single-seed, superseded)**: [`docs/archive/fql_succession/fql_succession_gate_b_interim_report.md`](fql_succession_gate_b_interim_report.md)
+> **Spec**: [`docs/archive/fql_succession/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) §5 (Task E)
+> **Plan**: [`docs/archive/fql_succession/fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §3 Lean MVP
 > **Raw outputs** (gitignored, local only):
 > - `results/offline/fql_succession/gate_b/{rebrac,fql}_e_uni_seed{0,42}/{test_result.json, eval_log.csv}` × 4
 > - `results/offline/fql_succession/gate_b/summaries/{gate_b_verdict.json, gate_b_overview.csv}`
-> **Cross-link**: [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) (N0 anchor 0.85 reference)
+> **Cross-link**: [`docs/rebrac_broad_validation_v2_report.md`](../../rebrac_broad_validation_v2_report.md) (N0 anchor 0.85 reference)
 
 ---
 
@@ -260,7 +262,7 @@ Per interim §8 + spec §5.3 mitigation matrix:
 
 Concretely:
 
-1. **Plan**: Upgrade `docs/fql_succession_plan_v0.md` to v1.1 noting Gate B 3/4 PASS + c4 marginal status; P2 spec inherits this.
+1. **Plan**: Upgrade `docs/archive/fql_succession/fql_succession_plan_v0.md` to v1.1 noting Gate B 3/4 PASS + c4 marginal status; P2 spec inherits this.
 2. **Spec writing (P2 main comparison)**: Start drafting `docs/fql_succession_p2_main_spec.md` (new file). Bake in:
    - **3+ seeds per algo** as minimum (P2 cannot reproduce Task E's n_seeds=2 power deficit)
    - **Bug 2 fix as pre-requisite** (either larger manifest or CLI honors `--episodes`) — must land before any P2 sweep
@@ -285,7 +287,7 @@ Carry-forward items for `docs/fql_succession_p2_main_spec.md` drafting:
 | **n_seeds ≥ 3 mandatory** | §4 huge seed spread (20-28pp) | Hard requirement; budget P2 wallclock accordingly |
 | **Bug 2 fix pre-requisite** | §5 noise analysis | Generate `single_u10_cross_tgt15_ep100` manifest **before** any P2 sweep starts; OR fix CLI override |
 | **c4 threshold revision** | §5.4 | Pick Option α/β/γ + sanity-check on n_seeds=3 mock data |
-| **Spec CLI rename** | notebook header table | Patch `docs/fql_succession_p0p1_spec.md` §5.1/§5.2 field names to match actual code (`--algo` not `--algorithm`, etc.) — **landed during P2 spec writing** |
+| **Spec CLI rename** | notebook header table | Patch `docs/archive/fql_succession/fql_succession_p0p1_spec.md` §5.1/§5.2 field names to match actual code (`--algo` not `--algorithm`, etc.) — **landed during P2 spec writing** |
 | **Dataset partial-obs ceiling finding** | Interim §7 + Final §3.3 | Discussion-quality finding: privileged-policy dataset under s0 sensor caps at ~0.6-0.8 vs crosscomp 0.85 on broad val v2 N0. Belongs in P2 §discussion as "oracle teacher under s0 sub-critical gap" — independent of FQL verdict, useful framing for the sim2real story |
 | **200k uniform vs 22k shuffle** | Interim §7.2 | Both algos show slight negative tendency at 200k tail (ReBRAC agg +0.00048, FQL agg −0.00381) — consider 100k step in P2 OR best-last-k metric instead of last-3 |
 | **FQL Q-instability transient (step 199k spike)** | Interim §4.2, single-seed=42 observation | Re-evaluate under P2 3-seed data; if it reproduces on 2+/3 seeds, escalate to FQL stability tuning |
@@ -298,8 +300,8 @@ Carry-forward items for `docs/fql_succession_p2_main_spec.md` drafting:
 
 | Path | Purpose | Tracked? |
 |---|---|---|
-| `docs/fql_succession_gate_b_report.md` | This document (final) | **yes** |
-| `docs/fql_succession_gate_b_interim_report.md` | rev.1 single-seed interim (superseded but kept for traceability) | yes (preserved) |
+| `docs/archive/fql_succession/fql_succession_gate_b_report.md` | This document (final) | **yes** |
+| `docs/archive/fql_succession/fql_succession_gate_b_interim_report.md` | rev.1 single-seed interim (superseded but kept for traceability) | yes (preserved) |
 | `notebooks/fql_succession_gate_b.ipynb` | rev.3.1 driver notebook | yes |
 | `notebooks/fql_succession_gate_b_completed_new.ipynb` | Option B 4-run Colab pass artifact | yes (this commit) |
 

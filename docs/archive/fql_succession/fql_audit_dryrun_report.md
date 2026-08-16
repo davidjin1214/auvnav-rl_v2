@@ -1,10 +1,12 @@
 # FQL Audit Multimodality — Task A Dry-Run Report
 
+> 📦 **已归档** — P2 之前的施工记录，2026-08-17 迁入 `docs/archive/fql_succession/`；归档只改位置与标注，**不含有效性判断**。缘由与本目录清单见 [`README.md`](README.md)。
+
 > **Status (2026-05-19)**: PASS — `scripts/audit_multimodality.py` 在真实小数据集上 Gate A.2 verdict 工作正常，4/4 criteria 全部通过。
 >
 > **Branch**: `codex-arrival-v2-prototype`
-> **Spec**: [`docs/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) Task A
-> **Design**: [`docs/fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md)
+> **Spec**: [`docs/archive/fql_succession/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) Task A
+> **Design**: [`docs/fql_audit_multimodality_design.md`](../../fql_audit_multimodality_design.md)
 > **Raw outputs**: `results/audit_dryrun_2026-05-19/{audit_summary.json, mode_count_per_anchor.csv, mode_count_distribution.png}`
 > **Data**: `offline_data/audit_dryrun_2026-05-19/{e_uni_priv_200, m_multi_mix_200}/`
 

@@ -793,7 +793,7 @@ def section_8_md(cfg: dict) -> dict:
         f"- [`docs/fql_succession_p2_main_spec.md`](../docs/fql_succession_p2_main_spec.md) "
         f"§5(verdict)→ {_cell_id_from_title(cfg)} 行填写:n_seeds,Δ_mean,paired diff,direction,verdict",
         "- `docs/fql_succession_p2_results.md`(待 P2 闭环时创建)→ 本 cell 段:per-seed table + verdict + c4 monitor",
-        "- [`docs/fql_succession_plan_v0.md`](../docs/fql_succession_plan_v0.md) P2 进度行:本 cell run done",
+        "- [`docs/archive/fql_succession/fql_succession_plan_v0.md`](../docs/archive/fql_succession/fql_succession_plan_v0.md) P2 进度行:本 cell run done",
         "",
         f"**预期 verdict = {expected.upper()}**",
         "",

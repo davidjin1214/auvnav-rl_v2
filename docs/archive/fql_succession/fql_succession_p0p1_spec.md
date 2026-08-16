@@ -1,5 +1,7 @@
 # FQL Succession — P0+P1 Executable Spec
 
+> 📦 **已归档** — P2 之前的施工记录，2026-08-17 迁入 `docs/archive/fql_succession/`；归档只改位置与标注，**不含有效性判断**。缘由与本目录清单见 [`README.md`](README.md)。
+
 > **文档版本**：v1.1（2026-05-20 patch:§5 CLI rename align actual code + §5.3 c4 阈值 Option α revision）
 > **作用**：把 [`fql_succession_plan_v0.md`](fql_succession_plan_v0.md) §4.1 P0+P1（reward sanity + multimodality audit + FQL 实现 + Expert anchor）拆成可执行的命令、参数、文件契约、产出清单。
 > **状态**:**CLOSED** — Gate A.1 cite ✓ + Gate A.2 ✅ PASS 4/4 + Gate B ⚠ 3/4 PASS + c4 marginal-FAIL (seed-driven, retroactive PASS under v1.1 阈值);P2 main comparison spec 在 `fql_succession_p2_main_spec.md` 起草中。
@@ -10,7 +12,7 @@
 > - **v1.1 (2026-05-20)** — Session A patch:(a) §5.1/§5.2 CLI flag 名对齐 `scripts/train_offline.py` 实际实现 (`--algo` 等);(b) §5.3 c4 阈值改 Option α (slope ≥ −2 × SE_agg) 替换原 "slope ≥ 0";(c) §5.1/§5.2 manifest 引用保持 30-ep `single_u10_cross_tgt15.json` (Gate B 历史事实),P2 default ep100 manifest 在 P2 spec 引用,不回写本文档。
 >
 > **核心简化**：
-> - **Task 1（reward sanity）共享 [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) N0 cell 证据**，本 spec 不重复 spec
+> - **Task 1（reward sanity）共享 [`rebrac_broad_validation_v2_plan.md`](../../rebrac_broad_validation_v2_plan.md) N0 cell 证据**，本 spec 不重复 spec
 > - **FQL 集成走 `auv_nav/offline_registry.py` + `scripts/train_offline.py --algorithm fql`**，不写独立 train entry（plan v1 §4.1 措辞需要纠正）
 > - **M-multi-mix dataset 走 in-tree `scripts/concat_offline_datasets.py`**（v1 broad val A2 mix5050 已实战），不改 `collect_offline_data.py`
 > - **审计仅 1 个 canonical 指标**（k-NN action GMM mode count）；其他 audit signal 是 nice-to-have appendix material
@@ -75,7 +77,7 @@
 
 | 参数 | 值 | 锚定 |
 |---|---|---|
-| Task config | `single_u10_cross_tgt15` benchmark | [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) §2 / broad val v2 N0 |
+| Task config | `single_u10_cross_tgt15` benchmark | [`arrival_v2_experiment_report.md`](../../arrival_v2_experiment_report.md) §2 / broad val v2 N0 |
 | Flow file | `wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy` | 同上 |
 | Reward | `--objective arrival_v2` | plan v1 §2.3 |
 | Probe layout | `--probe-layout s0` | plan v1 §3.3 |

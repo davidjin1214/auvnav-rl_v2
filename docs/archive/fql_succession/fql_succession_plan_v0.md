@@ -1,11 +1,13 @@
 # FQL Succession Plan v1 — Offline RL on Data Quality × Modality Spectrum (Lean MVP)
 
-> ⚠ **SUPERSEDED 2026-06-02**：本 plan 的实验 phase（P0–P4）已**全部完成且闭环**（NEGATIVE 收口 2026-05-23，见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md)）。本 plan 当时设计的 paper-writing 出口（"FQL Paper 2 standalone"）**已撤销启动**——per 2026-06-02 用户拍板，全部 FQL 素材作为**博士论文第 5 章 §N.6 节**（FQL 算法对比 + SAC collector cross-source headline），不另起独立投稿。
+> 📦 **已归档** — P2 之前的施工记录，2026-08-17 迁入 `docs/archive/fql_succession/`；归档只改位置与标注，**不含有效性判断**。缘由与本目录清单见 [`README.md`](README.md)。
+
+> ⚠ **SUPERSEDED 2026-06-02**：本 plan 的实验 phase（P0–P4）已**全部完成且闭环**（NEGATIVE 收口 2026-05-23，见 [`fql_succession_p2_results.md`](../../fql_succession_p2_results.md)）。本 plan 当时设计的 paper-writing 出口（"FQL Paper 2 standalone"）**已撤销启动**——per 2026-06-02 用户拍板，全部 FQL 素材作为**博士论文第 5 章 §N.6 节**（FQL 算法对比 + SAC collector cross-source headline），不另起独立投稿。
 > - **实验设计 / phase plan / gate 条件 / sprint 节奏 等仍有历史 / 复现价值**，可作为 §N.6 写作时回查实验 provenance 的档案。
-> - **不再据本 plan 推进任何写作动作**；写作方向去 [`../paper/thesis_chapter_outline.md`](../paper/thesis_chapter_outline.md) rev.4 §N.6。
-> - 已闭环结果数字 ground truth 见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md) + [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9。
+> - **不再据本 plan 推进任何写作动作**；写作方向去 [`../paper/thesis_chapter_outline.md`](../../../paper/thesis_chapter_outline.md) rev.4 §N.6。
+> - 已闭环结果数字 ground truth 见 [`fql_succession_p2_results.md`](../../fql_succession_p2_results.md) + [`fql_succession_p2_mechanism_diagnostic.md`](../../fql_succession_p2_mechanism_diagnostic.md) §9。
 >
-> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
+> 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../../../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
 >
 > **文档版本**：v1.4（2026-05-21,P2 sprint 0 collection 实测 + audit 降级 advisory)
 > **作用**：把"重启 FQL 作 ReBRAC 后续"的 framing、scope、phase plan 与 gate 条件落地为可执行计划。**v1 相对 v0 砍掉约 50% validation insurance**（6 tier → 3 cell；4 audit 指标 → 1；4 ablation → 1；anchor 5-seed → 1-seed smoke），保留全部 core paper claim 支撑实验。
@@ -18,12 +20,12 @@
 > - v1.3 (2026-05-21) — P2 spec v1.2 wallclock-budget + storage-layout 重设 (D20 n_seeds 5→2 primary, D21 results/ mirror tree)
 > - **v1.4 (2026-05-21)** — P2 sprint 0 collection 实测后 audit 降级 advisory(D22):3 dataset 收集闭环 + GMM audit on noise-widened unimodal 发现 known false-positive limitation,cell 定义改基于 collection protocol 元信息
 > **前置阅读**：
-> - [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) — Offline 线整体状态
-> - [`docs/arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) — `arrival_v2` reward 在 vanilla SAC 上的 4-cell 5/5 gate 验证报告（**本计划 reward 选型依据**）
-> - [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) — **rev.3 active**：ReBRAC × `arrival_v2` × cross-only offline 实测，N0 cell (crosscomp/u10/Re150/s0) 与本计划同 reward+task+sensor，作 **Gate A.1 reward-sanity 共享证据**
-> - [`docs/online_sac_reward_redesign.md`](online_sac_reward_redesign.md) — `efficiency_v2` reward hacking 诊断 + `arrival_v2` v6 spec
-> - [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) — ReBRAC paper 1 主线 4 finding 数字源
-> - [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) — AUVHamNODE 线 PAUSED；本计划**不**依赖 NODE
+> - [`docs/offline_rl_line_summary.md`](../../offline_rl_line_summary.md) — Offline 线整体状态
+> - [`docs/arrival_v2_experiment_report.md`](../../arrival_v2_experiment_report.md) — `arrival_v2` reward 在 vanilla SAC 上的 4-cell 5/5 gate 验证报告（**本计划 reward 选型依据**）
+> - [`docs/rebrac_broad_validation_v2_plan.md`](../../rebrac_broad_validation_v2_plan.md) — **rev.3 active**：ReBRAC × `arrival_v2` × cross-only offline 实测，N0 cell (crosscomp/u10/Re150/s0) 与本计划同 reward+task+sensor，作 **Gate A.1 reward-sanity 共享证据**
+> - [`docs/online_sac_reward_redesign.md`](../../online_sac_reward_redesign.md) — `efficiency_v2` reward hacking 诊断 + `arrival_v2` v6 spec
+> - [`docs/rebrac_experiment_report.md`](../../rebrac_experiment_report.md) — ReBRAC paper 1 主线 4 finding 数字源
+> - [`docs/auvhamnode_mbrl_line_pause_memo.md`](../../auvhamnode_mbrl_line_pause_memo.md) — AUVHamNODE 线 PAUSED；本计划**不**依赖 NODE
 >
 > **明确的 non-goals**：
 > - 不做 FQL 作 ReBRAC paper 的 baseline
@@ -119,7 +121,7 @@ actually matters for AUV deployment.
 | **Algorithm focus** | dual-BC + critic LN 的必要性 (Finding i–iv) | Gaussian vs flow-based actor 的 modality sensitivity |
 | **核心 framing** | Deployable offline RL on coherent expert data | Where expressive offline RL actually helps |
 
-**关键解耦点**：FQL Paper 2 §Setup cite [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md)（efficiency_v2 hacking 诊断）+ [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md)（arrival_v2 4-cell 5/5 gate 验证）作为 reward 切换理由，并在 P0 期补 **ReBRAC × arrival_v2 × 1-seed smoke** 作为 reward-sanity spot check（不上 5 seed，cite C1 ablation 节约）。
+**关键解耦点**：FQL Paper 2 §Setup cite [`online_sac_reward_redesign.md`](../../online_sac_reward_redesign.md)（efficiency_v2 hacking 诊断）+ [`arrival_v2_experiment_report.md`](../../arrival_v2_experiment_report.md)（arrival_v2 4-cell 5/5 gate 验证）作为 reward 切换理由，并在 P0 期补 **ReBRAC × arrival_v2 × 1-seed smoke** 作为 reward-sanity spot check（不上 5 seed，cite C1 ablation 节约）。
 
 ---
 
@@ -146,9 +148,9 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 
 | Reward preset | 状态 | 本计划可用性 |
 |---|---|---|
-| `efficiency_v2` | 已证实 reward hacking ([online_sac_reward_redesign.md](online_sac_reward_redesign.md)) | ❌ 禁用 |
+| `efficiency_v2` | 已证实 reward hacking ([online_sac_reward_redesign.md](../../online_sac_reward_redesign.md)) | ❌ 禁用 |
 | `arrival_v2_simple` | C1 ablation 用过，简化版 | ❌ 不用（用户决定） |
-| **`arrival_v2`**（commit `813096e`，8 参数 v6 完整版）| **vanilla SAC × 4 cell 严格控制 5/5 gate PASS**（[arrival_v2_experiment_report.md](arrival_v2_experiment_report.md)）；§2 reference 显示 `single_u10_cross_tgt15` + s0 也 PASS | ✅ **主选** |
+| **`arrival_v2`**（commit `813096e`，8 参数 v6 完整版）| **vanilla SAC × 4 cell 严格控制 5/5 gate PASS**（[arrival_v2_experiment_report.md](../../arrival_v2_experiment_report.md)）；§2 reference 显示 `single_u10_cross_tgt15` + s0 也 PASS | ✅ **主选** |
 | `arrival_v2_fast` | arrival_v2 的 fast-success bonus 变体 | ⚠ 备选 ablation，本计划不主用 |
 
 **主选 `arrival_v2`**。需注意：arrival_v2 在 online SAC 上验证，offline ReBRAC 行为未独立测过 → P0 Gate A 必跑 1-seed smoke 确认 offline 兼容性。
@@ -175,7 +177,7 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | **M-uni-noise** | privileged baseline + ε·N(0, I)，**ε=0.5** | Medium | Unimodal (widened) | **¬B test**：quality 单轴下降 + 仍单峰；验证 "unimodal sub-optimal 不区分 FQL/ReBRAC" |
 | **M-multi-mix** | 50% privileged + 50% goalseek (episode-level mix) | Medium | **Multi-modal**（双峰，by construction） | **A∧B core cell**：FQL 设计 sweet spot |
 
-¹ **E-uni already collected (2026-05-19)** — `offline_data/privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/` (1000 ep, success 0.985, 86,685 transitions),详见 [`fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md)。M-uni-noise 与 M-multi-mix 在 P2 期收集 (Session A P2 spec §2 协议)。
+¹ **E-uni already collected (2026-05-19)** — `offline_data/privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000/` (1000 ep, success 0.985, 86,685 transitions),详见 [`fql_e_uni_anchor_dataset_card.md`](../../fql_e_uni_anchor_dataset_card.md)。M-uni-noise 与 M-multi-mix 在 P2 期收集 (Session A P2 spec §2 协议)。
 
 **v0 → v1 砍掉的 tier**：
 - ❌ M-uni-early（与 M-uni-noise 重复 ¬B 角色，选构造可控的 noise 版本）
@@ -194,7 +196,7 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 |---|---|
 | Dataset size | 1000 episodes / cell |
 | Reward | `arrival_v2`（8 参数完整 v6 spec） |
-| Task config | `single_u10_cross_tgt15`（cite [arrival_v2_experiment_report.md](arrival_v2_experiment_report.md) §2 cross_u10 reference 已 PASS） |
+| Task config | `single_u10_cross_tgt15`（cite [arrival_v2_experiment_report.md](../../arrival_v2_experiment_report.md) §2 cross_u10 reference 已 PASS） |
 | Probe layout | `s0`（DVL only, 10-D obs；与 ReBRAC paper 1 一致） |
 | History length | 4 |
 | Metadata | seed / collector identity / generation timestamp 入 `metadata.json` |
@@ -232,7 +234,7 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 
 **任务**：
 1. **Reward sanity（cite broad val v2 N0，不独立跑）** — **✓ cite passed**
-   - [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) §4.1 N0 cell 与本计划同 reward (`arrival_v2`) + 同 task (`single_u10_cross_tgt15`) + 同 sensor (`s0`) + 同 ReBRAC config (β1=4, β2=2, vanilla critic, critic_LN=on)
+   - [`rebrac_broad_validation_v2_plan.md`](../../rebrac_broad_validation_v2_plan.md) §4.1 N0 cell 与本计划同 reward (`arrival_v2`) + 同 task (`single_u10_cross_tgt15`) + 同 sensor (`s0`) + 同 ReBRAC config (β1=4, β2=2, vanilla critic, critic_LN=on)
    - **Gate A.1（共享判据）**：broad val v2 N0 ≥ **0.70** success（v2 plan 已设定 GO 阈值）→ pass
    - 若 broad val v2 N0 fail，FQL plan v1 同步 abort 并联动 reward 切换决策
    - **本计划不重复跑 ReBRAC × arrival_v2 smoke**，节约 ~1 seed × 64 epoch ≈ 1.5h L4 + spec 复杂度
@@ -277,7 +279,7 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 
 **产出**:`results/fql_succession/p2/{e_uni,m_uni_noise,m_multi_mix}/` + `docs/fql_succession_p2_main_report.md`。
 
-详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) v1.2。
+详见 [`fql_succession_p2_main_spec.md`](../../fql_succession_p2_main_spec.md) v1.2。
 
 ### 4.3 P3 — Mix ratio ablation（~1 周）
 
@@ -339,7 +341,7 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | D1 | FQL 不做 baseline、不做独立线，做 ReBRAC succession | 2026-05-18 | 用户明确诉求；scope 解耦更清晰 |
 | D2 | NODE 线明确不启用 | 2026-05-18 | AUVHamNODE PAUSED；FQL pure 不绑 NODE |
 | D3 | Broad validation 不作 motivation | 2026-05-18 | efficiency_v2 reward hacking 污染所有 broad val 结论 |
-| D4 | Reward 用 **`arrival_v2`**（非 `efficiency_v2`、非 `arrival_v2_simple`） | 2026-05-18 (v1) | 用户决定；`arrival_v2` 已在 vanilla SAC × 4 cell 5/5 gate PASS（[arrival_v2_experiment_report.md](arrival_v2_experiment_report.md)） |
+| D4 | Reward 用 **`arrival_v2`**（非 `efficiency_v2`、非 `arrival_v2_simple`） | 2026-05-18 (v1) | 用户决定；`arrival_v2` 已在 vanilla SAC × 4 cell 5/5 gate PASS（[arrival_v2_experiment_report.md](../../arrival_v2_experiment_report.md)） |
 | D5 | Paper claim 设计为**条件式 iff**（quality × modality 双轴）| 2026-05-18 | 避免 overclaim；hedge unimodal sub-optimal 的实证不确定性 |
 | D6 | Two-paper sequence | 2026-05-18 | ReBRAC paper 1 已 paper-ready 4/4；不污染 |
 | D7 | Phase 0 multimodality audit 作 hard gate | 2026-05-18 | 避免重蹈 broad validation "结论建立在未验证假设上" 覆辙 |
@@ -353,9 +355,9 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 | **D17** | **Gate B 3/4 PASS + c4 marginal-FAIL (seed-driven) → progress to P2 with caveat,不 trigger Option D (FQL stability ablation)** | **2026-05-20** | Gate B Option B 2-seed 闭环显示 c4 FAIL 是 seed=42 driven 而非 FQL-driven (seed=0 上 FQL slope 正);interim 的 Option D 触发条件 "c4 FAIL on both seeds" 未满足;按 spec §5.3 mitigation matrix "mixed → caveat + 3-seed extension" 路径,P2 用 n_seeds≥3 retire-or-confirm 此 marginal finding |
 | **D18** | **Bug 2 修复采用方案 (a) 大 manifest**:生成 `single_u10_cross_tgt15_ep100.json` (100 ep,前 30 byte-identical to 30-ep),不动 `train_utils.py` 优先级逻辑 | **2026-05-20** | 不影响 30+ 现存 manifest 调用方 (paper 1 / broad val v2 / td3bc / online sac);(b/b') CLI honor `--episodes` 留 follow-up cleanup;ep100 manifest 同时 serve P2 default + P3 mix ratio ablation;**P2 spec 引用 ep100,不回写 P0+P1 spec §5.1/§5.2** (Gate B 历史事实保持) 详见 [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) |
 | **D19** | **c4 阈值采用 Option α**:`slope ≥ −2 × SE_aggregated`,SE 按 √(p(1−p)/n_eval)/√17.5/√n_seeds 自动 scale | **2026-05-20** | retroactive 在 Gate B 数据上 4 种 (n_seeds × manifest) 配置全 PASS;P2 default (n=5, 100-ep) 下阈值 ≈ −0.0098;数学最干净 (95% 单侧 CI 下界);实现成本 5 行 numpy;与 D18 Bug 2 fix 自然配合 (noise 减半 → 阈值自动收紧);β/γ 不选,γ 可作 supplementary visualization 详见 [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) |
-| **D20** | **P2 n_seeds 从 5 降至 2 primary [42, 0]**,conditional 扩 3 [42, 0, 7];verdict 改 **effect-size + 方向一致性** primary,Welch p / Bonferroni 留 sensitivity | **2026-05-21** | wallclock budget(L4 ~10h/session)+ effect-size primary 让 large-n 统计 power 不再是 paper claim 瓶颈;n=2 节省 60% wallclock (19h → 8h),让出余量给 revision 阶段扩 seed;Gate B 已用 [42, 0] 有 4-run 历史可 cross-reference;gray band [3pp, 5pp] 自动触发扩 n=3;n=2 下 c4 Option α 阈值自动 scale 到 −0.0155(比 n=5 −0.0098 宽容 1.6×,Gate B FQL slope −0.0038 仍 PASS) 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §4.1 + §10.3 |
-| **D21** | **P2 storage layout 拆 `checkpoints/` (大文件 .pt) + `results/` (绘图包) 两棵树**;train 输出 mirror 到 `results/training_curves/{algo}_seed{S}/`,final test eval 通过 `evaluate_offline --output-json` 单独写入 `results/test/`;Colab 跑完仅回收 `results/` 树即可本地绘图 + 重建 verdict | **2026-05-21** | 早期 ReBRAC c1 ablation 等 notebook 已用此约定(`CHECKPOINT_ROOT` + `RESULTS_ROOT` 单独命名)但近期 fql_succession Gate B notebook 把所有产物混在 `--save-dir` 下,违反约定;mirror 4 small file (`train_log.jsonl` + `eval_log.csv` + `trainer_state.json` + `train_config.txt`) 总大小 ~几十 KB/seed,廉价;`results/test/<algo>_seed<S>.json` self-contained final eval 与 train 解耦;train 加 `--skip-final-eval`,final eval 由独立 step 完成 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §4.2 + §9.3.1 |
-| **D22** | **P2 cell 定义改基于 collection protocol 元信息**(`policy_mixture` field),**GMM audit 从 Gate C.2 hard gate 降为 advisory sanity check** | **2026-05-21** | P2 sprint 0 实测 GMM audit 对 noise-widened single policy 有 known false-positive(privileged ε=0.5 → p_≥2=0.996;ε=0.3 → 0.850;均远超 < 0.20 阈值,但 collection metadata 证明都是 single policy);Root cause:GMM(max_comp=3, weight_floor=0.10)在 wide single Gaussian 上倾向 BIC-split,与 dryrun 验证用的 mixture-vs-mixture 对比 metric work 但 single-policy noise widening 的 negative control 上 over-sensitive;Mitigation 选项(Hartigan dip test / 改 weight_floor / per-anchor variance)reviewer 风险均高,实施成本 0.5-2 天;P2 处理:维持 GMM audit 作 advisory disclosure,paper §method 透明 caveat,cell assignment 由 collection metadata integrity 决定;**Audit 对 multi-policy mixture(M-multi-mix)仍 reliable**(P2 sprint 0 实测 p_≥2=0.414 + Welch p≈1e-29 + Δ CI lower 0.25 三 criterion 全过 → confirms mixture construction);**audit 对 single-policy noise widening(M-uni-noise)仅作 paper appendix 透明披露** 详见 [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) §3.0 + §10.5 |
+| **D20** | **P2 n_seeds 从 5 降至 2 primary [42, 0]**,conditional 扩 3 [42, 0, 7];verdict 改 **effect-size + 方向一致性** primary,Welch p / Bonferroni 留 sensitivity | **2026-05-21** | wallclock budget(L4 ~10h/session)+ effect-size primary 让 large-n 统计 power 不再是 paper claim 瓶颈;n=2 节省 60% wallclock (19h → 8h),让出余量给 revision 阶段扩 seed;Gate B 已用 [42, 0] 有 4-run 历史可 cross-reference;gray band [3pp, 5pp] 自动触发扩 n=3;n=2 下 c4 Option α 阈值自动 scale 到 −0.0155(比 n=5 −0.0098 宽容 1.6×,Gate B FQL slope −0.0038 仍 PASS) 详见 [`fql_succession_p2_main_spec.md`](../../fql_succession_p2_main_spec.md) §4.1 + §10.3 |
+| **D21** | **P2 storage layout 拆 `checkpoints/` (大文件 .pt) + `results/` (绘图包) 两棵树**;train 输出 mirror 到 `results/training_curves/{algo}_seed{S}/`,final test eval 通过 `evaluate_offline --output-json` 单独写入 `results/test/`;Colab 跑完仅回收 `results/` 树即可本地绘图 + 重建 verdict | **2026-05-21** | 早期 ReBRAC c1 ablation 等 notebook 已用此约定(`CHECKPOINT_ROOT` + `RESULTS_ROOT` 单独命名)但近期 fql_succession Gate B notebook 把所有产物混在 `--save-dir` 下,违反约定;mirror 4 small file (`train_log.jsonl` + `eval_log.csv` + `trainer_state.json` + `train_config.txt`) 总大小 ~几十 KB/seed,廉价;`results/test/<algo>_seed<S>.json` self-contained final eval 与 train 解耦;train 加 `--skip-final-eval`,final eval 由独立 step 完成 详见 [`fql_succession_p2_main_spec.md`](../../fql_succession_p2_main_spec.md) §4.2 + §9.3.1 |
+| **D22** | **P2 cell 定义改基于 collection protocol 元信息**(`policy_mixture` field),**GMM audit 从 Gate C.2 hard gate 降为 advisory sanity check** | **2026-05-21** | P2 sprint 0 实测 GMM audit 对 noise-widened single policy 有 known false-positive(privileged ε=0.5 → p_≥2=0.996;ε=0.3 → 0.850;均远超 < 0.20 阈值,但 collection metadata 证明都是 single policy);Root cause:GMM(max_comp=3, weight_floor=0.10)在 wide single Gaussian 上倾向 BIC-split,与 dryrun 验证用的 mixture-vs-mixture 对比 metric work 但 single-policy noise widening 的 negative control 上 over-sensitive;Mitigation 选项(Hartigan dip test / 改 weight_floor / per-anchor variance)reviewer 风险均高,实施成本 0.5-2 天;P2 处理:维持 GMM audit 作 advisory disclosure,paper §method 透明 caveat,cell assignment 由 collection metadata integrity 决定;**Audit 对 multi-policy mixture(M-multi-mix)仍 reliable**(P2 sprint 0 实测 p_≥2=0.414 + Welch p≈1e-29 + Δ CI lower 0.25 三 criterion 全过 → confirms mixture construction);**audit 对 single-policy noise widening(M-uni-noise)仅作 paper appendix 透明披露** 详见 [`fql_succession_p2_main_spec.md`](../../fql_succession_p2_main_spec.md) §3.0 + §10.5 |
 
 ---
 
@@ -369,25 +371,25 @@ ReBRAC 在 D4RL 原论文的强 cell 包括 unimodal medium（hopper-medium / wa
 
 | 文档 | 角色 |
 |---|---|
-| [`offline_rl_line_summary.md`](offline_rl_line_summary.md) | Offline 线总览 |
-| [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) | **`arrival_v2` reward 在 vanilla SAC × 4 cell 5/5 gate 验证报告 — 本计划 reward 选型依据** |
-| [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md) | efficiency_v2 hacking 诊断 + arrival_v2 v6 设计 spec |
-| [`rebrac_experiment_plan.md`](rebrac_experiment_plan.md) | ReBRAC paper 1 protocol（FQL 沿用 5-seed × test=100 × `cross_stream` × `s0`） |
-| [`rebrac_experiment_report.md`](rebrac_experiment_report.md) | ReBRAC paper 1 数字 ground truth |
-| [`rebrac_mainline_review.md`](rebrac_mainline_review.md) | ReBRAC One Page + 4 finding spine |
-| [`auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) | NODE 线 paused 状态（本计划不依赖） |
-| [`auv_nav/rebrac.py`](../auv_nav/rebrac.py) | FQL 复用 twin-Q + critic LN 的源代码起点 |
-| [`auv_nav/reward.py`](../auv_nav/reward.py) | `arrival_v2` preset 实现位置（commit `813096e`，§139-166） |
-| [`scripts/concat_offline_datasets.py`](../scripts/concat_offline_datasets.py) | Episode-level dataset concat helper（commit `992625c`，v1 A2 mix5050 实战）— M-multi-mix 走此工具，不动 `collect_offline_data.py` |
+| [`offline_rl_line_summary.md`](../../offline_rl_line_summary.md) | Offline 线总览 |
+| [`arrival_v2_experiment_report.md`](../../arrival_v2_experiment_report.md) | **`arrival_v2` reward 在 vanilla SAC × 4 cell 5/5 gate 验证报告 — 本计划 reward 选型依据** |
+| [`online_sac_reward_redesign.md`](../../online_sac_reward_redesign.md) | efficiency_v2 hacking 诊断 + arrival_v2 v6 设计 spec |
+| [`rebrac_experiment_plan.md`](../../rebrac_experiment_plan.md) | ReBRAC paper 1 protocol（FQL 沿用 5-seed × test=100 × `cross_stream` × `s0`） |
+| [`rebrac_experiment_report.md`](../../rebrac_experiment_report.md) | ReBRAC paper 1 数字 ground truth |
+| [`rebrac_mainline_review.md`](../../rebrac_mainline_review.md) | ReBRAC One Page + 4 finding spine |
+| [`auvhamnode_mbrl_line_pause_memo.md`](../../auvhamnode_mbrl_line_pause_memo.md) | NODE 线 paused 状态（本计划不依赖） |
+| [`auv_nav/rebrac.py`](../../../auv_nav/rebrac.py) | FQL 复用 twin-Q + critic LN 的源代码起点 |
+| [`auv_nav/reward.py`](../../../auv_nav/reward.py) | `arrival_v2` preset 实现位置（commit `813096e`，§139-166） |
+| [`scripts/concat_offline_datasets.py`](../../../scripts/concat_offline_datasets.py) | Episode-level dataset concat helper（commit `992625c`，v1 A2 mix5050 实战）— M-multi-mix 走此工具，不动 `collect_offline_data.py` |
 | [`fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) | **P0+P1 可执行 spec**：5 个 task + Gate A.1 共享 + Gate A.2/B 判据 (CLI rename + c4 阈值 patch 见 v1.2 Session A) |
-| [`fql_pytorch_port_design.md`](fql_pytorch_port_design.md) | **FQL 实现 design doc**：tensor shape 契约 + JAX→PyTorch pitfall + impl checklist + 12 个 test |
-| [`fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md) | **Audit 脚本 design doc**：k-NN GMM mode count + paired bootstrap + Gate A.2 verdict 逻辑 |
+| [`fql_pytorch_port_design.md`](../../fql_pytorch_port_design.md) | **FQL 实现 design doc**：tensor shape 契约 + JAX→PyTorch pitfall + impl checklist + 12 个 test |
+| [`fql_audit_multimodality_design.md`](../../fql_audit_multimodality_design.md) | **Audit 脚本 design doc**：k-NN GMM mode count + paired bootstrap + Gate A.2 verdict 逻辑 |
 | [`fql_audit_dryrun_report.md`](fql_audit_dryrun_report.md) | **Task A dry-run report**:Gate A.2 PASS 4/4 实测 (2026-05-19, Δp(≥2) +0.58 [CI +0.53, +0.63]) |
-| [`fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) | **E-uni 1000-ep dataset card**:Task D 闭环 (success 0.985, 86,685 transitions) |
+| [`fql_e_uni_anchor_dataset_card.md`](../../fql_e_uni_anchor_dataset_card.md) | **E-uni 1000-ep dataset card**:Task D 闭环 (success 0.985, 86,685 transitions) |
 | [`fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) | **Task E / Gate B final report**:Option B 2-seed 3/4 PASS + c4 marginal-FAIL (seed-driven) (2026-05-20) |
 | [`fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) | **P2 pre-requisite 1/2**:Bug 2 fix design memo (D18, 方案 a 大 manifest) |
 | [`fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) | **P2 pre-requisite 2/2**:c4 阈值 design memo (D19, Option α slope ≥ −2 × SE_agg) |
-| [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) | **P2 main comparison spec v1.2 (Session A 2026-05-21,n=2 primary + checkpoints/results 拆分)** |
+| [`fql_succession_p2_main_spec.md`](../../fql_succession_p2_main_spec.md) | **P2 main comparison spec v1.2 (Session A 2026-05-21,n=2 primary + checkpoints/results 拆分)** |
 
 ---
 

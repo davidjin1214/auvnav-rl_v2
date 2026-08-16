@@ -445,6 +445,21 @@
 | [`fql_succession_p2_xbench_spec.md`](fql_succession_p2_xbench_spec.md) | **FLOOR-closed** | 跨-benchmark 泛化探测 spec + 实测 FLOOR（§6.5 依据） |
 | [`fql_succession_paper_writing_index.md`](fql_succession_paper_writing_index.md) ★ | **P4 写作索引 (rev.1)** | paper 章节→文档映射 + 复现 notebook + headline 数字 + 定位选项 + 投稿前 TODO |
 
+留在 `docs/` 顶层但只被代码引用的三份（`thes=0 / entr=0` 的入链计数分不出「历史记录」和「活契约」）：
+
+| 文件 | 状态 | 角色 |
+|---|---|---|
+| [`fql_pytorch_port_design.md`](fql_pytorch_port_design.md) | **IMPLEMENTED** | `auv_nav/fql.py` 的现行 design contract；模块头注 + `tests/test_fql.py` §13 指回它 |
+| [`fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md) | **IMPLEMENTED** | `scripts/audit_multimodality.py` 同上；`tests/test_audit_multimodality.py` §9 是其测试计划 |
+| [`fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) | COLLECTED | E-uni 1000-ep 数据卡；P2 main spec §Status 引它作 Task D 闭环凭证 |
+
+**P2 之前的施工记录（7 份）已于 2026-08-17 迁入
+[`archive/fql_succession/`](archive/fql_succession/README.md)** —— plan v0 / P0+P1 spec /
+Gate B 终报 + 中间报告 / bug2 + c4 两项 P2 前置决策 / audit dry-run 报告。
+**归档只表示改变位置与标注，不含有效性判断**：这些文件的结论未被撤销，只是不再作为论文引用入口。
+Gate B 终报仍是**冻结超参的来源**（flow_steps=10 / distill_alpha_bc=1.0 / β1=4 β2=2），
+审稿人问「怎么调的」时回查该目录。
+
 ### 5.3 实验数据 / checkpoints / offline data
 
 > ⚠ **2026-08-16 订正**：本表原先整张指向 `experiments/offline/...`，实测该树下**只有**

@@ -11,7 +11,7 @@
 > [`offline_rl_line_summary.md`](offline_rl_line_summary.md) 与
 > [`online_rl_line_summary.md`](online_rl_line_summary.md)；本文件是**文件地图**，两者角色不同。
 
-共 117 个 markdown 文件。
+共 118 个 markdown 文件。
 
 ## 入口与总纲（3）
 
@@ -21,7 +21,7 @@
 | [`CLAUDE.md`](../CLAUDE.md) | CLAUDE.md | — |
 | [`README.md`](../README.md) | AUV Navigation in Complex Flow Fields | — |
 
-## docs/ — 研究与实现文档（54）
+## docs/ — 研究与实现文档（47）
 
 | 文档 | 标题 | 自我标注状态 |
 |---|---|---|
@@ -33,22 +33,15 @@
 | [`docs/auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) | AUVHamNODE Offline MBRL — v3.0 Pre-Notes(交接备忘) | PAUSED 2026-05-13 |
 | [`docs/data_integrity_open_items.md`](data_integrity_open_items.md) | 数据完整性待核项（2026-08-02 记录） | — |
 | [`docs/environment_design.md`](environment_design.md) | 复杂流场中欠驱动AUV导航的仿真环境设计 | — |
-| [`docs/fql_audit_dryrun_report.md`](fql_audit_dryrun_report.md) | FQL Audit Multimodality — Task A Dry-Run Report | — |
 | [`docs/fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md) | `scripts/audit_multimodality.py` — Detail Design Doc | — |
 | [`docs/fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) | FQL E-uni Paper Anchor Dataset — Card | — |
 | [`docs/fql_pytorch_port_design.md`](fql_pytorch_port_design.md) | `auv_nav/fql.py` — PyTorch Port Design Doc | — |
-| [`docs/fql_succession_bug2_fix_decision.md`](fql_succession_bug2_fix_decision.md) | Bug 2 修复方向决策 — `--episodes` vs manifest size | — |
-| [`docs/fql_succession_c4_threshold_revision.md`](fql_succession_c4_threshold_revision.md) | c4 阈值改造决策 — slope ≥ 0 → no-major-collapse | — |
-| [`docs/fql_succession_gate_b_interim_report.md`](fql_succession_gate_b_interim_report.md) | FQL Succession Gate B — Interim Report (seed=42 single-seed) | SUPERSEDED 2026-07-28 |
-| [`docs/fql_succession_gate_b_report.md`](fql_succession_gate_b_report.md) | FQL Succession Gate B — Final Report (Option B 2-seed) | — |
-| [`docs/fql_succession_p0p1_spec.md`](fql_succession_p0p1_spec.md) | FQL Succession — P0+P1 Executable Spec | CLOSED |
 | [`docs/fql_succession_p2_collection_log.md`](fql_succession_p2_collection_log.md) | FQL Succession P2 — Sprint 0 Collection Log | — |
 | [`docs/fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) | FQL Succession — P2 Main Comparison Spec | SUPERSEDED 2026-05-20 |
 | [`docs/fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) | FQL Succession P2 — Mechanism Diagnostic (option C) | — |
 | [`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md) | FQL Succession P2 — Results & Verdict | — |
 | [`docs/fql_succession_p2_xbench_spec.md`](fql_succession_p2_xbench_spec.md) | FQL Succession P2 — Cross-Benchmark Confirmation Spec (`single_u15_cross`) | — |
 | [`docs/fql_succession_paper_writing_index.md`](fql_succession_paper_writing_index.md) | FQL Succession 写作文档索引（原 Paper 2 候选 → 博士论文第 5 章 §N.6） | — |
-| [`docs/fql_succession_plan_v0.md`](fql_succession_plan_v0.md) | FQL Succession Plan v1 — Offline RL on Data Quality × Modality Spectrum (Lean MVP) | SUPERSEDED 2026-06-02 |
 | [`docs/generate_wake_usage.md`](generate_wake_usage.md) | `scripts/generate_wake.py` 使用说明 | — |
 | [`docs/offline_rl_implementation_plan.md`](offline_rl_implementation_plan.md) | 离线强化学习实现方案与计划 | DEPRECATED 2026-05-08 |
 | [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) | Offline RL 线总结报告 | — |
@@ -79,6 +72,19 @@
 | [`docs/td3bc_worldcomp_teacher_gap_experiment_report.md`](td3bc_worldcomp_teacher_gap_experiment_report.md) | TD3BC `worldcomp teacher-gap` 实验报告 | — |
 | [`docs/wallclock_profile_2026_05_17.md`](wallclock_profile_2026_05_17.md) | Wallclock Profile — 决定不做 GPU env 迁移的数据依据 | ARCHIVE |
 | [`docs/world_model_and_offline_rl_survey.md`](world_model_and_offline_rl_survey.md) | 世界模型与离线-在线 RL 研究综述 | — |
+
+## docs/archive/fql_succession/ — FQL succession P2 之前的施工记录（归档=移位+标注，非有效性判断）（8）
+
+| 文档 | 标题 | 自我标注状态 |
+|---|---|---|
+| [`docs/archive/fql_succession/fql_audit_dryrun_report.md`](../docs/archive/fql_succession/fql_audit_dryrun_report.md) | FQL Audit Multimodality — Task A Dry-Run Report | ARCHIVE 2026-08-17 |
+| [`docs/archive/fql_succession/fql_succession_bug2_fix_decision.md`](../docs/archive/fql_succession/fql_succession_bug2_fix_decision.md) | Bug 2 修复方向决策 — `--episodes` vs manifest size | ARCHIVE 2026-08-17 |
+| [`docs/archive/fql_succession/fql_succession_c4_threshold_revision.md`](../docs/archive/fql_succession/fql_succession_c4_threshold_revision.md) | c4 阈值改造决策 — slope ≥ 0 → no-major-collapse | ARCHIVE 2026-08-17 |
+| [`docs/archive/fql_succession/fql_succession_gate_b_interim_report.md`](../docs/archive/fql_succession/fql_succession_gate_b_interim_report.md) | FQL Succession Gate B — Interim Report (seed=42 single-seed) | SUPERSEDED 2026-07-28 |
+| [`docs/archive/fql_succession/fql_succession_gate_b_report.md`](../docs/archive/fql_succession/fql_succession_gate_b_report.md) | FQL Succession Gate B — Final Report (Option B 2-seed) | ARCHIVE 2026-08-17 |
+| [`docs/archive/fql_succession/fql_succession_p0p1_spec.md`](../docs/archive/fql_succession/fql_succession_p0p1_spec.md) | FQL Succession — P0+P1 Executable Spec | CLOSED |
+| [`docs/archive/fql_succession/fql_succession_plan_v0.md`](../docs/archive/fql_succession/fql_succession_plan_v0.md) | FQL Succession Plan v1 — Offline RL on Data Quality × Modality Spectrum (Lean MVP) | SUPERSEDED 2026-06-02 |
+| [`docs/archive/fql_succession/README.md`](../docs/archive/fql_succession/README.md) | FQL Succession — P2 之前的施工记录（归档） | ARCHIVE 2026-08-17 |
 
 ## docs/auvhamnode_spike/ — AUVHamNODE 预 spike 审计（⏸ 线已暂停）（6）
 

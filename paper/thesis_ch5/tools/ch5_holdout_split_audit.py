@@ -62,7 +62,7 @@ UNITS: dict[str, str] = {
     "ReBRAC cross-2000 (4,2)": "results/offline/rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test",
     "ReBRAC cross-2000 (4,1) backup": "results/offline/rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test",
     "ReBRAC world dep (4,2)": "results/offline/rebrac/worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test",
-    "ReBRAC world priv (4,2) [3 seeds local]": "results/offline/rebrac/worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test",
+    "ReBRAC world priv (4,2)": "results/offline/rebrac/worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test",
     "ReBRAC cross-1000 b2=0": "results/offline/rebrac/stage_e_critic_penalty_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_0p0/test",
     "ReBRAC cross-1000 LN-off": "results/offline/rebrac/critic_ln_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test",
     "ReBRAC world b2=0 probe": "results/offline/rebrac/worldcomp_critic_penalty_off_probe/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_0p0/test",
@@ -194,6 +194,27 @@ def main() -> None:
             f"collector={ref:.4f}\n"
             f"               Welch diff={diff:+.4f} t={t:+.4f} df={df:.3f} | "
             f"closure dep={100 * (mean(dep) - base) / denom:.1f}% priv={100 * (mean(priv) - base) / denom:.1f}%"
+        )
+
+    print("\n--- SS5.7.2 ReBRAC-Q deployable vs privileged (worldcomp, same algorithm) ---")
+    # The chapter reads this pair as a null ("no detectable mean lift"), so what matters on
+    # hold60 is whether the *mechanism* story survives -- the hard-seed rescue and the
+    # dispersion narrowing -- not the sign of a point estimate the chapter declines to read.
+    for label, key in (("full 100", "full"), ("hold-out 60", "hold")):
+        dep = results["ReBRAC world dep (4,2)"][key]  # type: ignore[index]
+        priv = results["ReBRAC world priv (4,2)"][key]  # type: ignore[index]
+        base = mean(results["TD3+BC world dep (a->0)"][key])  # type: ignore[arg-type]
+        ref = mean(results["collector worldcomp (ref)"][key])  # type: ignore[arg-type]
+        worst = min(range(len(dep)), key=lambda j: dep[j])  # type: ignore[arg-type]
+        others = [priv[j] - dep[j] for j in range(len(dep)) if j != worst]  # type: ignore[index]
+        print(
+            f"  {label:12s} dep={mean(dep):.4f} (pop sd {std_pop(dep):.4f}) "  # type: ignore[arg-type]
+            f"priv={mean(priv):.4f} (pop sd {std_pop(priv):.4f}, sample sd {std_sample(priv):.4f})\n"
+            f"               priv-dep={100 * (mean(priv) - mean(dep)):+.2f} pp | "
+            f"closure priv={100 * (mean(priv) - base) / (ref - base):.1f}%\n"
+            f"               worst dep seed {dep[worst]:.3f} -> {priv[worst]:.3f} "
+            f"({100 * (priv[worst] - dep[worst]):+.1f} pp); other seeds "
+            f"{[round(x, 4) for x in others]} (none rising: {all(x <= 0 for x in others)})"
         )
 
     print("\n--- per-seed hold-out 60 values (for hand-checking) ---")

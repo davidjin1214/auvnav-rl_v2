@@ -26,3 +26,21 @@ conda run -n mytorch1 python -m scripts.evaluate \
 ```
 
 The benchmark catalog itself is defined in `scripts/benchmark_catalog.py`.
+
+## `clean_probe/`
+
+Manifests for the item-(1) supplementary final evaluation (`docs/data_integrity_open_items.md`),
+reported in Chapter 5 §5.7.1 / §5.7.m.
+
+- `single_u10_cross_tgt15_ep100_s3000.json` — 100 episodes, manifest seeds 3000..3099. Disjoint
+  from both the training seed range 0..1999 and the published test set 1250..1349, with every
+  other generation parameter matching the main evaluation manifest.
+- `_repro_check_s1250.json` — the evidence for that last clause. Regenerated with the *same*
+  generator and parameters but manifest seed 1250, it reproduces
+  `single_u10_cross_tgt15_ep100.json` episode for episode, so the s3000 manifest differs from the
+  main one only in the seed. Not an evaluation target; keep it out of result protocols.
+
+Note for `python -m scripts.audit_seed_overlap`: its range pass treats every JSON with an
+`episodes` key as a manifest, so `_repro_check_s1250.json` shows up as a third overlap line
+against the 2000-episode dataset. That line is the same instance family as
+`single_u10_cross_tgt15_ep100.json`, not an additional contaminated evaluation set.

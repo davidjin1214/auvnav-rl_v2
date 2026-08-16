@@ -31,7 +31,22 @@ REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "docs/DOC_INDEX.md"
 HEAD_LINES = 15
 
-SKIP_DIRS = {".git", "node_modules", "__pycache__"}
+# Tool caches ship their own README.md, which would otherwise enter the index the
+# first time anyone runs pytest here -- making the index depend on what commands
+# happened to have run on this machine.
+SKIP_DIRS = {
+    ".git", "node_modules", "__pycache__",
+    ".pytest_cache", ".ruff_cache", ".mypy_cache", ".ipynb_checkpoints",
+    ".venv", "venv", ".tmp", "tmp",
+}
+
+# Gitignored data directories, skipped at the repo top level only. They may be
+# junctions to another volume, so rglob otherwise walks into ~40 GB of run output --
+# which carries markdown of its own (results/archived/, plus a stale pre-move copy of
+# experiments/auvhamnode_spike/ that a68b4c2 relocated to docs/). None of it belongs in
+# a document index, and whether it shows up at all depends on how a given machine
+# mounts its data, which would make the index machine-dependent.
+DATA_DIRS = {"results", "experiments", "checkpoints", "wake_data", "offline_data"}
 
 # Ordered: first match wins, so SUPERSEDED beats a passing mention of "archive".
 STATUS_PATTERNS: list[tuple[str, str]] = [
@@ -118,6 +133,8 @@ def collect() -> list[tuple[str, str, str]]:
         if SKIP_DIRS & set(p.parts):
             continue
         rel = p.relative_to(REPO).as_posix()
+        if rel.split("/", 1)[0] in DATA_DIRS:
+            continue
         if rel == OUT.relative_to(REPO).as_posix():
             continue
         lines = head_of(p)

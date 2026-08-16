@@ -10,7 +10,7 @@
 > | ② Table 1 transitions 数字 | 仅影响已撤销的 standalone paper 旧稿；论文第 5 章 `setup.tex` rev.3 已用实测值纠正 | 第 5 章 rev 头注四源互证 |
 > | ③ 验证集 ⊄ 测试集 | ⚠ **成立且更强**：val **不是重叠而是前缀子集**，40/40 配置下两份 manifest 完全相同 | manifest 生成器无 seed 偏移 + 三个 launcher + notebook 实际启动命令；2026-08-16 用 `validation/seed_*/*.json` 与 `screening/**/test/*.json` 的逐回合 seed 直证，并**订正**一处对 §5.3.6 措辞的误称（见该节末） |
 > | ④ 行为策略 vs ReBRAC 成功率 | 未动，仍是建议项 | — |
-> | ⑤ 含噪 2000 数据集种子 | ⚠ **待核**（2026-08-16 新增）。规模跨过 1250，若沿用默认 `--seed 0` 即与 ① 同因同病；数据集只在 Drive | 见第 5 节 |
+> | ⑤ 含噪 2000 数据集种子 | ⚠ **成立**（2026-08-16 Drive 侧探针钉死）。`seed=0`、2000 回合，与评估 manifest **100/100 任务实例逐条相同** —— 与 ① 同因同病 | 见第 5 节 |
 >
 > **污染面（本机范围内）已封闭**：**本机** `offline_data/` 下 10 个数据集，只有 `crosscomp-2000`
 > 一个受影响。其余 9 个均为 `seed=0 / 1000 回合`（种子 0..999），而全部 8 个 benchmark key 的
@@ -22,8 +22,26 @@
 >
 > ⚠ **该枚举的范围是本机目录，不是全仓**（2026-08-16 独立复核订正）。`audit_seed_overlap` 只扫
 > 本机 `offline_data/` 与本机 `benchmarks/`，而第 5 章至少引用了三个不在其中的数据集：500 回合集
-> （0..499，安全）、含噪 1000 集（0..999，安全）、**含噪 2000 集（种子未知，见下方第 5 条）**。
-> 结论要下"全仓封闭"，须在 Drive 侧再跑一次同一命令。
+> （0..499，安全）、含噪 1000 集（0..999，安全）、**含噪 2000 集（见下方第 5 条）**。
+>
+> ### ⚠⚠ 污染面**仍未封闭**——Drive 侧枚举本身不可信（2026-08-16 探针发现）
+>
+> Drive 侧跑同一命令，range pass 报 `datasets: 24  manifests: 22`，只有 `crosscomp-2000` 一个
+> `[OVERLAP]`。**但这份清单是残缺的**：同一次会话里 `--verify` 直接按路径读到了
+> `crosscomp_..._noise0p05clip0p15_ep2000/metadata.json`（`seed=0`、2000 回合、100/100 逐条相同），
+> 而该数据集**从未出现在那 24 行里**。
+>
+> 证据层面这是硬矛盾，不是解释问题：[`_load_datasets()`](../scripts/audit_seed_overlap.py) 只做
+> `offline_data/*/metadata.json` 的 glob，对每个命中都无条件打一行（`[clean]` 或 `[OVERLAP]`，
+> 无任何过滤）；而 `run_identity_pass()` 按 `OFFLINE_DATA_DIR / name / "metadata.json"` 直读、
+> **无回退分支**，读不到就抛异常。它没抛。→ **文件存在，glob 没返回它。**
+>
+> 成因未证实，最可能是 Google Drive FUSE 的目录列举分页/缓存不完整（直接 `stat` 已知路径正常）。
+> **后果是方法论的**：Drive 侧「只有一个数据集受影响」这个结论**不成立**，因为枚举漏掉了至少一个
+> ——而漏掉的那个恰好也是污染的。含噪 1000 集等其余 Drive-only 数据集同样未被真正扫到。
+>
+> 复核前须先修枚举：用 `os.listdir("offline_data")` 逐名 `stat`，与 glob 结果对拍，数量不等即以
+> listdir 为准。修复格已加进 [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb) §2。
 
 三条在别的工作里顺带撞见、**已在本机核实过证据但尚未处理**的记账问题。都不影响方法本身，
 但都会在投稿/返修阶段被审稿人问到，且第 1 条一旦成立会直接推翻一格主结果。
@@ -95,7 +113,38 @@ TD3+BC $0.596\pm0.036$）与 §5.7.1「数据规模退化的翻转」（$0.918$ 
 
 **处置选项**：(a) 换 `base_seed`（如 `--seed 5000`）重采 2000 回合数据集并重跑该单元；
 (b) 保留数字，在正文与表注显式披露该格的训练/评估任务实例重合，并把 §5.7.1 的翻转论述降级为
-不可用。**未决，需用户裁决。**
+不可用；**(c)** 在**现有检查点**上补一次干净 manifest 终检，把 δ 测出来再决定（独立复核补的第三条
+路径，纯评估开销、不重采不重训）。**未决，需用户裁决。**
+
+### ✅ Drive 侧探针 A（2026-08-16）：**选中检查点全部在位 → (c) 可做**
+
+`notebooks/ch5_data_integrity_probe_completed.ipynb` §1：cross-1000 与 cross-2000 两格 ×
+`actorb_4p0__criticb_2p0` × 种子 42–46 共 **10 个单元，每个 run 目录 10 个 `.pt`，
+`selected_checkpoint.json` 指名的那一个 100% 在位**（cross-1000 四个 `agent_step_00033432.pt` +
+一个 `agent_final.pt` + 一个 `agent_step_00028656.pt`；cross-2000 四个 `agent_step_00066752.pt` +
+一个 `agent_step_00057216.pt`）。本机 `results/offline/**` 下 `.pt` 计数为 0，故此前无法判断。
+
+### ⚠ 同次探针的附带发现：① 与 ③ 在 2000 格上**叠加**
+
+Drive 侧 range pass 显示 `crosscomp-2000` 的训练区间 0..1999 不只吞掉终检的 100 条，还吞掉了
+**全部选点用的 val manifest**：
+
+```
+OVERLAP 100/100  offline_rebrac_broad/test_100/single_u10_cross_tgt15.json   (1250..1349)
+OVERLAP  40/40   offline_rebrac_broad/val_40/single_u10_cross_tgt15.json     (1250..1289)
+OVERLAP 100/100  offline_rebrac_screen/test_100/...                          (1250..1349)
+OVERLAP  40/40   offline_rebrac_screen/val_40/...                            (1250..1289)
+OVERLAP  40/40   offline_rebrac_worldcomp_epoch_probe/{test_40,val_40}/...   (1250..1289)
+OVERLAP 100/100  offline_rebrac_worldcomp_final/test_100/...                 (1250..1349)
+OVERLAP  40/40   offline_rebrac_worldcomp_final/val_40/...                   (1250..1289)
+OVERLAP  30/30   single_u10_cross_tgt15.json                                 (1250..1279)
+OVERLAP 100/100  single_u10_cross_tgt15_ep100.json                           (1250..1349)
+```
+
+即：在 2000 格上，**选检查点用的那 40 条本身就是训练 episode**。③ 单看是"在测试集的前缀上选点"，
+叠上 ① 之后在这一格变成"**在训练 episode 上选点、再在训练 episode 上报告**"。这一点此前的波及面
+评估与独立复核都未单列，处置时须计入：它意味着 (c) 路径测出的 δ 是 ①③ 合并效应，而这恰好是
+正确的口径——两条本就要合成一批整改。
 
 ### 顺带建议
 
@@ -220,6 +269,23 @@ python -m scripts.audit_seed_overlap
 python -m scripts.audit_seed_overlap --verify crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000 single_u10_cross_tgt15_ep100
 ```
 
+### ✅ 核实结论（2026-08-16 Drive 侧探针）：**成立，与 ① 同因同病**
+
+```
+dataset : crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000  seeds 0..1999
+manifest: single_u10_cross_tgt15_ep100.json  100 episodes
+seeds in both ranges     : 100/100
+identical task instances : 100/100
+```
+
+`seed=0`、2000 回合 → 训练区间 0..1999，完整包含 1250..1349，reset RNG 重放确认逐条相同。
+于是 §5.6.2 那句「两千回合数据上的纯行为克隆成功率上升（由约 $0.60$ 升至约 $0.74$）」**两个端点
+都坐在污染数据上**：`0.60` 出自确定性 2000（第 ① 条），`0.74` 出自本条。且该筛查是 40+40 单元，
+val 与 test 逐条相同（第 ③ 条）——**三条问题在这一句上同时命中**。
+
+减轻情节不变：`td3bc.tex` rev.5 已把机制归属挪到干净的一千回合反证（0.68/0.76 → 0.51），受影响的
+只是被降级为"上升"的那半句。处置随 ① 一并裁决。
+
 ---
 
 ## 处置与复核状态（2026-08-16）
@@ -232,6 +298,11 @@ python -m scripts.audit_seed_overlap --verify crosscomp_s0_h4_efficiency_v2_re15
   把已刊 100 回合劈成「参与过选点的 40 条」与「选点规则未见的 60 条」。留出 60 条上组间差**全部
   保号且变大**（翻转 +1.6→+3.0 pp、基线差距 23.0→28.0 / 32.2→40.0 pp），**唯一例外**是 §5.7.2 的
   「差距闭合过半」53.0%→**48.9%**。
-- **第 1 条的污染幅度 δ 仍未测**，且可测：`notebooks/ch5_data_integrity_probe.ipynb` §1 探针决定
-  Drive 侧检查点是否尚存，§3 在干净 manifest 上补评两格 × 5 种子（纯评估开销）。
-- **处置未决**。裁决前不动任何 `.tex`；裁决后 ① 与 ③ 应合成**一批**整改，重流程复审只付一次。
+- **Drive 侧探针已回（2026-08-16，`notebooks/ch5_data_integrity_probe_completed.ipynb`）**：
+  - 探针 A **通过** —— 10 个选中检查点全部在位，路径 ①-c（干净 manifest 补评）可做；
+  - 探针 B **钉死第 ⑤ 条**（含噪 2000 同样 100/100 污染），同时**暴露枚举残缺**，污染面仍未封闭
+    （见文首 ⚠⚠ 块）；
+  - 附带发现 **① 与 ③ 在 2000 格上叠加**：该格选点用的 40 条 val 本身就是训练 episode。
+- **第 1 条的污染幅度 δ 仍未测**，但已具备条件：`ch5_data_integrity_probe.ipynb` §3 放开
+  `RUN_CLEAN_PROBE` 即在干净 manifest（`--seed 3000`）上补评两格 × 5 种子（纯评估开销）。
+- **处置未决**。裁决前不动任何 `.tex`；裁决后 ①③⑤ 应合成**一批**整改，重流程复审只付一次。

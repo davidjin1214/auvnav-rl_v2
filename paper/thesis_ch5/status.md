@@ -102,9 +102,9 @@
 
 **复算工具**（数字不写死，均从逐回合记录重算）：[`tools/ch5_clean_probe_readout.py`](tools/ch5_clean_probe_readout.py)（① 补充终检）· [`tools/ch5_holdout_split_audit.py`](tools/ch5_holdout_split_audit.py)（③ 留出复核）。
 
-**遗留**：补充终检只覆盖 ReBRAC-Q 两格，TD3+BC／纯 BC 未在该组实例上重跑，故正文明确不在其上重述基线差距——此条仍在，不构成送审阻塞。其余三条 **2026-08-16 全部闭合**（实算见 findings §8）：~~复现证据未入库~~ ✅ `9453f7e`；~~含噪 2000 集本机无法复核~~ ✅ 本机 `--verify` 实核 $100/100$，同族 ep1000 为 $0/100$；~~`world priv` seeds 45/46 未同步~~ ✅ 已并入复核枚举（`rebrac.tex` rev.7 / `setup.tex` rev.9 / `discussion.tex` rev.5）。~~污染面枚举未封闭~~ ✅ 根因是 `audit_seed_overlap` 单层 `glob` 漏扫嵌套集、与 Drive FUSE 无关，已修 `0aa42ac`（枚举 $10 \to 24$ 集，新曝光 12 个全 clean）。
+**遗留**：补充终检只覆盖 ReBRAC-Q 两格，TD3+BC／纯 BC 未在该组实例上重跑，故正文明确不在其上重述基线差距——此条仍在，不构成送审阻塞。其余三条 **2026-08-16 全部闭合**（实算见 findings §8）：~~复现证据未入库~~ ✅ `9453f7e`；~~含噪 2000 集本机无法复核~~ ✅ 本机 `--verify` 实核 $100/100$，同族 ep1000 为 $0/100$；~~`world priv` seeds 45/46 未同步~~ ✅ 已并入复核枚举（`rebrac.tex` rev.7 / `setup.tex` rev.9 / `discussion.tex` rev.5）。**污染面枚举**：✅ **章内范围已封闭**——`results/offline/**` 反查证明第 5 章所依数据集无一缺失，本机 $29$ 集全部已审，OVERLAP 仍只有两格。❌ **仓库全域未封闭**——Drive 侧那次顶层目录漏扫（事实账本文首 ⚠⚠ 块）成因仍未证实；`0aa42ac` 修的是本机单层 `glob` 看不见嵌套集这一**另一个独立缺陷**（$12$ 个集从未进过枚举），它不解释 Drive 那次（详见 findings §8.3 订正）。
 
-**尚缺的两个数据集 metadata**（章内依赖，非阻塞，清单见 [`data_integrity_batch_review_findings.md`](data_integrity_batch_review_findings.md) §8.4）：五百回合集 `crosscomp_..._fixdone`（§5.6.m 的「五百回合与评估集不相交」至今未逐集实核）与 TD3+BC 侧 `worldcomp_..._fixdone`（与 ReBRAC 侧所用的 `worldcomp_..._ep1000` 目录名不同，须确认 `seed`／`num_episodes` 一致）。
+~~尚缺的两个数据集 metadata~~ ✅ **五个补取集全部核对通过，未触发正文改动**（实算见 [`data_integrity_batch_review_findings.md`](data_integrity_batch_review_findings.md) §8.4）：枚举面封闭于 $29$ 集、OVERLAP 仍只有两格；五百回合集种子 $0$–$499$ 不相交，§5.6.m 由通则推得改为逐集实核，表 5.10 三行采集成功率与源头逐格精确；TD3+BC 侧与 ReBRAC 侧的两个 worldcomp 目录经**逐数组比对**确认转移完全相同（差异只是 `_ep1000` 多一个 ReBRAC 所需的 `next_actions`），§5.7.2「同一数据上的对照」字面成立。
 
 ## 全仓文档指针体检（2026-07-28）✅ 已闭环 —— 章内零失效，**章外 ground-truth 路由查出并修复 1 处 HIGH**
 

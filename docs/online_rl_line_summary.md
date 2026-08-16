@@ -227,7 +227,7 @@
 |---|---|---|---|
 | [`online_rl_line_summary.md`](online_rl_line_summary.md) | **active（本文件）** | online 线收口报告 | 最先读 |
 | [`online_rl_thesis_plan.md`](online_rl_thesis_plan.md) | **deprecated 2026-05-06**（本次更新落字） | 47-run thesis 矩阵；§2 priv_obs 语义定义、§10 preflight 决策仍 active | 找 priv_obs 精确定义 / preflight 数据 |
-| [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md) | **搁置（v4，2026-04-27）** | `arrival_v2` reward 8 参数设计 + 不变量测试 spec | 未来想恢复 reward 设计时 |
+| [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md) | **SHELVED 2026-05-06（v6 pre-integration spec）**（2026-08-17 订正：原写「搁置（v4，2026-04-27）」，版本与日期均落后于该文档自身的横幅） | `arrival_v2` reward 8 参数设计 + 不变量测试 spec。⚠ 该 spec 的 `arrival_v2` 与 `auv_nav/reward.py` 里已落地的 `arrival_v2_simple` preset **不是同一物**（见其横幅） | 未来想恢复 reward 设计时 |
 | [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) | **active archive（2026-05-23，§7.9.7 universal-floor closure）** | arrival_v2 prototype 实测档（19 组 experiments，§7 / §7.6 / §7.7 / §7.8 / §7.9 cross-seed closure + §7.9.7 manifest universal-floor finding） | paper revision / rebuttal cite arrival_v2 实测结果时 |
 | [`arrival_v2_p0_variance_reduction_design.md`](arrival_v2_p0_variance_reduction_design.md) | **active design reference (DEMOTED-TO-FUTURE-WORK / POLISH-ONLY，2026-05-19)** | SAC variance reduction (DroQ / N-Step / REDQ) 候选矩阵 + 5-tier verdict schema | offline 线 variance reduction 复用 / 未来 paper revision 需 DroQ 类轴时 |
 | [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) | **active — rev.3（2026-05-25，Plan A 4-tier finalized）** | Plan A = 从 `cross_u10 / sac_vanilla / s0_k4 / seed_46` 同 seed 训练切片构造真 D4RL 4-tier；rev.2 的 cross_u15 路径 1 已 SUPERSEDED，仅存历史 reference | 复现 SAC collector 数据源 / FQL 再验证 |
@@ -236,8 +236,8 @@
 | [`SAC_improvements_survey.md`](SAC_improvements_survey.md) | active reference | 2020-2026 SAC 改进算法综述 | 写论文 related work / 算法选型 |
 | [`environment_design.md`](environment_design.md) | active reference | Env / sensor / reward / benchmark 规格 | 写论文 method 节 |
 | [`rlpd_design.md`](rlpd_design.md) | active reference | RLPD 设计档（offline-to-online） | 未来恢复 RLPD 路线时 |
-| [`auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) | bridge | MBRL 计划，引用了 online 线产出的 AsymCritic / EquivalentCurrentModel | 跨线复用 infra 时 |
-| [`offline_mbrl_plan/AUV_REBRAC_NeuralODE_OfflineRL_v2_report.md`](offline_mbrl_plan/AUV_REBRAC_NeuralODE_OfflineRL_v2_report.md) §7.3 | bridge | asymmetric critic 复用论述 | 同上 |
+| [`auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) | bridge，**⏸ PAUSED 2026-05-13**（2026-08-17 补标：原行只写 bridge，未标该线已暂停） | MBRL 计划，引用了 online 线产出的 AsymCritic / EquivalentCurrentModel | 跨线复用 infra 时 |
+| [`offline_mbrl_plan/AUV_REBRAC_NeuralODE_OfflineRL_v2_report.md`](offline_mbrl_plan/AUV_REBRAC_NeuralODE_OfflineRL_v2_report.md) §7.3 | bridge，**DEPRECATED 2026-05-08**（2026-08-17 补标；其接替者即上一行的 v2.0 plan，亦已 PAUSED——该线现无活跃入口） | asymmetric critic 复用论述 | 同上 |
 
 **`docs/online_rl_thesis_report.md` 从未创建**——thesis plan §8.2 约定的累积报告未实例化（thesis 矩阵撤销后也不需要）。
 

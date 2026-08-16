@@ -59,6 +59,8 @@ python -m scripts.generate_standard_benchmarks \
 # → benchmarks/single_u15_cross_tgt15_ep100.json（flow = wake_v8_U1p50_Re250_* 由 benchmark spec 自带）
 ```
 
+> **2026-08-17 补注**：上面这条命令的产物 `benchmarks/single_u15_cross_tgt15_ep100.json` **未入库**（当时在 Colab 侧生成，没同步回仓库）。生成器无随机源（episode seed = `spec.manifest_seed + idx`），照上面原样重跑即得逐字节相同的 manifest。
+
 **3.2 两个 dataset**(本机 6-worker CPU,各 ~3-4 min;复用 P2 配方,仅换 flow):
 ```bash
 # clean-uni（对应 P2 E-uni；σ=0）

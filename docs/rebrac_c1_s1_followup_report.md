@@ -54,7 +54,8 @@
   - collector_success_rate = **1.0**（s1 比 s0 多 advance warning，crosscomp 在 s1 上 100% 成功）
   - n_transitions = 268,329；mean_return = −108.21；episode_length = 268.3 ± 66.7
 - **Train**: ReBRAC anchor (β1=4.0, β2=2.0) × seeds {42, 44} × 64 epochs，sym critic
-- **Eval**: 复用 `benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json`（与 P1 anchor + 三轮 ablation 共用 manifest，跨 5 配置可比）
+- **Eval**: 复用 `benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json`（与 P1 anchor + 三轮 ablation 共用 manifest，跨 5 配置可比；该 manifest **未入库**，见下）
+  - **未入库的缘由与复现方式**（2026-08-17 补注）：它由 [`../notebooks/rebrac_c1_reward_ablation_completed.ipynb`](../notebooks/rebrac_c1_reward_ablation_completed.ipynb) cell 14 在 Colab 就地生成，没同步回仓库；`benchmarks/` 顶层那批 manifest 则是入了库的，两者不一致纯属当时的操作差异。**重跑逐字节可复现**——生成器 [`../scripts/generate_standard_benchmarks.py`](../scripts/generate_standard_benchmarks.py) 的 episode seed 是 `spec.manifest_seed + idx`，无随机源，命令即 `--benchmarks single_u10_upstream_tgt15 --episodes 100 --output-dir benchmarks/c1_reward_ablation/test_100`。
 - **Cost**: ~2h L4
 
 ## 4. Result

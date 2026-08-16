@@ -6,6 +6,8 @@
 > v1 plan 在 `efficiency_v2` reward 下定义的 8 spoke × Probe-then-Deepen 流程不再 active；v2 plan 在 `arrival_v2` reward 下收敛到 5 cell core + 1 conditional sweep。
 >
 > v1 实验产物（`experiments/offline/rebrac/broad_validation/` + 完成的 notebook archive）保留作历史 reference，不重跑。
+>
+> **链接读法（2026-08-17 补注）**：本文 §Step 1/§Step 3 引用的 `scripts/_generate_broad_validation_notebook.py` 是**用后即删**的一次性 notebook 生成器——plan 自己的 Step 3 就是 `rm` 它，所以它今天不在仓库里是按计划执行的结果，不是丢失。另：本文多处 ``` 代码块里嵌着**未来报告的模板**，其中的相对链接是按报告将落位的 `docs/` 写的，不是按本文所在的 `docs/superpowers/plans/` 写的；那些链接在模板里正确，在本文里不解析。
 > ---
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -973,7 +973,7 @@ if not all_done():
 - **Run notebook**(任务 4c)消费 dataset path,产出:
   - `checkpoints/fql_succession/p2/{cell_id}/{algo}_seed{S}/` (Drive-mounted, 大文件)
   - `results/fql_succession/p2/{cell_id}/{test, training_curves}/` (Drive-mounted, 小文件, 本机绘图用)
-- **Verdict notebook**(P2 闭环时另起)消费 `results/` 全树,产出 `docs/fql_succession_p2_main_report.md`
+- **Verdict notebook**(P2 闭环时另起)消费 `results/` 全树,产出 `docs/fql_succession_p2_main_report.md`(**原计划文件名**;实际落盘为 [`fql_succession_p2_results.md`](fql_succession_p2_results.md),见 §Status 说明)
 
 ---
 

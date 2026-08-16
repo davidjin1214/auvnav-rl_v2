@@ -659,7 +659,7 @@ C1-s1 spoke 已执行（[notebook](../../../notebooks/rebrac_c1_s1_sensor_upgrad
 实施记录：
 - 数据集：`offline_data/crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000/`（collector_success_rate = 1.0，n_transitions = 268,329）
 - 训练：ReBRAC anchor (β1=4, β2=2) × 64 epochs × seeds {42, 44}
-- 评估：复用 `benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json`
+- 评估：复用 `benchmarks/c1_reward_ablation/test_100/single_u10_upstream_tgt15.json`（**未入库**，Colab 就地生成、可确定性重建；详见 [`docs/rebrac_c1_s1_followup_report.md`](../../rebrac_c1_s1_followup_report.md) §3 同名条目的 2026-08-17 补注）
 - 输出：`results/offline/rebrac/c1_s1_sensor_upgrade/<dataset>/actorb_4p0__criticb_2p0/test/seed_{42,44}.json`
 
 **事先 commit 的 verdict 选择**（< 0.30 区间触发）：

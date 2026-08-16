@@ -34,7 +34,7 @@ Computed by [`_wake_stats.py`](_wake_stats.py) over all 6 wake `.npy` files (ful
 | sbs_G35_U1p00 | 1.00 | (1200, ?, ?, 3) — not loaded | — | — | — | — | — | — |
 | sbs_G35_U1p50 | 1.50 | (1200, ?, ?, 3) — not loaded | — | — | — | — | — | — |
 
-**Note on missing files:** the 3 larger wake files (440 MB + 794 MB × 2 = ~2 GB total) live on OneDrive cloud storage and hit a `[Errno 60] Operation timed out` during on-demand sync. Re-run `experiments/auvhamnode_spike/_wake_stats.py` on a host with the files fully materialised (e.g., Colab Drive mount) to fill in. The 3 processed cases already establish the U=1.0 vs U=1.5 trend; sbs/tandem variants differ in spatial structure but `U_ref` dictates the magnitude scale, so the missing rows will land in the same brackets.
+**Note on missing files:** the 3 larger wake files (440 MB + 794 MB × 2 = ~2 GB total) live on OneDrive cloud storage and hit a `[Errno 60] Operation timed out` during on-demand sync. Re-run [`_wake_stats.py`](_wake_stats.py) (this directory — the script moved here from `experiments/` with the rest of the spike workspace in `a68b4c2`) on a host with the files fully materialised (e.g., Colab Drive mount) to fill in. The 3 processed cases already establish the U=1.0 vs U=1.5 trend; sbs/tandem variants differ in spatial structure but `U_ref` dictates the magnitude scale, so the missing rows will land in the same brackets.
 
 **Training current upper bound:** `current_speed_range = [0.0, 0.5]` m/s.
 

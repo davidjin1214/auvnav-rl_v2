@@ -21,6 +21,17 @@ Unresolvable pointers are triaged, because most are not defects:
             accounts for seven of these -- four infra files the notebook ended up
             doing inline, two M1-conditional files that correctly never existed
             because M1 never triggered, and one the plan itself records deleting.
+  never     the citing doc explains, in the same sentence, why this path is absent:
+            planned and never built / built then deliberately deleted / shipped
+            under a different name / generated at run time and left untracked.
+            Cancelled and paused plan docs are full of the first kind -- 45 of the
+            67 `real` misses on 2026-08-17 were one paused line and two cancelled
+            ones pointing at modules nobody ever wrote. Deleting those links would
+            erase what the line planned, which is the whole reason the plan doc is
+            kept; so the doc declares them instead, and the declaration IS the
+            visible note a reader sees, not a separate machine-only list that could
+            drift away from it. Verify before writing one -- `git log
+            --diff-filter=A -- <path>` distinguishes never-built from moved.
   artifact  under a gitignored产物 dir; absent on this machine by design
   example   an <angle>/glob/foo stand-in rather than a real path. No source
             directory is exempt -- .claude/agents/ and .claude/skills/ are
@@ -56,10 +67,17 @@ SKIP_DIRS = {".git", "node_modules", ".pytest_cache", ".pytest_tmp", "__pycache_
              "wake_data", "offline_data", "checkpoints", ".ipynb_checkpoints"}
 
 INLINE = re.compile(r"\[([^\]\[]*)\]\(([^)\s]+?)(?:\s+\"[^\"]*\")?\)")
-REFDEF = re.compile(r"^\s{0,3}\[([^\]]+)\]:\s*(\S+)", re.M)
+# `[^id]: text` is a footnote definition, not a link reference definition -- its first
+# word is prose. The bibliography in NODE_IQL_FQL_SORL_revised_roadmap_v3.md otherwise
+# reports six broken pointers named Denis, Ilya, Seohong, Nicolas, Divyansh and Justin.
+REFDEF = re.compile(r"^\s{0,3}\[(?!\^)([^\]]+)\]:\s*(\S+)", re.M)
+# `jsonl` precedes `json`, and the trailing guard stops any extension from matching a
+# prefix of a longer one: without it `.../train_log.jsonl` was read as `train_log.json`
+# and reported missing -- a broken pointer the repo never had.
 BARE = re.compile(
     r"`?((?:docs|paper|scripts|auv_nav|notebooks|benchmarks|experiments|figures|results|"
-    r"offline_data|\.claude)/[A-Za-z0-9_./\-]+\.(?:md|tex|py|ipynb|json|sh|npz|csv|bib))`?"
+    r"offline_data|\.claude)/[A-Za-z0-9_./\-]+"
+    r"\.(?:md|tex|py|ipynb|jsonl|json|sh|npz|csv|bib)(?![A-Za-z0-9]))`?"
 )
 HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.M)
 
@@ -78,6 +96,31 @@ PLAN_HEADING = re.compile(r"(待创建|待建|已删除|已弃用|计划创建|p
                           re.I)
 # ...or a row that still carries its planning-time status cell.
 PLAN_ROW = re.compile(r"\|\s*(TBD|待定|计划中|planned)\s*\|?\s*$", re.I)
+
+# A doc may declare that paths it cites were planned and never built. The trigger
+# phrase and the paths must sit on one line, so the declaration is the same sentence
+# the reader sees -- a hidden list would drift away from the prose beside it. Scoped
+# to the declaring file only: another doc citing the same path still reports `real`,
+# because there the miss may well be a genuine defect.
+# Closed list, four families, extend only deliberately: (1) planned, never built;
+# (2) built and deliberately deleted; (3) shipped under a different name; (4) generated
+# at run time and deliberately not committed. Anything else is a defect, not a category.
+NEVER_PRODUCED = re.compile(
+    r"从未产出|从未创建|从未建成|never produced|never built"
+    r"|用后即删|deleted by design"
+    r"|原计划文件名|原计划名|renamed"
+    r"|不入 ?git|不是 tracked|非 tracked|not tracked|未入库",
+    re.I)
+DECL_PATH = re.compile(r"`([A-Za-z0-9_./\-]+\.[A-Za-z0-9]{1,6})`")
+
+# Inside a fenced block, `[text](path)` is literal text, not a link -- it renders as
+# the characters themselves. The v1 broad-validation plan embeds the future report's
+# header as a template, and its nine cross-references are written relative to where
+# that report would live (docs/), not to the plan citing it; resolving them against
+# the plan's own directory reported nine misses for links that were never links.
+# Bare paths stay in scope: a path inside a ```bash block is still a claim about the
+# repo, and that is exactly where run commands cite scripts.
+FENCE = re.compile(r"^\s*(```|~~~)")
 
 
 def md_files() -> list[str]:
@@ -113,6 +156,8 @@ def resolve(raw: str, kind: str, src: str) -> str:
     """Return the best-guess absolute target for one pointer."""
     srcdir = os.path.dirname(src)
     stem = raw.split("#")[0]
+    # `scripts/train_utils.py:185` anchors a line; the pointer is still the file.
+    stem = re.sub(r":\d+(?:-\d+)?$", "", stem)
     if not stem:
         return src
     target = (os.path.join(ROOT, stem) if kind == "bare"
@@ -126,6 +171,26 @@ def resolve(raw: str, kind: str, src: str) -> str:
                 return cand
             probe = os.path.dirname(probe)
     return target
+
+
+def declared_never(src: str, lines: list[str]) -> set[str]:
+    """Absolute targets this file itself declares as planned-and-never-built."""
+    srcdir = os.path.dirname(src)
+    out: set[str] = set()
+    for line in lines:
+        if not NEVER_PRODUCED.search(line):
+            continue
+        cands = ([m.group(1) for m in DECL_PATH.finditer(line)]
+                 + [m.group(2) for m in INLINE.finditer(line)])
+        for c in cands:
+            c = c.split("#")[0]
+            if not c or re.match(r"^(https?|mailto|ftp):", c):
+                continue
+            # Both anchorings, because the same target is written `auv_nav/x.py`
+            # in prose and ../auv_nav/x.py in a link, often in the same doc.
+            out.add(os.path.normpath(os.path.join(ROOT, c)))
+            out.add(os.path.normpath(os.path.join(srcdir, c)))
+    return out
 
 
 def triage(src: str, raw: str, line: str, heading: str) -> str:
@@ -155,7 +220,7 @@ def main() -> int:
 
     files = md_files()
     anchor_cache: dict[str, set[str]] = {}
-    buckets: dict[str, list] = {"real": [], "plan": [], "artifact": [],
+    buckets: dict[str, list] = {"real": [], "never": [], "plan": [], "artifact": [],
                                 "example": [], "abs": []}
     bad_anchor: list[tuple[str, int, str]] = []
     cited: set[str] = set()
@@ -164,20 +229,27 @@ def main() -> int:
     for src in files:
         with open(src, encoding="utf-8") as fh:
             lines = fh.read().split("\n")
+        never = declared_never(src, lines)
         heading = ""
+        in_fence = False
         for lineno, line in enumerate(lines, 1):
-            if line.startswith("#"):
+            if FENCE.match(line):
+                in_fence = not in_fence
+                continue
+            if line.startswith("#") and not in_fence:
                 heading = line
-            found = ([(m.group(2), "link") for m in INLINE.finditer(line)]
-                     + [(m.group(2), "refdef") for m in REFDEF.finditer(line)]
-                     + [(m.group(1), "bare") for m in BARE.finditer(line)])
+            found = [(m.group(1), "bare") for m in BARE.finditer(line)]
+            if not in_fence:
+                found += ([(m.group(2), "link") for m in INLINE.finditer(line)]
+                          + [(m.group(2), "refdef") for m in REFDEF.finditer(line)])
             for raw, kind in found:
                 if re.match(r"^(https?|mailto|ftp):", raw):
                     continue
                 total += 1
                 target = (src if raw.startswith("#") else resolve(raw, kind, src))
                 if not os.path.exists(target):
-                    bucket = triage(rel(src), raw, line, heading)
+                    bucket = ("never" if target in never
+                              else triage(rel(src), raw, line, heading))
                     buckets[bucket].append((rel(src), lineno, raw, kind))
                     continue
                 cited.add(rel(target))
@@ -191,11 +263,14 @@ def main() -> int:
     miss = sum(len(v) for v in buckets.values())
     print(f"扫描 {len(files)} 个 markdown；解析到 {total} 个仓内指针")
     print("=" * 96)
-    print(f"未解析 {miss} = 真失效 {len(buckets['real'])} / 计划表预告 "
-          f"{len(buckets['plan'])} / 产物路径 {len(buckets['artifact'])} / 示例占位 "
-          f"{len(buckets['example'])} / 绝对路径 {len(buckets['abs'])}")
+    print(f"未解析 {miss} = 真失效 {len(buckets['real'])} / 自述缺席 "
+          f"{len(buckets['never'])} / 计划表预告 {len(buckets['plan'])} / 产物路径 "
+          f"{len(buckets['artifact'])} / 示例占位 {len(buckets['example'])} / 绝对路径 "
+          f"{len(buckets['abs'])}")
     print("=" * 96)
     for name, label in (("real", "★ 真失效（文档指向本应存在的东西）"),
+                        ("never", "自述缺席（引用方在同一句正文里说明了为何不存在：计划过没"
+                                  "建成，或用后即删；按源文件折叠）"),
                         ("plan", "计划表预告（待创建/已删除表内，或 Status 仍为 TBD 的行；"
                                  "是预测不是指针）"),
                         ("artifact", "产物路径（gitignored，本机缺席属正常；按源文件折叠）"),

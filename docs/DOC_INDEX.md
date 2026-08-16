@@ -93,10 +93,10 @@
 |---|---|---|
 | [`docs/auvhamnode_spike/00_smoke_test_log.md`](../docs/auvhamnode_spike/00_smoke_test_log.md) | Step 0 — Environment Smoke Test (AUVHamNODE phnode_full_oc_clean) | — |
 | [`docs/auvhamnode_spike/01_static_distribution_audit.md`](../docs/auvhamnode_spike/01_static_distribution_audit.md) | Step 1 — Static Distribution Audit (AUVHamNODE training vs PlanarRemusEnv deployment) | — |
-| [`docs/auvhamnode_spike/02_spike_lite_design.md`](../docs/auvhamnode_spike/02_spike_lite_design.md) | Spike-Lite Design (preflight kill-test, ~4-6 hours, only run if user picks Path 1B) | — |
+| [`docs/auvhamnode_spike/02_spike_lite_design.md`](../docs/auvhamnode_spike/02_spike_lite_design.md) | Spike-Lite Design (preflight kill-test, ~4-6 hours, only run if user picks Path 1B) | PAUSED 2026-05-13 |
 | [`docs/auvhamnode_spike/03_dynamics_consistency_audit.md`](../docs/auvhamnode_spike/03_dynamics_consistency_audit.md) | Step 3 — Dynamics Consistency Audit (`auv_nav/vehicle.py` vs `remus100_core.py`) | — |
 | [`docs/auvhamnode_spike/04_swap_vehicle_decision_memo.md`](../docs/auvhamnode_spike/04_swap_vehicle_decision_memo.md) | Step 4 — Swap `vehicle.py` → `remus100_core.py`? Decision Memo | — |
-| [`docs/auvhamnode_spike/README.md`](../docs/auvhamnode_spike/README.md) | `experiments/auvhamnode_spike/` — AUVHamNODE Offline MBRL Pre-Spike Workspace | PAUSED 2026-05-13 |
+| [`docs/auvhamnode_spike/README.md`](../docs/auvhamnode_spike/README.md) | `docs/auvhamnode_spike/` — AUVHamNODE Offline MBRL Pre-Spike Workspace | PAUSED 2026-05-13 |
 
 ## docs/offline_mbrl_plan/ — 已废弃的 MBRL 草案（未纳入 git）（6）
 

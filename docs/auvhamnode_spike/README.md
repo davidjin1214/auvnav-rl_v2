@@ -1,8 +1,10 @@
-# `experiments/auvhamnode_spike/` — AUVHamNODE Offline MBRL Pre-Spike Workspace
+# `docs/auvhamnode_spike/` — AUVHamNODE Offline MBRL Pre-Spike Workspace
 
 > **⚠ PAUSED 2026-05-13** — 这个工作区的 Step 0-4(smoke + 2 audit + decision memo)已经完成,但 Path 1B 的实际 spike(`02_spike_lite_design.md` 描述的 ~5h kill-test)**没有执行**;用户决定暂停整条 AUVHamNODE+MBRL 线。详情 + resume 起点见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](../../docs/auvhamnode_mbrl_line_pause_memo.md)。
 >
 > 本工作区的 Markdown 文档(00–04)是 read-only decision evidence;脚本 `_wake_stats.py` 可复用。
+>
+> **位置变更(2026-08-17 补注)** — 本工作区原在 `experiments/auvhamnode_spike/`,提交 `a68b4c2` 迁到 `docs/` 下:它的 8 个文件是**被 git 追踪的**,却卡在 gitignored 的产物目录里,不挪走就无法把 `experiments/` 整体外置。内容一字未改。
 
 Lightweight pre-spike workspace from 2026-05-13 (the day the project pivoted from ReBRAC mainline to AUVHamNODE-based offline MBRL). Output of the α path described in [`docs/auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](../../docs/auvhamnode_offline_mbrl_plan_v3_pre_notes.md) §7.
 

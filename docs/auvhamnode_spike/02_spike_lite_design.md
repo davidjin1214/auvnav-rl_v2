@@ -1,5 +1,11 @@
 # Spike-Lite Design (preflight kill-test, ~4-6 hours, only run if user picks Path 1B)
 
+> **⚠ PAUSED 2026-05-13 — never executed.** Path 1B was not picked; the line paused before this
+> design was carried out. The two deliverables named in the time-budget table below,
+> `scripts/spike_lite_auvhamnode_planar.py` and `02_spike_lite_results.md`, were **never produced** —
+> planned only, zero adds across the full git history, not missing files. Kept as the resume entry
+> point; read [`../auvhamnode_mbrl_line_pause_memo.md`](../auvhamnode_mbrl_line_pause_memo.md) first.
+
 **Purpose.** Before committing 1-2 days to the full adapter spike (Step 3 in the pre-notes), spend half a day on the **minimum viable evidence** that AUVHamNODE is or is not useful at U=1.0 wakes. The output is a single number: the median 1-step planar-state MSE on a fixed set of N=100 dataset transitions, with a confidence interval. This is the hard go / no-go for Path 1.
 
 **What spike-lite does NOT do** (to stay within 4-6 hours):

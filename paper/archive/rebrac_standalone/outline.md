@@ -4,6 +4,7 @@
 > - paper 1 ReBRAC **不再独立投稿** — 31pp arXiv preprint draft（Phase 6.1 commit `932aca1`）作为博士论文**第 5 章 §N.4 主干直接复用**。
 > - 本 outline 的 venue 分析（§0.1）、narrative spine（§0.3）、结构骨架（§1）、写作纪律（§8 R*）等**历史价值仍在**，作为 §N.4 节级写作时的参考；但**投稿口径相关段落**（venue 选择、CoRL/RA-L 8pp / IROS 6pp / 双栏切换等）请直接跳过。
 > - 仅保留作存档；新动作请去 `thesis_chapter_outline.md`（rev.4）。
+> - 📍 **2026-08-17 补注**：§7 建议"先拷方法节草稿到 `paper/draft.md`"——那个 markdown 中间稿 **从未创建**，写作直接落到了 LaTeX（本目录 `main.tex` + `sections/`）。不是丢失的文件。
 >
 > 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../../../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
 >

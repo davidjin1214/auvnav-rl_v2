@@ -3,6 +3,8 @@
 > **⚠ PAUSED 2026-05-13** — 本线已暂停。详情、累计决策、恢复条件全部记录在 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md)。本文(v2.1 plan)保留作历史 + resume 起点;**直接照此 plan 实施前**必须先读 pause memo §4(累计决策)与 §5(未做的事),否则会重复已做过的 Step 0-4 审计。
 >
 > Pause 期间影响:v2.1 §11.1 fire-condition 路径 A/B/C 已被 v3 pre-notes §3 的 4 项硬接口差异叠加暂停决策**取代**;v2.1 §4.2 A 阈值"normalized MSE < 0.1"在 wake U=1.5 上已被审计判定不可达。
+>
+> **⚠ 本文的链接读法(2026-08-17 补注)** — 本文是**计划文档**,其中指向下列路径的链接是**计划要建、因本线暂停而从未产出**的东西,**不是丢失的文件**(git 全历史零次新增,已逐条核):`auv_nav/auvhamnode.py`、`auv_nav/dynamics_ensemble.py`、`scripts/generate_model_augmented_buffer.py`、`tests/test_auvhamnode_wrapper.py`、`tests/test_vehicle_oracle_phase0.py`、`docs/offline_mbrl_plan/phase0_ablation_report.md`(§4.3)、`docs/offline_mbrl_plan/phase1_results.md`(§5.7)。§11.1.0 的零号前置表当时就把前五项如实登记为"✗ 不存在",两份阶段报告则是 Phase 0/1 的退出产出、阶段未启动故无。链接**保留原样**:删掉它们等于抹掉"本线计划过什么",而计划本身正是本文留档的理由。
 
 > **ℹ FQL Succession（Paper 2）NEGATIVE 闭环旁注（2026-05-23）** — 平行的 FQL vs ReBRAC 线已闭环为**诚实负面 + 机制发现**:"表达力更强的 flow-matching 先验在本 AUV 导航任务上无 leverage"（FQL 不系统性超过 ReBRAC;详见 [`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md)）。这对本线 §10.1 的 expressive-prior framing 是**相关上下文**,但**不改变 PAUSED 状态**,也**不是** §11.1 的 fire-condition discriminator —— 后者指 ReBRAC broad-val **C1 BC-penalty sweep**,与 FQL Succession 的 **C-1**(`distill_alpha_bc` 复赛)是两件不同的事,勿混淆。
 

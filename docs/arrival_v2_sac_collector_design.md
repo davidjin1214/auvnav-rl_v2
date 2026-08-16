@@ -561,6 +561,8 @@ Notebooks（per sprint, 仿 FQL P2 multi-run notebook 模式）：
 
 `replay_latest.pkl` 412 MB 在 Drive 上（audit cell 17 已确认）→ 写 `scripts/replay_to_offline.py` (~1-2h) 转 npz 做 D4RL 第 5 档 `medium-replay`。详 §5.3。
 
+> **2026-08-17 补注**：Plan A 收集顺利收口（见本节 §4.0 头部 Status：39 run cross-source 矩阵 paper-ready），这条 Plan B **从未启动**，`scripts/replay_to_offline.py` 因此**从未创建**——不是丢失的脚本。
+
 ---
 
 > **以下 §4.1–§4.6 是 rev.2 原方案，保留作历史 reference**。rev.3 启动 Plan A 后只 §4.5 sensor floor 论证仍然有效（与 Plan A 选 cross_u10 不选 cross_u15 同根）。

@@ -20,9 +20,16 @@ python -m scripts.check_doc_pointers --anchors --orphans
 ```
 
 Carry its `真失效` bucket into your report as-is. Do not re-enumerate links with your
-own `grep` — the script is repo-wide and its triage buckets (`plan` / `artifact` /
-`example` / `abs`) encode judgements already made about which misses are benign.
-If you believe a bucket assignment is wrong, say so as a finding about the script.
+own `grep` — the script is repo-wide and its triage buckets (`自述缺席` / `plan` /
+`artifact` / `example` / `abs`) encode judgements already made about which misses are
+benign. If you believe a bucket assignment is wrong, say so as a finding about the script.
+
+`自述缺席` is the one bucket whose contents are **claims, not facts**: a doc lands there
+by saying in prose that the path was never built, deliberately deleted, renamed, or left
+untracked. Spot-check a few against `git log --all --diff-filter=A -- <path>` — a doc
+that says "从未产出" about something the history shows was added and later moved is
+exactly the kind of lie a resolving-pointer check cannot catch, and it is now suppressing
+its own alarm.
 
 ## Step 2 — what the script cannot check
 

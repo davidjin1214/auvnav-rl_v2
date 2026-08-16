@@ -239,7 +239,7 @@
 | [`auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) | bridge | MBRL 计划，引用了 online 线产出的 AsymCritic / EquivalentCurrentModel | 跨线复用 infra 时 |
 | [`offline_mbrl_plan/AUV_REBRAC_NeuralODE_OfflineRL_v2_report.md`](offline_mbrl_plan/AUV_REBRAC_NeuralODE_OfflineRL_v2_report.md) §7.3 | bridge | asymmetric critic 复用论述 | 同上 |
 
-**`docs/online_rl_thesis_report.md` 不存在**——thesis plan §8.2 约定的累积报告未实例化（thesis 撤销后也不需要）。
+**`docs/online_rl_thesis_report.md` 从未创建**——thesis plan §8.2 约定的累积报告未实例化（thesis 矩阵撤销后也不需要）。
 
 ### 3.3 实验数据（experiments/ + results/）
 

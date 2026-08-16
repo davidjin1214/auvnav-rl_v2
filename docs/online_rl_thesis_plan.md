@@ -389,7 +389,7 @@ checkpoints/online_thesis_v1/<benchmark>/<objective>/<algo_tag>/<sensor>_k<k>/se
 | Sprint | Notebook |
 |---|---|
 | 0 | `notebooks/sac_thesis_s0_preflight.ipynb` |
-| 1 | `notebooks/sac_thesis_s2_sensor_envelope.ipynb` |
+| 1 | [`notebooks/_deprecated_sac_thesis_s2_sensor_envelope.ipynb`](../notebooks/_deprecated_sac_thesis_s2_sensor_envelope.ipynb)（原计划名 `sac_thesis_s2_sensor_envelope.ipynb`，撤销后加前缀） |
 | 2 | `notebooks/sac_thesis_s3_privileged_critic.ipynb` |
 | 2 | `notebooks/sac_thesis_s4_cross_sensor.ipynb` |
 | 3 | `notebooks/sac_thesis_s5_topology_eval.ipynb` |
@@ -397,6 +397,8 @@ checkpoints/online_thesis_v1/<benchmark>/<objective>/<algo_tag>/<sensor>_k<k>/se
 | 5 | `notebooks/sac_thesis_s7_history.ipynb` |
 
 §3-§7 的 notebook 在对应 Sprint 启动前再创建（避免基于错误假设写空骨架）。
+
+> **2026-08-17 补注 —— 上表的实际落地情况**：thesis-grade 矩阵 2026-05-06 撤销，上表 7 行只有 Sprint 0 落地。`notebooks/sac_thesis_s0_preflight.ipynb` 仍在仓库里；Sprint 1 的 notebook 建过、随撤销改名为 [`notebooks/_deprecated_sac_thesis_s2_sensor_envelope.ipynb`](../notebooks/_deprecated_sac_thesis_s2_sensor_envelope.ipynb)，故表内原名不解析；`notebooks/sac_thesis_s3_privileged_critic.ipynb`、`notebooks/sac_thesis_s4_cross_sensor.ipynb`、`notebooks/sac_thesis_s5_topology_eval.ipynb`、`notebooks/sac_thesis_s6_confirmation.ipynb`、`notebooks/sac_thesis_s7_history.ipynb` **从未创建**（git 全历史零次新增）——不是丢失，是上面这句"启动前再创建"按字面生效了。
 
 ---
 

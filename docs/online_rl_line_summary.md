@@ -4,7 +4,12 @@
 >
 > 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
 >
-> 文档版本：2026-05-06
+> 🔍 **真值审计（2026-08-16）**：逐条核对本文断言。§1.1 A0 的六个数字与
+> `experiments/protocol_screen_v2/.../efficiency_v2/summary/ablation_summary.csv` **逐位吻合**；
+> §2 各坑的 commit hash、§ 号、路径断言全部命中。**订正一处**：§3.2 表格仍称
+> `arrival_v2_sac_collector_design.md` 为 rev.2，而该文档自称 **rev.3**、本文自己的 §4.3 补注也已写 rev.3。
+>
+> 文档版本：2026-05-06（正文），审计订正 2026-08-16
 > 作用：Online RL 线的**收口**报告。汇总可引用的正式结果、记录踩过的坑、整理仓库中所有 online 线相关产出，并给出 2026-05-06 战略下调后的下一步建议。
 > 战略状态：thesis-grade 47-run 矩阵已撤销（详见 §3.1）；本线只保留 (a) 环境可行性 sanity（A0）、(b) Offline RL chapter 的 SAC collector 数据源（spec 已就位 = 第 5 章 §N.2 / §N.6 per 2026-06-02 LOCKED）两个角色。
 
@@ -225,7 +230,7 @@
 | [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md) | **搁置（v4，2026-04-27）** | `arrival_v2` reward 8 参数设计 + 不变量测试 spec | 未来想恢复 reward 设计时 |
 | [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) | **active archive（2026-05-23，§7.9.7 universal-floor closure）** | arrival_v2 prototype 实测档（19 组 experiments，§7 / §7.6 / §7.7 / §7.8 / §7.9 cross-seed closure + §7.9.7 manifest universal-floor finding） | paper revision / rebuttal cite arrival_v2 实测结果时 |
 | [`arrival_v2_p0_variance_reduction_design.md`](arrival_v2_p0_variance_reduction_design.md) | **active design reference (DEMOTED-TO-FUTURE-WORK / POLISH-ONLY，2026-05-19)** | SAC variance reduction (DroQ / N-Step / REDQ) 候选矩阵 + 5-tier verdict schema | offline 线 variance reduction 复用 / 未来 paper revision 需 DroQ 类轴时 |
-| [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) | **active — rev.2 用户已声明启动（2026-05-24）** | 19 ckpt 清单 + 按 offline 主线 s0_k4+arrival_v2 双约束筛选 8 ckpt + D4RL 路径 1 (cross_u15) / 路径 2 (cross_u10) 双轨 spec + sensor floor 方法学论证 | 启动 SAC collector 前 / 写 adapter 前 / FQL 再验证 |
+| [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) | **active — rev.3（2026-05-25，Plan A 4-tier finalized）** | Plan A = 从 `cross_u10 / sac_vanilla / s0_k4 / seed_46` 同 seed 训练切片构造真 D4RL 4-tier；rev.2 的 cross_u15 路径 1 已 SUPERSEDED，仅存历史 reference | 复现 SAC collector 数据源 / FQL 再验证 |
 | [`systematic_improved_sac_experiment_plan.md`](systematic_improved_sac_experiment_plan.md) | DEPRECATED 2026-04-26 | 旧版主计划 | 仅历史回溯 |
 | [`systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md) | DEPRECATED 2026-04-26 | A0 阶段实测记录（数据本身仍有效） | A0 数据来源（也可以直接看 ablation_summary.md） |
 | [`SAC_improvements_survey.md`](SAC_improvements_survey.md) | active reference | 2020-2026 SAC 改进算法综述 | 写论文 related work / 算法选型 |

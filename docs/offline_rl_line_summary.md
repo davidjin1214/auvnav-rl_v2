@@ -4,7 +4,16 @@
 >
 > 📍 **节号与版本对照（2026-07-28 全仓指针体检补注）**：本文头注写于 2026-06-02，其中 `§N.k` 是当时 8 节方案的记法、`rev.4` 是当时的 spec 版本。现行章结构为 **10 节**；spec 现行 rev **不在此写死**（写死正是本次体检查出的腐化源），以 [`CLAUDE.md`](../CLAUDE.md) 文档索引表为准。节号对照：**§N.2 → §5.5**（Online RL）、**§N.4 → §5.7**（ReBRAC-Q 主线）、**§N.5 → §5.8**（泛化边界）、**§N.6 → §5.9**（算法对比：FQL + SAC collector）。正文内 `§N.k` 一律照此读，**不逐处改写**。
 >
-> 文档版本：2026-05-07
+> 🔍 **真值审计（2026-08-16）**：逐条核对本文断言 vs 源文档 / `results/` / `metadata.json` 实测。
+> 数字基座核为真（A0 六个数字、SAC 4-tier 八个数字逐位吻合；19 个 commit hash 全在；36 个
+> `test_result.json` 计数吻合）。**订正了六处**：v2 广验数字与「同向退化」读法停在首轮 2-seed（§1/§3.3/§4.2/§7）、
+> §4.2 把两项已完成的 follow-up 挂在待办、§5.3 数据路径整张指向 `experiments/` 而实体在 `results/`、
+> §4.5 漏了 2026-08-16 新增的第 ⑤ 条、§2.0 对 v1 B1 的 paper-quality 标注（用户 2026-08-16 裁定
+> v1 一律不进论文）、§4.3 provenance 路径未标 Drive-only。
+> **根因**：源文档后续做了 supplement，本文没跟——落点全在 2026-05 之后被追加过的条目。
+> 下方「不重复任何 ground-truth 数字」的自我约束**事实上没做到**，重复的数字正是腐化处。
+>
+> 文档版本：2026-05-07（正文），审计订正 2026-08-16
 > 作用：Offline RL 线的**总览入口**——给不熟悉本仓库的新读者一份时间轴 + 当前位置 + 下一步走向，**不重复任何 ground-truth 数字**（数字一律链接到源文档）。
 > 镜像姊妹文档：[`docs/online_rl_line_summary.md`](online_rl_line_summary.md)。
 
@@ -29,11 +38,11 @@
 | **Phase 1 — TD3+BC baseline 收口** | 2026-Q1 → ~2026-04 | TD3+BC（D4RL 经典 single-BC 作算法基线） | ✅ 已收口（不再扩展） | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
 | **Phase 2 — ReBRAC 主线** | ~2026-04 → 2026-05-07 | ReBRAC（dual-BC + critic-side BC penalty） | ✅ 主线 paper-ready 4/4 closed (rev.8) | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) |
 | **Phase 2.5 v1 — Broad validation (efficiency_v2)** | 2026-05-04 → 2026-05-07 | ReBRAC 跨三轴 generality 广验 + C1 deep-dive | ⚠ **SUPERSEDED 2026-05-18** by v2 plan；v1 archive 保留，不重跑、不进 paper | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md)（archive） |
-| **Phase 2.5 v2 — Broad validation (arrival_v2 cross-only)** | 2026-05-18 → 2026-05-19 | cross-only spotlight + 2 flow regime + 精简 collector + conditional BC sweep | ✅ **2-seed 4-run 闭环 PASS 2026-05-19**（N0 HOLDS / N2' STRONG_NEGATIVE；M1 BC sweep 未触发） | [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ |
+| **Phase 2.5 v2 — Broad validation (arrival_v2 cross-only)** | 2026-05-18 → 2026-07-12 | cross-only spotlight + 2 flow regime + 精简 collector + conditional BC sweep | ✅ **3-seed 闭环 PASS**（首轮 2 seed 2026-05-19；asym addendum 2026-05-27；seed 43 supplement 2026-07-12 补齐第三种子）（N0 HOLDS / N2' STRONG_NEGATIVE；M1 BC sweep 未触发） | [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ |
 | **Phase 3 — AUVHamNODE Offline RL(cross-domain transfer)** | 2026-05-06 → 2026-05-13 | frozen AUVHamNODE 1-step prior + ReBRAC augmentation | ⏸ **PAUSED 2026-05-13**(原状态 v2.1 locked → α 路径 Step 0-4 审计 → 4 项硬接口差异 + wake current 2-4× OOD 暴露;用户决定暂停) | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★ |
 | **FQL Succession — FQL vs ReBRAC（Paper 2 候选）** | 2026-05-19 → 2026-05-23 | FQL（flow-matching teacher + 1-step distill）vs ReBRAC（dual-BC） | ✅ **NEGATIVE 闭环 2026-05-23**（核心 conditional-iff 假设证伪 → 机制发现 + 诚实负面，B+A） | [`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md) ★ |
 
-**当前位置**：Phase 2 主线已 freeze；**Phase 2.5 v1 广验已 SUPERSEDED 2026-05-18**（reward 失配 + online §7.6 更强 finding）；**Phase 2.5 v2 已于 2026-05-19 PASS**（N0 HOLDS / N2' STRONG_NEGATIVE，4-run 2-seed 闭环；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)）；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)；**FQL Succession P2 已于 2026-05-23 NEGATIVE 闭环**（"FQL > ReBRAC iff sub-optimal AND multi-modal" 证伪；机制 = BC-anchor 目标质量决定噪声鲁棒性；详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md)）。
+**当前位置**：Phase 2 主线已 freeze；**Phase 2.5 v1 广验已 SUPERSEDED 2026-05-18**（reward 失配 + online §7.6 更强 finding）；**Phase 2.5 v2 已 PASS**（N0 HOLDS / N2' STRONG_NEGATIVE；首轮 2-seed 4-run 2026-05-19，2026-07-12 seed 43 supplement 补齐为 3 seed {42, 0, 43}；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)）；**Phase 3 AUVHamNODE Offline RL 已 PAUSED**(2026-05-13;不影响其他线;恢复条件见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) §6)；**FQL Succession P2 已于 2026-05-23 NEGATIVE 闭环**（"FQL > ReBRAC iff sub-optimal AND multi-modal" 证伪；机制 = BC-anchor 目标质量决定噪声鲁棒性；详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md)）。
 
 ---
 
@@ -47,10 +56,14 @@
 | ✅ **TD3+BC baseline closure** | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) | 直接引用作 algorithm baseline |
 | ✅ **Stage F (B) — critic LayerNorm 必要性** | [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §7.15 | 论文 ablation 节 |
 | ✅ **Stage F (C) — Phase 1 deployable vs TD3BC priv-critic 统计检验** | [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §7.16 | 论文核心论点：deployable 不输 priv |
-| ⚠ **Broad validation B1 sensor envelope (s1 ≈ s0)** | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3.4 | clean positive，可作 paper-quality 引用 |
-| ⚠ **Broad validation 其他 spoke (A1/A2/A3/B2/C1/C3)** | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3 + [`c1_s1_followup`](rebrac_c1_s1_followup_report.md) | **standalone exploratory；不达 paper-quality** — 需要 BC penalty sweep / mix ratio sweep / paired bootstrap 闭环 |
+| ❌ **v1 广验全部 8 spoke（含 B1 sensor envelope）** | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) + [`c1_s1_followup`](rebrac_c1_s1_followup_report.md) | **不进论文**（用户 2026-08-16 裁定，与 §4.2 一致）。v1 整条线作废：跑在失配的 `efficiency_v2` 下，且已被 v2 取代。**B1 曾被本表标为「clean positive 可作 paper-quality 引用」，该标注已撤销** |
 
-### 2.1 Why broad validation 是 standalone 不回写主线
+### 2.1 Why broad validation 是 standalone 不回写主线（⚠ 已被 v1 作废覆盖，仅存历史决策）
+
+> ⚠ **2026-08-16 补注**：本节写于 2026-05-07，讨论的是「v1 广验何时回写主线」。
+> v1 已于 2026-05-18 被 v2 取代，其 retrofit trigger condition 亦已作废（见 §4.2 末），
+> 用户 2026-08-16 裁定 **v1 finding（含 B1）一律不进论文**。故本节列出的触发条件**不再是待办**，
+> 整节仅作历史决策记录读。
 
 2026-05-07 用户判断 + 文档级落地（见 [`rebrac_experiment_report.md`](rebrac_experiment_report.md) §10A pointer + [`broad_validation_report`](rebrac_broad_validation_report.md) 头部 status note + [`c1_s1_followup`](rebrac_c1_s1_followup_report.md) 头部 status note）：
 
@@ -106,14 +119,18 @@
 
 ### 3.3 Phase 2.5 — Broad validation（v1 SUPERSEDED → v2 ✅ PASS 2026-05-19）
 
-**2026-05-19 status 升级**：v2 broad validation 4-run 闭环完成。详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。
+**status 升级**：v2 broad validation 首轮 4-run 闭环 2026-05-19；asym-critic addendum 2026-05-27；seed 43 supplement 2026-07-12 补齐第三种子。详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)。
 
-**v2 核心结果（2 seed [42, 0], cross_stream / s0 / arrival_v2）**：
+**v2 核心结果（3 seed {42, 0, 43}, cross_stream / s0 / arrival_v2；2026-07-12 起以三种子为准）**：
 | Cell | Setup | success | verdict (plan §5) |
 |---|---|---:|---|
-| **N0** | crosscomp / s0 / cross_u10 / Re150 (sub-critical) | **0.850 ± 0.024** (per-seed [0.867, 0.833]) | **HOLDS** — Δ vs efficiency_v2 main-line anchor 0.902 = **−5.20pp** (paired same-direction) |
-| **N2'** | privileged / s0 / cross_u15 / Re250 (critical) | **0.000 ± 0.000** (per-seed [0.000, 0.000]) | **STRONG_NEGATIVE** — recovery_of_oracle = 0%, lift_vs_online_floor = **−10pp** |
+| **N0** | crosscomp / s0 / cross_u10 / Re150 (sub-critical) | **0.878 ± 0.051** (per-seed [0.867, 0.833, 0.933]) | **HOLDS** — Δ vs efficiency_v2 main-line anchor 0.902 = **−2.42pp** |
+| **N2'** | privileged / s0 / cross_u15 / Re250 (critical) | **0.000 ± 0.000** (per-seed [0.000, 0.000, 0.000]) | **STRONG_NEGATIVE** — recovery_of_oracle = 0%，0/90 episode（rule-of-three 上界 ≈ 0.033） |
 | M1 BC sweep | conditional | NOT triggered | N2' ∉ [0.15, 0.40] partial zone |
+
+> ⚠ **首轮读法已撤销（勿再引用）**：首轮 2 种子给出 N0 0.850 ± 0.024 / Δ −5.20pp，并读作「两种子同向退化、非噪声」。
+> 第三种子 seed 43 = 0.933 **高于** anchor，per-seed 方向变为 −3.5 / −6.9 / **+3.1** pp——同向退化的读法在
+> report §2.4 已明确撤销，该差异按种子间波动解读。**本节 2026-08-16 才同步；此前引用过 −5.20pp / same-direction 的地方都需复核。**
 
 **核心 paper finding**：actor-fundamental partial-observability ceiling under deployable `s0` sensor in critical regime — 即便 oracle teacher (privileged 70% direct success) 提供 demonstrations，s0-conditioned BC 不能传递 hull-integral flow 知识；N2' 甚至 跌破 online §7.6 catastrophic floor 10pp（report §4 列三个 candidate mechanism: OOD shift / BC trap / online 10% exploration luck）。
 
@@ -214,20 +231,23 @@
 - [`docs/rebrac_method_section_draft.md`](rebrac_method_section_draft.md) Method 节
 - [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §0/§1.5 是写作期反复回看的 One Page
 
-### 4.2 Broad validation v2（✅ PASS 2026-05-19）
+### 4.2 Broad validation v2（✅ PASS；首轮 2026-05-19，三种子收口 2026-07-12）
 
-详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)（report） + [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)（plan rev.3）。
+详见 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)（report） + [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md)（plan rev.3） + [`docs/rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md)（seed 43 supplement 全档）。
 
 **实际执行**（vs plan §6 原 4-stage 计划）：
 - Stage 0A (S sanity): ✅ 完成 2026-05-18，crosscomp 0% / privileged 70% — 触发 rev.3 pivot（N2 → N2'）
 - Stage 0B (dataset 收集): ✅ N0 + N2' 各 1000 ep 新 collect 完成
-- Stage 1 (core training + eval): ✅ **2 seed [42, 0]**（plan 原 3 seed，缩水原因见 report §6.1）；N0 0.850 → HOLDS，N2' 0.000 → STRONG_NEGATIVE
+- Stage 1 (core training + eval): ✅ **3 seed {42, 0, 43}**（首轮 2 seed 缩水原因见 report §6.1；2026-07-12 supplement 补齐第三种子。注意实际种子组与预登记 {42, 43, 44} 不重合——首轮以 0 替换 44）；N0 0.878 ± 0.051 → HOLDS，N2' 0.000 → STRONG_NEGATIVE
 - Stage 2 (conditional M1): ⏭ NOT triggered（N2' ∉ [0.15, 0.40]）
 
-**剩余 follow-up**（不在主线 paper revision 关键路径上，详见 report §6.3）：
-- 5-seed 补全 N0（+43, 44, 45）— Medium priority，若审稿人 push back
-- Asym-critic ablation on N2'（plan §9 backlog）— **High priority** 若 paper §discussion 想区分 "actor-fundamental" vs "critic-fundamental" partial-obs ceiling
-- online §7.6 candidate-C 验证（3 success episode trajectory 分析）— Medium，若 paper §discussion 想 strengthen anomaly section
+**已闭环的 follow-up**（本表 2026-08-16 订正——下列两项此前一直挂在「剩余」栏，实际早已完成）：
+- ✅ **Asym-critic ablation on N2'** — 2026-05-27 完成，verdict `ACTOR_FUNDAMENTAL_CONFIRMED`：critic 全程拿到完美 hull-integral flow，s0 actor success 仍 0.000，天花板不在 critic 价值估计。详见 report §4.5
+- ✅ **N0 第三种子** — seed 43 于 2026-07-12 补齐（原列为「5-seed 补全 +43, 44, 45」）
+
+**剩余 follow-up**（不在关键路径上，详见 report §6.3）：
+- 5-seed 补全 N0（再加 2 个种子）— Medium priority，若审稿人 push back
+- online §7.6 candidate-C 验证（3 success episode trajectory 分析）— Medium，若 §discussion 想 strengthen anomaly section
 
 **v1 retrofit trigger condition 已作废**（C1 BC sweep / A1 paired bootstrap / mix ratio / target=2.0 P1 等）— v1 finding 不进 paper。
 
@@ -236,6 +256,12 @@
 **Spec**：[`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) **rev.3** §4.0（rev.2 §4.1 路径 1 cross_u15 作废）。与本线协议严格对齐 = **s0 + k=4 + arrival_v2**。
 
 **rev.3 单一路径 = Plan A**：从 `checkpoints/arrival_v2_prototype/cross_u10_regression/arrival_v2/sac_vanilla/s0_k4/seed_46/` 的训练过程切片（39 个 `agent_step_*.pt`，25k env_step cadence）里 audit pick 4 个 ckpt 构成真 D4RL 4-tier — 与 D4RL 经典 paper (CQL/IQL/FQL/ReBRAC) 一致的 tier 构造方式：
+
+> ⚠ **该路径只在 Drive 侧（2026-08-16 实测标注）**：本机两个工作副本下 `checkpoints/` 均无
+> `arrival_v2_prototype/` 子树，`experiments/arrival_v2_prototype/cross_u10_regression/` 下
+> `agent_step_*.pt` 计数为 **0**。**四个 tier 数据集本身在本机**（`offline_data/sac_{random,medium,mexp,expert}_*`，
+> 下表数字已逐位核对其 `metadata.json`），故下游 39-run 结果可从数据集复现；
+> 只有「回到源 checkpoint 重采」这一步需要 Drive。**按现行决定不取回**，仅在此标明。
 
 | tier | step | success | ckpt 文件名 |
 |---|---:|---:|---|
@@ -308,16 +334,19 @@
 
 短期不需要的工作:Path 1B spike-lite 实施、Path 2 finetune 评估、Path 4 vehicle.py oracle plan 起草、AUVHamNODE 上游 dataset 取回。这些都在 pause memo §5 留作债务表。
 
-### 4.5 数据完整性问题（2026-08-02 记录 → 2026-08-09 核实，⚠ 处置未决）
+### 4.5 数据完整性问题（2026-08-02 记录 → 2026-08-16 复核，⚠ 处置未决）
 
-清单与完整证据在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)。**第 1、3 条已核实成立**（第 3 条比原怀疑更强），**处置待裁决**；不影响方法本身，但都会在答辩/返修时被问到。
+清单与完整证据在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)。**第 ①、③、⑤ 条已核实成立**（③ 比原怀疑更强；⑤ 为 2026-08-16 独立复核新增，本节 2026-08-16 才补录），**处置待裁决**；不影响方法本身，但都会在答辩/返修时被问到。
 
-- **① `crosscomp-2000` 训练与评估用的是同一批任务实例**（⚠ 最高优先，**已确证**）。数据集 `seed=0`、2000 回合 → 训练种子 0..1999 完整包含评估 manifest 的 1250..1349；reset RNG 重放确认 **100/100 实例逐条相同**。成因是 `collect_offline_data.py` 的 `--seed` 默认值为 0 加上规模跨过 1250。**全仓仅此一个数据集受影响**（其余 9 个止于种子 999，低于最小 `manifest_seed`=1100）。波及 ReBRAC 主线 `cross-2000` 一格与"2000 不再劣于 1000"这条翻转论述；反向的"2000<1000"结论不受威胁（污染只会抬高 2000）。
+- **① `crosscomp-2000` 训练与评估用的是同一批任务实例**（⚠ 最高优先，**已确证**）。数据集 `seed=0`、2000 回合 → 训练种子 0..1999 完整包含评估 manifest 的 1250..1349；reset RNG 重放确认 **100/100 实例逐条相同**。成因是 `collect_offline_data.py` 的 `--seed` 默认值为 0 加上规模跨过 1250。**本机 `offline_data/` 范围内仅此一个受影响**（其余 9 个止于种子 999，低于最小 `manifest_seed`=1100）——但该枚举只覆盖本机目录，⑤ 就是漏在外面的一个，且 Drive 侧枚举本身也被证残缺，**污染面至今未封闭**。波及 ReBRAC 主线 `cross-2000` 一格与"2000 不再劣于 1000"这条翻转论述；反向的"2000<1000"结论不受威胁（污染只会抬高 2000）。
 - **② paper Table 1 的 transitions 数字与本机 metadata 对不上** —— 仅影响已撤销的 standalone paper 旧稿（`paper/archive/rebrac_standalone/sections/setup.tex`）；论文第 5 章已于 rev.3（2026-06-18）用实测值 1.5e5 / 3.0e5 / 1.0e5 纠正过，四源互证。
 - **③ 选点验证集是终报测试集的前缀子集**（**已确证**，强于原怀疑）。manifest 生成器无 seed 偏移，val/test 用同一 benchmark key → `val_40` = `test_100` 的前 40 条；40+40 的单元里两份 manifest 完全相同。即报告的 100 回合测试集中有 40 条正是选 checkpoint 用的那批。
 - **④ 行为策略 success_rate 0.958 vs ReBRAC-Q 0.928** —— 非缺陷，建议把两个 behaviour policy 在评估 manifest 上的成功率补成一行，纯 eval 开销。
+- **⑤ 含噪 2000 回合数据集的种子同样重叠**（2026-08-16 独立复核新增，Drive 侧探针**已钉死**）。`crosscomp_..._noise0p05clip0p15_ep2000` 同为 `seed=0` / 2000 回合 → 种子 0..1999 完整包含 manifest 的 1250..1349，reset RNG 重放 **100/100 逐条相同**，与 ① 同因同病。波及第 5 章 §5.6.2 那句 noisy-support 诊断——`0.60` 出自确定性 2000（①）、`0.74` 出自本条，**两个端点都坐在污染数据上**；且该筛查是 40+40 单元，val 与 test 逐条相同（③）——**三条问题在同一句上同时命中**。减轻情节：`td3bc.tex` rev.5 已把机制归属挪到干净的一千回合反证。
 
-**复核工具（2026-08-09 入库）**：[`scripts/audit_seed_overlap.py`](../scripts/audit_seed_overlap.py)。默认扫全部数据集 × 全部 manifest 的种子区间相交（只在流场／几何／目标速度三项一致时才判定），`--verify DATASET MANIFEST` 重放 reset RNG 逐条比对任务实例。任何**新采集的数据集或新评估 manifest 落地后都该跑一次**。
+**处置与复核状态**（详见 [`data_integrity_open_items.md`](data_integrity_open_items.md) 末节）：波及面评估初稿 + [独立复核](../paper/thesis_ch5/data_integrity_impact_assessment_review.md)（判「可作裁决依据但须打补丁」）；③ 已用 [`ch5_holdout_split_audit.py`](../paper/thesis_ch5/tools/ch5_holdout_split_audit.py) 零成本量化（留出 60 条上组间差全部保号且变大，唯一例外是 §5.7.2 的 53.0% → 48.9%）；① 的污染幅度 δ 仍未测，但已具备条件。
+
+**复核工具**：[`scripts/audit_seed_overlap.py`](../scripts/audit_seed_overlap.py)（2026-08-09 入库，2026-08-16 改为递归扫描）。比对数据集 × manifest 的种子区间相交（只在流场／几何／目标速度三项一致时才判定），`--verify DATASET MANIFEST` 重放 reset RNG 逐条比对任务实例。⚠ **它只扫所在机器的 `offline_data/` 与 `benchmarks/`**——本机跑出的「已封闭」不等于全仓封闭，且 Drive 侧枚举已被证残缺。任何**新采集的数据集或新评估 manifest 落地后都该跑一次**。
 
 ---
 
@@ -334,8 +363,9 @@
 | ReBRAC 这一条线串线总览（TD3+BC→ReBRAC→FQL，含 β1 跨线 reconciliation） | [`docs/rebrac_line_overview.md`](rebrac_line_overview.md) |
 | ReBRAC One Page 摘要 + 4 finding spine | [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) §0 + §1.5 |
 | ReBRAC 任何具体数字 / per-seed | [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) §1–§10（按 stage 索引） |
-| Broad validation 三轴 8 spoke 全表 | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3 |
-| C1 spoke task-fundamental floor 候选证据链 | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3.5 + [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) |
+| 当前有效的广验结果（v2，三种子） | [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ |
+| ❌ v1 三轴 8 spoke 全表（**已作废，不进论文**，仅历史） | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3 |
+| ❌ v1 C1 spoke task-fundamental floor 证据链（同上，作废） | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) §3.5 + [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) |
 | TD3+BC baseline 详细收口 | [`docs/td3bc_phase0c_experiment_report.md`](td3bc_phase0c_experiment_report.md) |
 | AUVHamNODE Offline MBRL 线为何 paused / 累计决策 / 恢复条件 | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) ★(pause anchor) |
 | AUVHamNODE Offline MBRL 历史 plan(paused) | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md)(v2.1, paused) + [`auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) + [`docs/auvhamnode_spike/`](auvhamnode_spike/) |
@@ -357,8 +387,9 @@
 | [`rebrac_method_section_draft.md`](rebrac_method_section_draft.md) | active | 论文 Method 节草稿 |
 | [`rebrac_paper_writing_index.md`](rebrac_paper_writing_index.md) | active | 写论文期 reading map |
 | [`rebrac_statistical_test_followup.md`](rebrac_statistical_test_followup.md) | active | Welch's p / bootstrap CI 后续 |
-| [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ | **active (2026-05-19 PASS)** | v2 数字 ground truth — N0 HOLDS / N2' STRONG_NEGATIVE；paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0 |
-| [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) | **closed plan (2026-05-19, rev.3)** | v2 cross-only spotlight under arrival_v2；5 cell core + 1 conditional sweep；rev.3 pivot N2→N2'；4-run 闭环已 PASS（详见 report）|
+| [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) ★ | **active（3-seed 收口 2026-07-12）** | v2 数字 ground truth — N0 HOLDS (0.878 ± 0.051) / N2' STRONG_NEGATIVE；paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0。**数字以本文件为准，本总览曾停在首轮 2-seed** |
+| [`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) | **closed plan (2026-05-19, rev.3)** | v2 cross-only spotlight under arrival_v2；5 cell core + 1 conditional sweep；rev.3 pivot N2→N2'；闭环已 PASS（详见 report）|
+| [`rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md) | **closed (2026-07-12)** | seed 43 补齐三单元（N0 / N2' / asym）的 plan + 呈报 + 裁决全档 |
 | [`rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) (rev.2) | **SUPERSEDED 2026-05-18 (archive)** | v1 三轴 8 spoke 数据 archive；不重跑、不进 paper |
 | [`rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) | **SUPERSEDED 2026-05-18 (archive)** | v1 C1-s1 sensor upgrade follow-up archive |
 | [`superpowers/specs/2026-05-04-rebrac-broad-validation-design.md`](superpowers/specs/2026-05-04-rebrac-broad-validation-design.md) | **SUPERSEDED 2026-05-18 (archive)** | v1 design spec archive |
@@ -416,14 +447,22 @@
 
 ### 5.3 实验数据 / checkpoints / offline data
 
+> ⚠ **2026-08-16 订正**：本表原先整张指向 `experiments/offline/...`，实测该树下**只有**
+> `experiments/offline/rebrac/broad_validation_v2/`；offline 线的读数实际都在 **`results/offline/`** 下
+> （v2 report 自己的 Raw outputs 行写的也是 `results/offline/rebrac/...`）。照旧表去找会误判为「数据丢失」。
+
 | 路径 | 角色 |
 |---|---|
-| `experiments/offline/rebrac/` | ReBRAC 主线 5-seed 实验数据 |
-| `experiments/offline/rebrac/broad_validation/` | 广验 8 spoke + C1 deep-dive |
-| `experiments/offline/rebrac/c1_s1_sensor_upgrade/` | C1-s1 follow-up 数据 |
-| `experiments/offline/td3bc/` | TD3+BC Phase 0c 数据（已归档） |
-| `offline_data/<collector>_<sensor>_<reward>_<flow>_ep<N>/` | 多 collector / 多 sensor offline 数据集 |
-| `checkpoints/offline/rebrac/` + `checkpoints/offline/td3bc/` | actor + critic checkpoint |
+| `results/offline/rebrac/formal/` + `screening/` | ReBRAC 主线 5-seed 实验数据 |
+| `results/offline/rebrac/broad_validation/` | v1 广验 8 spoke（⚠ 已作废，不进论文） |
+| `results/offline/rebrac/broad_validation_v2/` + `broad_validation_v2_n2p_asym/` | v2 三种子 + asym-critic ablation（**当前有效的广验数据**） |
+| `results/offline/rebrac/c1_s1_sensor_upgrade/` + `c1_*_ablation/` | v1 C1 deep-dive 系列（⚠ 同上，作废） |
+| `results/offline/rebrac/critic_ln_off/` + `stage_e_critic_penalty_off/` + `worldcomp_*/` | Stage E/F probe 数据（finding iii/iv 依据） |
+| `results/offline/rebrac/clean_probe/` | 终检复现证据 |
+| `results/offline/td3bc/{phase0,phase0b_v2,phase0c}/` | TD3+BC 数据（已归档） |
+| `results/offline/sac_collector_h2h/{rebrac,fql}/` | SAC collector head-to-head 36 run |
+| `offline_data/<collector>_<sensor>_<reward>_<flow>_ep<N>/` | 19 个 offline 数据集（含 4 个 `sac_*` tier） |
+| `checkpoints/offline/td3bc/` | TD3+BC checkpoint。**注意 `checkpoints/offline/rebrac/` 本机不存在**——ReBRAC 训练产物只在 Drive 侧 |
 
 ### 5.4 代码组件（auv_nav/ + scripts/）
 
@@ -462,6 +501,6 @@
 
 ## 7. 一句话总结
 
-Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 broad validation 已于 2026-05-19 PASS**(arrival_v2 cross-only 2-seed 4-run 闭环 — N0 HOLDS / N2' STRONG_NEGATIVE，paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md));**FQL Succession（FQL vs ReBRAC，Paper 2 候选）已于 2026-05-23 NEGATIVE 闭环**("FQL > ReBRAC iff sub-optimal AND multi-modal" 证伪 → 机制发现 + 诚实负面:noise 是 discriminator、ReBRAC β1=1.0 双轴 dominate、BC-anchor 目标质量决定鲁棒性;详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md))。
+Offline RL 线在 2026-Q1 → 2026-05 累计完成 **TD3+BC baseline closure(Phase 0c 5 文档已归档)+ ReBRAC 主线 paper-ready 4/4 closed (rev.8) + v1 三轴 broad validation 8 spoke 5-seed parity**;主线 paper drafting 进入 revision 阶段;**v1 广验 + c1_s1 follow-up 已于 2026-05-18 SUPERSEDED**(reward 失配 + online §7.6 更强 finding)，v1 archive 保留不重跑;**v2 broad validation 已 PASS**(arrival_v2 cross-only；首轮 2-seed 4-run 2026-05-19，2026-07-12 补齐第三种子收口为 3 seed {42, 0, 43} — N0 HOLDS 0.878 ± 0.051 / N2' STRONG_NEGATIVE 0/90，paper §experiments appendix headline = actor-fundamental partial-observability ceiling under s0；详见 [`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md));**原计划下一阶段 AUVHamNODE Offline RL 已于 2026-05-13 paused**(详见 [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md));**FQL Succession（FQL vs ReBRAC，Paper 2 候选）已于 2026-05-23 NEGATIVE 闭环**("FQL > ReBRAC iff sub-optimal AND multi-modal" 证伪 → 机制发现 + 诚实负面:noise 是 discriminator、ReBRAC β1=1.0 双轴 dominate、BC-anchor 目标质量决定鲁棒性;详见 [`fql_succession_p2_results.md`](fql_succession_p2_results.md))。
 
 **2026-08-09 补注（本段以上写于 2026-05-07，其中"主线 paper drafting 进入 revision 阶段"已过期）**：2026-05 之后本线**没有新增实验**，全部工作转入写作出口——博士论文第 5 章于 **2026-07-28 收口、送审就绪**（章状态唯一真相源 = [`../paper/thesis_ch5/status.md`](../paper/thesis_ch5/status.md)，**此处不复述**）。本线现存唯一未结事项是本文 **§4.5 数据完整性待核项**（清单 [`data_integrity_open_items.md`](data_integrity_open_items.md)）。

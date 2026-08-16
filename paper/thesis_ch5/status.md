@@ -102,7 +102,9 @@
 
 **复算工具**（数字不写死，均从逐回合记录重算）：[`tools/ch5_clean_probe_readout.py`](tools/ch5_clean_probe_readout.py)（① 补充终检）· [`tools/ch5_holdout_split_audit.py`](tools/ch5_holdout_split_audit.py)（③ 留出复核）。
 
-**遗留**：补充终检只覆盖 ReBRAC-Q 两格，TD3+BC／纯 BC 未在该组实例上重跑，故正文明确不在其上重述基线差距；污染面枚举因 Drive FUSE 列举残缺仍未封闭（见事实账本文首）；`ReBRAC world priv` 单元 seeds 45/46 未同步本机，不在留出复核枚举内（正文措辞已不声称覆盖它）；`benchmarks/clean_probe/_repro_check_s1250.json`（补充终检「其余生成参数一致」的复现证据）尚未入库。四项均已如实登记，不构成送审阻塞。
+**遗留**：补充终检只覆盖 ReBRAC-Q 两格，TD3+BC／纯 BC 未在该组实例上重跑，故正文明确不在其上重述基线差距；污染面枚举因 Drive FUSE 列举残缺仍未封闭（见事实账本文首）；`ReBRAC world priv` 单元 seeds 45/46 未同步本机，不在留出复核枚举内（正文措辞已不声称覆盖它）。三项均已如实登记，不构成送审阻塞。~~复现证据未入库~~ ✅ 已闭环 `9453f7e`（`benchmarks/clean_probe/_repro_check_s1250.json` ＋ `benchmarks/README.md` 的 `clean_probe/` 小节）。
+
+**取回后即可闭合的两项**（Drive 侧文件清单见 [`data_integrity_batch_review_findings.md`](data_integrity_batch_review_findings.md) §7）：含噪集只需 `metadata.json`（`audit_seed_overlap` 的 identity pass 不读 `transitions.npz`，尾流场本机已有）；`world priv` 只需两个 `seed_*.json`。
 
 ## 全仓文档指针体检（2026-07-28）✅ 已闭环 —— 章内零失效，**章外 ground-truth 路由查出并修复 1 处 HIGH**
 

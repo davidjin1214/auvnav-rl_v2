@@ -99,8 +99,40 @@ clean cross-2000 逐种子 $[0.89,0.87,0.86,0.83,0.90]$ → 总体口径 $\sigma
 - **既有数字零漂移**：四文件正文（排除注释行）数字多重集与 `HEAD` 逐一比对，唯一删除项为 `rebrac.tex` 的 `0.025`×2（即 MED-1 订正），其余新增项全部为 $35.6$×3、$48.5$×1 与 `\ref` 标签内的数字，无一既有数字被删改。
 - 头注 rev 块：`setup` rev.8 / `rebrac` rev.6 / `td3bc` rev.8 / `discussion` rev.4，逐条记录病因与处置。
 
-## 7. 遗留（不构成送审阻塞）
+## 7. 遗留与 Drive 取回清单
 
-1. **含噪 $2000$ 集与评估集逐条相同**一条本机无法复核（`offline_data/` 无该集），只能采信 08-16 Drive 侧 `audit_seed_overlap --verify` 的记录——与「污染面枚举因 Drive FUSE 列举残缺未封闭」同源。
-2. `ReBRAC world priv` 单元 seeds 45/46 未同步本机，该单元不在留出复核枚举内；正文措辞已不再声称覆盖它。
-3. `benchmarks/clean_probe/_repro_check_s1250.json` 仍未追踪，建议入库作为补充终检的复现证据。
+第 3 项已闭环（`9453f7e`）。前两项均只需**小文件**，取回后本机即可复算闭合。
+
+### 遗留 1 ｜ 含噪 $2000$ 集与评估集逐条相同，本机无法复核
+
+`audit_seed_overlap` 的 identity pass（`run_identity_pass`）**只读 `offline_data/<集名>/metadata.json`** ＋ benchmark manifest ＋ 尾流场；**不读 `transitions.npz`**（源码注释：转移数组不存 `flow_time`/`start_xy`，故重放 reset 是唯一比对途径）。尾流场 `wake_data/wake_v8_U1p00_Re150_D12p00_dx0p60_Ti5pct_1200f_roi.npy` 本机已有。
+
+取回（各约 $1.5$ KB，**放回同名目录即可**，range pass 按 `offline_data/*/metadata.json` 枚举）：
+
+```
+offline_data/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000/metadata.json
+offline_data/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep1000/metadata.json
+```
+
+第二个是为 §5.6.2 判别性反证那一侧的「与评估集不相交」补同等强度的证据（当前该断言仅由 $\le1000$ 回合的通则推得，未逐集实核）。identity pass 用到的键在本机同类文件中齐全：`seed` / `num_episodes` / `flow_path` / `history_length` / `probe_layout` / `task_geometry` / `target_speed`。
+
+复算命令：
+
+```bash
+python -m scripts.audit_seed_overlap --verify crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000 single_u10_cross_tgt15_ep100
+```
+
+> **顺带**：若把 Drive 上**全部** `offline_data/*/metadata.json` 一并取回（每个约 $1.5$ KB），range pass 即可在本机对全集跑一遍——这正是「污染面枚举因 Drive FUSE 列举残缺未封闭」那条所缺的东西。本机 `os.listdir` 逐名 stat 可靠，不复现 FUSE 的枚举残缺。
+
+### 遗留 2 ｜ `ReBRAC world priv` 单元 seeds 45/46 未同步
+
+该单元的 $0.934 \pm 0.026$、难例种子 $+12$ pp 救援、离散度 $0.077 \to 0.026$、闭合比例 $57.6\%$ 均不在留出复核枚举内（本机只有 seeds 42/43/44）。取回两个文件（各约 $70$ KB，含 `eval_episode_results` 逐回合记录）：
+
+```
+results/offline/rebrac/worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_45.json
+results/offline/rebrac/worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_46.json
+```
+
+对照面（`world dep` 五种子、`TD3+BC world dep/priv` 五种子、`collector worldcomp`）本机齐全，取回后直接 `python paper/thesis_ch5/tools/ch5_holdout_split_audit.py` 即出 $5$ 种子读数，该单元行的 `[3 seeds local]` 标记随之消失。
+
+> ⚠ 取回后须复核一处：本机三种子上 `world priv` 的 hold60 均值 $0.9000$ 与 `world dep` 五种子的 $0.9067$ **不可直接比**（种子数不同）；按共同种子 42/43/44 配对则 dep $0.8722$、priv $0.9000$，即 $+2.8$ pp，与已刊的 $+0.6$ pp **同向且更大**。五种子齐全后应重算，若方向仍保持，§5.7.2「特权观测未再表现出可检测的均值抬升」不受影响，可把该单元并入 §5.7.m 的复核枚举。

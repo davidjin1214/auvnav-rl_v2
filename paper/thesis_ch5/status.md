@@ -89,7 +89,15 @@
 
 **两条的处置均未决**（重采/重跑 vs 正文如实披露），**须在答辩前裁决**；动正文即触发 `prompt_playbook.md` 的重流程复审义务。
 
-裁决依据的波及面评估（逐处列出必然要改的／可能被推翻的／守得住的）：[`data_integrity_impact_assessment.md`](data_integrity_impact_assessment.md) —— **初稿，未经独立复核**，复核轮入口见 [`next_session_prompt.md`](next_session_prompt.md)。其核心判断：中心命题与四条主要发现均不在污染面上，真正押在受污染数据格上的只有 §5.7.1「数据规模退化的翻转」一条论述。
+裁决依据的波及面评估（逐处列出必然要改的／可能被推翻的／守得住的）：[`data_integrity_impact_assessment.md`](data_integrity_impact_assessment.md)。其核心判断：中心命题与四条主要发现均不在污染面上，真正押在受污染数据格上的只有 §5.7.1「数据规模退化的翻转」一条论述。
+
+**独立复核（2026-08-16）**：[`data_integrity_impact_assessment_review.md`](data_integrity_impact_assessment_review.md) —— 判定「可作裁决依据，但须先打补丁」。核心图景方向成立；6 处漏项（含一个此前未计入污染面的含噪 2000 数据集）、2 处「守得住」要打折、3 条推断分级、以及一条被漏掉的处置路径。三项对裁决直接有用的实测：
+
+- ③ **已零成本量化**（[`tools/ch5_holdout_split_audit.py`](tools/ch5_holdout_split_audit.py)，把已刊 100 回合劈成参与选点的 40 条与未参与的 60 条）：留出 60 条上组间差**全部保号且变大**——翻转 $+1.6\to+3.0$ pp（5/5 种子不为负）、基线差距 $23.0\to28.0$ / $32.2\to40.0$ pp、§5.6 回落 $-7.6\to-9.0$ pp。**唯一例外**：§5.7.2「差距闭合过半」$53.0\%\to\mathbf{48.9\%}$，不再过半。
+- **事实订正**：§5.3.6 正文**从未写过「独立测试集」**（body 检索零命中），该误称出自 `td3bc.tex` rev.6 头注对 GT 报告的转述 → ③ 的正文敞口小于原描述。
+- ① 的污染幅度 $\delta$ **仍未测且可测**：[`../../notebooks/ch5_data_integrity_probe.ipynb`](../../notebooks/ch5_data_integrity_probe.ipynb) §1 探针查 Drive 侧检查点是否尚存，§3 在干净 manifest 上补评两格 × 5 种子（纯评估开销，配方已在本机验证逐条重现原 manifest）。
+
+**裁决前不动任何 `.tex`；裁决后 ① 与 ③ 合成一批整改，重流程复审只付一次。**
 
 ## 全仓文档指针体检（2026-07-28）✅ 已闭环 —— 章内零失效，**章外 ground-truth 路由查出并修复 1 处 HIGH**
 
@@ -130,7 +138,7 @@
 | ~~图浮动漂移 + 半空白页~~ | ✅ 已清 2026-07-08（收尾统稿轮包 B，根因与改法见 findings F·M2 追注） | findings F·M2 |
 | ~~零散 LOW（括注清理 / refs.bib 残留 / 机体↔船体术语章级统一等）~~ | ✅ 已清 2026-07-08（收尾统稿轮包 A，逐条追注在各 findings 原条目后） | findings §3.2；`section_5_8/5_9/5_10_review_findings.md` LOW 段 |
 | ⚠ **`crosscomp-2000` 训练/评估任务实例重合** —— **2026-08-09 已核实成立**：数据集 `seed=0 / 2000` → 训练种子 0..1999 完整包含评估的 1250..1349，reset RNG 重放确认 **100/100 实例逐条相同**。§5.7 表中 $2000$ 回合一格与 §5.7.1「翻转」（$0.918$ 对 $0.902$）建立在该格上；§5.6「$2000<1000$」方向与污染相反、不受威胁。**处置未决**（重采重跑 vs 正文披露 + 翻转论述降级） | 2026-08-09 核实，**待裁决** | [`docs/data_integrity_open_items.md`](../../docs/data_integrity_open_items.md) §1；工具 `scripts/audit_seed_overlap.py` |
-| ⚠ **选点验证集 ⊂ 终报测试集** —— **2026-08-09 已核实成立且强于原怀疑**：manifest 生成器无 seed 偏移，val/test 用同一 benchmark key，故 val_40 = test_100 的**前 40 条**（40+40 的单元两份完全相同）。§5.3.6 rev.6 的「**独立**测试集」不成立。**处置未决**（换种子重跑终检 vs 改 §5.3.6 如实描述包含关系） | 2026-08-09 核实，**待裁决** | [`docs/data_integrity_open_items.md`](../../docs/data_integrity_open_items.md) §3 |
+| ⚠ **选点验证集 ⊂ 终报测试集** —— **2026-08-09 已核实成立且强于原怀疑**：manifest 生成器无 seed 偏移，val/test 用同一 benchmark key，故 val_40 = test_100 的**前 40 条**（40+40 的单元两份完全相同，筛查单元由此**没有任何留出集**）。⚠ 2026-08-16 订正：§5.3.6 正文**并未写「独立测试集」**，该误称出自 `td3bc.tex` rev.6 头注对 GT 报告的转述——须补的是一个未写明的限定，不是撤回一个错误断言。**处置未决**（换种子重跑终检 vs 改 §5.3.6 如实描述包含关系 + 一句已量化的敏感性读数） | 2026-08-09 核实，2026-08-16 量化，**待裁决** | [`docs/data_integrity_open_items.md`](../../docs/data_integrity_open_items.md) §3；[`data_integrity_impact_assessment_review.md`](data_integrity_impact_assessment_review.md) §1 |
 
 ## 已锁决策（只列指针，内容以权威所在为准、不在此复述）
 

@@ -8,14 +8,22 @@
 > |---|---|---|
 > | ① `crosscomp-2000` 种子重叠 | ⚠ **成立**。评估 manifest 的 **100/100** 条 episode 是训练 episode，任务实例逐条相同 | 数据集 `metadata.json` + reset RNG 重放（[`scripts/audit_seed_overlap.py`](../scripts/audit_seed_overlap.py)） |
 > | ② Table 1 transitions 数字 | 仅影响已撤销的 standalone paper 旧稿；论文第 5 章 `setup.tex` rev.3 已用实测值纠正 | 第 5 章 rev 头注四源互证 |
-> | ③ 验证集 ⊄ 测试集 | ⚠ **成立且更强**：val **不是重叠而是前缀子集**，40/40 配置下两份 manifest 完全相同 | manifest 生成器无 seed 偏移 + 三个 launcher + notebook 实际启动命令 |
+> | ③ 验证集 ⊄ 测试集 | ⚠ **成立且更强**：val **不是重叠而是前缀子集**，40/40 配置下两份 manifest 完全相同 | manifest 生成器无 seed 偏移 + 三个 launcher + notebook 实际启动命令；2026-08-16 用 `validation/seed_*/*.json` 与 `screening/**/test/*.json` 的逐回合 seed 直证，并**订正**一处对 §5.3.6 措辞的误称（见该节末） |
 > | ④ 行为策略 vs ReBRAC 成功率 | 未动，仍是建议项 | — |
+> | ⑤ 含噪 2000 数据集种子 | ⚠ **待核**（2026-08-16 新增）。规模跨过 1250，若沿用默认 `--seed 0` 即与 ① 同因同病；数据集只在 Drive | 见第 5 节 |
 >
-> **全仓污染面已封闭**：`offline_data/` 下 10 个数据集，**只有 `crosscomp-2000` 一个受影响**。其余 9 个均为 `seed=0 / 1000 回合`（种子 0..999），而全部 8 个 benchmark key 的 `manifest_seed` 最小为 **1100**，故不可能相交。复核命令：
+> **污染面（本机范围内）已封闭**：**本机** `offline_data/` 下 10 个数据集，只有 `crosscomp-2000`
+> 一个受影响。其余 9 个均为 `seed=0 / 1000 回合`（种子 0..999），而全部 8 个 benchmark key 的
+> `manifest_seed` 最小为 **1100**，故不可能相交。复核命令：
 >
 > ```bash
 > python -m scripts.audit_seed_overlap
 > ```
+>
+> ⚠ **该枚举的范围是本机目录，不是全仓**（2026-08-16 独立复核订正）。`audit_seed_overlap` 只扫
+> 本机 `offline_data/` 与本机 `benchmarks/`，而第 5 章至少引用了三个不在其中的数据集：500 回合集
+> （0..499，安全）、含噪 1000 集（0..999，安全）、**含噪 2000 集（种子未知，见下方第 5 条）**。
+> 结论要下"全仓封闭"，须在 Drive 侧再跑一次同一命令。
 
 三条在别的工作里顺带撞见、**已在本机核实过证据但尚未处理**的记账问题。都不影响方法本身，
 但都会在投稿/返修阶段被审稿人问到，且第 1 条一旦成立会直接推翻一格主结果。
@@ -153,7 +161,14 @@ episodes 一次性报告。**40 这个数字对不上上面任何一个文件，
 | 40 + 40 | screen / phase0c Stage B / epoch probe | 1250..1289 | 1250..1289 | **两份 manifest 逐条相同** |
 
 即：**报告的 100 回合测试集里，有 40 条正是用来选 checkpoint 的那批**；在 40+40 的单元里两者完全重合。
-第 5 章 §5.3.6（rev.6）写的「在验证集上按字典序规则选点、在**独立**测试集上评估」，**"独立"不成立**。
+
+> **⚠ 2026-08-16 订正（独立复核发现的事实错误）**：本条初稿写「第 5 章 §5.3.6（rev.6）写的
+> 『在验证集上按字典序规则选点、在**独立**测试集上评估』，"独立"不成立」——**正文里没有"独立"
+> 这个词**。`sections/*.tex` 的 body 检索"独立测试"零命中；`setup.tex:215` 的实际措辞是
+> 「在评估集上对该次训练选定的检查点重新评估……或为训练期保存的检查点中按验证集指标的字典序
+> 选出者」。"独立测试集"只出现在 `td3bc.tex` rev.6 **头注**里对 GT 报告统一选择规则的转述。
+> → **③ 的正文敞口比原描述小**：不是撤回一个错误断言，而是**补一个未写明的限定**。这一订正
+> 直接影响处置取舍（披露路线更可行），且该误称已随文档扩散过一轮，务必不要回退。
 
 「40 回合」的出处也随之明确：不是某个 `benchmarks/` 下的文件，而是 launcher 的
 `VAL_MANIFEST_EPISODES` 默认值现场生成的 `benchmarks/<root>/val_40/single_u10_cross_tgt15.json`
@@ -173,3 +188,50 @@ episodes 一次性报告。**40 这个数字对不上上面任何一个文件，
 
 建议：把两个 behaviour policy 在**评估 manifest 上**的成功率跑出来，作为一行加进 Table 3。
 纯 eval 开销，且顺带回应"最强的 baseline 其实就是数据采集策略本身"这个必然会有的质疑。
+
+---
+
+## 5. 含噪 2000 回合数据集的种子未核 ⚠️ 新增（2026-08-16，独立复核发现）
+
+第 1 条的污染面枚举只覆盖本机 `offline_data/`，**漏掉了一个规模跨过 1250 的数据集**：
+
+- `crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000`
+  （结果目录 `results/offline/td3bc/phase0c/noisy_support_screen/noisy_std0p05_clip0p15/` 可证其存在；
+  数据集本身只在 Drive）
+
+`collect_offline_data.py` 的 `--seed` 默认为 `0`，本机现存 10 个数据集**无一例外都是 0**。若含噪 2000
+沿用同一调用，其训练种子区间同为 **0..1999**，完整包含评估 manifest 的 1250..1349 —— 与
+`crosscomp-2000` 同因同病。
+
+**波及**：第 5 章 §5.6.2 的 noisy-support 诊断句「两千回合数据上的纯行为克隆成功率上升（由约
+$0.60$ 升至约 $0.74$）」——
+
+- `0.60` 出自**确定性 2000**（即已确认受第 1 条污染的那个数据集），必然要重出或披露；
+- `0.74` 出自含噪 2000，**本条待核**。
+
+减轻情节：`td3bc.tex` rev.5 已把该段的机制归属从两千那条腿挪到**干净的一千回合反证**上
+（0.68/0.76 → 0.51），受影响的只是被降级为"上升"的那半句。另：该筛查为 40+40 单元，val 与 test
+逐条相同（第 3 条），故它同时是第 3 条最严重的一类实例。
+
+**怎么查（分钟级，需 Drive）**：`notebooks/ch5_data_integrity_probe.ipynb` §2，或直接
+
+```bash
+python -m scripts.audit_seed_overlap
+python -m scripts.audit_seed_overlap --verify crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000 single_u10_cross_tgt15_ep100
+```
+
+---
+
+## 处置与复核状态（2026-08-16）
+
+- 波及面评估：[`../paper/thesis_ch5/data_integrity_impact_assessment.md`](../paper/thesis_ch5/data_integrity_impact_assessment.md)（初稿）
+- **独立复核**：[`../paper/thesis_ch5/data_integrity_impact_assessment_review.md`](../paper/thesis_ch5/data_integrity_impact_assessment_review.md)
+  —— 判定「可作裁决依据但须打补丁」；6 处漏项、2 处"守得住"要打折、3 条推断的可靠度分级、
+  以及一条被漏掉的处置路径（①-c：在现有检查点上补一次干净 manifest 终检）。
+- **第 3 条已零成本量化**：[`../paper/thesis_ch5/tools/ch5_holdout_split_audit.py`](../paper/thesis_ch5/tools/ch5_holdout_split_audit.py)
+  把已刊 100 回合劈成「参与过选点的 40 条」与「选点规则未见的 60 条」。留出 60 条上组间差**全部
+  保号且变大**（翻转 +1.6→+3.0 pp、基线差距 23.0→28.0 / 32.2→40.0 pp），**唯一例外**是 §5.7.2 的
+  「差距闭合过半」53.0%→**48.9%**。
+- **第 1 条的污染幅度 δ 仍未测**，且可测：`notebooks/ch5_data_integrity_probe.ipynb` §1 探针决定
+  Drive 侧检查点是否尚存，§3 在干净 manifest 上补评两格 × 5 种子（纯评估开销）。
+- **处置未决**。裁决前不动任何 `.tex`；裁决后 ① 与 ③ 应合成**一批**整改，重流程复审只付一次。

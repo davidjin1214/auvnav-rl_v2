@@ -545,6 +545,8 @@ only 0.10 in critical regime), we conduct two experiments:
 
 **Seed-count 说明**：本轮执行实际跑 2 seed 而非 plan §6.2 原定 3 seed。N2' 0.000/0.000 deterministic 给出 strong signal；N0 0.867/0.833 同向退化 informative。**3rd seed 补全** 已转入 [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) §6.3 follow-up backlog。
 
+> ⚠ **2026-08-17 补注：上段是首轮当时的登记，已被后续执行超越**。第三种子（seed 43）已于 **2026-07-12** 按同协议补齐三单元（见 [`rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md)），backlog 该条已闭。且"N0 同向退化 informative"这个读法**已被撤销**——seed 43 = 0.933 反向高于 anchor，三种子 per-seed 方向为 −3.5 / −6.9 / **+3.1** pp，均值差小于种子间标准差。现行数字见本文头部状态行与 report §2.4。种子组为 {42, 0, 43}，与预登记 {42, 43, 44} 仍不完全重合（首轮以 0 替换 44）；5-seed 补全仍在 §6.3 backlog。
+
 paper 写作前最终检查：
 - [x] 所有 verdict gate 结果 documented in v2 report (§1, §2.3, §3.3)
 - [x] §8.2 ceiling decomposition 表 fully populated（含 S baseline 0.0% + N2' 0.0% + online §7.6 = 10.0% + privileged 70.0%）— v2 report §3.2 + §5.2

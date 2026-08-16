@@ -77,7 +77,8 @@ report §6.4 明确：在 crosscomp-1000 上，winner `(β1=4.0, β2=2.0)` 的 *
 - **v1（`efficiency_v2`，三轴 8 spoke × 5-seed parity，~30h L4）**：8 spoke 中只有 B1（s1 传感器）clean positive，其余 7 spoke 欠功效（A1 p≈0.11 / A2 mode-collapse 仅假设 / C1 task-fundamental floor 钉在 0.195–0.225）。**2026-05-18 整套 SUPERSEDED**——`efficiency_v2` 被 [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) 证有 OOB-suicide failure mode（reward 失配），且 online §7.6 已产出更强 sensor envelope finding。v1 archive 保留、不重跑、不进 paper。
 - **v2（`arrival_v2`，cross-only spotlight，✅ PASS；首轮 2-seed 4-run 2026-05-19，2026-07-12 补齐第三种子）**：
   - **N0**（crosscomp / sub-critical Re150）：**0.878 ± 0.051 → HOLDS**（3 seed {42, 0, 43}，vs anchor 仅 −2.4pp）。⚠ 原写 2-seed 的 `0.850 ± 0.024 / −5.2pp` 并读作「同向退化」，该读法已随第三种子（0.933，反向 +3.1pp）撤销，见 v2 report §2.4
-  - **N2'**（privileged / critical Re250）：**0.000 ± 0.000 → STRONG_NEGATIVE**，甚至跌破 online catastrophic floor 10pp
+  - **N2'**（privileged / critical Re250）：**0.000 ± 0.000 → STRONG_NEGATIVE**（3 seed 合计 **0/90**，rule-of-three 95% 上界 ≈ 0.033），甚至跌破 online catastrophic floor 10pp
+  - **N2' asym-critic 消融**（唯一变量 `--use-asymmetric-critic`，v2 report §4.5，2026-05-27）：把完美 hull-integral flow 全程喂给 critic，s0 actor success 仍 **0.000**（三种子同样 0/90）→ verdict `ACTOR_FUNDAMENTAL_CONFIRMED`，**天花板不在 critic 价值估计**。这是下一行 paper headline 里"actor-fundamental"三个字的实证来源，2026-08-17 补入本节
   - **paper headline**：即便 oracle teacher（privileged 70% 直接成功）提供示范，critical regime 下 `s0`-conditioned BC 也传不了 hull-integral flow 知识 → **deployable s0 传感器下的 actor-fundamental partial-observability ceiling**（作 paper §experiments 的 deployability boundary map）。
 
 > 数字出处：[`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md)（v2 ground truth）；[`rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md)（v1 archive）。
@@ -122,7 +123,7 @@ report §6.4 明确：在 crosscomp-1000 上，winner `(β1=4.0, β2=2.0)` 的 *
 | 用途 / 阶段 | dataset | collector | reward | flow regime | obs_dim | 关键统计 |
 |---|---|---|---|---|---:|---|
 | paper 1 / TD3+BC（历史） | `crosscomp_s0_h4_efficiency_v2_re150_u10cross_ep1000`/`_ep2000`；`worldcomp-1000` | crosscomp / worldcomp | efficiency_v2 | Re150 / u10 cross | **40** | finalist 数据源 |
-| 广验 v2 · N0（sub-critical） | `crosscomp_s0_h4_arrival_v2_re150_u10cross_ep1000` | crosscomp | arrival_v2 | Re150 / u10 | **48** | HOLDS 0.85 |
+| 广验 v2 · N0（sub-critical） | `crosscomp_s0_h4_arrival_v2_re150_u10cross_ep1000` | crosscomp | arrival_v2 | Re150 / u10 | **48** | HOLDS 0.878 ± 0.051（3 seed）|
 | 广验 v2 · N2'（critical） | `privileged_s0_h4_arrival_v2_re250_u15cross_ep1000` | privileged | arrival_v2 | Re250 / u15 | **48** | STRONG_NEGATIVE |
 | FQL · E-uni（clean anchor） | `privileged_s0_h4_arrival_v2_re150_u10cross_ep1000` | privileged | arrival_v2 | Re150 / u10 | 48 | σ=0；succ 0.985；86,685 trans |
 | FQL · M-uni-noise | `fql_succession/m_uni_noise_eps0p5_1000` | privileged | arrival_v2 | Re150 / u10 | 48 | **σ=0.5**；succ 0.632（unimodal+噪声）|

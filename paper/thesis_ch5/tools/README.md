@@ -70,4 +70,4 @@ python tools/ch5_refs.py                                      # 逐条引用 + �
 
 - 口径与语体规范：[`../../thesis_chapter_outline.md`](../../thesis_chapter_outline.md) §0.5.7 / §0.5.9 (d) / §0.5.10 / §0.5.11
 - 章状态与送审门槛：[`../status.md`](../status.md)
-- 本轮实测、判定与教训：[`../chapter_full_review_findings.md`](../chapter_full_review_findings.md) §12
+- 本轮实测、判定与教训：[`../chapter_full_review_findings.md`](../notes/chapter_full_review_findings.md) §12

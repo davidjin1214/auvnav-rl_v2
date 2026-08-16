@@ -10,8 +10,8 @@
 
 | 工具 | 执行 | 结果 |
 |---|---|---|
-| [`tools/ch5_clean_probe_readout.py`](tools/ch5_clean_probe_readout.py) | ✅ 本机 `mytorch1` | 内置 `EXPECTED` 断言未触发；两格 clean 均值 $0.8620$ / $0.8700$ |
-| [`tools/ch5_holdout_split_audit.py`](tools/ch5_holdout_split_audit.py) | ✅ 本机 `mytorch1` | 18 单元，其中 `ReBRAC world priv` 仅 3/5 种子在本机 |
+| [`tools/ch5_clean_probe_readout.py`](../tools/ch5_clean_probe_readout.py) | ✅ 本机 `mytorch1` | 内置 `EXPECTED` 断言未触发；两格 clean 均值 $0.8620$ / $0.8700$ |
+| [`tools/ch5_holdout_split_audit.py`](../tools/ch5_holdout_split_audit.py) | ✅ 本机 `mytorch1` | 18 单元，其中 `ReBRAC world priv` 仅 3/5 种子在本机 |
 
 另作的口径实核（非工具覆盖项）：
 

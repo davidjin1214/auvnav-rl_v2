@@ -6,7 +6,7 @@
 > 执行 notebook（已建，2026-07-08）：`notebooks/rebrac_broad_validation_v2_seed43_supplement.ipynb` + `notebooks/sac_arrival_v2_sensing_crit_rescue_seed{0,7,42}.ipynb`（builder：`scripts/_build_supplementary_verification_notebooks.py`）。
 > 原呈批稿正文（§1–§5）内容不变，作为已批协议保留。
 >
-> **来源**：博士论文第 5 章定稿前补充验证事项——§5.8 两单元与消融现为 2 seed `[42, 0]`，所依计划预登记为 3 seed `[42, 43, 44]`（[`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) §6.2 / 行 147）。缺口出处：spec §2 §5.8 答辩风险登记；[`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) 头部 seed-count caveat + §6.3 follow-up backlog；`paper/thesis_ch5/section_5_8_review_findings.md` H1（预登记种子缩水披露）。§5.8.m 已如实登记该缺额。
+> **来源**：博士论文第 5 章定稿前补充验证事项——§5.8 两单元与消融现为 2 seed `[42, 0]`，所依计划预登记为 3 seed `[42, 43, 44]`（[`rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) §6.2 / 行 147）。缺口出处：spec §2 §5.8 答辩风险登记；[`rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) 头部 seed-count caveat + §6.3 follow-up backlog；`paper/thesis_ch5/notes/section_5_8_review_findings.md` H1（预登记种子缩水披露）。§5.8.m 已如实登记该缺额。
 >
 > **红线（承自本轮入口 prompt）**：补种子结果落地前，`boundary.tex` 的两种子 caveat 与引用限定**一字不动**；v2 report 为 §5.8 数字唯一权威。
 

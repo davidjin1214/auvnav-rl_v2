@@ -32,7 +32,7 @@
 
 ## 本轮任务：独立对抗复审（新会话冷启动）
 
-按 `prompt_playbook.md` §2 第 2 步与 §4.2 的复审骨架，换参即可；模板取 [`section_5_6_review_prompt.md`](section_5_6_review_prompt.md)（硬停语义 + 诚实分级最完整版）。审查对象是本批改动，**不是整章重审**。
+按 `prompt_playbook.md` §2 第 2 步与 §4.2 的复审骨架，换参即可；模板取 [`section_5_6_review_prompt.md`](notes/section_5_6_review_prompt.md)（硬停语义 + 诚实分级最完整版）。审查对象是本批改动，**不是整章重审**。
 
 指名要查的维度（这是本批的特有风险面，复审不要只重复通用清单）：
 

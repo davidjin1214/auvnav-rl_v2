@@ -35,7 +35,7 @@
 ## 必读清单（先读，再诊断；禁止凭记忆写数）
 
 - **复审对象**：`paper/thesis_ch5/sections/rebrac.tex`（rev.1）。
-- **写作方案（落地依据）**：`paper/thesis_ch5/section_5_7_rebrac_writing_plan.md`——四项锁定决策
+- **写作方案（落地依据）**：`paper/thesis_ch5/notes/section_5_7_rebrac_writing_plan.md`——四项锁定决策
   （报告刊值 std 口径 / 正文匿名难例种子 / 两图重绘 / 标题甲案）已拍板勿重开；但「落地是否忠实
   方案」与「方案本身是否有盲点」都在复审范围内。
 - **标准范例与直接上游**：`sections/online.tex`（§5.5，组织与语体标准）、`sections/td3bc.tex`
@@ -47,7 +47,7 @@
     重复、只引用）/ §5.4.6 可部署-特权协议 / §5.4.7 检查点字典序规则之家。
 - **写作 spec**：`paper/thesis_chapter_outline.md` rev.12（§0.4 机制归因红线 / §0.5.9 register /
   §0.5.10 术语对照 / §2 §5.7 素材映射 / §5 图表清单）。
-- **章级验收登记**：`paper/thesis_ch5/chapter_acceptance_review_5_1_5_6_findings.md` §5（图浮动漂移等
+- **章级验收登记**：`paper/thesis_ch5/notes/chapter_acceptance_review_5_1_5_6_findings.md` §5（图浮动漂移等
   章级登记项是否被 §5.7 触发）。
 - **数字 ground truth（唯一权威，逐项回查，禁止照抄 headline）**：
   - `docs/rebrac_experiment_report.md`（rev.8）：§7.7 crosscomp 主对照 / §7.10.2–.5 worldcomp

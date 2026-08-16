@@ -1,7 +1,7 @@
 # §5.1 章级独立引言 —— Markdown 段落级 outline
 
 > 文档类型：**起草前的段落级骨架**（不是 LaTeX 排版）。目的 = 让体裁与 voice 可被评判，通过后再 bootstrap `paper/thesis_ch5/` LaTeX 工程并落地 §5.1 LaTeX。
-> 上游 spec：[`paper/thesis_chapter_outline.md`](../thesis_chapter_outline.md) rev.5（§0.5 体裁规范 / §2 §5.1 节 / §7 写作顺序 #1）。
+> 上游 spec：[`paper/thesis_chapter_outline.md`](../../thesis_chapter_outline.md) rev.5（§0.5 体裁规范 / §2 §5.1 节 / §7 写作顺序 #1）。
 > 起草日期：2026-06-06。数字一律不写进引言（点到为止，§0.5.3）；正文节再实时回查源 docs。
 
 ---

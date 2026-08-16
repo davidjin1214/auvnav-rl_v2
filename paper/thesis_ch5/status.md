@@ -26,7 +26,7 @@
 
 | 项 | 状态 |
 |---|---|
-| 复审执行 | ✅ 闭环（十节全文通读 + 58 页版面独立重编译 + 三路并行 ground-truth 数字审计）。存档 [`chapter_full_review_findings.md`](chapter_full_review_findings.md) |
+| 复审执行 | ✅ 闭环（十节全文通读 + 58 页版面独立重编译 + 三路并行 ground-truth 数字审计）。存档 [`chapter_full_review_findings.md`](notes/chapter_full_review_findings.md) |
 | 整体判定 | **有条件通过**。阻塞性必修 5 条（C1/C2/H1/H2/H3），**全部文本层、无一需补实验** |
 | 已确认合格 | 数字忠实度**零漂移**；统计可复现（§5.7.2 Welch t=0.104/df=7.91 由刊出逐种子值精确复现）；编译 58 页末次 pass 0 undefined、2 处 Overfull（3.1/4.3pt）；诚实度体系；承诺—兑现对账无空头支票 |
 | 整改批次 | 第 1 批（C1/C2 + M8/M9/M16，轻流程）✅ **已闭环 2026-07-21** ｜ 第 2 批（H1/H3/H5 + M11/M6，重流程）✅ **已闭环 2026-07-21** ｜ 第 3 批（H2 + §8 N1/N2 + M13，重流程）✅ **已闭环 2026-07-22** ｜ 第 4 批（H4/H6/H7 + M1/M3/M12，重流程）✅ **已闭环 2026-07-24** ｜ 第 5 批（余 MED/LOW + CH2/CH3 + §8 N3/N4 + §9 N7–N9 + §10 N12–N16）✅ **已闭环 2026-07-26** ｜ **🎉 整改轮全部闭环，此后只剩收尾统稿轮** |
@@ -43,7 +43,7 @@
 
 ## 收尾统稿轮（2026-07-28）✅ 已闭环 —— **本章送审就绪**
 
-> 来源：各批 findings 显式路由项。存档 [`chapter_full_review_findings.md`](chapter_full_review_findings.md) **§12**（逐项实测、判定与理由）；各原条目已就地追注闭环。
+> 来源：各批 findings 显式路由项。存档 [`chapter_full_review_findings.md`](notes/chapter_full_review_findings.md) **§12**（逐项实测、判定与理由）；各原条目已就地追注闭环。
 
 | # | 待办 | 出处 | 结果 |
 |---|---|---|---|
@@ -92,7 +92,7 @@
 
 **整改批（2026-08-16，一次落地，五节九处）**：`setup` §5.3.5/§5.3.6 各增一段披露 ｜ `rebrac` §5.7.1 增补充终检段、§5.7.2 增留出读数并「过半」→「约半」、§5.7.m 增两段集中登记、筛查表 caption 补 val≡test ｜ `td3bc` §5.6.2 扩写含噪段口径、§5.6.m 补种子区间与复核读数 ｜ `discussion` §5.10.4 章级限制补一句。逐处理由见各 `.tex` 头注 rev 块（`setup` rev.7 / `rebrac` rev.5 / `td3bc` rev.7 / `discussion` rev.3）。
 
-**独立对抗复审（2026-08-16，冷启动，`prompt_playbook.md` §2 第 2 步）**：**不通过 → 按批修复 → 复编译通过**，**0 CRIT / 1 HIGH / 4 MED / 2 LOW 全部落地**。存档 [`data_integrity_batch_review_findings.md`](data_integrity_batch_review_findings.md)。
+**独立对抗复审（2026-08-16，冷启动，`prompt_playbook.md` §2 第 2 步）**：**不通过 → 按批修复 → 复编译通过**，**0 CRIT / 1 HIGH / 4 MED / 2 LOW 全部落地**。存档 [`data_integrity_batch_review_findings.md`](notes/data_integrity_batch_review_findings.md)。
 
 **HIGH-1（整改面划小）**：上一批只改了 §5.7.2 的「过半」→「约半」（$53.0\to48.9$，位移 $-4.1$ pp），却漏掉同一次复核下**位移最大的读数**——§5.6.4 特权协议 TD3+BC 的闭合比例 $48.5\to35.6$（$-12.9$ pp，为前者三倍），而它在全章有四处等价强度表述（§5.6.4 正文 ＋ 表 caption ＋ §5.10.2 ＋ 表 5.21），收束层无任何限定。**教训：整改面须按「这次复核动了哪些读数」划，而非按「本批改了哪些段」划。** 处置走 ①-c 同构的披露路线——$48.5\%$ 点估计与「约一半」措辞全不动，只补留出口径，故仍无第二处论证强度改动。
 **MED-2（全称断言）**：§5.3.6 与 §5.10.4 把 §5.7.m 的**闭合枚举**universal 化为「每个终检读数／本章任何结论」，已收窄为枚举口径并写明 §5.5/§5.8/§5.9 直接取训练终点检查点故不受嵌套影响（其中 §5.8 的 $30$ 回合集整体落在前 $40$ 条内，结构上无留出回合可拆）。**与「枚举支撑的全称断言不可信」同型，只是这次枚举的是读数而非文件。**
@@ -104,7 +104,7 @@
 
 **遗留**：补充终检只覆盖 ReBRAC-Q 两格，TD3+BC／纯 BC 未在该组实例上重跑，故正文明确不在其上重述基线差距——此条仍在，不构成送审阻塞。其余三条 **2026-08-16 全部闭合**（实算见 findings §8）：~~复现证据未入库~~ ✅ `9453f7e`；~~含噪 2000 集本机无法复核~~ ✅ 本机 `--verify` 实核 $100/100$，同族 ep1000 为 $0/100$；~~`world priv` seeds 45/46 未同步~~ ✅ 已并入复核枚举（`rebrac.tex` rev.7 / `setup.tex` rev.9 / `discussion.tex` rev.5）。**污染面枚举**：✅ **章内范围已封闭**——`results/offline/**` 反查证明第 5 章所依数据集无一缺失，本机 $29$ 集全部已审，OVERLAP 仍只有两格。❌ **仓库全域未封闭**——Drive 侧那次顶层目录漏扫（事实账本文首 ⚠⚠ 块）成因仍未证实；`0aa42ac` 修的是本机单层 `glob` 看不见嵌套集这一**另一个独立缺陷**（$12$ 个集从未进过枚举），它不解释 Drive 那次（详见 findings §8.3 订正）。
 
-~~尚缺的两个数据集 metadata~~ ✅ **五个补取集全部核对通过，未触发正文改动**（实算见 [`data_integrity_batch_review_findings.md`](data_integrity_batch_review_findings.md) §8.4）：枚举面封闭于 $29$ 集、OVERLAP 仍只有两格；五百回合集种子 $0$–$499$ 不相交，§5.6.m 由通则推得改为逐集实核，表 5.10 三行采集成功率与源头逐格精确；TD3+BC 侧与 ReBRAC 侧的两个 worldcomp 目录经**逐数组比对**确认转移完全相同（差异只是 `_ep1000` 多一个 ReBRAC 所需的 `next_actions`），§5.7.2「同一数据上的对照」字面成立。
+~~尚缺的两个数据集 metadata~~ ✅ **五个补取集全部核对通过，未触发正文改动**（实算见 [`data_integrity_batch_review_findings.md`](notes/data_integrity_batch_review_findings.md) §8.4）：枚举面封闭于 $29$ 集、OVERLAP 仍只有两格；五百回合集种子 $0$–$499$ 不相交，§5.6.m 由通则推得改为逐集实核，表 5.10 三行采集成功率与源头逐格精确；TD3+BC 侧与 ReBRAC 侧的两个 worldcomp 目录经**逐数组比对**确认转移完全相同（差异只是 `_ep1000` 多一个 ReBRAC 所需的 `next_actions`），§5.7.2「同一数据上的对照」字面成立。
 
 ## 全仓文档指针体检（2026-07-28）✅ 已闭环 —— 章内零失效，**章外 ground-truth 路由查出并修复 1 处 HIGH**
 

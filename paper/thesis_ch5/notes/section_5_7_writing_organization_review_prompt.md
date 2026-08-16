@@ -68,11 +68,11 @@
 ## 必读清单（先读，再诊断）
 
 - **复审对象**：`paper/thesis_ch5/sections/rebrac.tex`（rev.2；头注 rev.1/rev.2 两块 = 起草取舍与忠实性修订全记录）。
-- **写作方案（重议取舍前必读其原始理由）**：`paper/thesis_ch5/section_5_7_rebrac_writing_plan.md`。
+- **写作方案（重议取舍前必读其原始理由）**：`paper/thesis_ch5/notes/section_5_7_rebrac_writing_plan.md`。
 - **素材上游（"被压缩掉的细节"对照源）**：paper 1 `paper/sections/experiments.tex`（只读，勿改 `paper/sections/`）+ `docs/rebrac_experiment_report.md`（rev.8，唯一权威数字源；§6.2–§6.8 筛查、§7.3–§7.16 正式/消融/统计）+ `docs/rebrac_statistical_test_followup.md` §1。
 - **章内均衡参照**：`sections/online.tex`（§5.5）、`sections/td3bc.tex`（§5.6）。
 - **体裁与红线**：`paper/thesis_chapter_outline.md` rev.12（§0.4 红线 / §0.5 体裁规范尤其 0.5.2/0.5.3/0.5.7/0.5.8 / §2 §5.7 素材映射 / §5 图表清单）。
-- **章级登记项**：`paper/thesis_ch5/chapter_acceptance_review_5_1_5_6_findings.md` §5（图浮动漂移 F·M2 系全章拼装后统一处理的延后项——本轮扩写会加剧浮动，登记即可、不在本轮解决）。
+- **章级登记项**：`paper/thesis_ch5/notes/chapter_acceptance_review_5_1_5_6_findings.md` §5（图浮动漂移 F·M2 系全章拼装后统一处理的延后项——本轮扩写会加剧浮动，登记即可、不在本轮解决）。
 - **图规范**：宽 ≤138mm / A4 可读 / 线可区分 / 不重叠 / 少字 / Nature 风格；新图用 `figures/scripts/_ch5_style.py` 统一风格，`mainline_edge` #2F5A6E 属 ReBRAC-Q 主线。
 - 本地原始数据（如启用授权 3）：`results/offline/rebrac/{screening,formal,worldcomp_teacher_gap,stage_e_critic_penalty_off,critic_ln_off}/`。
 

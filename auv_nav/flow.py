@@ -176,6 +176,12 @@ def make_probe_offsets(layout: str) -> np.ndarray:
          gradient for locating the AUV relative to the vortex core.
          Provides ~3–7 control steps of advance warning.
          d_obs = 8 + 4 × 2 = 16
+
+    The d_obs values above are for the efficiency_v2 objective.  Under
+    arrival_v2 the env appends two episode-context channels (see the
+    ARRIVAL_V2_OBJECTIVES branch in EnvConfig.__post_init__), making a single
+    step 12/14/18 and the stacked h4 observation 48/56/72.  Probe geometry is
+    identical either way; only the observation width changes.
     """
     if layout == "s0":
         return np.array([[0.0, 0.0]], dtype=float)

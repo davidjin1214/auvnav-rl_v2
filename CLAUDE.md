@@ -27,7 +27,9 @@ Full CLI reference (training/eval/offline-collection invocations, sweep launcher
 
 ## Environment & Sensing
 
-Probe coordinates, per-layout observation dimensions, and the sensor physics behind `s0`/`s1`/`s2` are specified in the `get_probe_positions()` docstring in [`auv_nav/flow.py`](auv_nav/flow.py) (authoritative, alongside the code) and derived in full in [`docs/environment_design.md`](docs/environment_design.md) (beam geometry, advance-warning budget, footprint vs. vortex wavelength). Read those rather than a summary.
+Probe coordinates, per-layout observation dimensions, and the sensor physics behind `s0`/`s1`/`s2` are specified in the `make_probe_offsets()` docstring at [`auv_nav/flow.py:135`](auv_nav/flow.py:135) (authoritative, alongside the code) and derived in full in [`docs/environment_design.md`](docs/environment_design.md) (beam geometry, advance-warning budget, footprint vs. vortex wavelength). Read those rather than a summary.
+
+**Both of those state `d_obs` for the historical `efficiency_v2` reward only** — 10/12/16 for `s0`/`s1`/`s2`. Under `arrival_v2`, which every offline-line / broad-validation / FQL / SAC-collector run uses, `env.py` appends two episode-context channels (elapsed fraction, normalised initial distance), so a single step is 12/14/18 and the stacked `h4` observation is 48/56/72. The full state-space reference — actor obs layout, the context channels with their code anchor, and `privileged_obs` (dim 2, not stacked) — is [`docs/rebrac_line_overview.md`](docs/rebrac_line_overview.md) §5.2. Take stacked dimensions from there, not from the two sources above.
 
 ## Non-obvious Conventions
 

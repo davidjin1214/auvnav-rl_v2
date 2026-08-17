@@ -321,6 +321,12 @@ $$\tau_{RPM} = 0.80 \text{ s},\quad \tau_{\delta} = 0.25 \text{ s}$$
 
 ## 5. 感知与观测空间设计
 
+> **⚠ 适用范围（2026-08-17 补注）：本节与 §7 描述的是 `efficiency_v2` 奖励设定下的环境**，即 paper 1 / TD3+BC 那一批与 A0 传感筛查所用的口径。其后迁到 **`arrival_v2`**（离线线全部、广验 v2、FQL succession、SAC collector 均用它），`env.py` 会**追加 2 个回合级上下文通道**（已耗时间占比、归一化初始距离；`auv_nav/env.py:377` 在 `reward_objective ∈ ARRIVAL_V2_OBJECTIVES` 时自动开启，非可选项）。
+>
+> 因此下文 $d_{obs}=10/12/16$ 是 `efficiency_v2` 的单步值；`arrival_v2` 下单步为 **12/14/18**，`h4` 堆叠后为 **48/56/72**。**探针坐标、波束几何、预警步数、足迹 vs. 波长这些本节主体内容两种设定完全相同**，不受影响。
+>
+> 完整状态空间速查（actor obs 分段、上下文通道及其代码锚、`privileged_obs` dim=2 不堆叠）见 [`rebrac_line_overview.md`](rebrac_line_overview.md) §5.2；**堆叠维度以该节为准，不要从本文推算**。
+
 ### 5.1 观测向量构成
 
 智能体在每个决策步 $t$ 接收维度为 $d_{obs}$ 的观测向量，由三个模块拼接而成：
@@ -474,6 +480,8 @@ $$\psi_{ref} = \psi_{LOS} + a_\psi \cdot \delta_{limit}, \quad \delta_{limit} = 
 
 ## 7. 奖励函数设计
 
+> **⚠ 适用范围（2026-08-17 补注）**：本节写的是 `efficiency_v2` 一族（见 §5 头部同类补注）。离线线与广验 v2 之后统一用 **`arrival_v2`**，其设计稿为 [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md)（注意该稿的 `arrival_v2` 与代码里落地的 `arrival_v2_simple` preset 不是同一物，见其横幅）；代码中全部预设见 `auv_nav/reward.py` 的 `REWARD_OBJECTIVE_PRESETS`。本节内容对 `efficiency_v2` 仍然有效，**不要**当作 arrival_v2 的说明读。
+
 奖励函数由三个成分叠加，遵循"稀疏终止奖励 + 密集进度整形"的混合范式：
 
 $$r_t = \underbrace{-c_{time} \cdot \Delta t_{ctrl}}_{\text{时间惩罚}} + \underbrace{k_p \cdot (d_{t-1} - d_t)}_{\text{进度奖励}} + \underbrace{r_{terminal}}_{\text{终止奖励}}$$
@@ -527,9 +535,11 @@ $$r_t = \underbrace{-c_{time} \cdot \Delta t_{ctrl}}_{\text{时间惩罚}} + \un
 | **任务** | 起终点距离范围 | 40–90 m |
 | | 目标到达半径 | 4.0 m |
 | | 最大任务时长 | 240 s |
-| **感知** | 方案 S0 | 1 探针，$(0,0)$，DVL 水跟踪，$d_{obs}=10$ |
+| **感知** | 方案 S0 | 1 探针，$(0,0)$，DVL 水跟踪，$d_{obs}=10$ ※ |
 | | 方案 S1 | 2 探针，$(0,0)+(4.5,0)$，2 MHz 短程 ADCP，$d_{obs}=12$ |
 | | 方案 S2 | 4 探针，$(0,0)+(5,0)+(8,\pm4)$，1 MHz 长程 ADCP，$d_{obs}=16$ |
 | | 通道 | 流速 $(u_c, v_c)$，2 通道/探针（ADCP 多波束重建后的矢量） |
 | | S1 前向足迹 vs. 涡旋波长 | 4.5 m vs. 48 m（9%），预警 ~3 控制步 |
 | | S2 前向足迹 vs. 涡旋波长 | 9 m vs. 48 m（19%），预警 ~7 控制步 + 侧向梯度 |
+
+> ※ **三个 $d_{obs}$ 值为 `efficiency_v2` 单步口径**（见 §5 头部补注）。`arrival_v2` 下单步为 12/14/18、`h4` 堆叠后 48/56/72；速查见 [`rebrac_line_overview.md`](rebrac_line_overview.md) §5.2。探针坐标与波束几何两种设定相同。

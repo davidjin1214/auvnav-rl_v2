@@ -46,6 +46,7 @@ def test_build_command_in_benchmark_mode_uses_manifest_and_explicit_factors(tmp_
         method=METHOD_SPECS["sac"],
         seed=7,
         save_dir=tmp_path / "run",
+        checkpoint_dir=tmp_path / "ckpt",
         cli_args=args,
         benchmark=benchmark,
     )
@@ -61,6 +62,8 @@ def test_build_command_in_benchmark_mode_uses_manifest_and_explicit_factors(tmp_
     assert "--objective" in cmd
     assert "efficiency_v1" in cmd
     assert "--difficulty" not in cmd
+    assert "--checkpoint-dir" in cmd
+    assert str(tmp_path / "ckpt") in cmd
 
 
 def test_factorized_preset_uses_efficiency_objective() -> None:

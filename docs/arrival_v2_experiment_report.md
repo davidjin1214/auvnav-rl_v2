@@ -15,6 +15,23 @@
 
 ## 0. Overview
 
+> **读法（2026-08-17 数字级回溯后加注）**：本报告按时间顺序累积，各节记录的是**当时**的判读。
+> 逐格回溯原始 `eval_log.csv` / `final_eval.json` 后，§7 全部读数（39 次评估的均值、peak 及其
+> 首达步、OOB、n_succ、终止构成、§7.9.7 的 per-episode floor）与原始文件**逐位吻合**；但下表三处
+> **表述**已被后续证据取代，论文侧已据此改写，本报告此前未回填。引用时以右列为准：
+>
+> | §0 / §7.6–§7.9 的旧表述 | 取代它的 | 论文侧处置 |
+> |---|---|---|
+> | s0–s1 gap = **80pp**（seed=42 配对；§7.6 已自注「单 seed，多 seed 复现是后续工作」） | 该多 seed 复现即 **§7.10**（2026-07-08 补跑）：三种子 s0 `0.46 ± 0.39` vs s1 `0.90 ± 0.00`，**gap 44pp**。且 s0 在 seed=7 上 **k=4 即达 0.867** —— k=4 并非一致地 catastrophic，0.100 是三种子中的下端 | `online.tex` rev.2 ③「§5.5.2 80pp 差距去绝对化」；rev.7「gap 60→44pp」 |
+> | k=8 cross-seed **σ_final = 0.181** | 同一三种子、**ddof=1** 口径为 **0.222**；与并排引用的 k=12 `0.038`（ddof=1）**不同口径**。§7.9.4 第三列已是一致的 `0.222 → 0.038` | `online.tex` rev.2 ①：因「与 k=12 样本口径不一致」删去 0.181 |
+> | 特权 critic「更安全 / 更积极」（safety −34%、progress +64%、return +26%） | 均为 seed=42 单点；两 seed 池均值下 progress / return **方向反转**（详见 §0 §7.7 表下注与 §7.7 F2 注） | `online.tex` rev.4 ②：删该组行为度量，§5.5.3 不再写「更安全 / 更积极」 |
+>
+> §7.10 是本报告唯一经 2026-07-19 定点复审的小节（✅ 9/9 实核）；**该轮只重写了 §7.10，未回头
+> 校订上表左列**——而 §7.10 恰恰是为闭合「论文 → 本报告 → `final_eval.json`」引用链而写的，断点
+> 在源头。§7.7 的核心 negative finding（特权 critic 未闭合差距、任务级反而更差）与 §7.9 的 k
+> 单调性结论**本身不受影响**：前者的 2-seed 配对均值（0.221/0.218 vs 0.044/0.088）与后者的
+> per-seed 轨迹均已逐格核过。
+
 **严格控制对照（§7，唯一变量 = topology × geometry）**：固定 `s1 / k4 / arrival_v2 / U=1.5 / target=1.5 / seed=42 / 1M / num_envs=6 / vanilla SAC`。
 
 | Run | Benchmark | Topology | Geometry | 5/5 Gate |
@@ -42,6 +59,16 @@
 | §7.7.1 vanilla seed=0 (sister) | 0.400 | 0.218（与 seed=42 差 0.003）| 9.15 | 0.556 | FAIL（3/5）|
 | §7.7.1 sac_asym seed=0 (sister) | 0.200 | **0.088** | 31.65 | 0.530 | FAIL（3/5）|
 | **2-seed mean** | — | vanilla 0.220 / asym **0.066（3.3× 更差）** | — | — | — |
+
+> ⚠ **本表 `safety_cost` 一列跨行不可比（2026-08-17 逐格回溯发现）**：前两行是**全程 mean**（39 次评估），
+> 后两行是**终检单点**。同一口径下的四个数是——全程 mean：vanilla s42 `25.85` / asym s42 `16.93` /
+> vanilla s0 `18.45` / asym s0 `21.87`；终检：`23.81` / `13.81` / `9.15` / `31.65`。
+> 按全程 mean 统一后，「asym 更安全」**只在 seed=42 上成立**：s42 是 −34.5%，s0 是 **+18.6%**。
+> 另两个行为指标同样逐 seed 反向：progress（终检）s42 `+64%`（0.277→0.453）、s0 **`−4.7%`**（0.556→0.530）；
+> return（终检）s42 `+43.8`、s0 **`−114.8`**（−30.4→−145.2）。
+> 故 §7.7 F2 的「更安全 + 更积极」是 seed=42 单点现象，`online.tex` rev.4 ② 已据此把该组行为度量
+> 移出论文。**不影响本表主结论**：任务级 mean（0.221/0.218 vs 0.044/0.088）与 peak ceiling 0.267
+> 两条跨 seed 一致，negative finding 成立。（`0.220` 是两个已四舍五入值再取平均，精确值 `0.219`。）
 
 → **negative finding（2-seed × 2-algo paired hardened）**：AsymCritic peak ceiling 跨 seed 严丝合缝锁在 0.267（vanilla 在 [0.37, 0.53]），2-seed paired mean 仍 ~3.3× gap。瓶颈在 actor-side information access，不是 critic estimation accuracy。
 
@@ -512,12 +539,22 @@ Gate 5 条同 §7 口径。**Single seed = 42**，与 §7 平行 1:1 exploratory
 | 525k | 0.333 | 0.26 | 0.500 |
 | 625k | 0.333 | 0.24 | 0.800 |
 | 725k | 0.300 | 0.24 | 0.900 |
-| 825k | 0.300 | 0.31 | 0.900 |
-| 925k | 0.233 | 0.31 | 0.900 |
+| 825k | 0.300 | 0.24 | 0.900 |
+| 925k | 0.233 | 0.22 | 0.900 |
 
-s0：225k 起来 → 525k–625k 高点 0.367 → 然后 drift down 至 ~0.23–0.30 → final eval 0.100。**从未越过 gate 阈值 0.85**。`path_efficiency` 同步 plateau 在 ~0.25。
+s0：225k 起来 → 中段在 0.27–0.33 反复震荡 → final eval 0.100。**从未越过 gate 阈值 0.85**。`path_efficiency` 同步 plateau 在 ~0.25。
 
-这比 "没收敛" 严重一档 — 策略学到了一个局部 mode（success rate 短暂攀升）然后**被 OOB-incentive 反向 erode**（缓慢下滑 + final eval 反而最低）。对比 s1 同 benchmark：225k → 625k 单调爬到 0.800，725k 起稳定 plateau 0.900。s1 学到稳定策略，s0 学到的策略不稳定。
+对比 s1 同 benchmark：225k → 625k 单调爬到 0.800，725k 起稳定 plateau 0.900。s1 学到稳定策略，s0 没有。
+
+> **订正（2026-08-17 逐格回溯 `eval_log.csv`）**：本表 825k / 925k 两格 `path_eff` 原写作 `0.31`，
+> 原始值为 **`0.236` / `0.221`**，已改；其余八格逐位无误。同时订正正文两处对曲线形状的读法：
+> ① 0.367 **不在 525k–625k**，它是全程唯一最大值且落在**最后一次周期评估 975k**（525k / 625k 均为 0.333）；
+> ② 275k 之后曲线在 [0.133, 0.367] 内噪声震荡、均值约 0.27，**并无下滑趋势**，故原文「被 OOB-incentive
+> 反向 erode（缓慢下滑）」「plasticity-loss 形态」在原始日志上**不成立**——§7.8 F3 与 §0 中以此作反差
+> 的表述同样按此理解。真正成立且更有信息量的是：周期评估长期锁在 ~0.30 高原、**从未逼近 0.85**，而
+> 1M 处的确定性终检只有 0.100，远低于该高原——这正是 §7.7 方法论 footnote 已指出的「终检单点 noisy，
+> 应优先看 mean39 / last100k」。**F1 / F2 / F4 与 §7.6 的 catastrophic-FAIL 判定不受影响**（gate 判据用
+> 的是终检与 last100k，两者均已核对）。论文侧未使用 plasticity-loss / erosion 这一措辞，无联动改写。
 
 **Finding F4 — Peak step 在上游 3 phase 上 s0 vs s1 不单调慢**
 
@@ -548,6 +585,10 @@ s0：225k 起来 → 525k–625k 高点 0.367 → 然后 drift down 至 ~0.23–
 **重要约束 / disclaimers**
 
 - **单 seed (=42)**，与 §7 平行 exploratory；任何 ±5pp 内的 cell-level 差异不要 over-claim。F2 的 24× gap 是单 seed 数；多 seed 复现 single_cross_s0 是后续工作（§8 新增条目）。
+  **→ 该后续工作已完成（2026-08-17 补注）**：即 §7.10（2026-07-08 同协议补跑三种子）。结果是 s0 `0.46 ± 0.39`
+  vs s1 `0.90 ± 0.00`，**gap 44pp 而非 80pp**，且 s0 在 **seed=7 上 k=4 即达 0.867**。本节的 `0.100` 是三种子
+  中的下端而非典型值，F2 的「24× 放大」相应应按三种子均值理解。本小节其余读数（含 `{OOB:20, timeout:7,
+  goal:3}` 终止构成）经原始 `final_eval.json` 逐格核对无误。
 - **数据完整性 footnote**：本地下载 Drive 时 `tandem_u15_*/s0_k4/seed_42/` 与 `sbs_u15_*/s0_k4/seed_42/` 两个目录在文件系统上一度互换。通过 6 个独立内部指针交叉验证（`trainer_state.json` 的 `flow_path` / `eval_manifest` / `checkpoint_dir` / `agent_path` + `results/train_config.txt` 的 `save_dir` + `results/*_gate_summary.json` 文件名）并 `mv` swap 回去；**所有 4 phase 数据本身完整可信**。`combined_gate_summary.json` 是 Colab 上 dir 还在正确位置时生成的，反映正确 label，无需 regen。Drive 上对应两个 dir 同样错置但未处理；以后 resume 训练或读 checkpoint 时需要去 Drive 上做同样 swap。
 
 ---
@@ -593,6 +634,12 @@ AsymCritic 同样未达 gate；末尾 final +6.7pp 是 noise（30-ep eval 上 2 
 | progress_ratio（final eval） | 0.277 | **0.453** | **+64%（朝目标推进更多）** |
 | eval_return（final eval） | −173.7 | −129.9 | +43.8（return 更高） |
 | **eval_success_rate（全程 mean）** | **0.221** | **0.044** | **−80%（任务级反而崩）** |
+
+> ⚠ **本表前三行是 seed=42 单点，且逐 seed 反向（2026-08-17 补核）**：sister seed=0 上 safety
+> 全程 mean 是 **+18.6%**（18.45→21.87，不是更安全）、progress **−4.7%**、return **−114.8**。
+> 下文「清晰的反向 trade-off」的机理叙事因此不跨 seed 成立，`online.tex` rev.4 ② 已把这组行为
+> 度量移出论文。末行 `eval_success_rate` 的 −80% 跨 seed 稳健（见 §0 表下注），**F2 的任务级结论
+> 与 F1/F3/F4 不受影响**——受影响的只是"为什么更差"的行为学解释。
 
 这是一个**清晰的反向 trade-off**：critic 拿到 `[u_eq, v_eq]` 后通过 Q-gradient 引导 actor 学到一个"少触 boundary + 稳定朝目标走"的行为模式（safety_cost ↓ 34%, progress_ratio ↑ 64%, return ↑ 26%），但 **actor 在 s0 端没有获得任何新信息**（asymmetric critic 的标准结构），在 cross 几何下接近目标的最后一段仍然 navigate 不过去。**结果是 sac_asym 大量 episodes 都是"稳定推进 30%–45% 然后 OOB"，比 vanilla "无序硬冲偶尔过去" 还要 less successful。**
 
@@ -795,6 +842,11 @@ s0 单点 + 长 history → actor 可从 DVL 时序节拍中重建：
 
 **Finding F1.1 — k=8 cross-seed σ 显著超 thesis-acceptable**：seed=42 / 0 / 7 三 seeds final ∈ {0.900, 0.500, 0.867}, σ_final = 0.181（thesis-grade 期望 ≤ 0.10 with 3 seeds）。**1/3 strict 5/5 PASS** 是 §7.8 anchor 单 seed 升格到 thesis-grade 前的最大障碍。
 
+> **口径注（2026-08-17 补核）**：此处 `0.181` 是 **ddof=0**（`build_k8_seed7.py` 当轮的算法）。同一三个
+> final 值按 **ddof=1** 是 **`0.222`**——即 §7.9.4 第三列所用者。全文并排引用的 k=12 `0.038` 也是 ddof=1，
+> 故「0.181 → 0.038」是**跨口径比较**；一致口径下应为 `0.222 → 0.038`（ddof=1）或 `0.181 → 0.031`（ddof=0），
+> 两者都比混用时的降幅更大，**结论方向不变**。`online.tex` rev.2 ① 已因此把 0.181 从论文删去。
+
 **Finding F1.2 — mean39 维度比 final 更早暴露 seed=0 的 stall**：seed=42 mean39=0.636 / seed=7 mean39=0.518 / seed=0 mean39=0.260 — seed=0 在整段训练 trajectory 上都没逼近 success-rate plateau，**不是 final-eval 末段 OOB collapse，而是从中段起整体性 stall**（last100k_mean=0.475 ≈ peak=0.500）。
 
 **Finding F1.3 — seed=7 BORDERLINE-PASS 是 thesis 写作上必须 codify 的中间态**：seed=7 final=0.867 ≥ 0.85（strict-PASS 的 final 阈值），但 OOB=0.133 > 0.10（strict-PASS 的 OOB 阈值），4/5 sub-gate PASS — 介于 strict-PASS 与 PARTIAL 之间。原 build script 4-tier verdict schema 把这种状态错标为 REGRESS，详见 §7.9.5。
@@ -844,6 +896,15 @@ s0 单点 + 长 history → actor 可从 DVL 时序节拍中重建：
 | Reference 上界对齐 | s0_k8 完全追平 s1_k4 (final 0.900) | s0_k12 同样追平 s1_k4 且 σ_final << k=8 | s0_k12 三 seeds 中 2/3 完全追平 s1_k4 (final 0.900) + 3rd seed final=0.833 在 universal-floor − 2ep 之内可解释 |
 | Manifest universal floor 概念 | n/a | n/a | **新加**：vanilla SAC s0 在 single_u15_cross_tgt15 30-ep manifest 上的 inherent ceiling = 27/30 = 0.900 (ep {1208, 1216, 1228} universally hard)；k=12 已 saturate 此 ceiling |
 | §8 P0 SAC variance reduction motivation | "必要 (压 seed=0 stall)" | 降级为 polish/orthogonal upgrade only | **维持** polish-only：universal floor 是 manifest-inherent，variance reduction 救不了；3-seed σ_final 已自然达标 |
+
+> ⚠ **上表第二列（2026-05-19 中间态）的两个 σ 数有误，第三列无误（2026-08-17 逐格重算）**：
+> ① `σ_final` 行第二列的 **`0.064` 不是 σ_final**——k=12 当时只有 seed {42, 0}，两者 final 同为 `0.900`，
+> **σ_final 精确等于 0**；`0.064` 实为同两 seed 的 **mean39 σ（ddof=0）**，与下一行 σ_mean39 的第二列同值，
+> 这正是重号的痕迹。② 同行第二列的 `0.181` 是**三** seed 的 ddof=0 值，却排在标着「2 seeds」的列里。
+> ③ σ_mean39 行第二列 `0.157`（3 seed）→ `0.064`（2 seed）同样跨样本量。
+> **第三列（3-seed、ddof=1）经重算逐位无误**：σ_final `0.222 → 0.038`、σ_mean39 `0.192 → 0.113`（降 41.2%），
+> 且 §0 与 §7.9.1 沿用的 `0.181` 为 ddof=0（见 §7.9.1 F1.1 口径注）。**升格结论以第三列为准**；
+> §0 中「从 "k=12 cross-seed (2 seeds) σ_final=0.064" 升格」一句里的 0.064 承袭同一重号，应读作 mean39 σ。
 
 **Writeable claim (thesis-grade, 2026-05-23 升格)**：在 production-difficulty cross-stream geometry × deployment-realistic single-point DVL sensor × arrival_v2 reward 的严格控制下，把 actor 时序访问窗从 k=4 (~2s) 加大到 **k=12 (~6s, ~涡街周期 30–60%)** 在 **2/3 seeds 上完全 saturate vanilla SAC s0 在此 manifest 上的 inherent universal ceiling (27/30 = 0.900)**；第 3 seed (seed=7) final=0.833 = ceiling − 2 episodes 之中 1 个是 seed=7 cross-history-persistent bias (与 k 无关)、1 个是 k=12 specific near-miss (progress=89%、final_dist=5.1m，任务实际几乎完成)。**3-seed σ_final = 0.038**（远低于 thesis-grade target 0.10）、σ_mean39 跨 history 砍 41%、k=12 s7 mean39=0.750（三 seeds 最高）+ peak @ 275k（三 seeds 最早）共同证明 k=12 在 seed=7 上是 monotonic improvement 而非 stall。**deployment-realistic 路径从「保持 s0 + k=8」最终升格为「保持 s0 + k=12」**；80pp s0–s1 gap 闭合 + universal-floor 饱和双重证据支撑。
 
@@ -1006,7 +1067,7 @@ gap(s1 − s0) = 0.44（约 44pp）。s1 三种子终检同值 0.900（= 27/30�
 > **已关闭（不再推荐展开）**：
 > - ~~`single_cross_s0 × history k=4→8` 单变量 ablation（原 P1#1）~~ — §7.8 已闭环（PASS，闭合 80pp gap → final 0.900, OOB 0.100, peak @ 475k, mean 0.636）。**actor-side temporal information access 被确认为瓶颈** — §7.7 F4 机理重定位被验证。
 > - ~~AsymCritic × `single_cross_s0` ablation（原原 P1#1）~~ — §7.7 已闭环（pure B 路径 + 2-seed paired hardened，negative finding；peak ceiling 跨 seed 严丝合缝锁在 0.267）。**不再推荐继续走 A 路径（`sac_asym_lnutd` 组合）**：LN / UTD 都是优化 critic estimation 的，但 §7.7 F4 + §7.8 F4 cross-arm 对照已经证明 critic estimation 不是这里的瓶颈。
-> - ~~`single_cross_s0` k=4 multi-seed 复现（原 P1#2）~~ — §7.7 update 显示 §7.6.4 vanilla seed=42 + sister seed=0 的 trajectory mean39 极度 stable（0.221 vs 0.218，差 0.003）；final_eval 单点 noise 已被解释（OOB 末段 collapse 模式 seed-sensitive，但 mean / last100k 不受影响）。**k=4 baseline 不再是 thesis 主线**（被 k=12 取代），无需 multi-seed。
+> - ~~`single_cross_s0` k=4 multi-seed 复现（原 P1#2）~~ — §7.7 update 显示 §7.6.4 vanilla seed=42 + sister seed=0 的 trajectory mean39 极度 stable（0.221 vs 0.218，差 0.003）；final_eval 单点 noise 已被解释（OOB 末段 collapse 模式 seed-sensitive，但 mean / last100k 不受影响）。**k=4 baseline 不再是 thesis 主线**（被 k=12 取代），无需 multi-seed。**→ 关闭理由已过时（2026-08-17 补注）**：k=4 三种子后来还是跑了，见 §7.10（2026-07-08，为论文 §5.5 瓶颈表的 k=4 行取证）；结果 `0.46 ± 0.39` 说明 k=4 的跨种子离散度是全 k 轴最大的，与此处「无需 multi-seed」的判断相反。条目仍属已关闭，但关闭理由应改记为「已由 §7.10 完成」。
 > - ~~`single_cross_s0 + k=8` × multi-seed (seed=0, seed=7)（2026-05-18 P1#1）~~ — **CLOSED by §7.9.1**（seed=0 PARTIAL + seed=7 BORDERLINE-PASS，揭示 k=8 cross-seed σ_final=0.181 不达 thesis-grade，1/3 strict 5/5 PASS）。
 > - ~~`single_cross_s0` × history monotonicity scan (k=12 / k=16, seed=42)（2026-05-18 P1#2）~~ — **CLOSED by §7.9.2**（k=12 × seed=42 PASS-PLATEAU，peak 提早 100k；后续延伸到 k=12 × seed=0 CROSS-SEED-RESCUE 2/2 strict 5/5 PASS）。**k=16 决定不再扩展**（2026-05-19 user judgment）：k=12 cross-seed σ_final 已显著下降到 0.064，k=16 大概率无 thesis-relevant 增益；保留为 future-work pointer。
 > - ~~`single_cross_s0 + k=12` × seed=7 third anchor~~ — **决定不跑**（2026-05-19）：现有 k=12 × {seed=42, seed=0} 2/2 strict PASS + σ_final=0.064 已 thesis-acceptable，第 3 seed 边际信息量低于 2.5h L4 成本。

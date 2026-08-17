@@ -1129,6 +1129,12 @@ Stage C 正式复核在 [§7.8](#78-stage-c-通过判据核对) 的三项阈值�
 
 ## 9. 局限性
 
+> **本节是全报告局限性的收口，且是唯一随实验推进更新的一份**（体例：已解决的条目保留原文加删除线，后接「**已升级为**」写明新状态——见下方第 3/4/5 条）。
+>
+> 上文各阶段另有九个 `局限性` 小节（§5.7、§6.8、§7.10.9、§7.11、§7.12.9、§7.13.8、§7.14.9、§7.15.8、§7.16.5，多数带「Step 2 专属 / Phase 2 专属 / probe 专属」后缀）。**那些是写在各自阶段当时的记录**，其中的待办与「下一步该查什么」按当时视野写，事后未回改，**不表示现在仍然开着**。典型例：§7.10.9 第 1 条写「seed 44 的真因尚未定位……Phase 2 是核心诊断；如 Phase 2 也救不回，需要回到 collector 层面检查 episode 起点分布」——Phase 2 其后已执行并把 seed 44 在 worldcomp 上救回 +12pp（§7.12），因此该条的兜底动作从未触发，机制归因的现行状态见本节第 5 条。
+>
+> **判断某条局限性是否仍然成立，一律以本节为准**（2026-08-17 加注）。
+
 1. **`state_dict_l2_distance` 交叉验证仍未做**——Stage B0 的 "长训 ≈ 单独训到" 假设在 Stage B / Stage C 结果层面一致，但仍未从权重层面直接验证。这是遗留在 Stage C 清单上的 sanity check 项，但不影响当前结论。
 2. **backup finalist 的 seed 敏感未解释**——seed 45 在 `(β1=4.0, β2=1.0)` 上得到 `0.810`，Stage B 阶段不可见，Stage C 第一次暴露。如果 Stage D 再次观察到 "β2 小一档在新 seed 上方差放大"，会回来做 critic penalty 敏感性 ablation；当前不 rework。
 3. ~~`worldcomp` 轨道**仅 deployable 子集已触及**~~（Phase 2 已完成）→ ~~**已升级为**：worldcomp 全部三个子集（Phase 1 deployable + Phase 2 privileged-critic + critic-penalty-off probe）已跑完，但 Phase 2 是 **3-seed 边际确认而非 5-seed 完整 formal**~~（**rev.8 已修复 — Phase 2 升 5-seed**，详见 §7.12，mean=0.9340±0.0261，std 严格低于 TD3BC priv 0.086）。worldcomp 全部三个子集已完整 5-seed 收口；critic-penalty-off probe 仍只 2 seeds（见下条 4）。

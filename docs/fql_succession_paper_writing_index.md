@@ -64,6 +64,14 @@ FQL Succession P2 已 **NEGATIVE 闭环（B+A：机制发现 + 诚实负面，NO
 
 ## 2. Paper 章节 → 文档映射（写作 cheatsheet）
 
+> **⚠ 2026-08-17 注：本表的「Paper section」列是 standalone 论文的章节，该出口已于 2026-06-02 作废**（见头注）。现行出口是论文里的单独一节 **§5.9**，因此本表六行**没有对应的写作任务**：
+> - **Abstract / Introduction / Related Work / Method / Experimental Setup** —— 论文里由章级的 §5.1 引言、§5.2 相关工作、§5.3 设置、§5.4 方法承担，不在 §5.9 内重写；
+> - **Reproducibility Appendix** —— **本章无附录**（spec 硬约束，不得下放）。
+>
+> 连带**两处 TODO 已失效、不要执行**：Related Work 行的「需新写」、Method 行的「尚无 method_section_draft，需从 §1.1+§6 整理成 prose」。
+>
+> **仍然有效的是 Results 四行 + Discussion + Limitations + Conclusion**——它们是 §5.9 正文的实际来源，「主要文档 / 具体节」两列照用（Conclusion 对应 §5.9 的收束小节，不是独立结论章）。
+
 | Paper section | 主要文档 | 具体节 / 拷贝点 |
 |---|---|---|
 | **Abstract** | results §0 | TL;DR + headline + 机制 一段，改写 |

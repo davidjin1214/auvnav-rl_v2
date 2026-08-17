@@ -1,4 +1,17 @@
-# 第 5 章 — 轮次入口（**当前轮：离散度口径按选项 C 落地**）
+# 第 5 章 — 轮次入口（**本轮已闭环，下一轮入口待写**）
+
+> ✅ **2026-08-17 当日闭环**：第 1 步（§5.9 的 $12$ 处补核）与第 2 步（选项 C 三处落地）均已完成，
+> 见 [`status.md`](status.md)「待决与登记项」离散度那一行的末段。**本文件描述的任务不要再执行一遍**；
+> 下一轮的 scope 由用户定，届时按体例整体重写本文件。以下内容保留作该轮的执行记录。
+>
+> 与执行前的方案相比有两处按实核收窄，已写入 `setup.tex` rev.10 / `rebrac.tex` rev.8 头注：
+> ① §5.9 补核结果是 **ddof=1**（不是「大概率 ddof=0」的先验）；
+> ② 声明里指代 §5.5 两表用**描述＋节号**而非 `\ref{tab:...}`，否则 floats/order 双判 FAIL。
+> 新登记项一条：`ch5_lexicon_baseline.json` 长期未刷新，lexicon 门槛已失效（见 status.md）。
+
+---
+
+## 【已闭环】原文如下（当轮：离散度口径按选项 C 落地）
 
 > 体例（2026-07-07 起）：本文件**每轮重写**，只含当轮任务与相关约束。章状态账本 = [`status.md`](status.md)（唯一真相源）；逐轮历史 = git log 与各节头注；prompt 方法论 = [`prompt_playbook.md`](prompt_playbook.md)。
 > 上一轮（数据完整性整改批的独立对抗复审）已闭环——不通过 → 按批修复 → 复编译通过，0 CRIT / 1 HIGH / 4 MED / 2 LOW 全部落地，存档 [`notes/data_integrity_batch_review_findings.md`](notes/data_integrity_batch_review_findings.md)。

@@ -36,6 +36,15 @@ latexmk -c
 | `ch5_refs.py` | 每个 `sec:`/`subsec:` 交叉引用解析到真实标题 | 零未解析 |
 | `_ch5_corpus.py` | 共享语料加载器 = spec §0.5.9 (d) 九条口径的实现 | — |
 
+本目录另有一类**证据类工具**，不进 `ch5_check_all.py`、不是门槛，而是把某个刊出数字的来路做成可重跑的一条命令（判据一律是「复算值与刊值对得上」）。它们各自服务一次具体的核查，用完不删——下次有人质疑同一个数字时，重跑比重新考古便宜：
+
+| 脚本 | 核的是什么 |
+|---|---|
+| `ch5_dispersion_audit.py` | 全章 $\pm$ 的离散度口径；能由行内逐种子值自解的逐处判 ddof，`--convert` 打印换算后的值 |
+| `ch5_sac_ladder_dispersion_check.py` | §5.9 SAC 阶梯表那 $12$ 处的口径（行内不印逐种子值，只能回 `results/` 逐 run 复算） |
+| `ch5_holdout_split_audit.py` | 把已刊的 $100$ 回合读数拆成参与选点的 $40$ 与留出的 $60$，仅在后者上重算组间比较 |
+| `ch5_clean_probe_readout.py` | 训练／评估实例重合的抬升量（干净 manifest 补评的差中差） |
+
 常用变体：
 
 ```bash

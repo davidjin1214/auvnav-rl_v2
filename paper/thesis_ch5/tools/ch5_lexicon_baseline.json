@@ -67,7 +67,8 @@
  "天花板": {},
  "导航": {},
  "彼此独立": {
-  "boundary": 1
+  "boundary": 1,
+  "setup": 1
  },
  "必然收紧": {},
  "性能上限": {
@@ -90,7 +91,7 @@
   "algo_compare": 1,
   "online": 1,
   "rebrac": 1,
-  "td3bc": 1
+  "td3bc": 3
  },
  "旁证": {
   "discussion": 1,
@@ -128,7 +129,8 @@
  "特属于": {},
  "独立采样": {
   "algo_compare": 1,
-  "boundary": 1
+  "boundary": 1,
+  "rebrac": 1
  },
  "相互印证": {},
  "相应地": {},
@@ -147,10 +149,10 @@
  "终检": {
   "algo_compare": 10,
   "boundary": 9,
-  "discussion": 1,
+  "discussion": 4,
   "online": 6,
-  "rebrac": 16,
-  "setup": 1,
+  "rebrac": 23,
+  "setup": 7,
   "td3bc": 7
  },
  "经验上限": {},
@@ -160,7 +162,9 @@
  "船体": {},
  "艇体": {},
  "蒸馏师": {},
- "证实": {},
+ "证实": {
+  "rebrac": 1
+ },
  "证明": {
   "boundary": 1,
   "discussion": 1,

@@ -38,6 +38,10 @@ SKIP_DIRS = {
     ".git", "node_modules", "__pycache__",
     ".pytest_cache", ".ruff_cache", ".mypy_cache", ".ipynb_checkpoints",
     ".venv", "venv", ".tmp", "tmp",
+    # Agent worktrees are full second checkouts living at .claude/worktrees/<name>/.
+    # Indexing one lists every doc twice, and --check then fails purely because a
+    # worktree happens to exist right now.
+    "worktrees",
 }
 
 # Gitignored data directories, skipped at the repo top level only. They may be

@@ -64,7 +64,14 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SKIP_DIRS = {".git", "node_modules", ".pytest_cache", ".pytest_tmp", "__pycache__",
-             "wake_data", "offline_data", "checkpoints", ".ipynb_checkpoints"}
+             "wake_data", "offline_data", "checkpoints", ".ipynb_checkpoints",
+             # Agent worktrees land *inside* the repo at .claude/worktrees/<name>/.
+             # Each is a full second checkout, so walking one doubles the corpus and
+             # reports that copy's pointers as if they were the working tree's: a run
+             # with one worktree present read 240 markdown files and 67 dead pointers
+             # against the real 128 and 0. The tool deliberately scans .claude/ for
+             # project tooling, so only the worktree root is exempt, not .claude itself.
+             "worktrees"}
 
 INLINE = re.compile(r"\[([^\]\[]*)\]\(([^)\s]+?)(?:\s+\"[^\"]*\")?\)")
 # `[^id]: text` is a footnote definition, not a link reference definition -- its first

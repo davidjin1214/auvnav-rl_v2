@@ -230,7 +230,7 @@
 | [`online_sac_reward_redesign.md`](online_sac_reward_redesign.md) | **SHELVED 2026-05-06（v6 pre-integration spec）**（2026-08-17 订正：原写「搁置（v4，2026-04-27）」，版本与日期均落后于该文档自身的横幅） | `arrival_v2` reward 8 参数设计 + 不变量测试 spec。⚠ 该 spec 的 `arrival_v2` 与 `auv_nav/reward.py` 里已落地的 `arrival_v2_simple` preset **不是同一物**（见其横幅） | 未来想恢复 reward 设计时 |
 | [`arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) | **active archive（2026-05-23，§7.9.7 universal-floor closure）** | arrival_v2 prototype 实测档（19 组 experiments，§7 / §7.6 / §7.7 / §7.8 / §7.9 cross-seed closure + §7.9.7 manifest universal-floor finding） | paper revision / rebuttal cite arrival_v2 实测结果时 |
 | [`arrival_v2_p0_variance_reduction_design.md`](arrival_v2_p0_variance_reduction_design.md) | **active design reference (DEMOTED-TO-FUTURE-WORK / POLISH-ONLY，2026-05-19)** | SAC variance reduction (DroQ / N-Step / REDQ) 候选矩阵 + 5-tier verdict schema | offline 线 variance reduction 复用 / 未来 paper revision 需 DroQ 类轴时 |
-| [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) | **active — rev.3（2026-05-25，Plan A 4-tier finalized）** | Plan A = 从 `cross_u10 / sac_vanilla / s0_k4 / seed_46` 同 seed 训练切片构造真 D4RL 4-tier；rev.2 的 cross_u15 路径 1 已 SUPERSEDED，仅存历史 reference | 复现 SAC collector 数据源 / FQL 再验证 |
+| [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) | **CLOSED 2026-05-26（rev.3）**（2026-08-17 订正：原写「active — rev.3（2026-05-25，Plan A 4-tier finalized）」，停在收集刚完成、head-to-head 未跑的那一刻） | Plan A = 从 `cross_u10 / sac_vanilla / s0_k4 / seed_46` 同 seed 训练切片构造真 D4RL 4-tier；rev.2 的 cross_u15 路径 1 已 SUPERSEDED，仅存历史 reference。**Sprint 1+2 + m_multi_mix 补充共 39 run 已闭环**，主表与结论见该文 §4.0.10 | 复现 SAC collector 数据源 / FQL 再验证 / 查 §5.9 跨源质量区间判别的 ground truth |
 | [`systematic_improved_sac_experiment_plan.md`](systematic_improved_sac_experiment_plan.md) | DEPRECATED 2026-04-26 | 旧版主计划 | 仅历史回溯 |
 | [`systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md) | DEPRECATED 2026-04-26 | A0 阶段实测记录（数据本身仍有效） | A0 数据来源（也可以直接看 ablation_summary.md） |
 | [`SAC_improvements_survey.md`](SAC_improvements_survey.md) | active reference | 2020-2026 SAC 改进算法综述 | 写论文 related work / 算法选型 |
@@ -325,7 +325,7 @@ Online 线开发出的、当前**仍 active 且 offline 线复用**的核心组�
 
 ### 4.3 SAC collector 数据源 spec（~~Online 线下一个真正要做的事~~ ✅ **已 CLOSED 2026-05-26**）
 
-> 📍 **2026-08-09 复核补注**：本节标题与下文的「待办 / 等 offline 线确认再 freeze」措辞停在 2026-05-24（rev.2）。SAC collector 已于 **2026-05-26 CLOSED**（rev.3 Plan A + Sprint 1+2 + m_multi_mix supplement，cross-source 矩阵闭环），收口详情见 [`offline_rl_line_summary.md`](offline_rl_line_summary.md) §4.3、实施 spec 见 [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md)（active rev.3）。**本节推荐 spec 表已被 design 文档取代，只作历史决策记录读。**
+> 📍 **2026-08-09 复核补注**：本节标题与下文的「待办 / 等 offline 线确认再 freeze」措辞停在 2026-05-24（rev.2）。SAC collector 已于 **2026-05-26 CLOSED**（rev.3 Plan A + Sprint 1+2 + m_multi_mix supplement，cross-source 矩阵闭环），收口详情见 [`offline_rl_line_summary.md`](offline_rl_line_summary.md) §4.3、实施 spec 见 [`arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md)（rev.3；**2026-08-17 补**：该文头注当时自称 active，实为已闭环，现已订正为 CLOSED 2026-05-26）。**本节推荐 spec 表已被 design 文档取代，只作历史决策记录读。**
 
 Memory 提到 "D4RL-style SAC collector 拟定为 broad validation 平行第四轴" 但 spec 未定。**这是 online 线唯一仍有意义的待办项**——为 offline RL chapter 提供一个 RL-trained behavior policy（区别于 worldcomp / crosscomp / privileged 这三个 hand-engineered baseline）。
 

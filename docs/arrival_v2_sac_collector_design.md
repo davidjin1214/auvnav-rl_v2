@@ -2,7 +2,8 @@
 
 > **文档版本**：2026-05-25（**rev.3，Plan A 4-tier finalized**）
 > **历史版本**：rev.2 (2026-05-24，主线协议对齐，cross_u15 path 1 + cross_u10 path 2 双轨)
-> **状态**：**active — Plan A 4 tier dataset collection COMPLETED**（2026-05-25）。Adapter 落地 commit 97d394c；audit commits be4b573 + 8667fbc + 9f8252e；collection notebook 7a82308；collection completed run 032b527。**下一步**：FQL + ReBRAC β1∈{1.0, 4.0} head-to-head × 4 tier × 2 seed。
+> **状态**：**CLOSED（2026-05-26）** —— 本文两条工作流均已闭环：① Plan A 4 tier 数据收集 COMPLETED 2026-05-25（adapter commit 97d394c；audit be4b573 + 8667fbc + 9f8252e；collection notebook 7a82308；completed run 032b527），实测见 §4.0.7；② head-to-head sprint chain COMPLETED 2026-05-26 —— Sprint 1（ReBRAC β1∈{1,4} × 4 tier × 3 seed，24 run，§4.0.9）+ Sprint 2（FQL × 4 tier × 3 seed，12 run）+ m_multi_mix 补充 3 run，合计 **39 run cross-source matrix**，结论与主表见 **§4.0.10**（该节末尾即本文的收口声明）。Plan B（§4.0.6）从未启动。**本头注原写「active / 下一步：head-to-head × 4 tier × 2 seed」，2026-08-17 订正**：该下一步早已执行完毕，且种子数在 §4.0.5 就已由 2 修订为 3（[42, 0, 7]）。
+> **注意范围**：闭环的是本文记录的**设计与 sprint 链**；它产出的 4 tier 数据集本身仍在用（§5.9 的跨源质量区间判别即以 §4.0.10 为 ground truth）。
 > **作用**：盘点 `codex-arrival-v2-prototype` 分支产出的 SAC checkpoint，对比 SAC collector vs 现有 rule-based baseline collector，给出 D4RL 风格数据收集的推荐子集与实施要点。
 > **协议约束（rev.2 锁定，rev.3 沿用）**：与 offline 主线（broad val v2 + FQL P2）**严格对齐 = `s0` probe + `history-length 4` + `arrival_v2` reward**。现有 offline datasets 全部 `*_s0_h4_arrival_v2_*` 命名，本文档推荐的 SAC collector 数据集复用相同 schema。
 > **上下文**：[`docs/online_rl_line_summary.md`](online_rl_line_summary.md) §4.3；[`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) §4.3。
@@ -277,8 +278,8 @@ offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/
 | Adapter 落地（SACCheckpointPolicy + collector 扩展） | ~2.25h | ✅ 已完成 (commit 97d394c) |
 | Plan A 4 tier × 1000 ep × CPU pool 收集（`--num-workers 8`） | ~60 min Colab L4（实测，medium tier 因 timeout 拉长 avg_len 跑慢） | ✅ 已完成 (commits 7a82308 + 032b527) |
 | ~~FQL + ReBRAC β1∈{1,4} head-to-head × 4 tier × 2 seed~~ | ~~~4-6h L4~~ | ❌ **estimate 错误**：spec line 356 / 558 写 "2 algo × 2 seed = 16 run × 15 min" 与 paper finding 候选 + paired-control 需求不一致，且 per-run wallclock 用 FQL P2 §8.2 权威实测后大幅 underestimate |
-| **Sprint 1**：ReBRAC β1∈{1, 4} × 4 tier × 3 seed = 24 run（per FQL P2 §8.2 ReBRAC 200k step ≈ 25 min/run L4） | ~10-11h L4（1 Colab session） | ⏳ 下一步 |
-| **Sprint 2**：FQL × 4 tier × 3 seed = 12 run（per FQL P2 §8.2 FQL 200k step ≈ 50 min/run L4） | ~10h L4（1 Colab session，sprint 1 完成后启动） | ⏳ 之后 |
+| **Sprint 1**：ReBRAC β1∈{1, 4} × 4 tier × 3 seed = 24 run（per FQL P2 §8.2 ReBRAC 200k step ≈ 25 min/run L4） | ~10-11h L4（1 Colab session） | ✅ 已完成 2026-05-25（实测 ~3.3h wall，按 seed 拆 3 session 并发；结果见 §4.0.9） |
+| **Sprint 2**：FQL × 4 tier × 3 seed = 12 run（per FQL P2 §8.2 FQL 200k step ≈ 50 min/run L4） | ~10h L4（1 Colab session，sprint 1 完成后启动） | ✅ 已完成 2026-05-26（实测 ~3.5h wall，3 seed shard 并发；结果见 §4.0.10） |
 | **rev.3 总计修订（36 run, 3 seeds, 3 configs）** | **~21h L4 = 2 个 Colab session** | （原 rev.3 estimate ~5-7h 错估约 4×，修正） |
 
 #### 4.0.7 Actual collection results（2026-05-25 completed）
@@ -379,13 +380,13 @@ offline_data/sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000/ 
 
 | Sprint | 内容 | run 数 | wallclock | 顺序 |
 |---|---|---:|---:|---|
-| **Sprint 1** | ReBRAC β1∈{1, 4} / β2=2 × 4 tier × 3 seed [42, 0, 7] | 24 | ~10-11h L4 | **下一步立刻开干** |
-| **Sprint 2** | FQL × 4 tier × 3 seed [42, 0, 7] | 12 | ~10h L4 | sprint 1 完成 + paired analysis OK 后启动 |
+| **Sprint 1** | ReBRAC β1∈{1, 4} / β2=2 × 4 tier × 3 seed [42, 0, 7] | 24 | ~10-11h L4 | ✅ 已跑（2026-05-25，§4.0.9） |
+| **Sprint 2** | FQL × 4 tier × 3 seed [42, 0, 7] | 12 | ~10h L4 | ✅ 已跑（2026-05-26，§4.0.10；启动 trigger 经 §4.0.9 末「Sprint 2 启动决策」改换后执行） |
 
 **预期 paper finding 候选**（pre-registered before training, FQL P2 sister paired）：
 
 1. ~~**β1 翻转点 cross-noise-source universality**（cross-tier）— random/medium tier 上 β1=4 ≥ β1=1（noisy behavior needs strong BC anchor）；expert tier 上 β1=1 ≥ β1=4（clean behavior, low β1 better）。如果观察到 monotone β1 优势随 tier quality 翻转 → **直接复现 FQL P2 v1.4 §6.3 Q1b/Q1c 机制 in SAC-stochastic regime**~~ **[DESCRIPTION ERROR — see §4.0.9]**. 本 pre-registered hypothesis 描述写错（这是我自己 commit 8a9616e reframe sprint 1 时的 mistake，不是 spec 内部矛盾）：FQL P2 v1.4 真实 finding（diagnostic.md §9.4/§9.7）是 **"ReBRAC β1=1.0 strictly dominates β1=4.0 in BOTH clean AND noisy regimes"**（universal monotone dominance），不是翻转。修正后的 hypothesis 在 §4.0.9 — sprint 1 数据在有 power 的 cells 上 directionally consistent。
-2. **FQL ≈ ReBRAC β1=1 on clean expert**（sprint 2 完成后才能 verify）— FQL P2 v1.4 已在 E-uni privileged regime 实证 (RESCUE-FAIL: FQL 0.858 vs ReBRAC β1=1 0.910)；sprint 2 在 SAC expert tier verify universality。
+2. **FQL ≈ ReBRAC β1=1 on clean expert**（sprint 2 完成后才能 verify）— FQL P2 v1.4 已在 E-uni privileged regime 实证 (RESCUE-FAIL: FQL 0.858 vs ReBRAC β1=1 0.910)；sprint 2 在 SAC expert tier verify universality。**[已 verify — 见 §4.0.10]**：SAC expert tier 三者全部逼近 collector 天花板 0.899（ReBRAC β1∈{1,4} 均 0.889、FQL 0.911，Δ CI 跨 0），该 cell **saturated 故 inconclusive**；RESCUE-FAIL 的跨源判定改由 m_multi_mix 承担，结论是**依 regime 而非普适**。
 3. **(Deferred follow-up)** **SAC vs rule-based collector paired**：本 sprint 1 不 cover。如 reviewer push back，sprint 1b 用 broad val v2 N0 协议 (64 epoch shuffle_no_replacement, seeds [42, 43, 44]) 跑 12 run × ~25 min ≈ 5h L4。
 
 **输出落地**：

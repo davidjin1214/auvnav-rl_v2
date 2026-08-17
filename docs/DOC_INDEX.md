@@ -27,7 +27,7 @@
 |---|---|---|
 | [`docs/arrival_v2_experiment_report.md`](arrival_v2_experiment_report.md) | `arrival_v2` Reward — Experiment Report | — |
 | [`docs/arrival_v2_p0_variance_reduction_design.md`](arrival_v2_p0_variance_reduction_design.md) | arrival_v2 §8 P0 — SAC Variance Reduction Design | — |
-| [`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) | `arrival_v2` SAC Collector — Design & Checkpoint Inventory | — |
+| [`docs/arrival_v2_sac_collector_design.md`](arrival_v2_sac_collector_design.md) | `arrival_v2` SAC Collector — Design & Checkpoint Inventory | CLOSED 2026-05-26 |
 | [`docs/auvhamnode_mbrl_line_pause_memo.md`](auvhamnode_mbrl_line_pause_memo.md) | AUVHamNODE + Offline MBRL 线 — 暂停归档备忘 | — |
 | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) | AUVHamNODE-based Offline RL:Cross-Domain Transfer via Frozen Physics-Structured 1-Step … | PAUSED 2026-05-13 |
 | [`docs/auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) | AUVHamNODE Offline MBRL — v3.0 Pre-Notes(交接备忘) | PAUSED 2026-05-13 |

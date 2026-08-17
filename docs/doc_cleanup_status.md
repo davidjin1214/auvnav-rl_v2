@@ -8,8 +8,10 @@
 
 **本机（Windows 副机）绝对路径，仅本文件此处出现：**
 
-- 工作副本 = `C:\Code\rl_v2` ← **一切改动都在这里**
-- 退役中的旧副本 = `C:\Users\jinxiang\OneDrive\我的\Code\new_off_rl\rl_v2`
+- 工作副本 = `D:\Codes\rl_v2` ← **一切改动都在这里**（2026-08-18 由 `C:\Code\rl_v2` 迁入，
+  代码与数据从此同处一盘、**不再有 junction**）
+- 退役中的旧副本 = `C:\Users\jinxiang\OneDrive\我的\Code\new_off_rl\rl_v2`（停在 `3d1f83b`，
+  落后 30+ 个提交；用户裁决暂不处置）
 
 三个必踩的坑：
 
@@ -17,10 +19,20 @@
    `experiments/` 已删、10 个提交也不在那里。在旧副本上跑校验会得到假结果——
    `check_doc_pointers` 在旧副本报**真失效 150**，在工作副本报 **67**，差的 83 条全是
    指向已删 `experiments/` 的路径。**每条命令都显式带上工作副本路径。**
+   ⚠ **2026-08-18 复测：工作副本上 `check_doc_pointers` 现报真失效 `0`**（未解析 138 全部落在
+   自述缺席／计划表预告／产物路径／示例占位／绝对路径五类豁免里）。上面的 `67` 与下表「附」层的
+   `67 处 ⬜ 未做` 因此都已过期。**但不要据此把该层记成已完成**——本次只是撞见读数不符，没有
+   核对那 $67$ 条是被逐条修好的、还是被后续的文档搬移与工具口径变化吸收掉的。要销号得先分清这两者。
 2. **git 用 `git -C "<工作副本>" …`。** `cd <路径> && git …` 这种复合形式会被权限层拒绝
    （推送时连拒两次，换成 `git -C` 一次就过）。
-3. **五个数据目录是 junction**（`results/ experiments/ checkpoints/ wake_data/ offline_data/`
-   实体在 D 盘）。它们不随 `git clone` 到位；`benchmarks/` 相反，是被 git 追踪的，**绝不能** junction。
+3. ~~**五个数据目录是 junction**（`results/ experiments/ checkpoints/ wake_data/ offline_data/`
+   实体在 D 盘）。~~ **2026-08-18 起不再成立**：五个目录已随迁移移入工作副本内部，是**真目录**。
+   撤掉 junction 的理由不是整洁——Git Bash 的 `find` 不跟随 junction、`pathlib.rglob` 拒绝下降进
+   symlink 目录，而本仓的完整性审计全靠目录枚举，多一层挂载就多一类「文件在、枚举没返回它」。
+   撤后 `find` 与 `rglob` 在五个目录上逐一同数（60 / 4508 / 1060 / 1932 / 24）。
+   它们仍**不随 `git clone` 到位**（全部 gitignore），这条没变；`benchmarks/` 仍是被 git 追踪的真目录。
+   ⚠ `D:\rl_v2_data\` 未清空：`_archive` `_backup` 按裁决留在仓库外；同目录下另有一份
+   `benchmarks` **旧副本**（与仓库内那份同名同项、各自独立、会漂移），读的时候别拿错。
 
 ## 1. 这条线分三层
 

@@ -42,7 +42,8 @@
 - 办法：照 §5.5 A0 那次的路子——找到该批 run 的汇总目录，用逐 run 记录（`ablation_runs.csv` 同构）
   重算 `pstdev` / `stdev` 与刊出的 `*_std` 对拍。A0 那次的实证路径可作模板：
   `experiments/protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/summary/`
-  （`experiments/` 本机是指向 `D:\rl_v2_data` 的链接；纯读文件，分钟级）。
+  （纯读文件，分钟级。原文此处注「`experiments/` 是指向 `D:\rl_v2_data` 的链接」——
+  2026-08-18 迁移后链接已撤，它是工作副本内的真目录。）
 - 若源目录本机没有：**如实登记「源未定位、口径未核」并在声明里写明**，不要推测口径。
 
 ### 第 2 步：落地选项 C

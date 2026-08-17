@@ -22,6 +22,39 @@
 
 Stage D + Stage E (a) + Stage F (rev.8 新增 4 项 paper-readiness probes) 全部完成；Stage E (b) seed 44 collector inspection 维持推迟（Phase 2 假设 A + Stage E (a) seed 44 -17pp 双重证据已闭环，触发恢复条件均不成立，降级为 root-cause sanity）。**ReBRAC 主线整体收口；rev.8 paper-readiness 弱点全部堵死。**
 
+> **离散度口径注（2026-08-17 数字级回溯加注）**
+>
+> 本轮从 `results/offline/rebrac/**/test/seed_*.json` 逐格重算了论文第 5 章实际引用的那批刊值
+> （Stage B 筛查网格、Stage C 两个数据规模的主 finalist、Stage D 两条 worldcomp 轨道、Stage E
+> critic-penalty-off、Stage F LayerNorm-off）。**逐种子值与全部 mean 逐位吻合**，无一处誊写错。
+>
+> 但 `±` 的口径有一处不齐：**本报告的 ± 一律是 ddof=0（总体标准差），只有一个例外**——
+>
+> | 刊值 | 逐种子原始 | ddof=0 | ddof=1 |
+> |---|---|---:|---:|
+> | `0.902 ± 0.021`（Stage C crosscomp-1000） | .89/.93/.87/.90/.92 | **0.0214** | 0.0239 |
+> | `0.918 ± 0.030`（Stage C crosscomp-2000） | .96/.94/.89/.88/.92 | **0.0299** | 0.0335 |
+> | `0.878 ± 0.090`（Stage E β2=0） | .92/.95/.70/.92/.90 | **0.0904** | 0.1011 |
+> | `0.928 ± 0.077`（Stage D Phase 1 deployable） | .99/.93/.78/.98/.96 | **0.0768** | 0.0858 |
+> | `0.742 ± 0.198` / `0.900 ± 0.071`（Stage B） | 3 seeds | **0.1983 / 0.0707** | 0.2428 / 0.0866 |
+> | `0.883 ± 0.031` / `0.917 ± 0.012`（Stage B 3-seed 对照列） | 3 seeds | **0.0312 / 0.0118** | 0.0382 / 0.0144 |
+> | **`0.9340 ± 0.0261`（Stage D Phase 2 privileged，rev.8）** | .96/.92/.90/.93/.96 | 0.0233 | **0.0261** ← 唯一 ddof=1 |
+>
+> 这一格是 rev.8 由 3-seed 补到 5-seed 时新算的，且**小数位数也与全文不一致**（四位 vs 其余三位），
+> 指向它出自另一套工具——`numpy.std` 默认 ddof=0、`pandas.Series.std()` 默认 ddof=1 是这类错位的
+> 常见来源。
+>
+> **影响仅限一处措辞**：§5 rev.8 结论里的「std `0.0261` 严格低于 TD3BC priv `0.086` ⇒ paper 可正式
+> 做 std 对比 claim」是**跨口径比较**（0.0261 是 ddof=1，0.086 是 ddof=0）。统一后为 `0.0233` vs
+> `0.0857`（ddof=0）或 `0.0261` vs `0.0958`（ddof=1），两种口径下都是约 3.3 倍的差距，**该 claim
+> 两边都成立**，故本轮**不改任何刊值**。论文侧 `rebrac.tex` 引用的 `0.934 ± 0.026` 承袭同一口径。
+>
+> **全章层面**：§5.6（TD3+BC）与本节 §5.7 用 ddof=0，§5.5（在线）与 §5.8（泛化边界）用 ddof=1
+> ——已登记为待裁决事项，本注只如实记录，不作改动。
+>
+> **本注的覆盖范围**：只核了论文引用的那批数，不是本报告全部 47 处数字；未覆盖的部分沿用
+> 2026-07-28 自查结论。
+
 本文档要回答的核心问题与 [rebrac_experiment_plan.md §2](./rebrac_experiment_plan.md) 一致：
 
 1. 在与 phase0c 相同的 deployable canonical protocol 下，ReBRAC 是否能稳定优于 TD3BC？

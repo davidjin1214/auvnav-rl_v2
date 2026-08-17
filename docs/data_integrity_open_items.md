@@ -42,8 +42,54 @@
 > **后果是方法论的**：Drive 侧「只有一个数据集受影响」这个结论**不成立**，因为枚举漏掉了至少一个
 > ——而漏掉的那个恰好也是污染的。含噪 1000 集等其余 Drive-only 数据集同样未被真正扫到。
 >
-> 复核前须先修枚举：用 `os.listdir("offline_data")` 逐名 `stat`，与 glob 结果对拍，数量不等即以
-> listdir 为准。修复格已加进 [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb) §2。
+> ~~复核前须先修枚举：用 `os.listdir("offline_data")` 逐名 `stat`，与 glob 结果对拍，数量不等即以
+> listdir 为准。~~ ⚠ **这个药方无效，见下方 2026-08-17 订正。**
+>
+> #### ⚠ 2026-08-17 订正与补充（两轮探针原始输出的逐行比对）
+>
+> 证据是两份 completed notebook 里 §2 的原始输出——首轮 `ch5_data_integrity_probe_completed.ipynb`、
+> 次轮 `ch5_data_integrity_probe1_completed.ipynb`，逐行比对而非转述。
+>
+> **(1) 漏掉的是两个，不是「至少一个」。** 首轮 range pass 的 24 行里，缺的是**含噪 1000 与含噪
+> 2000 两个顶层目录**（`..._noise0p05clip0p15_ep1000` 与 `..._ep2000`）；次轮同一份代码报
+> `datasets: 26`，两个都在。上面「含噪 1000 集……同样未被真正扫到」当时是推测，现由次轮读数证实。
+> 两者在排序里**相邻**，与「目录列举丢了连续一段」的形态相符。
+>
+> **(2) 证据比原记的更硬：不是单个进程的问题。** 首轮 cell 8（内核内 `glob`，`exec_count=5`）与
+> cell 9（子进程跑 `audit_seed_overlap`，`exec_count=7`）**两个不同进程**都只看到 24 个、都缺同样
+> 两个；cell 10（第三个进程，`exec_count=9`）按路径直读含噪 2000 却成功。→ 不是某个进程的缓存，
+> 是挂载层的目录项。（另：上一段说 `_load_datasets()` 做的是单层 glob，那是 `0aa42ac` 之前的状态，
+> 现已改 `rglob`；但**首轮漏的是顶层，单层 glob 本就该扫到**，故与该修复无关。）
+>
+> **(3) 那次漏扫是瞬时的——于是「重跑对上了」这条路子会误判。** 次轮就是那次重跑，它「对上了」，
+> 而问题只是当时没复现。**任何以「再跑一次数目对得上」为由的销号都不成立**，包括次轮自己。
+>
+> **(4) 原来开的药方（`os.listdir` ↔ `glob` 对拍）结构上抓不到这个病。** 两者是同一次 `readdir`
+> 的两个消费者：目录列举短了就一起短，对拍照样干净收场——等于给盲区发合格证。而且那一格
+> **从未被执行过**（次轮 notebook 里 `execution_count=None`、outputs 为空），所以这个缺陷此前
+> 没被发现。要区分「文件没了」与「列举撒谎」，参照物必须**不经列举**产生。
+>
+> **(5) 现在的做法：账本对帐（2026-08-17 落地）。**
+> [`../scripts/offline_dataset_ledger.txt`](../scripts/offline_dataset_ledger.txt) 记录**跨机并集**的
+> 数据集名（本机 29 ＋ Drive 首轮 24 ＋ Drive 次轮 26 ＝ 39 个，含首轮漏掉的那两个）；
+> `audit_seed_overlap` 每次 range pass 前先拿账本里每个名字做**直接 `stat`**（lookup，不是列举）：
+>
+> | 判定 | 含义 |
+> |---|---|
+> | `[ENUM MISS]` | `metadata.json` stat 得到、枚举却没返回它 —— **就是 Drive 那次的形态**，退出码 `2` |
+> | `[SHADOWED ]` | `os.scandir` 看得到而递归 glob 丢了 —— 另一类：`rglob` 不进入符号链接目录（本仓数据经链接挂载，已由测试实证） |
+> | `[absent]` | 该名字这台机器上没有 —— 正常，账本是跨机并集 |
+> | `[new]` | 枚举到但账本里没有 —— 跑 `--record` 收进去（并集，只增不删，短列举缩不了账本） |
+>
+> 检测本身经**故意喂假枚举**实测会 fire，不是只在健康文件系统上跑通就算数：
+> [`../tests/test_audit_seed_overlap.py`](../tests/test_audit_seed_overlap.py) 共 11 项，含顶层漏项、
+> 嵌套漏项、符号链接盲区，以及 `python -m` 下退出码为 `2`（notebook 里唯一的硬信号）。
+>
+> **销号条件**：Drive 侧跑一次 `python -m scripts.audit_seed_overlap`，对帐块判 clean（零
+> `[ENUM MISS]`、零 `[SHADOWED]`、退出码 `0`），且账本已含 Drive 全部数据集名（先跑一次
+> `--record` 并回传账本）。修复格见
+> [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb) §2 末两格。
+> **在那之前本块不销号。**
 
 三条在别的工作里顺带撞见、**已在本机核实过证据但尚未处理**的记账问题。都不影响方法本身，
 但都会在投稿/返修阶段被审稿人问到，且第 1 条一旦成立会直接推翻一格主结果。
@@ -347,6 +393,6 @@ val 与 test 逐条相同（第 ③ 条）——**三条问题在这一句上同
   - 验收：编译 65 页、0 undefined、2 处 Overfull（与整改前逐条相同）；既有数字零漂移；逐处理由见各 `.tex` 头注 rev 块。章状态见 [`../paper/thesis_ch5/status.md`](../paper/thesis_ch5/status.md)。
 - **污染面枚举（2026-08-16 更新，分两层）**：
   - ✅ **第 5 章范围已封闭**。本机补齐全部章内依赖数据集后，`audit_seed_overlap` 对 $29$ 个集跑通，**OVERLAP 仍只有两格**（`crosscomp-2000` 确定性集与其含噪变体，各 $100/100$），其余全 clean；以 `results/offline/**` 目录名反查，章内每个训练单元所依的数据集无一缺失。含噪 $2000$ 集本机独立复现 $100/100$，同族 $1000$ 集 $0/100$。
-  - ❌ **仓库全域仍未封闭**，文首 ⚠⚠ 块**不销号**。Drive 那次漏掉的是一个**顶层**目录（`--verify` 用裸名即解析成功），单层 `glob` 本应扫到——成因仍未证实，FUSE 假设依然在台面上。
+  - ❌ **仓库全域仍未封闭**，文首 ⚠⚠ 块**不销号**。Drive 那次漏掉的是**两个顶层**目录（`--verify` 用裸名即解析成功），单层 `glob` 本应扫到——成因仍未证实，FUSE 假设依然在台面上。**2026-08-17 进展**：漏项数目、跨进程复现、以及「次轮同码返回 26 个 ⇒ 该漏扫是瞬时的」均已由两轮原始输出钉死；据此新增账本对帐（`[ENUM MISS]` ＋ 退出码 `2`，经故意喂假枚举实测会 fire）。**销号仍需 Drive 侧实跑一次**，条件与判读见文首订正 (5)。
   - ⚠ 另查出一个**独立**缺陷并已修（`0aa42ac`）：`_load_datasets()` 用单层 `glob` 而 `_load_manifests()` 用 `rglob`，两侧不对称，`offline_data/fql_succession/` 与 `audit_dryrun_2026-05-19/` 下的 $12$ 个嵌套集从未进过枚举（全部 clean）。**它不解释 Drive 那次**——两者是不同的缺陷，勿相互冒充。
   - 此项不影响已落地的整改——正文披露覆盖的是已实核的三条。

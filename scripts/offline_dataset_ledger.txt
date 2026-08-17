@@ -1,0 +1,54 @@
+# Dataset names ever seen under offline_data/, across hosts. Union only --
+# `--record` adds, never removes, so a short listing cannot shrink the ledger.
+#
+# Why this file exists: on the Colab/Drive FUSE mount a readdir of offline_data/ came back
+# short in two separate processes (2026-08-16 probe round 1: 24 names) while a lookup of one
+# of the two missing paths succeeded in a third process minutes later; round 2 listed all 26.
+# An audit that trusts its own glob cannot report that. Names here are probed by direct stat,
+# so one that stats fine yet never appears in the enumeration is reported as [ENUM MISS].
+#
+# A name absent on a given host is normal and reported as [absent] -- this is a cross-host
+# union, not a manifest of what any one machine should hold.
+#
+# Seeded 2026-08-17 from: this host's enumeration (29) + the range-pass listings saved in
+# notebooks/ch5_data_integrity_probe_completed.ipynb (24) and
+# notebooks/ch5_data_integrity_probe1_completed.ipynb (26).
+audit_dryrun_2026-05-19/e_uni_priv_200
+audit_dryrun_2026-05-19/m_crosscomp_66
+audit_dryrun_2026-05-19/m_multi_mix_200
+audit_dryrun_2026-05-19/m_priv_67
+audit_dryrun_2026-05-19/m_worldcomp_67
+crosscomp_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000
+crosscomp_s0_h4_arrival_v2_simple_re150_u10upstream_fixdone_ep1000
+crosscomp_s0_h4_efficiency_v2_re150_u10cross
+crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone
+crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
+crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000
+crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep1000
+crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000
+crosscomp_s0_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000
+crosscomp_s0_h4_efficiency_v2_re150tandem_u10cross_fixdone_ep1000
+crosscomp_s0_h4_effv2_re150_u10cross
+crosscomp_s1_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
+crosscomp_s1_h4_efficiency_v2_re150_u10upstream_fixdone_ep1000
+crosscomp_s2_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
+fql_succession/_components/goalseek_500_clean_seed200
+fql_succession/_components/goalseek_500_seed200
+fql_succession/_components/privileged_500_clean_seed100
+fql_succession/_components/privileged_500_seed100
+fql_succession/e_multi_50priv_50goal_clean_1000
+fql_succession/m_multi_mix_50priv_50goal_1000
+fql_succession/m_uni_noise_eps0p5_1000
+goalseek_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
+mix5050_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
+mix_tmp_crosscomp_500ep_seed1
+mix_tmp_goalseek_500ep_seed0
+privileged_s0_h4_arrival_v2_re150_u10cross_fixdone_ep1000
+privileged_s0_h4_arrival_v2_re250_u15cross_fixdone_ep1000
+privileged_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000
+sac_expert_s0_h4_arrival_v2_re150_u10cross_seed46_step600k_ep1000
+sac_medium_s0_h4_arrival_v2_re150_u10cross_seed46_step425k_ep1000
+sac_mexp_s0_h4_arrival_v2_re150_u10cross_seed46_step575k_ep1000
+sac_random_s0_h4_arrival_v2_re150_u10cross_seed46_step25k_ep1000
+worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone
+worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000

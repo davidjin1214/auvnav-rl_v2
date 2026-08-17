@@ -43,6 +43,30 @@ the harder `single_u15_cross` (U=1.5 / Re250) **floored** (offline `s0` policy 0
 out-of-bounds-dominated), so the FQL-vs-ReBRAC comparison is *undefined* there — a deployable-
 sensor sufficiency boundary, not an algorithmic counter-result (see §6.5).
 
+> **Number-level retrace, 2026-08-17.** Every success rate, δ, and statistic in this document was
+> recomputed from `results/fql_succession/p2/<cell>/test/*.json` and matches to the printed digit:
+> the four 2×2 cells and their δ; the Q1 / Q1b / Q1c and C-1 sweep values; `σ_train ≈ 3.8 pp`
+> (mean |seed-spread| over the eleven n=2 cells is 4.27 pp, and 4.27 / (2/√π) = 3.79); all six
+> t-values (rows 1–5 pooled, row 6 Welch — with unequal n the two differ, and 1.23 is the Welch
+> value); the §6.5 floor probe (0.14 SR, OOB 78/100); and all five source-line anchors in §9
+> (`rebrac.py:257/284`, `fql.py:444/471/532`) point at exactly the lines described.
+>
+> Two **scope** statements do not survive the retrace, and the thesis side already corrected both
+> (`algo_compare.tex` rev block):
+>
+> 1. **"a single, fixed ReBRAC configuration (β1 = 1.0) … on every cell of the 2×2 matrix"**
+>    (TL;DR) and **"β1 ≈ 1 matches or beats FQL everywhere"** (§7 claim 2) overstate coverage.
+>    β1 = 1.0 was run on **two** of the four cells — the uni row (Q1c clean, Q1b noisy), i.e. the
+>    noise axis, which is exactly how §3's grid is labelled. On the multi row only β1 = 4.0 was run
+>    (E-multi 0.810 vs 0.790; M-multi-mix 0.990 vs 0.955). So "ReBRAC ≥ FQL on all four cells" is
+>    true as measured, but via **two different β1 values**, not one fixed configuration. The
+>    falsification is unaffected — FQL is not ahead anywhere — but the single-config dominance
+>    claim is measured on the noise axis only.
+> 2. The pre-registration attribution in §2 is wrong; see the note there.
+>
+> Neither touches the verdict: the iff claim is falsified, and the mechanism (BC-anchor target
+> quality) rests on Q1/Q1b/Q1c + C-1, all of which retrace exactly.
+
 ---
 
 ## 1. Setup
@@ -106,6 +130,20 @@ actually sees is low. So the discriminating variable is **action-noise magnitude
 the conditional action variance `E_s[Var(a|s)]`, **not** modality. The original
 "sub-optimal AND multi-modal" iff is cleanly falsified: it scored **1/3** on its own
 predicted verdicts (E-multi was supposed to be the *primary* positive; it was null).
+
+> **Correction (2026-08-17).** The parenthetical misattributes the pre-registration. The spec's
+> pre-registered design is a **three**-cell spectrum — E-uni / M-uni-noise / M-multi-mix
+> (`fql_succession_p2_main_spec.md` §4.1) — and its §5.5 verdict table names **M-multi-mix**, the
+> small-noise multi-modal cell, as the primary positive: "完整 iff = E-uni null + M-uni-noise null
+> + **M-multi-mix positive**". **E-multi was not in the pre-registered design at all**; it was added
+> later, and appears in the spec only inside its retrospective v1.4 banners. The `1/3` tally is
+> likewise mismatched — it scores a four-cell matrix against a three-cell pre-registration.
+>
+> The falsification is if anything **cleaner** than written: the cell the spec designated as the
+> primary positive came out `δ = −0.035` (GRAY, both seeds negative), which is precisely the spec's
+> own "Null iff" row — the pre-registered failure condition, hit directly. `algo_compare.tex`
+> already carries this correction (attribution moved to the small-noise multi-modal cell, the
+> three-cell `1/3` tally withdrawn).
 
 This already demotes the headline. But the +20.5 pp positive cell still looked like a real
 FQL win — so we asked *why*, and the answer dissolves it.
@@ -270,7 +308,9 @@ and does **not** weaken Results 1–3, which stand on `single_u10_cross`.
    (conditional action variance) is** (Result 1, E-multi NULL).
 2. The discriminating effect is a **tuning artifact, not an algorithmic property**: a
    canonical ReBRAC (β1 ≈ 1) matches or beats FQL everywhere, including worst-case-over-noise
-   (Results 2–3).
+   (Results 2–3). *(Scope, 2026-08-17: "everywhere" is measured on the **noise axis** — β1 = 1.0
+   was run on E-uni and M-uni-noise only. On the multi row ReBRAC is ahead at β1 = 4.0. See the
+   §0 retrace note.)*
 3. The governing mechanism is **BC-anchor target quality**, demonstrated by a chain whose
    two load-bearing effects are significant at n = 2 (Results 2 & 5).
 4. Methodological caution: **BC-weight defaults tuned for clean data silently handicap a

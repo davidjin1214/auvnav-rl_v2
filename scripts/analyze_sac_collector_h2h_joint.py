@@ -18,7 +18,7 @@ SEEDS = [42, 0, 7]
 SAC_SRC_SR = {"random": 0.002, "medium": 0.515, "mexp": 0.751, "expert": 0.899}
 
 def load_success_vector(path: Path) -> np.ndarray:
-    with path.open() as f:
+    with path.open(encoding="utf-8") as f:
         d = json.load(f)
     eps = d["eval_episode_results"]
     return np.array([int(e["success"]) for e in eps], dtype=np.float64)

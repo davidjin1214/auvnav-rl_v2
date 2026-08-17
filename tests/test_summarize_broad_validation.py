@@ -22,7 +22,7 @@ def _write_test_json(path: Path, success: float, rtn: float = 1.0) -> None:
         "eval_return": rtn,
         "eval_safety_cost": 0.0,
         "eval_time_s": 1.0,
-    }))
+    }), encoding="utf-8")
 
 
 def test_anchor_constants_match_spec() -> None:

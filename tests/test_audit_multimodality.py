@@ -54,7 +54,7 @@ def _write_dataset(
     }
     if extra_meta:
         metadata.update(extra_meta)
-    (out_dir / "metadata.json").write_text(json.dumps(metadata))
+    (out_dir / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
     return out_dir
 
 
@@ -381,7 +381,7 @@ def test_main_e2e_synthetic(tmp_path: Path) -> None:
     assert (out_dir / "mode_count_per_anchor.csv").exists()
     assert (out_dir / "mode_count_distribution.png").exists()
 
-    summary = json.loads((out_dir / "audit_summary.json").read_text())
+    summary = json.loads((out_dir / "audit_summary.json").read_text(encoding="utf-8"))
     assert summary["audit_a"]["p_ge_2"] <= summary["audit_b"]["p_ge_2"], (
         "Multimodal dataset should have higher p_ge_2 than unimodal"
     )

@@ -434,7 +434,7 @@ def _save_summary_json(
     summary: dict[str, Any],
     out_path: Path,
 ) -> None:
-    out_path.write_text(json.dumps(summary, indent=2, sort_keys=False))
+    out_path.write_text(json.dumps(summary, indent=2, sort_keys=False), encoding="utf-8")
 
 
 def _save_per_anchor_csv(
@@ -457,7 +457,7 @@ def _save_per_anchor_csv(
         strict=True,
     ):
         lines.append(f"{label_b},{int(idx)},{int(mc)}")
-    out_path.write_text("\n".join(lines) + "\n")
+    out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 _COLOR_A = "#1f77b4"

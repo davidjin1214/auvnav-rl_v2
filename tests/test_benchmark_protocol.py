@@ -117,7 +117,7 @@ def test_evaluate_agent_uses_fixed_manifest_episodes(tmp_path: Path):
     assert "eval_progress_ratio" in metrics
     assert isinstance(metrics["eval_termination_counts"], dict)
 
-    payload = json.loads(manifest_path.read_text())
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert payload["history_length"] is None
 
 

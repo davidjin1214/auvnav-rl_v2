@@ -16,7 +16,7 @@ from pathlib import Path
 REPO = Path("/Users/xiangjin/Library/CloudStorage/OneDrive-Personal/我的/Code/new_off_rl/rl_v2")
 
 def load_success_vector(path: Path) -> np.ndarray:
-    d = json.loads(path.read_text())
+    d = json.loads(path.read_text(encoding="utf-8"))
     eps = d["eval_episode_results"]
     return np.array([int(e["success"]) for e in eps], dtype=np.float64)
 

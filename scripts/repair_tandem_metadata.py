@@ -125,7 +125,7 @@ def repair_case(npy_path: Path, dry_run: bool) -> None:
 
     print(f"\n{'[DRY-RUN] ' if dry_run else ''}Processing: {npy_path.name}")
 
-    with open(meta_path) as f:
+    with open(meta_path, encoding="utf-8") as f:
         meta = json.load(f)
 
     D   = meta["D_ref"]
@@ -182,7 +182,7 @@ def repair_case(npy_path: Path, dry_run: bool) -> None:
         f"Corrected monitor: ix={ix}, iy={iy}, "
         f"x_phys={x0 + ix*dx:.1f} m, y_phys={y0 + iy*dx:.1f} m."
     )
-    with open(meta_path, "w") as f:
+    with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
     print(f"  Updated: {meta_path.name}")
 

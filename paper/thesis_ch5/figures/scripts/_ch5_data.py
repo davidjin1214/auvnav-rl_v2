@@ -58,7 +58,7 @@ def _read_series(path: Path, col: str) -> tuple[np.ndarray, np.ndarray]:
     steps: list[float] = []
     vals: list[float] = []
     ci = COLS[col]
-    with open(path, newline="") as fh:
+    with open(path, newline="", encoding="utf-8") as fh:
         reader = csv.reader(fh)
         next(reader)  # header
         for row in reader:
@@ -124,7 +124,7 @@ def a0_cell(objective: str, sensor: str, seeds: list[int]) -> list[Path]:
 def final_eval(algo: str, k: int, seed: int, sensor: str = "s0") -> dict:
     """Read one final_eval.json (the locked-table 'final' convention)."""
     p = CRIT_BASE / algo / f"{sensor}_k{k}" / f"seed_{seed}" / "results" / "final_eval.json"
-    with open(p) as fh:
+    with open(p, encoding="utf-8") as fh:
         return json.load(fh)
 
 

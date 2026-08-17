@@ -54,7 +54,7 @@ def _write_synthetic(
         "objective": "efficiency_v2",
         "seed": seed,
     }
-    (out_dir / "metadata.json").write_text(json.dumps(metadata))
+    (out_dir / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
     return out_dir
 
 
@@ -83,7 +83,7 @@ def test_concat_writes_extended_metadata(tmp_path: Path) -> None:
 
     concat_datasets([a, b], output_dir=out_dir, mix_strategy="episode_level")
 
-    metadata = json.loads((out_dir / "metadata.json").read_text())
+    metadata = json.loads((out_dir / "metadata.json").read_text(encoding="utf-8"))
     components = metadata["mix_components"]
     assert len(components) == 2
     assert components[0]["policy"] == "goalseek"

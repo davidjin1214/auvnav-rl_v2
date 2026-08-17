@@ -206,7 +206,7 @@ def test_env_build_info_has_privileged_obs_key():
     """env.py _build_info() contains 'privileged_obs' key mapped from equivalent_body[:2]."""
     from pathlib import Path
     env_source = Path(__file__).parent.parent / "auv_nav" / "env.py"
-    source = env_source.read_text()
+    source = env_source.read_text(encoding="utf-8")
     assert '"privileged_obs"' in source, "env.py missing 'privileged_obs' key"
     # Verify it slices equivalent_body[:2]
     assert "equivalent_body[:2].astype(np.float32)" in source, (

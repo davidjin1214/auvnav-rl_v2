@@ -61,7 +61,7 @@ def unit_stats(test_dir: Path) -> None:
     per_seed: dict[int, Counter[str]] = {}
     for seed in SEEDS:
         path = test_dir / f"seed_{seed}.json"
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         episodes = data["eval_episode_results"]
         assert len(episodes) == 100, (path, len(episodes))
         reasons = Counter(ep["reason"] for ep in episodes)

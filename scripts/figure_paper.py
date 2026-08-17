@@ -184,7 +184,7 @@ def run_rl_agent(
 
     ckpt_root = Path(checkpoint_dir)
     meta_path = ckpt_root / "trainer_state.json" if ckpt_root.is_dir() else ckpt_root
-    with meta_path.open() as fp:
+    with meta_path.open(encoding="utf-8") as fp:
         state = json.load(fp)
 
     agent = SACAgent(SACConfig(**state["agent_config"]), device=device)

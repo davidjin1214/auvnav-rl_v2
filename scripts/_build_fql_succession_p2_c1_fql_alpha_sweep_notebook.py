@@ -567,7 +567,7 @@ def build() -> dict:
 def main() -> None:
     nb = build()
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
+    OUT.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"wrote {OUT}")
     code_cells = sum(1 for c in nb["cells"] if c["cell_type"] == "code")
     md_cells = sum(1 for c in nb["cells"] if c["cell_type"] == "markdown")

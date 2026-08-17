@@ -101,7 +101,7 @@ def load_case(stem: str, wake_dir: Path = WAKE_DIR) -> WakeCase:
     jmeta = wake_dir / f"{stem}_meta.json"
     if not npy.exists():
         raise FileNotFoundError(npy)
-    with open(jmeta) as f:
+    with open(jmeta, encoding="utf-8") as f:
         meta = json.load(f)
     data = np.load(npy, mmap_mode="r")
     dx   = meta["dx_m"]

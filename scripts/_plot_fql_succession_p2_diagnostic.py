@@ -38,7 +38,7 @@ LINESTYLES = {42: "-", 0: "--"}
 def read_eval_log(path: Path) -> tuple[list[int], list[float]]:
     steps: list[int] = []
     srs: list[float] = []
-    with path.open() as fh:
+    with path.open(encoding="utf-8") as fh:
         reader = csv.DictReader(fh)
         for row in reader:
             steps.append(int(row["train_step"]))
@@ -48,7 +48,7 @@ def read_eval_log(path: Path) -> tuple[list[int], list[float]]:
 
 def read_test_sr(cell: str, algo: str, seed: int) -> float:
     f = RESULTS / cell / "test" / f"{algo}_seed{seed}.json"
-    with f.open() as fh:
+    with f.open(encoding="utf-8") as fh:
         return float(json.load(fh)["eval_success_rate"])
 
 
@@ -126,7 +126,7 @@ def main() -> None:
             f"{fs[0]:.3f} | {fs[1]:.3f} | **{fmu:.3f}** | "
             f"**{delta:+.3f}** | {verdict} |"
         )
-    summary_md.write_text("\n".join(lines) + "\n")
+    summary_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"wrote {summary_md}")
 
 

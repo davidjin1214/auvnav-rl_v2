@@ -59,6 +59,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -213,6 +214,104 @@ def triage(src: str, raw: str, line: str, heading: str) -> str:
     return "real"
 
 
+# `never` is the only bucket that holds a *claim* instead of an observation: the doc says
+# the path was planned and never built, and this script takes its word.  The failure mode is
+# a doc writing "never produced" about a file that did exist and was merely moved -- that
+# silences a real alarm permanently, and nothing downstream would ever notice.  Git can
+# adjudicate: `git log --all --diff-filter=A -- <path>` says whether the path was ever added.
+DECL_FAMILY = (
+    ("planned-never-built", re.compile(r"从未产出|从未创建|从未建成|never produced|never built")),
+    ("deleted-by-design", re.compile(r"用后即删|deleted by design")),
+    ("renamed", re.compile(r"原计划文件名|原计划名|renamed")),
+    ("not-tracked", re.compile(r"不入 ?git|不是 tracked|非 tracked|not tracked|未入库")),
+)
+
+
+def _ever_added(relpath: str) -> int:
+    """How many commits, anywhere in history, added this exact path."""
+    out = subprocess.run(
+        ["git", "-C", ROOT, "log", "--all", "--diff-filter=A", "--format=%h", "--", relpath],
+        capture_output=True)
+    return len([l for l in out.stdout.decode("utf-8", "replace").splitlines() if l.strip()])
+
+
+def verify_declarations() -> int:
+    """Cross-check each `never` declaration against git history.  Returns SUSPECT count."""
+    print("\n" + "=" * 96)
+    print("自述缺席桶的验真（该桶装的是声明，不是事实；此处拿 git 历史逐条对质）")
+    print("=" * 96)
+    rows: list[tuple[str, int, str, str, str, int, str]] = []
+    occurrences = 0  # the bucket counts every citation; a declaration may be cited many times
+    for src in md_files():
+        with open(src, encoding="utf-8") as fh:
+            lines = fh.read().split("\n")
+        never = declared_never(src, lines)
+        if not never:
+            continue
+        srcdir = os.path.dirname(src)
+        seen: set[tuple[str, str]] = set()
+        in_fence = False
+        for lineno, line in enumerate(lines, 1):
+            if FENCE.match(line):
+                in_fence = not in_fence
+                continue
+            found = [(m.group(1), "bare") for m in BARE.finditer(line)]
+            if not in_fence:
+                found += ([(m.group(2), "link") for m in INLINE.finditer(line)]
+                          + [(m.group(2), "refdef") for m in REFDEF.finditer(line)])
+            for raw, kind in found:
+                if re.match(r"^(https?|mailto|ftp):", raw) or raw.startswith("#"):
+                    continue
+                target = resolve(raw, kind, src)
+                if os.path.exists(target) or target not in never:
+                    continue
+                try:
+                    trel = os.path.relpath(target, ROOT).replace("\\", "/")
+                except ValueError:
+                    trel = target
+                occurrences += 1
+                if (rel(src), trel) in seen:
+                    continue
+                seen.add((rel(src), trel))
+                fams = set()
+                for dline in lines:
+                    if not NEVER_PRODUCED.search(dline):
+                        continue
+                    cands = ([m.group(1) for m in DECL_PATH.finditer(dline)]
+                             + [m.group(2) for m in INLINE.finditer(dline)])
+                    hit = any(os.path.normpath(os.path.join(a, c.split("#")[0])) == target
+                              for c in cands if c and not re.match(r"^(https?|mailto|ftp):", c)
+                              for a in (ROOT, srcdir))
+                    if hit:
+                        fams |= {n for n, rx in DECL_FAMILY if rx.search(dline)}
+                adds = _ever_added(trel)
+                if adds and fams == {"planned-never-built"}:
+                    verdict = "SUSPECT"
+                elif adds and "planned-never-built" in fams:
+                    verdict = "check"
+                elif not adds and fams == {"deleted-by-design"}:
+                    verdict = "weak"
+                else:
+                    verdict = "consistent"
+                rows.append((rel(src), lineno, raw, trel, "+".join(sorted(fams)) or "?",
+                             adds, verdict))
+
+    tally: dict[str, int] = {}
+    for r in rows:
+        tally[r[-1]] = tally.get(r[-1], 0) + 1
+    print(f"声明 {len(rows)} 条（对应桶内 {occurrences} 处引用；同一声明常被多处引用）："
+          + "、".join(f"{k} {n}" for k, n in sorted(tally.items())))
+    print("  SUSPECT = 声明「计划过没建成」，但 git 确实新增过该路径 —— 警报被错误掐掉")
+    print("  check   = 同上但声明族不止一个（可能是改名，须人读）")
+    print("  weak    = 声明「用后即删」而 git 无该路径记录（与「未提交即删」自洽，不算错）")
+    for src, ln, raw, trel, fam, adds, verdict in sorted(rows):
+        if verdict == "consistent":
+            continue
+        print(f"\n  [{verdict}] {src}:{ln}  -> {raw}")
+        print(f"        解析 {trel} ｜ 声明族 {fam} ｜ git 新增该路径的提交数 {adds}")
+    return tally.get("SUSPECT", 0) + tally.get("check", 0)
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -223,6 +322,9 @@ def main() -> int:
                     help="also list #anchor misses (mostly CJK slug drift)")
     ap.add_argument("--orphans", action="store_true",
                     help="also list docs/ and paper/ files nothing links to")
+    ap.add_argument("--verify-declarations", action="store_true",
+                    help="cross-check every `never` declaration against git history "
+                         "(the one bucket holding claims rather than observed facts)")
     args = ap.parse_args()
 
     files = md_files()
@@ -314,9 +416,11 @@ def main() -> int:
         for o in orphans:
             print(f"  {o}")
 
+    suspect = verify_declarations() if args.verify_declarations else 0
+
     print("\n⚠ 本脚本只验「目标是否存在」。指向是否**恰当**、deprecated 横幅与引用方是否"
           "一致、prose 里的版本号与日期声明是否仍然为真——机器验不了，是人的活。")
-    return 1 if (args.strict and buckets["real"]) else 0
+    return 1 if (args.strict and (buckets["real"] or suspect)) else 0
 
 
 if __name__ == "__main__":

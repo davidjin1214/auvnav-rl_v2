@@ -102,7 +102,7 @@
 | # | claim（一句） | 节内锚 | ground truth 出处 | 措辞对齐要求 / 红线 |
 |---|---|---|---|---|
 | C0.1 | 三处伏笔由本节兑现（四态收束 / β1 统一解释 / 交互统一收束） | §5.8.5、§5.9.2、§5.9.5 原句 | — | 兑现句与伏笔句语义严格对应，不扩权 |
-| C1.1 | 临界在线：成功率随历史长度单调闭合到空间参照与评估集上界 | \S\ref{subsec:ch5_online_ablation}、\S\ref{subsec:ch5_online_robustness}、tab:ch5_online_bottleneck | `arrival_v2_experiment_report.md` §7.9 | 数字（0.26/0.76/0.88/0.90）不进本节正文，需要时 \S\ref 指回 |
+| C1.1 | 临界在线：成功率随历史长度单调闭合到空间参照与评估集上界 | \S\ref{subsec:ch5_online_ablation}、\S\ref{subsec:ch5_online_robustness}、tab:ch5_online_bottleneck | `arrival_v2_experiment_report.md` §7.9 | 数字（0.26/0.76/0.88/0.90）不进本节正文，需要时 \S\ref 指回。**2026-08-17 注**：k=4 值 0.26 已于 2026-07-19 道 1 裁决轮作废，现为 **0.46**（k=8/k=12/上界三值未变）；本条的对齐要求不受影响——数字本就不进本节正文 |
 | C1.2 | 在线时序救援不直接迁移到离线（离线各线 $k=4$ 既采数据） | \S\ref{subsec:ch5_online_implications}（k=4 scope 保险）、\S\ref{subsec:ch5_boundary_ceiling} | 同上 §7.9 + broad-val v2 report | 逐字承 §5.5.5："在线情形下靠延长时序窗闭合差距的途径，未必能直接迁移到离线" |
 | C1.3 | 高质量确定性数据上原始动作锚工作良好（途径二前半） | \S\ref{subsec:ch5_rebrac_implications} | `rebrac_experiment_report.md` §7 | 逐字承 §5.7.5"'模仿目标与数据质量相适配'这一正向途径的前半在此得到正面例证" |
 | C1.4 | 质量区间判别：中段去噪参照占优、饱和高位直接模仿至少相当（途径二后半） | \S\ref{subsec:ch5_algo_implications} | `arrival_v2_sac_collector_design.md` §4.0.10 | **逐字沿用 §5.9.5 rev.2 质量区间口径**；禁"含噪数据上 FQL 更优"（H4） |

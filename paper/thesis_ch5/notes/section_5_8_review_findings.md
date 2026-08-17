@@ -89,6 +89,8 @@
 | 全场走廊参照 = 全场打分 + 等效来流局部补偿、与 eq:ch5_priv_obs 仅坐标系不同 | baselines.py PrivilegedCorridorPolicy（last_equivalent_current_world）；setup.tex eq:ch5_priv_obs（体系投影） | ✓ |
 | §5.7.5 伏笔承接、§5.5.5 k=4 scope 承接（对照用 0.26 非 legacy 10%）、速度比 λ=1.0 | rebrac.tex 行 241；online.tex 行 206；setup.tex 行 60 | ✓ |
 
+> **⚠ 追注（2026-08-17）：上表两行引的在线 k=4 参照值 `0.26±0.15` 已非现行值。** 涉及「在线 k=4 0.26±0.15、k=12 0.88±0.04……」与「§5.5.5 k=4 scope 承接（对照用 0.26 非 legacy 10%）」两行。**2026-07-19 道 1 裁决轮**把 2026-06-18 的九宫格转录值定性为**引用错误、完全作废**，以补跑值重排，在线 k=4 参照现为 **`0.46±0.39`**（`online.tex` rev.7、`boundary.tex` rev.4 已按新值落地，§5.8.4 层级表在线行同步）。**两行的 ✓ 判定本身不撤销**——它记录的是 rev.1 复审当时成稿与当时 ground truth 逐项一致，该事实未变；此处只标注该 ground truth 其后被替换。同行其余量（k=12 `0.88±0.04`、三种子、100 万步、评估集 `single_u15_cross_tgt15`）未变。现行 ground truth = [`../../../docs/arrival_v2_experiment_report.md`](../../../docs/arrival_v2_experiment_report.md) §7.10；裁决全档见 [`../../../docs/rebrac_broad_validation_v2_seed43_supplement_plan.md`](../../../docs/rebrac_broad_validation_v2_seed43_supplement_plan.md) 附录 C。
+
 ## 6. 轻流程门控判定（交用户拍板）
 
 | 复审轮 | CRIT | HIGH | 合计 | 流程 |

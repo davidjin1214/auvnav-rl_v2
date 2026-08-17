@@ -19,6 +19,7 @@ import json
 import multiprocessing as mp
 import time
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -453,6 +454,12 @@ def _collect_parallel(
         print(f"[collect] parallel workers unavailable ({exc}); falling back to serial.")
     except OSError as exc:
         print(f"[collect] parallel workers unavailable ({exc}); falling back to serial.")
+    except BrokenProcessPool as exc:
+        # A worker died mid-collection, usually because the OS refused memory to the
+        # spawned interpreters (each re-imports torch and rebuilds the env). The
+        # serial retry below needs one interpreter instead of `num_workers`. Note
+        # BrokenProcessPool is a RuntimeError, so the handlers above do not catch it.
+        print(f"[collect] parallel worker died ({exc}); falling back to serial.")
 
     return [_collect_episode_range(worker_config, 0, num_episodes)]
 

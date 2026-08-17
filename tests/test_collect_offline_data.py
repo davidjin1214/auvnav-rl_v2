@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import json
+import multiprocessing as mp
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 
+import scripts.collect_offline_data as collect_offline_data
 from scripts.collect_offline_data import (
     TERMINATION_REASON_TO_CODE,
+    CollectChunkResult,
     _collect_episode,
+    _collect_parallel,
     _episode_chunks,
     collect,
 )
@@ -159,3 +164,44 @@ def test_collect_episode_marks_timeout_as_done() -> None:
     assert transitions["terminateds"] == [False]
     assert transitions["truncateds"] == [True]
     assert transitions["terminal_reason_codes"] == [TERMINATION_REASON_TO_CODE["timeout"]]
+
+
+def _collect_range_dying_in_subprocess(worker_config, start, end):
+    """Abort when run in a spawned worker, succeed when run in-process.
+
+    Reproduces a collection worker killed by the OS -- most often for memory,
+    since every spawned worker re-imports torch and rebuilds the env. The parent
+    sees that as BrokenProcessPool. Must stay module-level to survive pickling
+    under spawn.
+    """
+    if mp.current_process().name != "MainProcess":
+        os._exit(1)
+    return CollectChunkResult(
+        start_episode=start,
+        end_episode=end,
+        payload={"obs": np.zeros((end - start, 1), dtype=np.float32)},
+        successes=0,
+        episode_returns=[0.0] * (end - start),
+        episode_lengths=[1] * (end - start),
+        episode_reasons=["timeout"] * (end - start),
+        episode_policy_names=["goalseek"] * (end - start),
+    )
+
+
+def test_collect_parallel_falls_back_to_serial_when_worker_dies(monkeypatch) -> None:
+    monkeypatch.setattr(
+        collect_offline_data,
+        "_collect_episode_range",
+        _collect_range_dying_in_subprocess,
+    )
+
+    results = _collect_parallel(
+        worker_config=None,
+        num_episodes=4,
+        num_workers=2,
+    )
+
+    # The serial retry covers the whole episode range in one chunk.
+    assert len(results) == 1
+    assert (results[0].start_episode, results[0].end_episode) == (0, 4)
+    assert results[0].payload["obs"].shape[0] == 4

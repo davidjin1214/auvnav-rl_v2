@@ -6,6 +6,7 @@ import multiprocessing as mp
 import pickle
 import random
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -405,6 +406,16 @@ def _run_parallel_episode_chunks(
         return worker_fn(worker_config, episodes)
     except OSError as exc:
         print(f"[eval] parallel workers unavailable ({exc}); falling back to serial.")
+        return worker_fn(worker_config, episodes)
+    except BrokenProcessPool as exc:
+        # A worker died mid-run. The usual cause is the OS refusing memory to the
+        # spawned interpreters: each one re-imports torch and rebuilds the env for
+        # ~0.5 GB, so `num_workers` of them can exhaust a small machine. The serial
+        # retry needs one interpreter instead of `num_workers` and normally clears
+        # it. BrokenProcessPool is a RuntimeError, so neither handler above catches
+        # it. If the worker instead died from a genuine fault, the serial retry hits
+        # the same fault and raises the real traceback rather than this opaque error.
+        print(f"[eval] parallel worker died ({exc}); falling back to serial.")
         return worker_fn(worker_config, episodes)
 
 

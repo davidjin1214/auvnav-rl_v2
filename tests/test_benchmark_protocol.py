@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import math
+import multiprocessing as mp
+import os
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +16,12 @@ from scripts.benchmark_utils import (
     load_benchmark_manifest,
     save_benchmark_manifest,
 )
-from scripts.train_utils import evaluate_agent, evaluate_offline_policy_parallel, make_planar_env
+from scripts.train_utils import (
+    _run_parallel_episode_chunks,
+    evaluate_agent,
+    evaluate_offline_policy_parallel,
+    make_planar_env,
+)
 
 
 class ZeroAgent:
@@ -168,6 +175,32 @@ def test_parallel_policy_eval_matches_serial() -> None:
                 assert serial_value == parallel_value, key
         else:
             assert serial_value == parallel_value, key
+
+
+def _worker_dying_in_subprocess(worker_config, episodes):
+    """Abort when run in a spawned worker, succeed when run in-process.
+
+    Reproduces a worker killed by the OS -- most often for memory, since every
+    spawned worker re-imports torch and rebuilds the env. The parent sees that as
+    BrokenProcessPool. Must stay module-level to survive pickling under spawn.
+    """
+    if mp.current_process().name != "MainProcess":
+        os._exit(1)
+    return [{"episode": episode, "config": worker_config} for episode in episodes]
+
+
+def test_parallel_chunks_fall_back_to_serial_when_worker_dies() -> None:
+    episodes = [0, 1, 2, 3]
+
+    results = _run_parallel_episode_chunks(
+        _worker_dying_in_subprocess,
+        "cfg",
+        episodes,
+        num_workers=2,
+    )
+
+    # Every episode is evaluated exactly once, in order, by the serial retry.
+    assert results == [{"episode": episode, "config": "cfg"} for episode in episodes]
 
 
 def test_parallel_rebrac_policy_eval_matches_serial() -> None:

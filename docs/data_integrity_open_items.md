@@ -85,11 +85,41 @@
 > [`../tests/test_audit_seed_overlap.py`](../tests/test_audit_seed_overlap.py) 共 11 项，含顶层漏项、
 > 嵌套漏项、符号链接盲区，以及退出码 `2`（notebook 里唯一的硬信号；该契约在进程内钉，另有一项子进程测试只钉「`python -m` 起得来」——它跑在夹具树上，不扫宿主的 `offline_data/`，否则一次真发现会表现成测试失败）。
 >
-> **销号条件**：对 Drive 那棵树跑一次 `python -m scripts.audit_seed_overlap`（`--data-dir` 可把它指向挂载路径，不必在 Drive 侧克隆仓库；`--benchmarks-dir` 同理），对帐块判 clean（零
+> **销号条件**：对 Drive 那棵树跑一次 `python -m scripts.audit_seed_overlap`，对帐块判 clean（零
 > `[ENUM MISS]`、零 `[SHADOWED]`、退出码 `0`），且账本已含 Drive 全部数据集名（先跑一次
 > `--record` 并回传账本）。修复格见
 > [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb) §2 末两格。
 > **在那之前本块不销号。**
+>
+> #### 怎么在 Colab 上跑（Drive 侧不是 git 仓库）
+>
+> Drive 上那份 `rl_v2_5/` 是同步副本，不是 clone —— 所以**别跑它自带的
+> `scripts/audit_seed_overlap.py`**：那份的版本停在最后一次同步，很可能早于 `0aa42ac`（单层
+> glob 改 rglob）、`8d03fcc`（账本对帐 ＋ 退出码 `2`）与 `95a8302`（`--data-dir`），跑了会静默
+> 重现旧行为，且没有对帐块可判。**代码从 git 取、数据从 Drive 读**，两边不必是同一棵树：
+>
+> ```python
+> from google.colab import drive; drive.mount('/content/drive')
+> !git clone --depth 1 https://github.com/davidjin1214/auvnav-rl_v2.git /content/rl_v2
+> %cd /content/rl_v2
+> DRIVE = '/content/drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5'
+> # 1) 先收名字进账本（并集，只增不删）
+> !python -m scripts.audit_seed_overlap --data-dir "$DRIVE/offline_data" \
+>     --benchmarks-dir "$DRIVE/benchmarks" --record ; echo "exit=$?"
+> # 2) 再判对帐；exit=0 才算 clean
+> !python -m scripts.audit_seed_overlap --data-dir "$DRIVE/offline_data" \
+>     --benchmarks-dir "$DRIVE/benchmarks" ; echo "exit=$?"
+> ```
+>
+> 三个必看的点：
+>
+> 1. **`!` 行的非零退出不会让 cell 失败**，而退出码是这里唯一的硬信号 —— 所以每行都跟一句
+>    `echo "exit=$?"`，并**以打印出来的数字为准**，不要只看输出好不好看。
+> 2. **回传账本**：clone 里的 `scripts/offline_dataset_ledger.txt` 是被 `--record` 改的那份，
+>    要取回本机提交（`files.download` 或写回 Drive 再同步），否则这次收到的名字下轮就没了。
+> 3. **`--record` 只能记下枚举**看得见**的名字** —— 枚举本身正是嫌疑对象，所以短列举会
+>    少记。这不构成销号，只是让账本长期变厚；判据仍是上面那两个零加退出码 `0`，且照
+>    (3) 条，「重跑一次数目对上了」不算数。
 
 三条在别的工作里顺带撞见、**已在本机核实过证据但尚未处理**的记账问题。都不影响方法本身，
 但都会在投稿/返修阶段被审稿人问到，且第 1 条一旦成立会直接推翻一格主结果。
@@ -399,27 +429,6 @@ val 与 test 逐条相同（第 ③ 条）——**三条问题在这一句上同
   - 验收：编译 65 页、0 undefined、2 处 Overfull（与整改前逐条相同）；既有数字零漂移；逐处理由见各 `.tex` 头注 rev 块。章状态见 [`../paper/thesis_ch5/status.md`](../paper/thesis_ch5/status.md)。
 - **污染面枚举（2026-08-16 更新，分两层）**：
   - ✅ **第 5 章范围已封闭**。本机补齐全部章内依赖数据集后，`audit_seed_overlap` 对 $29$ 个集跑通，**OVERLAP 仍只有两格**（`crosscomp-2000` 确定性集与其含噪变体，各 $100/100$），其余全 clean；以 `results/offline/**` 目录名反查，章内每个训练单元所依的数据集无一缺失。含噪 $2000$ 集本机独立复现 $100/100$，同族 $1000$ 集 $0/100$。
-  - ❌ **仓库全域仍未封闭**，文首 ⚠⚠ 块**不销号**。Drive 那次漏掉的是**两个顶层**目录（`--verify` 用裸名即解析成功），单层 `glob` 本应扫到——成因仍未证实，FUSE 假设依然在台面上。**2026-08-17 进展**：漏项数目、跨进程复现、以及「次轮同码返回 26 个 ⇒ 该漏扫是瞬时的」均已由两轮原始输出钉死；据此新增账本对帐（`[ENUM MISS]` ＋ 退出码 `2`，经故意喂假枚举实测会 fire）。**销号仍需 Drive 侧实跑一次**，条件与判读见文首订正 (5)，**怎么跑见下一条**。
-  - **怎么在 Colab 跑（2026-08-20 补）**：Drive 侧工作副本本身就挂在 `drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5/`，其 `offline_data/` 即待审的那棵树，因此 **不需要 `--data-dir`**（那个开关是给「从别处审一个挂载点」用的，例如在 Mac 上审同步下来的目录）。
-
-    ```python
-    from google.colab import drive; drive.mount('/content/drive')
-    %cd "/content/drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5"
-    !git pull --ff-only
-    ```
-    ```python
-    # ① 先把 Drive 上全部集名收进账本（本步会改 scripts/offline_dataset_ledger.txt）
-    !python -m scripts.audit_seed_overlap --record
-    ```
-    ```python
-    # ② ③ 各自独立一次复核 —— 两轮都要判 clean
-    !python -m scripts.audit_seed_overlap; echo "exit=$?"
-    ```
-
-    **顺序不可颠倒**：必须先 `--record`、后复核。账本要先含 Drive 全部集名，之后一次短列举才会显形为 `[ENUM MISS]`；反过来（同一次列举记完就拿它自判）等于拿短列举给自己背书——正是文首订正 (5) 要防的那件事。
-
-    **一次干净不算数**：首轮 24 / 次轮 26 的差异已证明该漏扫是**瞬时**的，故 ② 要跑两轮（最好隔一次运行时重启），两轮都 clean 才算。
-
-    **判读**：零 `[ENUM MISS]`、零 `[SHADOWED ]`、退出码 `0`，且 ① 打印的 `ledger: added N` 已随账本回传（把 `scripts/offline_dataset_ledger.txt` 提交回 `main`）。任一轮不满足 → 文首 ⚠⚠ 块**不销号**，把两轮原始输出存档后再判。
+  - ❌ **仓库全域仍未封闭**，文首 ⚠⚠ 块**不销号**。Drive 那次漏掉的是**两个顶层**目录（`--verify` 用裸名即解析成功），单层 `glob` 本应扫到——成因仍未证实，FUSE 假设依然在台面上。**2026-08-17 进展**：漏项数目、跨进程复现、以及「次轮同码返回 26 个 ⇒ 该漏扫是瞬时的」均已由两轮原始输出钉死；据此新增账本对帐（`[ENUM MISS]` ＋ 退出码 `2`，经故意喂假枚举实测会 fire）。**销号仍需 Drive 侧实跑一次**，条件与判读见文首订正 (5)。
   - ⚠ 另查出一个**独立**缺陷并已修（`0aa42ac`）：`_load_datasets()` 用单层 `glob` 而 `_load_manifests()` 用 `rglob`，两侧不对称，`offline_data/fql_succession/` 与 `audit_dryrun_2026-05-19/` 下的 $12$ 个嵌套集从未进过枚举（全部 clean）。**它不解释 Drive 那次**——两者是不同的缺陷，勿相互冒充。
   - 此项不影响已落地的整改——正文披露覆盖的是已实核的三条。

@@ -52,14 +52,54 @@ LEDGER_PATH = REPO_ROOT / "scripts" / "offline_dataset_ledger.txt"
 TOL = 1e-6
 
 
+def _iter_dataset_dirs(root: Path) -> Iterable[Path]:
+    """Every directory under ``root`` holding a ``metadata.json``, links included.
+
+    Neither ``rglob`` nor ``os.walk`` can be used here: both decide whether to descend by asking
+    ``is_dir()`` first, and pathlib additionally refuses symlinked directories outright. On the
+    Drive mount that cost three datasets in a row -- ``os.scandir`` listed them and their
+    ``metadata.json`` stat'd fine, yet ``rglob`` returned neither (2026-08-21 Colab run, both
+    passes identical, so not the transient short readdir of 2026-08-16).
+
+    So this follows the rule ``_metadata_is_file`` already follows: attempt the operation and let
+    the filesystem object, rather than trusting a predicate that can be wrong. Two consequences
+    worth stating:
+
+    * a name whose ``metadata.json`` stats is a dataset, full stop -- no ``is_dir()`` involved,
+      and datasets are never descended into (a dataset does not nest inside a dataset);
+    * everything else is *tried* as a container, and only a filesystem refusal stops it.
+
+    The visited set covers containers only, so two links to one collection cannot make a dataset
+    disappear -- it would merely be reported once under each name.
+    """
+    seen: set[str] = set()
+    stack = [root]
+    while stack:
+        current = stack.pop()
+        real = os.path.realpath(current)
+        if real in seen:  # a link pointing back up would otherwise loop forever
+            continue
+        seen.add(real)
+        try:
+            entries = sorted(os.scandir(current), key=lambda e: e.name)
+        except OSError:  # not a directory, or unreadable -- either way there is nothing below it
+            continue
+        for entry in entries:
+            child = current / entry.name
+            if (child / "metadata.json").is_file():
+                yield child
+            else:
+                stack.append(child)
+
+
 def _load_datasets() -> dict[str, dict[str, Any]]:
     # Recursive: collections such as fql_succession/ nest their datasets one level deeper, and a
     # single-level glob skipped them silently -- an audit that under-reports is worse than none.
     datasets: dict[str, dict[str, Any]] = {}
-    for meta_path in sorted(OFFLINE_DATA_DIR.rglob("metadata.json")):
-        name = str(meta_path.parent.relative_to(OFFLINE_DATA_DIR)).replace("\\", "/")
-        datasets[name] = json.loads(meta_path.read_text(encoding="utf-8"))
-    return datasets
+    for dataset_dir in _iter_dataset_dirs(OFFLINE_DATA_DIR):
+        name = str(dataset_dir.relative_to(OFFLINE_DATA_DIR)).replace("\\", "/")
+        datasets[name] = json.loads((dataset_dir / "metadata.json").read_text(encoding="utf-8"))
+    return dict(sorted(datasets.items()))
 
 
 def _load_manifests() -> dict[str, dict[str, Any]]:
@@ -124,9 +164,14 @@ def reconcile(enumerated: Iterable[str], ledger_path: Path = LEDGER_PATH) -> Rec
     * ``missed`` -- a ledger name whose ``metadata.json`` stats fine, yet the enumeration never
       returned it. The ledger is a cross-host union of every dataset name ever recorded, so it
       supplies names to probe that this host's listing cannot be trusted to produce.
-    * ``shadowed`` -- a top-level dataset ``os.scandir`` reports and the recursive glob dropped.
-      This catches an asymmetry inside pathlib rather than a bad listing: ``rglob`` refuses to
-      descend into a symlinked directory, and this repo mounts its data through links.
+    * ``shadowed`` -- a top-level dataset ``os.scandir`` reports and the enumeration dropped.
+      This is the weaker of the two and has been getting weaker: it caught real breakage while
+      the enumeration was ``rglob``-based (which refuses to descend into a symlinked directory,
+      and this repo mounts its data through links), but ``_iter_dataset_dirs`` now starts from
+      the same ``os.scandir`` call, so at the top level the two sides largely agree by
+      construction. It still catches a drop inside the descent logic; it is **not** independent
+      evidence about the listing. ``missed`` is the check that is -- the ledger comes from
+      outside this process.
 
     ``os.listdir`` is deliberately *not* used as the reference for ``missed``. It and ``glob``
     are two consumers of the same readdir, so a short listing hands both the same short answer

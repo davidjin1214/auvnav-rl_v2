@@ -135,24 +135,49 @@ def test_new_dataset_is_flagged_as_unrecorded(offline_data, ledger):
     assert not rec.failed  # a new dataset is news, not a broken listing
 
 
-def test_symlinked_dataset_is_shadowed(offline_data, ledger, tmp_path):
-    """Why `shadowed` exists: pathlib's rglob refuses to descend into a symlinked directory.
-
-    This repo mounts its data through links, so a dataset linked in rather than copied in would
-    otherwise drop out of the audit without a word.
-    """
-    elsewhere = _write_dataset(tmp_path / "external", "epsilon_ep1000")
+def _symlink_or_skip(link: Path, target: Path) -> None:
     try:
-        (offline_data / "epsilon_ep1000").symlink_to(elsewhere, target_is_directory=True)
+        link.symlink_to(target, target_is_directory=True)
     except (OSError, NotImplementedError) as exc:  # Windows without developer mode
         pytest.skip(f"cannot create a symlink here: {exc}")
+
+
+def test_symlinked_dataset_is_enumerated(offline_data, ledger, tmp_path):
+    """A dataset linked in rather than copied in must still be audited.
+
+    It was not, until 2026-08-21. `rglob` refuses to descend into a symlinked directory, so three
+    datasets on the Drive mount fell out of the enumeration while `os.scandir` listed them and
+    their `metadata.json` stat'd fine. The reconciliation did report it -- that half worked -- but
+    a reported blind spot is still a blind spot, and the open item it blocks cannot close while
+    the enumeration itself cannot see them.
+    """
+    elsewhere = _write_dataset(tmp_path / "external", "epsilon_ep1000")
+    _symlink_or_skip(offline_data / "epsilon_ep1000", elsewhere)
 
     names = audit._load_datasets()
     rec = audit.reconcile(names, ledger)
 
-    assert "epsilon_ep1000" not in names
-    assert rec.shadowed == ["epsilon_ep1000"]
-    assert rec.failed
+    assert "epsilon_ep1000" in names
+    assert rec.shadowed == []
+    assert not rec.failed
+
+
+def test_symlinked_collection_is_descended_into(offline_data, tmp_path):
+    """The fql_succession/ shape: the link is the container, the datasets sit a level below it."""
+    external = tmp_path / "external_collection"
+    _write_dataset(external, "zeta_ep500", episodes=500)
+    _symlink_or_skip(offline_data / "linked_collection", external)
+
+    assert "linked_collection/zeta_ep500" in audit._load_datasets()
+
+
+def test_a_symlink_loop_terminates(offline_data):
+    """Descending through links makes a cycle reachable; the visited set is what stops it."""
+    _symlink_or_skip(offline_data / "collection" / "back_to_root", offline_data)
+
+    names = audit._load_datasets()  # must not hang, and must not walk itself deeper and deeper
+
+    assert set(names) == {"alpha_ep1000", "beta_ep2000", "collection/gamma_ep500"}
 
 
 def test_cli_exits_nonzero_when_the_listing_is_short(offline_data, ledger, monkeypatch, capsys):

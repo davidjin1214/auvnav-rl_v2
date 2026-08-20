@@ -75,7 +75,12 @@ Two things these files make checkable that were previously only assertions:
   disclosed in Chapter 5 §5.3.6.
 - **`offline_rebrac_worldcomp_epoch_probe/test_40` and `val_40` are the same 40 episodes**, the two
   files differing only in a `created_at` six seconds apart. For that unit "test" and "validation"
-  are one set, not merely overlapping ones.
+  are one set, not merely overlapping ones. **Ruled on 2026-08-21: this stays out of the chapter**
+  — a repository fact, recorded here, deliberately not carried into Chapter 5 prose.
 
-Which table drew on which of these files is not recorded in `results/offline/**`; the readouts
-there do not name their manifest.
+Which *physical file* a given table used is not recorded: no readout under `results/offline/**`
+names its manifest. The *episode set* is recorded, and that is the half the contamination question
+turns on — every `test/seed_*.json` carries `eval_episode_results` with a per-episode `episode_id`
+and `seed`, so a readout's evaluation instances can be matched against these manifests exactly.
+Expect an equivalence class rather than one file: five of the manifests here freeze the same seeds
+1250..1289, and `episode_id` derives from the benchmark key, so it does not separate them either.

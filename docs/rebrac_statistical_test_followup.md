@@ -4,6 +4,12 @@
 > 配套：[docs/rebrac_mainline_review.md §2.2.3 / §3.1.C](./rebrac_mainline_review.md)
 > 用途：paper drafting 时的 main results 表注脚 / discussion 引用。
 
+> ⚠ **追注（2026-08-20，① 层深核）——本文全部读数坐在一个与选点集嵌套的评估集上。** §1 那个 $100$ 回合终检集的**固定前 $40$ 条**就是选 checkpoint 用的验证集（[`data_integrity_open_items.md`](./data_integrity_open_items.md) 第 ③ 条，2026-08-09 确证）。仅计入选点规则未见的 $60$ 条时，§4 的闭合比例为 **48.9% / 35.6%**——方向不变，但落到半数以下。
+>
+> 因此 §5 第一条写作建议里的「差距闭合**过半**」读法**已在第 5 章撤销**：`rebrac.tex` §5.7.2 现行措辞为「约半」，并就地给出 48.9% / 35.6%（敏感性读数集中登记于 §5.7.m）。**引本文写作时须连同该限定。**
+>
+> 下文 53.0% / 48.5% 与 Welch / bootstrap 四项统计量**均为当时实测值，按全集口径仍成立，故一律不改**（此为追注而非订正；`rebrac.tex` rev 块亦明写点估计未变）。
+
 ## 1. Sample-level 数据
 
 | Protocol | 来源 | n_seeds | n_eps/seed | seed-level mean | seed-level std |

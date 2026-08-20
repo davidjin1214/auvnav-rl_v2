@@ -428,7 +428,8 @@ Formal 结果表明：
 1. `worldcomp` 数据上的 deployable gap 是真实存在的。  
 2. 在 deployable setting 下，当前 TD3BC 的正式最优点退回到 `alpha=0.0`，说明只用 deployable 观测时，critic-guided improvement 不稳定。  
 3. 一旦 critic 在训练时能够访问 `privileged_obs`，最佳 `alpha` 变为 `0.1`，success 从 `0.858` 提升到 `0.922`。  
-4. privileged critic 关闭了约 `48.5%` 的 deployable teacher gap，说明局部 teacher information gap 是重要瓶颈。  
+4. privileged critic 关闭了约 `48.5%` 的 deployable teacher gap，说明局部 teacher information gap 是重要瓶颈。
+   ⚠ **追注（2026-08-20）**：该 `48.5%` 算在一个与选点集嵌套的 $100$ 回合评估集上（前 $40$ 条即选 checkpoint 用的验证集，[`data_integrity_open_items.md`](./data_integrity_open_items.md) 第 ③ 条）。仅计入未参与选点的 $60$ 条时降为 **35.6%**（位移 $-12.9$ pp，同次复核中位移最大的读数之一）。**点估计不改**；引用时须连同该限定，参见 `rebrac.tex` §5.7.2/§5.7.m。  
 5. 但 privileged-critic 仍未达到 baseline，因此剩余差距不只来自观测信息，也来自算法与策略层面的限制。  
 
 一句话总结：

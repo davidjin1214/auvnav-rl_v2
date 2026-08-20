@@ -39,7 +39,7 @@
 |---|---|---|
 | ② | 两份 line summary 的**真值核对**——逐条对照源文档、`results/`、CSV、`metadata.json` | ✅ 已完成 |
 | ③ | 文档**归位与角色标注** | ✅ 已完成 |
-| ① | 25 篇**论文承重文档**深核 | ⬜ **下一步** |
+| ① | 25 篇**论文承重文档**深核 | 🔧 **进行中** —— 第 1 批已落（12/25 已深核，见 §4.1） |
 | 附 | 67 处**真失效指针** | ✅ **已闭环，但闭环方式须照 §3 引用**——不是「把 67 个文件补出来」 |
 
 层号是当初提出的顺序，执行顺序是 ② → ③ → ①：先确认索引本身可信，再动它索引的东西。
@@ -99,6 +99,25 @@ SAC 四档八个数字逐位吻合 `metadata.json`；36 个 h2h `test_result.jso
   已按此处理的两处：`fql_e_uni_anchor_dataset_card.md` §4（0.85 是 Gate B 门槛依据）、
   `docs/archive/fql_succession/fql_succession_gate_b_interim_report.md` §7。
 - **`*_completed.ipynb` 是执行记录**：路径可以同步改，数字一律不动。
+
+### 4.1 进度（第 1 批，2026-08-20）
+
+**已深核 12 篇**（沿上述优先级规则，先查引用三个高危源文档的）：广验 v2 report / plan / seed43 supplement plan、`rebrac_line_overview`、`rebrac_mainline_review`、`offline_rl_line_summary`、`data_integrity_open_items`、`td3bc_phase0c_experiment_report`、`rebrac_statistical_test_followup`、`td3bc_worldcomp_teacher_gap_experiment_report`、`rebrac_method_section_draft`、`rebrac_experiment_report`（仅 §10A 指针）。
+
+**三个高危源文档中的两个已清**：广验 v2 supplement（2026-07-12）与 asym-critic addendum（2026-05-27）的传播逐处核过——作废的 `0.850 ± 0.024 / −5.2pp / 同向退化` 每一份副本都带撤销标记，论文侧 `boundary.tex` 已全面改三种子并自披露「配对诊断基于首轮两种子」。**第三个（data_integrity ①③⑤）则漏了一大片**，见下。
+
+**本批 findings（均已落）**：
+
+| # | 文档 | 问题 | 改法 |
+|---|---|---|---|
+| F1 | `offline_rl_line_summary.md` §4.5 | **四处过期**：标题与正文均写「处置未决/待裁决」（实已 2026-08-16 走 ①-c 落地）；「δ 仍未测」（实已测，源文档 `4295f68` 已订、本副本漏跟）；污染面「至今未封闭」（实为章内已封、全仓未封两层） | 订正 + 标明原文 |
+| F2 | `rebrac_statistical_test_followup.md` | rev.1、**文内无任何日期**、paper 侧 10 处引用。它是 §5.7.2 「差距闭合过半」写作建议的源头，而第 5 章已改「约半」（留出 60 条上 48.9%）——文内零披露 | 加追注，**点估计不改** |
+| F3 | `td3bc_worldcomp_teacher_gap_experiment_report.md`:431 | 「特权 critic 关闭约 48.5%」无嵌套限定；留出 60 条上为 35.6%（$-12.9$ pp） | 同上 |
+| F4 | 本文 §7 | ①③⑤ 处置的指针只写 `discussion.tex` §5.10.4（那里只有章级收束句） | 改指正文三处 |
+
+**本批新增一条筛法（与 §3 优先级规则并用）：数同一条陈述有几份平行副本。** F1 四处全出于同一机制：源文档改了，副本没改。同一条「处置未决」当时共三份（`CLAUDE.md`、本文 §7、`offline_rl_line_summary`），前两份已订而第三份漂了四天；`paper/thesis_ch5/status.md` 那份早已划掉。**做法**：每碰到一段复述别处结论的文字，先 grep 它的特征数字或措辞找兄弟副本，有兄弟的八成有一份掉队。机械检查对这类全部失盲。
+
+**剩下 13 篇未深核**：`arrival_v2_experiment_report`、`arrival_v2_sac_collector_design`、`environment_design`、FQL 系六篇（`p2_results` / `p2_main_spec` / `p2_xbench_spec` / `p2_mechanism_diagnostic` / `p2_collection_log` / `paper_writing_index`）、`online_rl_line_summary`、`online_sac_reward_redesign`、`rebrac_paper_writing_index`、`systematic_improved_sac_experiment_report`、`rebrac_experiment_report`（全文，1200+ 行）。
 
 ## 5. 67 处真失效指针
 
@@ -194,6 +213,6 @@ python -m pytest tests/ -q --tb=no        # 需 --basetemp 指到 scratchpad，�
   补回只需**读数层约 125 MB**
 
 **研究侧**：数据完整性 ①③⑤ 的**处置已于 2026-08-16 落地**——路线 ①-c（散文披露 + 登记敏感性读数），
-见 `discussion.tex` §5.10.4。**仍未闭合的是另一件事**：污染**枚举**只对第 5 章自有数据集闭合，
+入正文三处：`setup.tex` §5.3.5/§5.3.6（口径披露）、`rebrac.tex` §5.7.1/§5.7.2/§5.7.m（敏感性读数）、`discussion.tex` §5.10.4（章级收束）。**仍未闭合的是另一件事**：污染**枚举**只对第 5 章自有数据集闭合，
 全仓未闭合——Drive 侧枚举本身被证残缺。入口 [`data_integrity_open_items.md`](data_integrity_open_items.md)
 + [`../paper/thesis_ch5/data_integrity_impact_assessment_review.md`](../paper/thesis_ch5/data_integrity_impact_assessment_review.md)。

@@ -334,17 +334,17 @@
 
 短期不需要的工作:Path 1B spike-lite 实施、Path 2 finetune 评估、Path 4 vehicle.py oracle plan 起草、AUVHamNODE 上游 dataset 取回。这些都在 pause memo §5 留作债务表。
 
-### 4.5 数据完整性问题（2026-08-02 记录 → 2026-08-16 复核，⚠ 处置未决）
+### 4.5 数据完整性问题（2026-08-02 记录 → 2026-08-16 复核，处置已落地；污染面全仓未封闭）
 
-清单与完整证据在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)。**第 ①、③、⑤ 条已核实成立**（③ 比原怀疑更强；⑤ 为 2026-08-16 独立复核新增，本节 2026-08-16 才补录），**处置待裁决**；不影响方法本身，但都会在答辩/返修时被问到。
+清单与完整证据在 [`docs/data_integrity_open_items.md`](data_integrity_open_items.md)。**第 ①、③、⑤ 条已核实成立**（③ 比原怀疑更强；⑤ 为 2026-08-16 独立复核新增，本节 2026-08-16 才补录），**处置已于 2026-08-16 落地**（路线 ①-c：如实披露 + 登记敏感性读数——`setup.tex` §5.3.5/§5.3.6、`rebrac.tex` §5.7.1/§5.7.2/§5.7.m、`discussion.tex` §5.10.4）；不影响方法本身，但都会在答辩/返修时被问到。
 
-- **① `crosscomp-2000` 训练与评估用的是同一批任务实例**（⚠ 最高优先，**已确证**）。数据集 `seed=0`、2000 回合 → 训练种子 0..1999 完整包含评估 manifest 的 1250..1349；reset RNG 重放确认 **100/100 实例逐条相同**。成因是 `collect_offline_data.py` 的 `--seed` 默认值为 0 加上规模跨过 1250。**本机 `offline_data/` 范围内仅此一个受影响**（其余 9 个止于种子 999，低于最小 `manifest_seed`=1100）——但该枚举只覆盖本机目录，⑤ 就是漏在外面的一个，且 Drive 侧枚举本身也被证残缺，**污染面至今未封闭**。波及 ReBRAC 主线 `cross-2000` 一格与"2000 不再劣于 1000"这条翻转论述；反向的"2000<1000"结论不受威胁（污染只会抬高 2000）。
+- **① `crosscomp-2000` 训练与评估用的是同一批任务实例**（⚠ 最高优先，**已确证**）。数据集 `seed=0`、2000 回合 → 训练种子 0..1999 完整包含评估 manifest 的 1250..1349；reset RNG 重放确认 **100/100 实例逐条相同**。成因是 `collect_offline_data.py` 的 `--seed` 默认值为 0 加上规模跨过 1250。**本机 `offline_data/` 范围内仅此一个受影响**（其余 9 个止于种子 999，低于最小 `manifest_seed`=1100）。⚠ **本句原写「污染面至今未封闭」，2026-08-20 订正为两层**：本机补齐章内依赖后重跑 $29$ 个集，OVERLAP 仍只有两格（本条与 ⑤）——**第 5 章范围已封闭**；**仓库全域仍未封闭**，Drive 侧枚举本身被证残缺，销号须 Drive 侧实跑一次（入口同下）。波及 ReBRAC 主线 `cross-2000` 一格与"2000 不再劣于 1000"这条翻转论述；反向的"2000<1000"结论不受威胁（污染只会抬高 2000）。
 - **② paper Table 1 的 transitions 数字与本机 metadata 对不上** —— 仅影响已撤销的 standalone paper 旧稿（`paper/archive/rebrac_standalone/sections/setup.tex`）；论文第 5 章已于 rev.3（2026-06-18）用实测值 1.5e5 / 3.0e5 / 1.0e5 纠正过，四源互证。
 - **③ 选点验证集是终报测试集的前缀子集**（**已确证**，强于原怀疑）。manifest 生成器无 seed 偏移，val/test 用同一 benchmark key → `val_40` = `test_100` 的前 40 条；40+40 的单元里两份 manifest 完全相同。即报告的 100 回合测试集中有 40 条正是选 checkpoint 用的那批。
 - **④ 行为策略 success_rate 0.958 vs ReBRAC-Q 0.928** —— 非缺陷，建议把两个 behaviour policy 在评估 manifest 上的成功率补成一行，纯 eval 开销。
 - **⑤ 含噪 2000 回合数据集的种子同样重叠**（2026-08-16 独立复核新增，Drive 侧探针**已钉死**）。`crosscomp_..._noise0p05clip0p15_ep2000` 同为 `seed=0` / 2000 回合 → 种子 0..1999 完整包含 manifest 的 1250..1349，reset RNG 重放 **100/100 逐条相同**，与 ① 同因同病。波及第 5 章 §5.6.2 那句 noisy-support 诊断——`0.60` 出自确定性 2000（①）、`0.74` 出自本条，**两个端点都坐在污染数据上**；且该筛查是 40+40 单元，val 与 test 逐条相同（③）——**三条问题在同一句上同时命中**。减轻情节：`td3bc.tex` rev.5 已把机制归属挪到干净的一千回合反证。
 
-**处置与复核状态**（详见 [`data_integrity_open_items.md`](data_integrity_open_items.md) 末节）：波及面评估初稿 + [独立复核](../paper/thesis_ch5/data_integrity_impact_assessment_review.md)（判「可作裁决依据但须打补丁」）；③ 已用 [`ch5_holdout_split_audit.py`](../paper/thesis_ch5/tools/ch5_holdout_split_audit.py) 零成本量化（留出 60 条上组间差全部保号且变大，唯一例外是 §5.7.2 的 53.0% → 48.9%）；① 的污染幅度 δ 仍未测，但已具备条件。
+**处置与复核状态**（详见 [`data_integrity_open_items.md`](data_integrity_open_items.md) 末节）：波及面评估初稿 + [独立复核](../paper/thesis_ch5/data_integrity_impact_assessment_review.md)（判「可作裁决依据但须打补丁」）；③ 已用 [`ch5_holdout_split_audit.py`](../paper/thesis_ch5/tools/ch5_holdout_split_audit.py) 零成本量化（留出 60 条上组间差全部保号且变大，唯一例外是 §5.7.2 的 53.0% → 48.9%）；① 的污染幅度 δ **已于 2026-08-16 实测**（干净 manifest `--seed 3000` 上原封不动重跑两格 × 5 种子，纯评估）：差中差 **$+0.80$ pp**（种子级 95% CI $[-3.5,+5.1]$ 跨零），两格绝对水平另同向下移 $4.0$/$4.8$ pp。详见 `rebrac.tex` §5.7.1/§5.7.m，复算 [`ch5_clean_probe_readout.py`](../paper/thesis_ch5/tools/ch5_clean_probe_readout.py)。（本行原写「δ 仍未测」，源文档 `data_integrity_open_items.md` 已于 `4295f68` 订正，本副本漏跟。）
 
 **复核工具**：[`scripts/audit_seed_overlap.py`](../scripts/audit_seed_overlap.py)（2026-08-09 入库，2026-08-16 改为递归扫描）。比对数据集 × manifest 的种子区间相交（只在流场／几何／目标速度三项一致时才判定），`--verify DATASET MANIFEST` 重放 reset RNG 逐条比对任务实例。⚠ **它只扫所在机器的 `offline_data/` 与 `benchmarks/`**——本机跑出的「已封闭」不等于全仓封闭，且 Drive 侧枚举已被证残缺。任何**新采集的数据集或新评估 manifest 落地后都该跑一次**。
 

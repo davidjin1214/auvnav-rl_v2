@@ -59,7 +59,7 @@
 | `5d2f727` | `CLAUDE.md` 数据完整性行订正（第 ⑤ 条已核实成立，不再是 open） |
 | `480d834` | ③ 层：FQL 线 7 份 P2 之前的施工记录归位 `docs/archive/fql_succession/` |
 
-全部已推送到 `origin/codex-arrival-v2-prototype`。
+全部已推送。**主干 2026-08-20 起为 `main`**（`codex-arrival-v2-prototype` 已快进合入并退役，上面这批提交均在 `main` 上）。
 
 ## 3. ② 层的方法学结论 —— ① 层直接拿来用
 
@@ -165,7 +165,7 @@ weak 那条出自 v1 广验 plan，指的是它那个一次性 notebook 生成�
 ## 6. 收尾必跑的三件事
 
 ```
-python -m scripts.check_doc_pointers      # 真失效基线 = 67（在工作副本里跑）
+python -m scripts.check_doc_pointers      # 真失效基线 = 0（2026-08-17 起；非 0 即为新引入）
 python -m scripts.build_doc_index --check # 索引是否落后
 python -m pytest tests/ -q --tb=no        # 需 --basetemp 指到 scratchpad，否则沙箱挡系统临时目录
 ```
@@ -184,7 +184,7 @@ python -m pytest tests/ -q --tb=no        # 需 --basetemp 指到 scratchpad，�
 
 ## 7. 不属于这条线（用户 2026-08-17 确认延后）
 
-**迁移收尾**（见 memory `repo-migration-to-local`）：
+**迁移收尾**（迁移本身见 `32ea60a`；原引的 memory `repo-migration-to-local` 已不存在）：
 
 - 删 OneDrive 侧剩余四个数据目录（`checkpoints/ wake_data/ offline_data/ results/`，约 5.8 GB）——
   观察一两天后再动，**需用户再次确认**
@@ -193,7 +193,7 @@ python -m pytest tests/ -q --tb=no        # 需 --basetemp 指到 scratchpad，�
   那边重建第 5 章插图会断；数据未丢（D 盘完整副本 + Google Drive 的 Colab 副本 + 回收站 30 天），
   补回只需**读数层约 125 MB**
 
-**研究侧**（用户明确「等仓库整理完再做」）：数据完整性 ①③⑤ 的处置未决，
-三条同时落在 §5.6.2 那一句上。入口 [`data_integrity_open_items.md`](data_integrity_open_items.md)
+**研究侧**：数据完整性 ①③⑤ 的**处置已于 2026-08-16 落地**——路线 ①-c（散文披露 + 登记敏感性读数），
+见 `discussion.tex` §5.10.4。**仍未闭合的是另一件事**：污染**枚举**只对第 5 章自有数据集闭合，
+全仓未闭合——Drive 侧枚举本身被证残缺。入口 [`data_integrity_open_items.md`](data_integrity_open_items.md)
 + [`../paper/thesis_ch5/data_integrity_impact_assessment_review.md`](../paper/thesis_ch5/data_integrity_impact_assessment_review.md)。
-污染面至今未封闭——Drive 侧枚举本身被证残缺。

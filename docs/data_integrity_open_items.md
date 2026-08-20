@@ -82,8 +82,8 @@
 > | `[new]` | 枚举到但账本里没有 —— 跑 `--record` 收进去（并集，只增不删，短列举缩不了账本） |
 >
 > 检测本身经**故意喂假枚举**实测会 fire，不是只在健康文件系统上跑通就算数：
-> [`../tests/test_audit_seed_overlap.py`](../tests/test_audit_seed_overlap.py) 共 11 项，含顶层漏项、
-> 嵌套漏项、符号链接盲区，以及退出码 `2`（notebook 里唯一的硬信号；该契约在进程内钉，另有一项子进程测试只钉「`python -m` 起得来」——它跑在夹具树上，不扫宿主的 `offline_data/`，否则一次真发现会表现成测试失败）。
+> [`../tests/test_audit_seed_overlap.py`](../tests/test_audit_seed_overlap.py) 共 13 项，含顶层漏项、
+> 嵌套漏项、符号链接（数据集与整个集合两种形态，以及链接成环必须收敛），以及退出码 `2`（notebook 里唯一的硬信号；该契约在进程内钉，另有一项子进程测试只钉「`python -m` 起得来」——它跑在夹具树上，不扫宿主的 `offline_data/`，否则一次真发现会表现成测试失败）。
 >
 > **销号条件**：对 Drive 那棵树跑一次 `python -m scripts.audit_seed_overlap`，对帐块判 clean（零
 > `[ENUM MISS]`、零 `[SHADOWED]`、退出码 `0`），且账本已含 Drive 全部数据集名（先跑一次
@@ -92,6 +92,36 @@
 > ——**别再用** [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb)
 > §2 末两格：那几格在 Drive 树里就地 `!python -m scripts.audit_seed_overlap`，跑的是 Drive 自带的旧脚本（下一节）。
 > **在那之前本块不销号。**
+>
+> #### 第一次实跑的读数（2026-08-21）：**未销号**
+>
+> `datasets: 32   manifests: 24`，两遍退出码都是 `2`：**3 条 `[ENUM MISS]` ＋ 同名 3 条
+> `[SHADOWED ]`，两遍逐字相同**——所以不是 2026-08-16 那种瞬时短列举，是结构性的。
+>
+> - 三个名字：`crosscomp_..._noise0p05clip0p15_ep1000`、`..._noise0p05clip0p15_ep2000`、
+>   `worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone`。
+> - 它们在本机全部枚举正常，其中 `..._noise0p05clip0p15_ep2000` 本机就报 `[OVERLAP]`
+>   （seeds 0..1999 × manifest 1250..1349）——**而在 Drive 那一侧它从未进过扫描**。这正是账本
+>   要拦的失效形态，账本拦住了；但拦到的盲区仍旧是盲区，仓级封闭谈不上。
+> - 病因：`rglob` 不进符号链接目录。`06e6d1f` 已换成显式下行——碰到条目就试着往下走，由文件
+>   系统拒绝为准，因而 FUSE 上 `is_dir()` 说谎的情形一并覆盖。
+> - 账本 39 → 41（收到 `fql_succession/xbench_u15cross/` 下两个），已回传提交。
+>
+> **销号仍需在 `06e6d1f` 之后对 Drive 侧重跑一次**——这一轮不能追认。执行记录：
+> [`../notebooks/ch5_data_integrity_enum_closure_completed.ipynb`](../notebooks/ch5_data_integrity_enum_closure_completed.ipynb)。
+>
+> 同一轮还带回两条读数，都不影响上面的判定，但都得记下来：
+>
+> 1. Drive 的 `benchmarks/` 有 **24** 个 manifest，git 里只有 11 个，且 git 那 11 个 Drive 全有——
+>    即 **13 个实际用过的评估 manifest 从未进过 git**（`offline_rebrac_broad/`、
+>    `offline_rebrac_screen/`、`offline_rebrac_worldcomp_final/`、`offline_rebrac_worldcomp_epoch_probe/`、
+>    `c1_reward_ablation/` 各自的 `val_40/` 与 `test_100/` 切分，加一个 `single_u15_cross_tgt15_ep100.json`）。
+>    `benchmarks/` 是被跟踪目录，本意就是让评估集可复现；这 13 个在本机不可见，**任何只在本机跑的
+>    审计都数不到它们**。是否补进 git 待定。
+> 2. 同一个 `crosscomp_..._ep2000`，在本机 11 个 manifest 里撞 3 个，在 Drive 24 个里撞 **11** 个；
+>    多出的 8 处全落在那 13 个未提交 manifest 的 `val_40/` 与 `test_100/` 上。其中 `val_40`
+>    （seeds 1250..1289）整段落在训练区间 0..1999 内——这是第 ③ 条「选点用的 40 条本身就是训练
+>    episode」的直接物证，此前只有推断。
 >
 > #### 怎么在 Colab 上跑（Drive 侧不是 git 仓库）
 >

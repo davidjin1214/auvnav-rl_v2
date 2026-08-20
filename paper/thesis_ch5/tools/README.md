@@ -44,6 +44,7 @@ latexmk -c
 | `ch5_sac_ladder_dispersion_check.py` | §5.9 SAC 阶梯表那 $12$ 处的口径（行内不印逐种子值，只能回 `results/` 逐 run 复算） |
 | `ch5_holdout_split_audit.py` | 把已刊的 $100$ 回合读数拆成参与选点的 $40$ 与留出的 $60$，仅在后者上重算组间比较 |
 | `ch5_clean_probe_readout.py` | 训练／评估实例重合的抬升量（干净 manifest 补评的差中差） |
+| `ch5_manifest_attribution.py` | 每张表用的是哪批评估实例、对应 `benchmarks/` 下哪个物理文件。判据是**零不可归属**（有读数落空即退出 1），不是等价类的大小 |
 
 常用变体：
 

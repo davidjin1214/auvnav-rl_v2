@@ -396,7 +396,24 @@ episodes 一次性报告。**40 这个数字对不上上面任何一个文件，
 
 「40 回合」的出处也随之明确：不是某个 `benchmarks/` 下的文件，而是 launcher 的
 `VAL_MANIFEST_EPISODES` 默认值现场生成的 `benchmarks/<root>/val_40/single_u10_cross_tgt15.json`
-（本机无，只在 Drive）。
+（**2026-08-21 起本机已有**：`0dc35a2` 把这批只在 Drive 的评估 manifest 补进了 `benchmarks/`；
+括注原作「本机无，只在 Drive」，是当时的实况，现已不成立）。
+
+> **✅ 2026-08-21 补证：上表不再只是从生成器代码与启动命令推出来的，已由读数逐条实测。**
+> `paper/thesis_ch5/tools/ch5_manifest_attribution.py` 拿每份读数的 `eval_episode_results`
+> 逐条取 `(episode_id, seed)` 当指纹，去比 `benchmarks/` 下的 24 份 manifest：3715 份读数
+> **无一落空**（3280 份逐条相同，435 份是某份更长 manifest 的开头一段），刊出的每个单元都归到
+> 上表三批实例之一 —— cross 100 条 1250..1349、cross 40 条 1250..1289、upstream 100 条
+> 1400..1499。于是 2026-08-21 那次只扫 24 份 manifest 的污染面枚举，**覆盖了全部刊出评估实例**，
+> 这一步此前是缺的。
+>
+> 同一份工具从 launcher 侧反查物理文件名（路径是 `${MANIFEST_ROOT}/{val,test}_${N}/${BENCHMARK_KEY}.json`
+> 推出来的，不是写死的）：ReBRAC 主线 `results/offline/rebrac/formal` 用的是
+> `benchmarks/offline_rebrac_screen/test_100/single_u10_cross_tgt15.json` —— **screen 那个根，
+> 不是目录名会让人猜的 `worldcomp_final` 或顶层文件**。另有两处 launcher 至今仍在指名、而文件
+> 连 Drive 上都没有：`offline_rebrac_screen/test_40/`，以及 `scripts/run_offline_td3bc_phase0*.sh`
+> 名下整个 `benchmarks/offline_phase0*/` 家族（7 个根）。**文件没了，它们装的实例集没丢** —— 用过
+> 它们的读数指纹都落在上面两批 cross 实例里。判据与等价类明细见 `benchmarks/README.md`。
 
 **处置选项**：(a) 给 test manifest 换一段种子（生成器加 `--seed-offset`）并重跑终检评估；
 (b) 保留数字，在 §5.3.6 把"独立"改为如实描述选点集与测试集的包含关系。**未决，需用户裁决。**

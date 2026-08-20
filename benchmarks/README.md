@@ -78,9 +78,41 @@ Two things these files make checkable that were previously only assertions:
   are one set, not merely overlapping ones. **Ruled on 2026-08-21: this stays out of the chapter**
   — a repository fact, recorded here, deliberately not carried into Chapter 5 prose.
 
-Which *physical file* a given table used is not recorded: no readout under `results/offline/**`
-names its manifest. The *episode set* is recorded, and that is the half the contamination question
-turns on — every `test/seed_*.json` carries `eval_episode_results` with a per-episode `episode_id`
-and `seed`, so a readout's evaluation instances can be matched against these manifests exactly.
-Expect an equivalence class rather than one file: five of the manifests here freeze the same seeds
-1250..1289, and `episode_id` derives from the benchmark key, so it does not separate them either.
+### Which table used which manifest
+
+No readout under `results/offline/**` names its manifest, but the link is rebuildable from two
+independent directions, and `paper/thesis_ch5/tools/ch5_manifest_attribution.py` runs both
+(local-only, no Colab; exit 1 if any readout is unattributable).
+
+**From the readouts (complete).** Every `eval_episode_results` entry carries `episode_id` and
+`seed`, and `generate_standard_benchmarks.py` builds those as `f"{spec.key}_ep_{idx:04d}"` and
+`spec.manifest_seed + idx`, so the ordered sequence fingerprints the episode set. Over all 3715
+offline readouts: **zero match no manifest in this directory** — 3280 exactly, 435 as the opening
+prefix of a longer one (a 40-episode evaluation against the head of a 100-episode file; a subset
+of an audited set is audited). So the 2026-08-21 contamination enumeration, which swept the 24
+manifests here, covers every published evaluation instance. Each published unit resolves to one of
+three sets: cross 100 episodes seeds 1250..1349, cross 40 episodes seeds 1250..1289, upstream 100
+episodes seeds 1400..1499.
+
+This side names a class, not a file, and the ambiguity is a property of the manifests rather than
+a limit of the method: within each class below the episode ids, the seeds *and* the geometry are
+identical down to float noise, so nothing a readout records could separate them.
+
+| Indistinguishable from any readout | Members |
+|---|---|
+| cross, 100 ep, 1250..1349 | `offline_rebrac_{broad,screen,worldcomp_final}/test_100/single_u10_cross_tgt15.json`, `single_u10_cross_tgt15_ep100.json` |
+| cross, 40 ep, 1250..1289 | `offline_rebrac_{broad,screen,worldcomp_final}/val_40/…`, `offline_rebrac_worldcomp_epoch_probe/{test_40,val_40}/…` |
+| upstream, 100 / 40 ep | `{c1_reward_ablation,offline_rebrac_broad}/{test_100,val_40}/single_u10_upstream_tgt15.json` |
+
+**From the launchers (names one file, covers fewer studies).** The path is derived, not hard-coded:
+`${MANIFEST_ROOT}/{val,test}_${N}/${BENCHMARK_KEY}.json`, so a launcher's defaults plus the driving
+notebook's `os.environ` overrides pin it exactly. The ReBRAC mainline
+(`results/offline/rebrac/formal`, and `stage_e_critic_penalty_off` with it) used
+`offline_rebrac_screen/test_100/single_u10_cross_tgt15.json` — the *screen* root, not the
+`worldcomp_final` or top-level name the directory layout suggests.
+
+Two declared paths no longer exist anywhere, on Drive included: `offline_rebrac_screen/test_40/`
+(the screening study's own test manifest) and the whole TD3+BC family under
+`benchmarks/offline_phase0*/` that `scripts/run_offline_td3bc_phase0*.sh` still names — seven roots.
+Those files are gone; what they held is not, because the readouts that used them fingerprint onto
+the two cross classes above. Recorded here as a fact about the repository, not an open item.

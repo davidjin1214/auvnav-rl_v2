@@ -25,14 +25,7 @@ Training runs on **Google Colab Pro / L4 GPU** with the codebase mounted from Go
 
 Full CLI reference (training/eval/offline-collection invocations, sweep launcher table, `[skip]`-resume semantics) lives in the `rl-v2-commands` skill — see [`.claude/skills/rl-v2-commands/SKILL.md`](.claude/skills/rl-v2-commands/SKILL.md).
 
-**Tests.** No `pytest.ini` / `pyproject.toml` — tests import `auv_nav.*` and `scripts.*` as top-level packages, so run from the repo root or collection fails:
-
-```bash
-python -m pytest tests/ -q          # 170 tests, local-only (no GPU, no Colab)
-python -m pytest tests/test_fql.py -q
-```
-
-**Doc audits.** `python -m scripts.build_doc_index` (`--check` fails on drift) and `python -m scripts.check_doc_pointers` — both local, both cheap; run after any doc reshuffle.
+**Tests.** No `pytest.ini` / `pyproject.toml` — tests import `auv_nav.*` and `scripts.*` as top-level packages, so `pytest` must run from the repo root or collection fails.
 
 ## Environment & Sensing
 
@@ -76,7 +69,6 @@ That orphan set closed on 2026-08-17. Ten of the eleven were FQL-line files, and
 |---|---|
 | [`docs/doc_cleanup_status.md`](docs/doc_cleanup_status.md) | 🔧 **In-flight** — the repo-wide documentation cleanup: what the three layers are, which are done, the priority rule for the remaining one, and the traps. Sole status ledger for that work; delete when it closes |
 | [`docs/DOC_INDEX.md`](docs/DOC_INDEX.md) | **Generated file map** — every markdown in the repo with its H1 and self-declared status. Use it to locate a doc; use the two line summaries below to understand a research line |
-| [`AGENTS.md`](AGENTS.md) | ⛔ **Stale — do not read as current.** Written for Codex, last touched 2026-04-23 (`bd00950`; 3 commits total vs. CLAUDE.md's 30). It still says "three active lines" and "next offline priority is ReBRAC", both superseded. CLAUDE.md is the maintained one; AGENTS.md is kept only as a historical snapshot |
 | [`docs/offline_rl_line_summary.md`](docs/offline_rl_line_summary.md) | Offline RL line entry (primary) — phases, citable results, full doc index |
 | [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) | Online RL line entry (support) — A0 + SAC collector roles, thesis-matrix closure |
 | [`paper/thesis_chapter_outline.md`](paper/thesis_chapter_outline.md) | **Dissertation Ch5 writing spec** — central thesis, §0.4 red lines, register/terminology conventions, 10-section skeleton, reuse matrix |

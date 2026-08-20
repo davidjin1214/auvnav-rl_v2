@@ -39,7 +39,7 @@
 |---|---|---|
 | ② | 两份 line summary 的**真值核对**——逐条对照源文档、`results/`、CSV、`metadata.json` | ✅ 已完成 |
 | ③ | 文档**归位与角色标注** | ✅ 已完成 |
-| ① | 25 篇**论文承重文档**深核 | 🔧 **进行中** —— 第 1 批已落（12/25 已深核，见 §4.1） |
+| ① | 25 篇**论文承重文档**深核 | ✅ **25/25 已深核**（两批，见 §4.1） |
 | 附 | 67 处**真失效指针** | ✅ **已闭环，但闭环方式须照 §3 引用**——不是「把 67 个文件补出来」 |
 
 层号是当初提出的顺序，执行顺序是 ② → ③ → ①：先确认索引本身可信，再动它索引的东西。
@@ -117,7 +117,18 @@ SAC 四档八个数字逐位吻合 `metadata.json`；36 个 h2h `test_result.jso
 
 **本批新增一条筛法（与 §3 优先级规则并用）：数同一条陈述有几份平行副本。** F1 四处全出于同一机制：源文档改了，副本没改。同一条「处置未决」当时共三份（`CLAUDE.md`、本文 §7、`offline_rl_line_summary`），前两份已订而第三份漂了四天；`paper/thesis_ch5/status.md` 那份早已划掉。**做法**：每碰到一段复述别处结论的文字，先 grep 它的特征数字或措辞找兄弟副本，有兄弟的八成有一份掉队。机械检查对这类全部失盲。
 
-**剩下 13 篇未深核**：`arrival_v2_experiment_report`、`arrival_v2_sac_collector_design`、`environment_design`、FQL 系六篇（`p2_results` / `p2_main_spec` / `p2_xbench_spec` / `p2_mechanism_diagnostic` / `p2_collection_log` / `paper_writing_index`）、`online_rl_line_summary`、`online_sac_reward_redesign`、`rebrac_paper_writing_index`、`systematic_improved_sac_experiment_report`、`rebrac_experiment_report`（全文，1200+ 行）。
+### 第 2 批（2026-08-20，剩余 13 篇收尾）
+
+| # | 文档 | 问题 | 改法 |
+|---|---|---|---|
+| F5 | `rebrac_experiment_report.md` | `CLAUDE.md` 指定的**唯一权威数字源**、paper 侧 30 处引用，写于 2026-05-01，**全文零数据完整性限定**。而 ① 污染的正是它那条翻转断言（`ep2000 0.918 > ep1000 0.902`） | 顶部加限定块，**零数字改动**（§9 两条 Rule 是预登记判据） |
+| F6 | `fql_succession_p2_results.md` §8 | 把 N4（spec v1.3→v1.4 改写）写成待办，并断言 spec 「**still carries** the iff framing」——实则 spec 当日即升 v1.4，§1.1 标 SUPERSEDED、§1.4 标 RESOLVED。另 行 6 把活 spec 的 rev 号（v1.3）写进了别人文档 | 加追注；rev 号改为指向该文自己的头部 |
+
+**其余 11 篇核后无需改动**：`environment_design`（`efficiency_v2` 适用范围已三处自注）、两份 `arrival_v2` 文档（状态横幅准确，后者还区分了「设计链已闭环」与「它产出的数据集仍在用」）、两份写作索引（均已带 2026-07-28 指针体检补注，且自声不持有数字 ground truth）、FQL 其余三篇（`p2_main_spec` / `p2_xbench_spec` / `p2_collection_log`）与 `p2_mechanism_diagnostic`（后两者引 spec v1.3 属当日历史记录，早于 v1.4）、`online_rl_line_summary`、`online_sac_reward_redesign`（SHELVED 横幅完备）、`systematic_improved_sac_experiment_report`（DEPRECATED 横幅 + 2026-07-28 去向补注）。
+
+**FQL 线不受 ③ 波及**：它直接评估训练终点检查点、不做验证集选点（与 `setup.tex` §5.3.6 声明一致），因此未加限定并非遗漏。
+
+~~**剩下 13 篇未深核**~~（第 2 批已收尾）：`arrival_v2_experiment_report`、`arrival_v2_sac_collector_design`、`environment_design`、FQL 系六篇（`p2_results` / `p2_main_spec` / `p2_xbench_spec` / `p2_mechanism_diagnostic` / `p2_collection_log` / `paper_writing_index`）、`online_rl_line_summary`、`online_sac_reward_redesign`、`rebrac_paper_writing_index`、`systematic_improved_sac_experiment_report`、`rebrac_experiment_report`（全文，1200+ 行）。
 
 ## 5. 67 处真失效指针
 

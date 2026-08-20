@@ -3,7 +3,7 @@
 **Date**: 2026-05-23
 **Branch**: `codex-arrival-v2-prototype`
 **Status**: **CLOSED — honest negative + mechanism finding.** "FQL > ReBRAC" is falsified.
-**Companion docs**: design = [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) (v1.3);
+**Companion docs**: design = [`fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) (version: see that file's own header);
 detailed lab notebook = [`fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) §9 (authoritative);
 collection log = [`fql_succession_p2_collection_log.md`](fql_succession_p2_collection_log.md).
 **Verdict notebook**: [`../notebooks/fql_succession_p2_verdict.ipynb`](../notebooks/fql_succession_p2_verdict.ipynb) (re-aggregates every number here from `results/`).
@@ -326,6 +326,10 @@ absolute headroom above ReBRAC β1=1.0 is small — but FQL is *behind*, not mer
 ---
 
 ## 8. Implications for the spec & paper (→ N4)
+
+> ⚠ **追注（2026-08-20，① 层深核）：下文的 N4 已经做完了。** 本节写于 2026-05-23，比 spec 的 v1.4 修订早半天，所以把它写成待办。实际上 `fql_succession_p2_main_spec.md` 当日即升至 **v1.4（CLOSED）**：§1.1 已标 `⚠️ SUPERSEDED`（明写 conditional iff claim 是原始假设、已被 P2 证伪）、§1.4 已标 `✅ RESOLVED`。
+>
+> 因此句首「The spec … **still carries** the "iff multi-modal AND sub-optimal" framing」**已不成立**，切勿据此得出「spec 里那条断言至今未撤」的结论。原文保留为当时记录，四条改写项可当作 N4 实际做了什么的清单读。
 
 The spec (`fql_succession_p2_main_spec.md` v1.3) still carries the "iff multi-modal AND
 sub-optimal" framing. **N4** rewrites it v1.3 → v1.4 to:

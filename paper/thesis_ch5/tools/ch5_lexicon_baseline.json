@@ -4,6 +4,11 @@
  "<裸写 ReBRAC>": {
   "methodology": 2
  },
+ "_meta": {
+  "commit": "89c8a76",
+  "entries": 88,
+  "frozen": "2026-08-18"
+ },
  "``": {},
  "dispensability": {},
  "headline": {},

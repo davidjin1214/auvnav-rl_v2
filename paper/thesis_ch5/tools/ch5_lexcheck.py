@@ -43,6 +43,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 
 from _ch5_corpus import (
     CHAPTER_DIR, SECTION_NO, SECTION_ORDER, strip_comments, use_utf8_stdout,
@@ -50,6 +51,7 @@ from _ch5_corpus import (
 
 BASELINE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         "ch5_lexicon_baseline.json")
+META_KEY = "_meta"  # provenance stamp, not a watched term: skipped on read and diff
 
 # spec §0.5.11 layer-2 禁用词表 + §0.5.10 术语四档 + §0.5.9 (a) marker
 GROUPS: list[tuple[str, list[str]]] = [
@@ -118,6 +120,42 @@ def count_hits(doc, word) -> tuple[int, dict[str, int], list[tuple[str, int, str
     return total, per_file, where
 
 
+def _git(*args: str) -> str:
+    try:
+        out = subprocess.run(("git",) + args, cwd=CHAPTER_DIR, capture_output=True)
+    except OSError:
+        return ""
+    return out.stdout.decode("utf-8", "replace").strip() if out.returncode == 0 else ""
+
+
+def _freeze_meta(entries: int) -> dict[str, object]:
+    """Stamp when this baseline was frozen and against which tree.
+
+    The baseline sat unrefreshed across five 整改 batches before anyone noticed, which
+    left the lexicon gate failing on backlog drift -- a genuine new violation would have
+    been buried in it. Nothing in the file recorded when it was frozen, so it could not
+    go stale *visibly*. These three fields are what makes staleness observable.
+    """
+    return {
+        "frozen": _git("log", "-1", "--format=%ad", "--date=short") or "unknown",
+        "commit": _git("rev-parse", "--short", "HEAD") or "unknown",
+        "entries": entries,
+    }
+
+
+def _report_baseline_age(meta: dict[str, object], quiet: bool) -> None:
+    """Print the stamp -- and print it even under --quiet once sections/ has moved on."""
+    commit = str(meta.get("commit", "unknown"))
+    behind = ""
+    if commit != "unknown":
+        n = _git("rev-list", "--count", f"{commit}..HEAD", "--", "sections")
+        if n.isdigit() and int(n):
+            behind = f"  ⚠ sections/ 已前进 {n} 个提交——基线未重冻，存量漂移会淹没新违例"
+    if behind or not quiet:
+        print(f"  基线：{meta.get('frozen', 'unknown')} @ {commit}，"
+              f"{meta.get('entries', '?')} 个词条{behind}")
+
+
 def main() -> int:
     use_utf8_stdout()
     ap = argparse.ArgumentParser(description="Chapter 5 collation search (spec §0.5.11)")
@@ -178,8 +216,10 @@ def main() -> int:
         print(f"  裸写 ReBRAC（指原始方法时合规，见 §0.5.10 (A)）：{bare if bare else '零命中'}")
 
     if args.freeze:
+        stamped = dict(current)
+        stamped[META_KEY] = _freeze_meta(len(current))
         with open(BASELINE, "w", encoding="utf-8") as fh:
-            json.dump(current, fh, ensure_ascii=False, indent=1, sort_keys=True)
+            json.dump(stamped, fh, ensure_ascii=False, indent=1, sort_keys=True)
         print(f"\n已冻结基线 -> {os.path.basename(BASELINE)}")
         print("⚠ 冻结即断言「当前每一处命中都已裁定并记入 findings ＋ spec §0.5.11 豁免行」。")
         return 0
@@ -190,6 +230,7 @@ def main() -> int:
 
     with open(BASELINE, encoding="utf-8") as fh:
         base = json.load(fh)
+    _report_baseline_age(base.pop(META_KEY, {}), args.quiet)
 
     deltas = []
     for word, per_file in current.items():

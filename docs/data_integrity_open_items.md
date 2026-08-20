@@ -399,6 +399,27 @@ val 与 test 逐条相同（第 ③ 条）——**三条问题在这一句上同
   - 验收：编译 65 页、0 undefined、2 处 Overfull（与整改前逐条相同）；既有数字零漂移；逐处理由见各 `.tex` 头注 rev 块。章状态见 [`../paper/thesis_ch5/status.md`](../paper/thesis_ch5/status.md)。
 - **污染面枚举（2026-08-16 更新，分两层）**：
   - ✅ **第 5 章范围已封闭**。本机补齐全部章内依赖数据集后，`audit_seed_overlap` 对 $29$ 个集跑通，**OVERLAP 仍只有两格**（`crosscomp-2000` 确定性集与其含噪变体，各 $100/100$），其余全 clean；以 `results/offline/**` 目录名反查，章内每个训练单元所依的数据集无一缺失。含噪 $2000$ 集本机独立复现 $100/100$，同族 $1000$ 集 $0/100$。
-  - ❌ **仓库全域仍未封闭**，文首 ⚠⚠ 块**不销号**。Drive 那次漏掉的是**两个顶层**目录（`--verify` 用裸名即解析成功），单层 `glob` 本应扫到——成因仍未证实，FUSE 假设依然在台面上。**2026-08-17 进展**：漏项数目、跨进程复现、以及「次轮同码返回 26 个 ⇒ 该漏扫是瞬时的」均已由两轮原始输出钉死；据此新增账本对帐（`[ENUM MISS]` ＋ 退出码 `2`，经故意喂假枚举实测会 fire）。**销号仍需 Drive 侧实跑一次**，条件与判读见文首订正 (5)。
+  - ❌ **仓库全域仍未封闭**，文首 ⚠⚠ 块**不销号**。Drive 那次漏掉的是**两个顶层**目录（`--verify` 用裸名即解析成功），单层 `glob` 本应扫到——成因仍未证实，FUSE 假设依然在台面上。**2026-08-17 进展**：漏项数目、跨进程复现、以及「次轮同码返回 26 个 ⇒ 该漏扫是瞬时的」均已由两轮原始输出钉死；据此新增账本对帐（`[ENUM MISS]` ＋ 退出码 `2`，经故意喂假枚举实测会 fire）。**销号仍需 Drive 侧实跑一次**，条件与判读见文首订正 (5)，**怎么跑见下一条**。
+  - **怎么在 Colab 跑（2026-08-20 补）**：Drive 侧工作副本本身就挂在 `drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5/`，其 `offline_data/` 即待审的那棵树，因此 **不需要 `--data-dir`**（那个开关是给「从别处审一个挂载点」用的，例如在 Mac 上审同步下来的目录）。
+
+    ```python
+    from google.colab import drive; drive.mount('/content/drive')
+    %cd "/content/drive/MyDrive/Colab Notebooks/new_offRL/rl_v2_5"
+    !git pull --ff-only
+    ```
+    ```python
+    # ① 先把 Drive 上全部集名收进账本（本步会改 scripts/offline_dataset_ledger.txt）
+    !python -m scripts.audit_seed_overlap --record
+    ```
+    ```python
+    # ② ③ 各自独立一次复核 —— 两轮都要判 clean
+    !python -m scripts.audit_seed_overlap; echo "exit=$?"
+    ```
+
+    **顺序不可颠倒**：必须先 `--record`、后复核。账本要先含 Drive 全部集名，之后一次短列举才会显形为 `[ENUM MISS]`；反过来（同一次列举记完就拿它自判）等于拿短列举给自己背书——正是文首订正 (5) 要防的那件事。
+
+    **一次干净不算数**：首轮 24 / 次轮 26 的差异已证明该漏扫是**瞬时**的，故 ② 要跑两轮（最好隔一次运行时重启），两轮都 clean 才算。
+
+    **判读**：零 `[ENUM MISS]`、零 `[SHADOWED ]`、退出码 `0`，且 ① 打印的 `ledger: added N` 已随账本回传（把 `scripts/offline_dataset_ledger.txt` 提交回 `main`）。任一轮不满足 → 文首 ⚠⚠ 块**不销号**，把两轮原始输出存档后再判。
   - ⚠ 另查出一个**独立**缺陷并已修（`0aa42ac`）：`_load_datasets()` 用单层 `glob` 而 `_load_manifests()` 用 `rglob`，两侧不对称，`offline_data/fql_succession/` 与 `audit_dryrun_2026-05-19/` 下的 $12$ 个嵌套集从未进过枚举（全部 clean）。**它不解释 Drive 那次**——两者是不同的缺陷，勿相互冒充。
   - 此项不影响已落地的整改——正文披露覆盖的是已实核的三条。

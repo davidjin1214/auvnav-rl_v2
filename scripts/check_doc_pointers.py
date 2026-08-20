@@ -387,6 +387,16 @@ def main() -> int:
                         ("example", "示例占位符（<>/glob 模板；无目录豁免）")):
         rows = buckets[name]
         print(f"\n--- {label}：{len(rows)} ---")
+        if name == "never":
+            # The accepted wordings are a closed list. Print it at the moment the bucket is
+            # reported so an author writing a new declaration sees it here rather than
+            # having to find it in CLAUDE.md -- a second copy there is what goes stale.
+            print("    接受的理由，闭列表（写声明前先用 "
+                  "`git log --all --diff-filter=A -- <path>` 定性；假声明会永久消音）：")
+            print("      从未产出 / 从未创建    计划过，没建成")
+            print("      用后即删               建过，事后有意删除")
+            print("      原计划文件名           以别的名字落地——把真名写出来")
+            print("      未入库 / 不入 git      运行时生成，有意不跟踪")
         if name == "real" or len(rows) <= 12:
             for s, ln, raw, kind in rows:
                 print(f"  {s}:{ln}  [{kind}]  -> {raw}")

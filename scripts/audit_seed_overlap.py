@@ -335,11 +335,34 @@ def main() -> None:
         help="Dataset-name ledger used to probe the enumeration (default: %(default)s).",
     )
     parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=None,
+        help="Audit this offline_data/ tree instead of the repo's (e.g. a Drive-side mount).",
+    )
+    parser.add_argument(
+        "--benchmarks-dir",
+        type=Path,
+        default=None,
+        help="Manifest tree to pair with --data-dir (default: the repo's benchmarks/).",
+    )
+    parser.add_argument(
         "--record",
         action="store_true",
         help="Add the names seen here to the ledger. Union only; never removes.",
     )
     args = parser.parse_args()
+
+    # Every helper reads these two as module state -- which is also how the in-process
+    # tests redirect them. Rebinding here gives one code path for the repo tree, for a
+    # Drive-side mount, and for the subprocess test's fixture; without it that test can
+    # only scan this host's real offline_data/, where a legitimate finding (exit 2)
+    # would surface as a test failure.
+    global OFFLINE_DATA_DIR, BENCHMARKS_DIR
+    if args.data_dir is not None:
+        OFFLINE_DATA_DIR = args.data_dir.resolve()
+    if args.benchmarks_dir is not None:
+        BENCHMARKS_DIR = args.benchmarks_dir.resolve()
 
     if args.verify is not None:
         run_identity_pass(*args.verify)

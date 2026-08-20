@@ -187,10 +187,27 @@ def test_shipped_ledger_parses_and_covers_this_host():
     assert rec.shadowed == [], f"the recursive glob dropped {rec.shadowed}"
 
 
-def test_module_runs_as_a_script():
-    """`python -m scripts.audit_seed_overlap` is how every notebook and doc invokes it."""
+def test_module_runs_as_a_script(tmp_path):
+    """`python -m scripts.audit_seed_overlap` is how every notebook and doc invokes it.
+
+    Pointed at a fixture tree, not this host's `offline_data/`. Scanning the real one made
+    the assertion below mean the opposite of what it reads: a non-zero exit is the tool
+    reporting an incomplete enumeration -- a finding, not a defect -- so a true positive
+    would fail the suite, and on a fresh clone (empty tree) the check passes vacuously.
+    The exit-2 contract itself is pinned in-process by
+    `test_cli_exits_nonzero_when_the_listing_is_short`.
+    """
+    data_dir = tmp_path / "offline_data"
+    _write_dataset(data_dir, "alpha_ep1000")
+    ledger_path = tmp_path / "ledger.txt"
+    ledger_path.write_text("alpha_ep1000\n", encoding="utf-8")
+
     proc = subprocess.run(
-        [sys.executable, "-X", "utf8", "-m", "scripts.audit_seed_overlap"],
+        [
+            sys.executable, "-X", "utf8", "-m", "scripts.audit_seed_overlap",
+            "--data-dir", str(data_dir),
+            "--ledger", str(ledger_path),
+        ],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,

@@ -83,9 +83,9 @@
 >
 > 检测本身经**故意喂假枚举**实测会 fire，不是只在健康文件系统上跑通就算数：
 > [`../tests/test_audit_seed_overlap.py`](../tests/test_audit_seed_overlap.py) 共 11 项，含顶层漏项、
-> 嵌套漏项、符号链接盲区，以及 `python -m` 下退出码为 `2`（notebook 里唯一的硬信号）。
+> 嵌套漏项、符号链接盲区，以及退出码 `2`（notebook 里唯一的硬信号；该契约在进程内钉，另有一项子进程测试只钉「`python -m` 起得来」——它跑在夹具树上，不扫宿主的 `offline_data/`，否则一次真发现会表现成测试失败）。
 >
-> **销号条件**：Drive 侧跑一次 `python -m scripts.audit_seed_overlap`，对帐块判 clean（零
+> **销号条件**：对 Drive 那棵树跑一次 `python -m scripts.audit_seed_overlap`（`--data-dir` 可把它指向挂载路径，不必在 Drive 侧克隆仓库；`--benchmarks-dir` 同理），对帐块判 clean（零
 > `[ENUM MISS]`、零 `[SHADOWED]`、退出码 `0`），且账本已含 Drive 全部数据集名（先跑一次
 > `--record` 并回传账本）。修复格见
 > [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb) §2 末两格。

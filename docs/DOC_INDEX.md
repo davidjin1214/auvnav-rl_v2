@@ -11,7 +11,7 @@
 > [`offline_rl_line_summary.md`](offline_rl_line_summary.md) 与
 > [`online_rl_line_summary.md`](online_rl_line_summary.md)；本文件是**文件地图**，两者角色不同。
 
-共 119 个 markdown 文件。
+共 121 个 markdown 文件。
 
 ## 入口与总纲（3）
 
@@ -134,11 +134,11 @@
 |---|---|---|
 | [`paper/thesis_ch5/data_integrity_impact_assessment.md`](../paper/thesis_ch5/data_integrity_impact_assessment.md) | 数据完整性两条问题对第 5 章的波及面评估 | — |
 | [`paper/thesis_ch5/data_integrity_impact_assessment_review.md`](../paper/thesis_ch5/data_integrity_impact_assessment_review.md) | 波及面评估的独立复核（2026-08-16） | — |
-| [`paper/thesis_ch5/next_session_prompt.md`](../paper/thesis_ch5/next_session_prompt.md) | 第 5 章 — 轮次入口（**当前轮：数据完整性整改批的独立复核**） | CLOSED |
+| [`paper/thesis_ch5/next_session_prompt.md`](../paper/thesis_ch5/next_session_prompt.md) | 第 5 章 — 轮次入口（**本轮已闭环，下一轮入口待写**） | — |
 | [`paper/thesis_ch5/prompt_playbook.md`](../paper/thesis_ch5/prompt_playbook.md) | 第 5 章写作 Prompt Playbook（总纲） | — |
 | [`paper/thesis_ch5/status.md`](../paper/thesis_ch5/status.md) | 第 5 章写作状态账本（status ledger） | — |
 
-## paper/thesis_ch5/notes/ — 第 5 章过程存档（21）
+## paper/thesis_ch5/notes/ — 第 5 章过程存档（23）
 
 | 文档 | 标题 | 自我标注状态 |
 |---|---|---|
@@ -149,7 +149,9 @@
 | [`paper/thesis_ch5/notes/chapter_full_review_findings.md`](../paper/thesis_ch5/notes/chapter_full_review_findings.md) | 第 5 章 全章整体复审 findings（2026-07-21） | — |
 | [`paper/thesis_ch5/notes/chapter_full_review_prompt.md`](../paper/thesis_ch5/notes/chapter_full_review_prompt.md) | 第 5 章全章整体复审（十节 · 58 页）— 新对话启动 Prompt | — |
 | [`paper/thesis_ch5/notes/data_integrity_batch_review_findings.md`](../paper/thesis_ch5/notes/data_integrity_batch_review_findings.md) | 数据完整性整改批 —— 独立对抗复审 findings（2026-08-16） | — |
+| [`paper/thesis_ch5/notes/dispersion_convention_decision_memo.md`](../paper/thesis_ch5/notes/dispersion_convention_decision_memo.md) | 全章离散度（±）口径不一致 —— 裁决呈报（2026-08-17） | — |
 | [`paper/thesis_ch5/notes/draft_5.1_outline.md`](../paper/thesis_ch5/notes/draft_5.1_outline.md) | §5.1 章级独立引言 —— Markdown 段落级 outline | — |
+| [`paper/thesis_ch5/notes/lexicon_baseline_refresh_2026-08-17.md`](../paper/thesis_ch5/notes/lexicon_baseline_refresh_2026-08-17.md) | 词表基线重裁与刷新（2026-08-17） | — |
 | [`paper/thesis_ch5/notes/section_5_10_discussion_writing_plan.md`](../paper/thesis_ch5/notes/section_5_10_discussion_writing_plan.md) | §5.10 综合讨论与本章小结 写作方案 — 已拍板执行版 | — |
 | [`paper/thesis_ch5/notes/section_5_10_review_findings.md`](../paper/thesis_ch5/notes/section_5_10_review_findings.md) | §5.10 综合讨论与本章小结（discussion.tex rev.1）独立对抗复审 findings | — |
 | [`paper/thesis_ch5/notes/section_5_3_followup_review_notes.md`](../paper/thesis_ch5/notes/section_5_3_followup_review_notes.md) | Section 5.3 Follow-up Review Notes | — |

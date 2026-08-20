@@ -137,7 +137,7 @@ python -m scripts.train_sac --total-steps 600000 --device cuda --seed 46 \
 
 顶层目录：`auv_nav/`（核心库）、`scripts/`（实验入口）、`tests/`（pytest）、`docs/`（研究+实现文档）、`benchmarks/`（固定评估 manifest）、`wake_data/` / `offline_data/`（数据，gitignored）、`results/` / `experiments/` / `checkpoints/`（训练产物，gitignored）、`paper/`（论文与第 5 章 LaTeX 工程）。
 
-> **数据目录可能是符号链接。** 那五个 gitignored 的产物目录（`results/ experiments/ checkpoints/ wake_data/ offline_data/`）体量约 40 GB，其中论文重建实际只需约 0.5 GB。本机可把实体放在别的盘、用目录联结（Windows `mklink /J`，或 Unix 符号链接）挂回同名路径——**仓库内相对路径因此一字不变**，图脚本、审计工具、notebook、`scripts/*.py` 照常工作，git 也看不见（它们本就在 `.gitignore` 里）。判断当前是不是链接：`Get-ChildItem -Force | Where-Object LinkType`（PowerShell）或 `ls -l`（Unix）。
+> **数据目录的磁盘布局。** 那五个 gitignored 的产物目录（`results/ experiments/ checkpoints/ wake_data/ offline_data/`）体量约 40 GB，其中论文重建实际只需约 0.5 GB。开发机上曾把实体放在别的盘、用目录联结（Windows `mklink /J`，或 Unix 符号链接）挂回同名路径，以保持仓库内相对路径一字不变；**该安排已于 `32ea60a` 撤销，现在是与代码同盘的普通目录**。这类挂载 git 看不见（它们本就在 `.gitignore` 里）。要确认当前布局：`Get-ChildItem -Force | Where-Object LinkType`（PowerShell）或 `ls -l`（Unix）。
 >
 > 一个后果值得记住：**这五个目录不进 git，所以它们不随 clone 而来**。新克隆的工作副本里它们是空的，读数需要另行同步。
 

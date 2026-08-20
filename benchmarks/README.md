@@ -44,3 +44,38 @@ Note for `python -m scripts.audit_seed_overlap`: its range pass treats every JSO
 `episodes` key as a manifest, so `_repro_check_s1250.json` shows up as a third overlap line
 against the 2000-episode dataset. That line is the same instance family as
 `single_u10_cross_tgt15_ep100.json`, not an additional contaminated evaluation set.
+
+## Per-study split manifests (`offline_rebrac_*/`, `c1_reward_ablation/`)
+
+The val/test splits the offline studies actually evaluated on. They were generated on Colab and
+lived only on the Drive copy until 2026-08-21, when the repo-wide contamination enumeration was
+closed against them — a closure that could not be reproduced from a clone while they were
+missing, since `python -m scripts.audit_seed_overlap` would have swept 11 manifests instead of
+24 and said nothing about the difference. Copied off Drive rather than regenerated: `auv_nav/env.py`
+changed after the benchmark protocol was frozen in `9b96a7d`, so rerunning the generator is not
+guaranteed to reproduce them, and these are evaluation records. Their content is untouched; line
+endings follow the repository's convention like every other manifest (stored LF, `core.autocrlf`
+renders them CRLF in a Windows working tree), so compare against Drive on a Linux checkout.
+
+Seed ranges, verified against that audit's own printout:
+
+| Directory | Episodes | Manifest seeds |
+|---|---|---|
+| `offline_rebrac_{broad,screen,worldcomp_final}/test_100/single_u10_cross_tgt15.json` | 100 | 1250..1349 |
+| `offline_rebrac_{broad,screen,worldcomp_final}/val_40/single_u10_cross_tgt15.json` | 40 | 1250..1289 |
+| `offline_rebrac_worldcomp_epoch_probe/{test_40,val_40}/single_u10_cross_tgt15.json` | 40 | 1250..1289 |
+| `offline_rebrac_broad/{test_100,val_40}/single_u10_upstream_tgt15.json` | 100 / 40 | 1400..1499 / 1400..1439 |
+| `c1_reward_ablation/{test_100,val_40}/single_u10_upstream_tgt15.json` | 100 / 40 | 1400..1499 / 1400..1439 |
+| `single_u15_cross_tgt15_ep100.json` | 100 | 1200..1299 |
+
+Two things these files make checkable that were previously only assertions:
+
+- **Every `val_40` is a prefix of its sibling `test_100`** — the checkpoint-selection episodes are
+  a subset of the reported test episodes. This is item (3) of `docs/data_integrity_open_items.md`,
+  disclosed in Chapter 5 §5.3.6.
+- **`offline_rebrac_worldcomp_epoch_probe/test_40` and `val_40` are the same 40 episodes**, the two
+  files differing only in a `created_at` six seconds apart. For that unit "test" and "validation"
+  are one set, not merely overlapping ones.
+
+Which table drew on which of these files is not recorded in `results/offline/**`; the readouts
+there do not name their manifest.

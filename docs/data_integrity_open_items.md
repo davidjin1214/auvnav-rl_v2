@@ -120,7 +120,8 @@
 >    `offline_rebrac_screen/`、`offline_rebrac_worldcomp_final/`、`offline_rebrac_worldcomp_epoch_probe/`、
 >    `c1_reward_ablation/` 各自的 `val_40/` 与 `test_100/` 切分，加一个 `single_u15_cross_tgt15_ep100.json`）。
 >    `benchmarks/` 是被跟踪目录，本意就是让评估集可复现；这 13 个在本机不可见，**任何只在本机跑的
->    审计都数不到它们**。是否补进 git 待定。
+>    审计都数不到它们**。~~是否补进 git 待定。~~ ✅ **同日已全部补进 `benchmarks/`**——读数与核验
+>    见本块「第二轮」小节末尾；上面这句「从未进过 git」是当日的发现，保留原文。
 > 2. 同一个 `crosscomp_..._ep2000`，在本机 11 个 manifest 里撞 3 个，在 Drive 24 个里撞 **11** 个；
 >    多出的 8 处全落在那 13 个未提交 manifest 的 `val_40/` 与 `test_100/` 上。其中 `val_40`
 >    （seeds 1250..1289）整段落在训练区间 0..1999 内——这是第 ③ 条「选点用的 40 条本身就是训练
@@ -141,10 +142,13 @@
 > 本机一致（第 ⑤ 条）。执行记录：
 > [`../notebooks/ch5_data_integrity_enum_closure1_completed.ipynb`](../notebooks/ch5_data_integrity_enum_closure1_completed.ipynb)。
 >
-> ⚠ **销号的前提就写在这里**：本轮覆盖面含 Drive 上那 13 个未进 git 的评估 manifest。它们不进
-> git，则**任何只从 clone 出发的审计都覆盖不到它们**，这次封闭就不可复现。该项与枚举封闭是
-> 两件事，仍开着：补不补进 git 待裁；在此之前，「`benchmarks/` 被跟踪 ⇒ 评估集可复现」这句话
-> 对那 13 个不成立。
+> ⚠ **销号的前提曾写在这里**：本轮覆盖面含 Drive 上那 13 个未进 git 的评估 manifest，它们不进
+> git 则任何只从 clone 出发的审计都覆盖不到，这次封闭就不可复现。**已办（同日）**：13 个全部
+> 补进 `benchmarks/`，本机重跑 `audit_seed_overlap` 由 `manifests: 11` 变为 **`24`**，OVERLAP 明细
+> 与 Drive 那轮**逐行相同**（22 处 ＝ 2 × 11）——封闭现在从 clone 就能复现。不走重生成：
+> `auv_nav/env.py` 在协议冻结（`9b96a7d`）之后被 `813096e` 动过，重跑生成器不保证逐条复现，而这是
+> 评估记录。落库时逐个核过：条数与目录名相符、种子连续、8 个与审计打印的区间逐条对上。清单与
+> 两条新读数见 [`../benchmarks/README.md`](../benchmarks/README.md)。
 >
 > #### 怎么在 Colab 上跑（Drive 侧不是 git 仓库）
 >

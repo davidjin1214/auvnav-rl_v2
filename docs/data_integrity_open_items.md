@@ -87,8 +87,10 @@
 >
 > **销号条件**：对 Drive 那棵树跑一次 `python -m scripts.audit_seed_overlap`，对帐块判 clean（零
 > `[ENUM MISS]`、零 `[SHADOWED]`、退出码 `0`），且账本已含 Drive 全部数据集名（先跑一次
-> `--record` 并回传账本）。修复格见
-> [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb) §2 末两格。
+> `--record` 并回传账本）。可执行版见
+> [`../notebooks/ch5_data_integrity_enum_closure.ipynb`](../notebooks/ch5_data_integrity_enum_closure.ipynb)
+> ——**别再用** [`../notebooks/ch5_data_integrity_probe.ipynb`](../notebooks/ch5_data_integrity_probe.ipynb)
+> §2 末两格：那几格在 Drive 树里就地 `!python -m scripts.audit_seed_overlap`，跑的是 Drive 自带的旧脚本（下一节）。
 > **在那之前本块不销号。**
 >
 > #### 怎么在 Colab 上跑（Drive 侧不是 git 仓库）
@@ -110,6 +112,12 @@
 > !python -m scripts.audit_seed_overlap --data-dir "$DRIVE/offline_data" \
 >     --benchmarks-dir "$DRIVE/benchmarks" ; echo "exit=$?"
 > ```
+>
+> 上面四行是手跑的最小配方；照着跑一遍的 notebook 是
+> [`../notebooks/ch5_data_integrity_enum_closure.ipynb`](../notebooks/ch5_data_integrity_enum_closure.ipynb)，
+> 它另外做两件手跑做不到的事：把 clone 与 Drive 两边的 manifest 取**并集**再审（覆盖面缺一边都不算
+> 仓级封闭），以及把对帐块解析成三个零的判定。**判据与理由留在本文，可执行步骤留在 notebook**，
+> 两边不复述彼此。
 >
 > 三个必看的点：
 >

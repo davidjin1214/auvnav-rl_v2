@@ -165,6 +165,10 @@ def resolve(raw: str, kind: str, src: str) -> str:
     srcdir = os.path.dirname(src)
     stem = raw.split("#")[0]
     # `scripts/train_utils.py:185` anchors a line; the pointer is still the file.
+    # That `:N` is fragile in a way this script cannot see: inserting a banner at the
+    # top of the target shifts every line below it, and the reference still resolves.
+    # The repo has had exactly one `file.md:N` reference at a time -- grep for the form
+    # before adding banners, and fix the offsets in the same commit.
     stem = re.sub(r":\d+(?:-\d+)?$", "", stem)
     if not stem:
         return src
@@ -236,7 +240,11 @@ def _ever_added(relpath: str) -> int:
 
 
 def verify_declarations() -> int:
-    """Cross-check each `never` declaration against git history.  Returns SUSPECT count."""
+    """Cross-check each `never` declaration against git history.  Returns SUSPECT count.
+
+    Run this after every doc move.  Moving a file is the one action that turns a
+    standing declaration false, and a false one silences its own alarm permanently.
+    """
     print("\n" + "=" * 96)
     print("自述缺席桶的验真（该桶装的是声明，不是事实；此处拿 git 历史逐条对质）")
     print("=" * 96)

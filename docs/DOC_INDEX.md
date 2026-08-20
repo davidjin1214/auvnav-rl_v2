@@ -11,7 +11,7 @@
 > [`offline_rl_line_summary.md`](offline_rl_line_summary.md) 与
 > [`online_rl_line_summary.md`](online_rl_line_summary.md)；本文件是**文件地图**，两者角色不同。
 
-共 121 个 markdown 文件。
+共 120 个 markdown 文件。
 
 ## 入口与总纲（3）
 
@@ -21,7 +21,7 @@
 | [`CLAUDE.md`](../CLAUDE.md) | CLAUDE.md | — |
 | [`README.md`](../README.md) | AUV Navigation in Complex Flow Fields | — |
 
-## docs/ — 研究与实现文档（48）
+## docs/ — 研究与实现文档（47）
 
 | 文档 | 标题 | 自我标注状态 |
 |---|---|---|
@@ -32,7 +32,6 @@
 | [`docs/auvhamnode_offline_mbrl_plan.md`](auvhamnode_offline_mbrl_plan.md) | AUVHamNODE-based Offline RL:Cross-Domain Transfer via Frozen Physics-Structured 1-Step … | PAUSED 2026-05-13 |
 | [`docs/auvhamnode_offline_mbrl_plan_v3_pre_notes.md`](auvhamnode_offline_mbrl_plan_v3_pre_notes.md) | AUVHamNODE Offline MBRL — v3.0 Pre-Notes(交接备忘) | PAUSED 2026-05-13 |
 | [`docs/data_integrity_open_items.md`](data_integrity_open_items.md) | 数据完整性待核项（2026-08-02 记录） | — |
-| [`docs/doc_cleanup_status.md`](doc_cleanup_status.md) | 文档整理 — 状态与交接 | — |
 | [`docs/environment_design.md`](environment_design.md) | 复杂流场中欠驱动AUV导航的仿真环境设计 | — |
 | [`docs/fql_audit_multimodality_design.md`](fql_audit_multimodality_design.md) | `scripts/audit_multimodality.py` — Detail Design Doc | — |
 | [`docs/fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) | FQL E-uni Paper Anchor Dataset — Card | — |

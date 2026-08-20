@@ -129,6 +129,9 @@ def status_of(lines: list[str]) -> str:
             # ARCHIVE, the exact opposite of its state. A slash on either side means
             # path, not banner. Kept per-occurrence rather than per-doc so a real
             # banner further down the same blockquote still registers.
+            # This was one misfire of its kind, not the only possible one: after moving
+            # docs, rebuild and read the status column's diff line by line -- a matching
+            # total hides a doc that flipped from live to ARCHIVE.
             kw_start, kw_end = m.start(2), m.end(2)
             tail = re.match(r"[^\s`)\]]*", head[kw_end:]).group(0)
             looks_like_path = head[kw_start - 1 : kw_start] == "/" or (

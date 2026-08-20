@@ -25,7 +25,7 @@ Training runs on **Google Colab Pro / L4 GPU** with the codebase mounted from Go
 
 Full CLI reference (training/eval/offline-collection invocations, sweep launcher table, `[skip]`-resume semantics) lives in the `rl-v2-commands` skill — see [`.claude/skills/rl-v2-commands/SKILL.md`](.claude/skills/rl-v2-commands/SKILL.md).
 
-**Tests.** No `pytest.ini` / `pyproject.toml` — tests import `auv_nav.*` and `scripts.*` as top-level packages, so `pytest` must run from the repo root or collection fails.
+**Tests.** No `pytest.ini` / `pyproject.toml` — tests import `auv_nav.*` and `scripts.*` as top-level packages, so `pytest` must run from the repo root or collection fails. On this machine the sandbox blocks the system temp directory, so pass `--basetemp` pointing into the scratchpad.
 
 ## Environment & Sensing
 
@@ -63,11 +63,10 @@ Offline transition data lives in `offline_data/` (gitignored). Each subdirectory
 
 **Pointer rot is the standing failure mode of this index.** Version numbers, section numbers, and deprecation status embedded in prose go stale silently and then get quoted as fact (2026-07-28 sweep found the spec rev pointer two revisions behind, six docs still citing the chapter's superseded 8-section `§N.k` numbering, and the authoritative ReBRAC report routing readers to broad-validation v1 with no mention that v2 exists). Run `python -m scripts.check_doc_pointers` after any doc reshuffle — it resolves every markdown link and bare `docs/foo.md` reference repo-wide, with no directory exempt — `.claude/` included. It only proves targets *exist*; whether a banner, a rev number, or a dated claim is still *true* stays human work. **Never write a live spec's rev number into another doc** — including this table; each doc carries its own version in its header.
 
-**A path that legitimately does not exist is declared in the citing doc's own prose, not deleted** — 45 of the 67 misses cleared in the 2026-08-17 sweep were cancelled or paused plan docs pointing at modules nobody ever wrote, and deleting those links would have erased what the line planned. Write the reason in the same sentence as the path; `check_doc_pointers` then buckets the miss as `自述缺席`, prints the closed list of accepted reasons, and cross-checks every declaration against git history. A false declaration silences the alarm permanently.
+**A path that legitimately does not exist is declared in the citing doc's own prose, not deleted** — 45 of the 67 misses cleared in the 2026-08-17 sweep were cancelled or paused plan docs pointing at modules nobody ever wrote, and deleting those links would have erased what the line planned. Write the reason in the same sentence as the path; `check_doc_pointers` then buckets the miss as `自述缺席`, prints the closed list of accepted reasons, and cross-checks every declaration against git history. A false declaration silences the alarm permanently — `--verify-declarations` cross-checks the whole bucket and exits 1 on a SUSPECT under `--strict`; **rerun it after every doc move**, since moving a file is precisely what turns a standing declaration false. One trap when writing about any of this: a doc that describes pointer problems is itself scanned corpus, so keep examples unparseable or they land in the buckets they describe.
 
 | Doc | Role |
 |---|---|
-| [`docs/doc_cleanup_status.md`](docs/doc_cleanup_status.md) | 🔧 **In-flight** — the repo-wide documentation cleanup: what the three layers are, which are done, the priority rule for the remaining one, and the traps. Sole status ledger for that work; delete when it closes |
 | [`docs/DOC_INDEX.md`](docs/DOC_INDEX.md) | **Generated file map** — every markdown in the repo with its H1 and self-declared status. Use it to locate a doc; use the two line summaries below to understand a research line |
 | [`docs/offline_rl_line_summary.md`](docs/offline_rl_line_summary.md) | Offline RL line entry (primary) — phases, citable results, full doc index |
 | [`docs/online_rl_line_summary.md`](docs/online_rl_line_summary.md) | Online RL line entry (support) — A0 + SAC collector roles, thesis-matrix closure |

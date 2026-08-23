@@ -25,7 +25,7 @@ Training runs on **Google Colab Pro / L4 GPU** with the codebase mounted from Go
 
 Full CLI reference (training/eval/offline-collection invocations, sweep launcher table, `[skip]`-resume semantics) lives in the `rl-v2-commands` skill — see [`.claude/skills/rl-v2-commands/SKILL.md`](.claude/skills/rl-v2-commands/SKILL.md).
 
-**Tests.** No `pytest.ini` / `pyproject.toml` — tests import `auv_nav.*` and `scripts.*` as top-level packages, so `pytest` must run from the repo root or collection fails. On this machine the sandbox blocks the system temp directory, so pass `--basetemp` pointing into the scratchpad.
+**Tests.** No `pytest.ini` / `pyproject.toml` — tests import `auv_nav.*` and `scripts.*` as top-level packages, so `pytest` must run from the repo root or collection fails. On this machine the sandbox blocks the system temp directory, so pass `--basetemp` pointing into the scratchpad. Never pipe `pytest` through `head`/`tail` — the truncated pipe orphans worker processes that then exhaust memory; redirect to a file and read that.
 
 ## Environment & Sensing
 

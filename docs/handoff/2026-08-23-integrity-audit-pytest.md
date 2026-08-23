@@ -205,14 +205,27 @@ token 的行」。`docs/arrival_v2_experiment_report.md:285` 引 `train_sac.py:4
 `.claude/settings.json` 里的那条 PostToolUse 命令指的还是同一个脚本路径，**无需改配置**（该文件
 gitignored，另一台机器要手工加，办法写在钩子自己的 docstring 里）。
 
-**第二批 = 刊值复算**（用户已定顺序）。范围来自 §一 C 类：
+**第二批 = 刊值复算**（用户已定顺序）。范围来自 §一 C 类，**已开工**：
 
-1. **C 类第 6 项**：四条数字溯源链，做成可重跑脚本。
-2. **C 类第 7 项**：`docs/*.md` 报告侧的 ddof 口径（ddof=0 vs ddof=1）工具化。
-3. **C 类第 11 项**：manifest 指纹归属。
+| C 类 | 内容 | 状态 |
+|---|---|---|
+| 6 | 四条数字溯源链做成可重跑命令 | ◐ 工具 ＋ 2/4 条链落表（FQL P2 35 处、td3bc phase0c 57 处，全部吻合）。ReBRAC 与 arrival_v2 未落 |
+| 7 | `docs/*.md` 报告侧的 ddof 口径工具化 | ◐ `--ddof` 已就位；td3bc 那 23 处机械判定为 `ddof=0`。ReBRAC 那处已知的 `ddof=1` 混入要等第 6 项的 ReBRAC 链 |
+| 11 | 刊出读数 ⇄ manifest 指纹归属 | ⬜ 未动。工具 `paper/thesis_ch5/tools/ch5_manifest_attribution.py` 已存在，缺的是测试——与第三批第 5 项同源，可能合批 |
 
-三件都读 `results/`；`offline_data/` 是 gitignored 的，脚本必须支持 `--data-dir` /
-`--benchmarks-dir` 指到 Drive 挂载，**「本地扫不到」不能写成失败**。
+已交付：[`../../scripts/audit_published_numbers.py`](../../scripts/audit_published_numbers.py)
+＋ [`../tracebacks/`](../tracebacks/README.md) 下的溯源表 ＋ 27 项测试（26 条注入判据全红，
+其中一条注入的是**溯源表数据本身**而非代码）。已挂进 markdown 编辑钩子，串为第三个 sweep。
+
+**ReBRAC 链的两个已知难点**（落表前先读 `48b8d06` 的提交正文）：一是它只核过「论文实际引用的
+那批」而非全部 47 处，溯源表要如实只覆盖同一批；二是 rev.8 那格 `0.9340 ± 0.0261` 是全报告唯一
+的 `ddof=1`，`--ddof` 应当把它单独判出来——**那正是这条链的验收点**。
+
+**arrival_v2 链要先扩工具**：它的源是 `eval_log.csv` 与 `final_eval.json`，现在的
+`read_metric()` 只读 JSON。
+
+`offline_data/` 与 `results/` 都是 gitignored 的，脚本一律支持把根指到 Drive 挂载，
+**「本地扫不到」不能写成失败**（`no-data` 桶，不进 `--strict`）。
 
 **第三批 = `paper/thesis_ch5/tools/` 全覆盖**（12 个脚本，其中 6 个需 `main.aux`、5 个需
 `results/`）＋ C 类第 12 项。

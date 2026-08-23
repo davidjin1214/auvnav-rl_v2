@@ -1,0 +1,258 @@
+{
+  "chain": "fql_succession_p2",
+  "doc": "docs/fql_succession_p2_results.md",
+  "note": "Provenance rule is the report's own Provenance section: every value is read from results/fql_succession/p2/<cell>/test/<algo>_seed<n>.json, key eval_success_rate. Traced by hand once in 2a8c311 (2026-05-23) and found exact; this makes that pass repeatable.",
+  "root": "results/fql_succession",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "2x2 | E-uni | ReBRAC mean",
+      "anchor": "^\\| \\*\\*uni\\*\\* \\|",
+      "capture": "E-uni\\*\\*: R ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/e_uni/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "2x2 | E-uni | FQL mean",
+      "anchor": "^\\| \\*\\*uni\\*\\* \\|",
+      "capture": "E-uni\\*\\*: R [0-9.]+, F ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/e_uni/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | E-uni | FQL n",
+      "anchor": "^\\| \\*\\*uni\\*\\* \\|",
+      "capture": "E-uni\\*\\*: R [0-9.]+, F [0-9.]+ \\(n=([0-9]+)\\)",
+      "stat": "n",
+      "sources": ["p2/e_uni/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | E-uni | delta = F - R",
+      "anchor": "^\\| \\*\\*uni\\*\\* \\|",
+      "capture": "E-uni\\*\\*:.*?δ = \\*\\*([−+0-9.]+)\\*\\*",
+      "stat": "delta",
+      "sources": ["p2/e_uni/test/rebrac_seed*.json", "p2/e_uni/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | M-uni-noise | ReBRAC mean",
+      "anchor": "^\\| \\*\\*uni\\*\\* \\|",
+      "capture": "M-uni-noise\\*\\*.*?: R ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "2x2 | M-uni-noise | FQL mean",
+      "anchor": "^\\| \\*\\*uni\\*\\* \\|",
+      "capture": "M-uni-noise\\*\\*.*?: R [0-9.]+, F ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | M-uni-noise | delta = F - R",
+      "anchor": "^\\| \\*\\*uni\\*\\* \\|",
+      "capture": "M-uni-noise\\*\\*.*?δ = \\*\\*([−+0-9.]+)\\*\\*",
+      "stat": "delta",
+      "sources": ["p2/m_uni_noise/test/rebrac_seed*.json", "p2/m_uni_noise/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | E-multi | ReBRAC mean",
+      "anchor": "^\\| \\*\\*multi\\*\\* \\|",
+      "capture": "E-multi\\*\\*: R ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/e_multi/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "2x2 | E-multi | FQL mean",
+      "anchor": "^\\| \\*\\*multi\\*\\* \\|",
+      "capture": "E-multi\\*\\*: R [0-9.]+, F ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/e_multi/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | E-multi | delta = F - R",
+      "anchor": "^\\| \\*\\*multi\\*\\* \\|",
+      "capture": "E-multi\\*\\*:.*?δ = \\*\\*([−+0-9.]+)\\*\\*",
+      "stat": "delta",
+      "sources": ["p2/e_multi/test/rebrac_seed*.json", "p2/e_multi/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | M-multi-mix | ReBRAC mean",
+      "anchor": "^\\| \\*\\*multi\\*\\* \\|",
+      "capture": "M-multi-mix\\*\\*.*?: R ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/m_multi_mix/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "2x2 | M-multi-mix | FQL mean",
+      "anchor": "^\\| \\*\\*multi\\*\\* \\|",
+      "capture": "M-multi-mix\\*\\*.*?: R [0-9.]+, F ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/m_multi_mix/test/fql_seed*.json"]
+    },
+    {
+      "label": "2x2 | M-multi-mix | delta = F - R",
+      "anchor": "^\\| \\*\\*multi\\*\\* \\|",
+      "capture": "M-multi-mix\\*\\*.*?δ = \\*\\*([−+0-9.]+)\\*\\*",
+      "stat": "delta",
+      "sources": ["p2/m_multi_mix/test/rebrac_seed*.json", "p2/m_multi_mix/test/fql_seed*.json"]
+    },
+
+    {
+      "label": "mechanism | Q1 critic beta2=0 (noisy) | after",
+      "anchor": "^\\| \\*\\*Q1\\*\\* \\|",
+      "capture": "SR [0-9.]+ → ([0-9.]+)",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise_q1_critic_pen0/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "mechanism | Q1 | before (Gate B default)",
+      "anchor": "^\\| \\*\\*Q1\\*\\* \\|",
+      "capture": "SR ([0-9.]+) →",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "mechanism | Q1b actor beta1=1.0 (noisy) | after",
+      "anchor": "^\\| \\*\\*Q1b\\*\\* \\|",
+      "capture": "SR [0-9.]+ → \\*\\*([0-9.]+)\\*\\*",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise_q1b_actor_pen1/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "mechanism | Q1b | the FQL bar it overtakes",
+      "anchor": "^\\| \\*\\*Q1b\\*\\* \\|",
+      "capture": "FQL \\(([0-9.]+)\\)",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise/test/fql_seed*.json"]
+    },
+    {
+      "label": "mechanism | Q1c actor beta1=1.0 (clean) | after",
+      "anchor": "^\\| \\*\\*Q1c\\*\\* \\|",
+      "capture": "SR [0-9.]+ → \\*\\*([0-9.]+)\\*\\*",
+      "stat": "mean",
+      "sources": ["p2/e_uni_q1c_actor_pen1_clean/test/rebrac_seed*.json"]
+    },
+
+    {
+      "label": "worst-case | beta1=4.0 | clean",
+      "anchor": "^\\| ReBRAC β1 = 4\\.0 \\(Gate B default\\)",
+      "capture": "\\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "worst-case | beta1=4.0 | noisy",
+      "anchor": "^\\| ReBRAC β1 = 4\\.0 \\(Gate B default\\)",
+      "capture": "\\| [0-9.]+ \\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "worst-case | beta1=1.0 | clean",
+      "anchor": "^\\| \\*\\*ReBRAC β1 = 1\\.0\\*\\* \\|",
+      "capture": "\\| \\*\\*([0-9.]+)\\*\\* \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni_q1c_actor_pen1_clean/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "worst-case | beta1=1.0 | noisy",
+      "anchor": "^\\| \\*\\*ReBRAC β1 = 1\\.0\\*\\* \\|",
+      "capture": "\\| \\*\\*[0-9.]+\\*\\* \\| \\*\\*([0-9.]+)\\*\\* \\|",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise_q1b_actor_pen1/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "worst-case | FQL frozen | clean",
+      "anchor": "^\\| FQL \\(frozen",
+      "capture": "\\| ([0-9.]+) \\(n=4\\) \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni/test/fql_seed*.json"]
+    },
+    {
+      "label": "worst-case | FQL frozen | noisy",
+      "anchor": "^\\| FQL \\(frozen",
+      "capture": "\\(n=4\\) \\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": ["p2/m_uni_noise/test/fql_seed*.json"]
+    },
+
+    {
+      "label": "C-1 alpha sweep | 0.3 | per-seed",
+      "anchor": "^\\| 0\\.3 \\|",
+      "capture": "^\\| 0\\.3 \\| ([0-9., ]+) \\|",
+      "stat": "seeds",
+      "sources": ["p2/e_uni_c1_fql_alpha_sweep/test/fql_a0p3_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | 0.3 | mean",
+      "anchor": "^\\| 0\\.3 \\|",
+      "capture": "^\\| 0\\.3 \\| [0-9., ]+ \\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni_c1_fql_alpha_sweep/test/fql_a0p3_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | 1.0 frozen | per-seed",
+      "anchor": "^\\| \\*\\*1\\.0 \\(frozen\\)\\*\\* \\|",
+      "capture": "\\*\\* \\| ([0-9., ]+) \\|",
+      "stat": "seeds",
+      "sources": ["p2/e_uni/test/fql_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | 1.0 frozen | mean",
+      "anchor": "^\\| \\*\\*1\\.0 \\(frozen\\)\\*\\* \\|",
+      "capture": "\\| \\*\\*([0-9.]+)\\*\\* \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni/test/fql_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | 3.0 | per-seed",
+      "anchor": "^\\| 3\\.0 \\|",
+      "capture": "^\\| 3\\.0 \\| ([0-9., ]+) \\|",
+      "stat": "seeds",
+      "sources": ["p2/e_uni_c1_fql_alpha_sweep/test/fql_a3p0_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | 3.0 | mean",
+      "anchor": "^\\| 3\\.0 \\|",
+      "capture": "^\\| 3\\.0 \\| [0-9., ]+ \\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni_c1_fql_alpha_sweep/test/fql_a3p0_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | 10.0 | per-seed",
+      "anchor": "^\\| 10\\.0 \\|",
+      "capture": "^\\| 10\\.0 \\| ([0-9., ]+) \\|",
+      "stat": "seeds",
+      "sources": ["p2/e_uni_c1_fql_alpha_sweep/test/fql_a10p0_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | 10.0 | mean",
+      "anchor": "^\\| 10\\.0 \\|",
+      "capture": "^\\| 10\\.0 \\| [0-9., ]+ \\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni_c1_fql_alpha_sweep/test/fql_a10p0_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | ReBRAC beta1=1.0 bar | per-seed",
+      "anchor": "^\\| \\*ReBRAC β1 = 1\\.0 \\(the bar\\)\\*",
+      "capture": "\\* \\| ([0-9., ]+) \\|",
+      "stat": "seeds",
+      "sources": ["p2/e_uni_q1c_actor_pen1_clean/test/rebrac_seed*.json"]
+    },
+    {
+      "label": "C-1 alpha sweep | ReBRAC beta1=1.0 bar | mean",
+      "anchor": "^\\| \\*ReBRAC β1 = 1\\.0 \\(the bar\\)\\*",
+      "capture": "\\| \\*([0-9.]+)\\* \\|",
+      "stat": "mean",
+      "sources": ["p2/e_uni_q1c_actor_pen1_clean/test/rebrac_seed*.json"]
+    },
+
+    {
+      "label": "xbench floor | single_u15_cross | offline ReBRAC beta1=1.0 clean test SR",
+      "anchor": "^\\| offline ReBRAC β1=1\\.0 / clean / test SR",
+      "capture": "\\*\\*([0-9.]+)\\*\\*",
+      "stat": "mean",
+      "sources": ["p2_xbench/e_uni_clean/test/rebrac_b1p1_seed42.json"]
+    }
+  ]
+}

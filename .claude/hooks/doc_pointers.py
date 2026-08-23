@@ -1,18 +1,24 @@
 """PostToolUse hook: catch doc-reference rot at the edit that introduces it.
 
-Fires only on markdown edits, then runs both repo-wide sweeps in --strict mode:
+Fires only on markdown edits, then runs three repo-wide sweeps in --strict mode:
 
-    check_doc_pointers   does the cited path exist
-    check_doc_code_refs  is the cited *line* still that line, and does the cited
-                         function name exist at all
+    check_doc_pointers       does the cited path exist
+    check_doc_code_refs      is the cited *line* still that line, and does the
+                             cited function name exist at all
+    audit_published_numbers  can a published figure still be recomputed from the
+                             per-seed JSON its report says it came from
 
-They are complementary by construction -- the first strips a trailing `:N`
-before checking, and says so in its own `resolve()`, which is the gap the second
-one fills. Both grade their findings, and only the defect buckets fail --strict:
-self-declared absences, gitignored artefacts, plan-table forecasts, and citations
-that sit a line or two off a quoted fragment are all legitimate and stay silent.
+The first two are complementary by construction -- check_doc_pointers strips a
+trailing `:N` before checking, and says so in its own `resolve()`, which is the
+gap the second fills. The third checks a different thing again: not whether a
+citation resolves, but whether a number is still true. Editing a report is
+exactly when its traceback spec stops pointing at the figure it covers, and this
+says so in the same turn. All three grade their findings, and only the defect
+buckets fail --strict: self-declared absences, gitignored artefacts, plan-table
+forecasts, citations a line or two off a quoted fragment, and readings whose
+`results/` is not on this machine are all legitimate and stay silent.
 
-Baseline at the time of writing: 0 findings from either, 888 ms + 1.8 s.
+Baseline at the time of writing: 0 findings from any, 888 ms + 1.8 s + 0.6 s.
 
 Exit 2 feeds stderr back to the agent. PostToolUse runs after the write, so this
 flags the finding rather than preventing it -- the point is to catch it in the
@@ -49,6 +55,10 @@ SWEEPS = (
     ("scripts.check_doc_code_refs", "★",
      "Re-read the cited line and correct the number, or say in the same sentence "
      "that the name is historical and give the real one."),
+    ("scripts.audit_published_numbers", "★",
+     "A traceback spec under docs/tracebacks/ no longer finds the figure it checks, "
+     "or the figure no longer matches its per-seed source. Re-point the spec only "
+     "after reading why the report changed."),
 )
 
 

@@ -357,16 +357,18 @@ def _hook_module():
     return mod
 
 
-def test_the_hook_runs_the_line_anchor_sweep_as_well_as_the_path_sweep():
+def test_the_hook_runs_every_sweep_not_only_the_path_one():
     """Wiring, asserted separately from behaviour.
 
-    The two sweeps check disjoint things -- whether the path exists, and whether the
-    line and the name behind it still do -- so dropping either leaves the other passing
-    and nothing else says so.
+    The three sweeps check disjoint things -- whether the path exists, whether the line
+    and the name behind it still do, and whether a published figure still recomputes --
+    so dropping any one leaves the others passing and nothing else says so.
     """
     modules = [module for module, _marker, _hint in _hook_module().SWEEPS]
 
-    assert modules == ["scripts.check_doc_pointers", "scripts.check_doc_code_refs"]
+    assert modules == ["scripts.check_doc_pointers",
+                       "scripts.check_doc_code_refs",
+                       "scripts.audit_published_numbers"]
 
 
 def test_the_defect_filter_keeps_only_the_failing_sections():

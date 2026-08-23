@@ -1,0 +1,579 @@
+{
+  "chain": "td3bc_phase0c",
+  "doc": "docs/td3bc_phase0c_experiment_report.md",
+  "note": "Provenance rule is the report's own dispersion footnote under the stage_c_final table: the per-seed terminal evaluations under test_selected/alpha_*/seed_4{2..6}.json, with the +/- taken at ddof=0. Traced by hand once in 06ec295 (2026-08-17); this makes that repeatable, and the `sd` claims re-derive the convention rather than trusting it.",
+  "root": "results/offline/td3bc/phase0c",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "stage_c_final | 500 | success rate mean",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 500 | success rate ±",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 500 | return mean",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_final | 500 | return ±",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_final | 500 | safety cost mean",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "stage_c_final | 500 | safety cost ±",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "stage_c_final | 500 | time mean",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "stage_c_final | 500 | time ±",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "stage_c_final | 500 | path efficiency mean",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "stage_c_final | 500 | path efficiency ±",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "stage_c_final | 500 | baseline success",
+      "anchor": "^\\| 500 \\| 0\\.5 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 500 \\| 0\\.5 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/baselines/crosscomp_test_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 1000 | success rate mean",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 1000 | success rate ±",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 1000 | return mean",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_final | 1000 | return ±",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_final | 1000 | safety cost mean",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "stage_c_final | 1000 | safety cost ±",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "stage_c_final | 1000 | time mean",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "stage_c_final | 1000 | time ±",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "stage_c_final | 1000 | path efficiency mean",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "stage_c_final | 1000 | path efficiency ±",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "stage_c_final | 1000 | baseline success",
+      "anchor": "^\\| 1000 \\| 0\\.25 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 1000 \\| 0\\.25 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/baselines/crosscomp_test_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 2000 | success rate mean",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 2000 | success rate ±",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_final | 2000 | return mean",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_final | 2000 | return ±",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_final | 2000 | safety cost mean",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "stage_c_final | 2000 | safety cost ±",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "stage_c_final | 2000 | time mean",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "stage_c_final | 2000 | time ±",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "stage_c_final | 2000 | path efficiency mean",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "stage_c_final | 2000 | path efficiency ±",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| -?[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "stage_c_final | 2000 | baseline success",
+      "anchor": "^\\| 2000 \\| 0\\.15 \\|(?:[^|]*\\|){6}$",
+      "capture": "^\\| 2000 \\| 0\\.15 \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/baselines/crosscomp_test_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_bc_final | 500 | BC success mean",
+      "anchor": "^\\| 500 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 500 \\| ([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_bc_final | 500 | BC success ±",
+      "anchor": "^\\| 500 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 500 \\| [0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_bc_final | 500 | BC return mean",
+      "anchor": "^\\| 500 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 500 \\|[^|]+\\|[^|]+\\|[^|]+\\| (-[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_bc_final | 500 | BC return ±",
+      "anchor": "^\\| 500 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 500 \\|[^|]+\\|[^|]+\\|[^|]+\\| -[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_bc_final | 1000 | BC success mean",
+      "anchor": "^\\| 1000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 1000 \\| ([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_bc_final | 1000 | BC success ±",
+      "anchor": "^\\| 1000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 1000 \\| [0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_bc_final | 1000 | BC return mean",
+      "anchor": "^\\| 1000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 1000 \\|[^|]+\\|[^|]+\\|[^|]+\\| (-[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_bc_final | 1000 | BC return ±",
+      "anchor": "^\\| 1000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 1000 \\|[^|]+\\|[^|]+\\|[^|]+\\| -[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_bc_final | 2000 | BC success mean",
+      "anchor": "^\\| 2000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 2000 \\| ([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_bc_final | 2000 | BC success ±",
+      "anchor": "^\\| 2000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 2000 \\| [0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage_c_bc_final | 2000 | BC return mean",
+      "anchor": "^\\| 2000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 2000 \\|[^|]+\\|[^|]+\\|[^|]+\\| (-[0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage_c_bc_final | 2000 | BC return ±",
+      "anchor": "^\\| 2000 \\| [0-9.]+ ± [0-9.]+ \\|",
+      "capture": "^\\| 2000 \\|[^|]+\\|[^|]+\\|[^|]+\\| -[0-9.]+ ± ([0-9.]+) ",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_bc_selected/alpha_0p0/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "shadow a0.2 | success mean",
+      "anchor": "^\\| `2000, alpha=0\\.2` \\|",
+      "capture": "^\\| `2000, alpha=0\\.2` \\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_shadow_ep2000_a0p2/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p2/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "shadow a0.2 | success ±",
+      "anchor": "^\\| `2000, alpha=0\\.2` \\|",
+      "capture": "^\\| `2000, alpha=0\\.2` \\| [0-9.]+ \\| ([0-9.]+) \\|",
+      "stat": "sd",
+      "sources": [
+        "stage_c_shadow_ep2000_a0p2/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p2/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "shadow a0.2 | return",
+      "anchor": "^\\| `2000, alpha=0\\.2` \\|",
+      "capture": "^\\| `2000, alpha=0\\.2` \\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_shadow_ep2000_a0p2/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p2/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "shadow a0.2 | safety cost",
+      "anchor": "^\\| `2000, alpha=0\\.2` \\|",
+      "capture": "^\\| `2000, alpha=0\\.2` \\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_shadow_ep2000_a0p2/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p2/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "shadow a0.2 | time",
+      "anchor": "^\\| `2000, alpha=0\\.2` \\|",
+      "capture": "^\\| `2000, alpha=0\\.2` \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_shadow_ep2000_a0p2/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p2/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "shadow a0.2 | path efficiency",
+      "anchor": "^\\| `2000, alpha=0\\.2` \\|",
+      "capture": "^\\| `2000, alpha=0\\.2` \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_shadow_ep2000_a0p2/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p2/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "shadow table | a0.15 | success mean",
+      "anchor": "^\\| `2000, alpha=0\\.15` \\|",
+      "capture": "^\\| `2000, alpha=0\\.15` \\| ([0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "shadow table | a0.15 | success ±",
+      "anchor": "^\\| `2000, alpha=0\\.15` \\|",
+      "capture": "^\\| `2000, alpha=0\\.15` \\| [0-9.]+ \\| ([0-9.]+) \\|",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "shadow table | a0.15 | return",
+      "anchor": "^\\| `2000, alpha=0\\.15` \\|",
+      "capture": "^\\| `2000, alpha=0\\.15` \\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_return"
+    },
+    {
+      "label": "shadow table | a0.15 | safety cost",
+      "anchor": "^\\| `2000, alpha=0\\.15` \\|",
+      "capture": "^\\| `2000, alpha=0\\.15` \\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_safety_cost"
+    },
+    {
+      "label": "shadow table | a0.15 | time",
+      "anchor": "^\\| `2000, alpha=0\\.15` \\|",
+      "capture": "^\\| `2000, alpha=0\\.15` \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_time_s"
+    },
+    {
+      "label": "shadow table | a0.15 | path efficiency",
+      "anchor": "^\\| `2000, alpha=0\\.15` \\|",
+      "capture": "^\\| `2000, alpha=0\\.15` \\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\| (-?[0-9.]+) \\|",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ],
+      "metric": "eval_path_efficiency"
+    }
+  ]
+}

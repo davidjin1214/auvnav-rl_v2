@@ -32,6 +32,10 @@
 
 ### 方向 2 — 诚信审计固化成 pytest：**值得独立一个会话，工作量最大**
 
+> **已执行完毕（2026-08-24）。** 下面这一节是当时的立项说明，保留原样；实际做成什么样、
+> 还剩哪两项，一律看 [`2026-08-23-integrity-audit-pytest.md`](2026-08-23-integrity-audit-pytest.md)。
+> 那份是该方向的账本，本节不是。
+
 纯本仓工作，自成体系。已有素材：
 
 - [`docs/data_integrity_open_items.md`](../data_integrity_open_items.md) — 待办项与已闭合项

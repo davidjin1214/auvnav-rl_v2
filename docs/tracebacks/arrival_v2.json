@@ -1,0 +1,1522 @@
+{
+  "chain": "arrival_v2",
+  "doc": "docs/arrival_v2_experiment_report.md",
+  "note": "provenance：本报告 §7.10 自述的引用链「论文 → 本报告 → final_eval.json」，以及 §7.9 各表自述的 gate JSON 源。逐 run 的 mean39 / peak / 首达步 / n_succ 取自该 run 的 results/eval_log.csv（39 次周期评估），final 取自 results/final_eval.json。OOB 列未落表：它要 eval_termination_counts 的分项除以 num_eval_episodes，本工具只读平铺键。6380082 的主发现（论文侧已改、报告侧未回填）属表述层，同样不在覆盖内。",
+  "root": "experiments/arrival_v2_prototype",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "7.5 §7.1 single+cross final",
+      "anchor": "^\\| final_success_rate \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross peak",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross peak step (k steps)",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000,
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_return",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_return ±",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_safety_cost",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_safety_cost ±",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_time_s",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_time_s ±",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_path_length_m",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_path_length_m ±",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_progress_ratio",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_progress_ratio ±",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_path_efficiency",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_path_efficiency ±",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.1 single+cross eval_energy",
+      "anchor": "^\\| eval_energy \\|",
+      "capture": "^\\|[^|]*\\| ([0-9][0-9 ]*[0-9])",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_energy",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream final",
+      "anchor": "^\\| final_success_rate \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream peak",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream peak step (k steps)",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000,
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_return",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_return ±",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_safety_cost",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_safety_cost ±",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_time_s",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_time_s ±",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_path_length_m",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_path_length_m ±",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_progress_ratio",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_progress_ratio ±",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_path_efficiency",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_path_efficiency ±",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.2 single+upstream eval_energy",
+      "anchor": "^\\| eval_energy \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| ([0-9][0-9 ]*[0-9])",
+      "stat": "mean",
+      "sources": [
+        "single_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_energy",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem final",
+      "anchor": "^\\| final_success_rate \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem peak",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem peak step (k steps)",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000,
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_return",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_return ±",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_safety_cost",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_safety_cost ±",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_time_s",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_time_s ±",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_path_length_m",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_path_length_m ±",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_progress_ratio",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_progress_ratio ±",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_path_efficiency",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_path_efficiency ±",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.3 tandem eval_energy",
+      "anchor": "^\\| eval_energy \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| ([0-9][0-9 ]*[0-9])",
+      "stat": "mean",
+      "sources": [
+        "tandem_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_energy",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs final",
+      "anchor": "^\\| final_success_rate \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs peak",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs peak step (k steps)",
+      "anchor": "^\\| peak \\(first-hit step\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000,
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_return",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_return ±",
+      "anchor": "^\\| eval_return \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_return_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_safety_cost",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_safety_cost ±",
+      "anchor": "^\\| eval_safety_cost \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_safety_cost_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_time_s",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_time_s ±",
+      "anchor": "^\\| eval_time_s \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_time_s_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_path_length_m",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_path_length_m ±",
+      "anchor": "^\\| eval_path_length_m \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_length_m_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_progress_ratio",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_progress_ratio ±",
+      "anchor": "^\\| eval_progress_ratio \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_progress_ratio_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_path_efficiency",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_path_efficiency ±",
+      "anchor": "^\\| eval_path_efficiency \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency_std",
+      "section": "^### 7\\.5 4-way",
+      "note": "终检自带的 std，不是跨 seed 离散度——单 run 30 episodes 的样本标准差"
+    },
+    {
+      "label": "7.5 §7.4 sbs eval_energy",
+      "anchor": "^\\| eval_energy \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| ([0-9][0-9 ]*[0-9])",
+      "stat": "mean",
+      "sources": [
+        "sbs_u15_upstream_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "metric": "eval_energy",
+      "section": "^### 7\\.5 4-way"
+    },
+    {
+      "label": "7.9.1 k=8 seed=42 (§7.8 anchor) final",
+      "anchor": "^\\| §7\\.8 anchor \\(重列\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_42/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.1 k=8 seed=42 (§7.8 anchor) peak",
+      "anchor": "^\\| §7\\.8 anchor \\(重列\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_42/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1 k=8 seed=42 (§7.8 anchor) peak step (k steps)",
+      "anchor": "^\\| §7\\.8 anchor \\(重列\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_42/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.1 k=8 seed=42 (§7.8 anchor) mean39",
+      "anchor": "^\\| §7\\.8 anchor \\(重列\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_42/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1 k=8 seed=42 (§7.8 anchor) n_succ",
+      "anchor": "^\\| §7\\.8 anchor \\(重列\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| ([0-9]+)/",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_42/results/eval_log.csv"
+      ],
+      "metric": "count_gt(eval_success_rate, 0)"
+    },
+    {
+      "label": "7.9.1 k=8 seed=42 (§7.8 anchor) n_evals",
+      "anchor": "^\\| §7\\.8 anchor \\(重列\\) \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| [0-9]+/([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_42/results/eval_log.csv"
+      ],
+      "metric": "nrows(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1' k=8 seed=0 final",
+      "anchor": "^\\| §7\\.9\\.1' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.1' k=8 seed=0 peak",
+      "anchor": "^\\| §7\\.9\\.1' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1' k=8 seed=0 peak step (k steps)",
+      "anchor": "^\\| §7\\.9\\.1' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.1' k=8 seed=0 mean39",
+      "anchor": "^\\| §7\\.9\\.1' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1' k=8 seed=0 n_succ",
+      "anchor": "^\\| §7\\.9\\.1' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| ([0-9]+)/",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "count_gt(eval_success_rate, 0)"
+    },
+    {
+      "label": "7.9.1' k=8 seed=0 n_evals",
+      "anchor": "^\\| §7\\.9\\.1' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| [0-9]+/([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "nrows(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1'' k=8 seed=7 final",
+      "anchor": "^\\| §7\\.9\\.1'' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_7/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.1'' k=8 seed=7 peak",
+      "anchor": "^\\| §7\\.9\\.1'' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_7/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1'' k=8 seed=7 peak step (k steps)",
+      "anchor": "^\\| §7\\.9\\.1'' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_7/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.1'' k=8 seed=7 mean39",
+      "anchor": "^\\| §7\\.9\\.1'' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_7/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1'' k=8 seed=7 n_succ",
+      "anchor": "^\\| §7\\.9\\.1'' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| ([0-9]+)/",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_7/results/eval_log.csv"
+      ],
+      "metric": "count_gt(eval_success_rate, 0)"
+    },
+    {
+      "label": "7.9.1'' k=8 seed=7 n_evals",
+      "anchor": "^\\| §7\\.9\\.1'' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| [0-9]+/([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_7/results/eval_log.csv"
+      ],
+      "metric": "nrows(eval_success_rate)"
+    },
+    {
+      "label": "7.9.2 k=12 seed=42 final",
+      "anchor": "^\\| §7\\.9\\.2 anchor",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_42/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.2 k=12 seed=42 peak",
+      "anchor": "^\\| §7\\.9\\.2 anchor",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_42/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.2 k=12 seed=42 peak step (k steps)",
+      "anchor": "^\\| §7\\.9\\.2 anchor",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_42/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.2 k=12 seed=42 mean39",
+      "anchor": "^\\| §7\\.9\\.2 anchor",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_42/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.2 k=12 seed=42 n_succ",
+      "anchor": "^\\| §7\\.9\\.2 anchor",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| ([0-9]+)/",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_42/results/eval_log.csv"
+      ],
+      "metric": "count_gt(eval_success_rate, 0)"
+    },
+    {
+      "label": "7.9.2 k=12 seed=42 n_evals",
+      "anchor": "^\\| §7\\.9\\.2 anchor",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| [0-9]+/([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_42/results/eval_log.csv"
+      ],
+      "metric": "nrows(eval_success_rate)"
+    },
+    {
+      "label": "7.9.2' k=12 seed=0 final",
+      "anchor": "^\\| §7\\.9\\.2' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.2' k=12 seed=0 peak",
+      "anchor": "^\\| §7\\.9\\.2' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.2' k=12 seed=0 peak step (k steps)",
+      "anchor": "^\\| §7\\.9\\.2' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.2' k=12 seed=0 mean39",
+      "anchor": "^\\| §7\\.9\\.2' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.2' k=12 seed=0 n_succ",
+      "anchor": "^\\| §7\\.9\\.2' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| ([0-9]+)/",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "count_gt(eval_success_rate, 0)"
+    },
+    {
+      "label": "7.9.2' k=12 seed=0 n_evals",
+      "anchor": "^\\| §7\\.9\\.2' sister",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| [0-9]+/([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "nrows(eval_success_rate)"
+    },
+    {
+      "label": "7.9.3 seed=0 k=4 final",
+      "anchor": "^\\| §7\\.7\\.1 sister \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_0/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.3 seed=0 k=4 peak",
+      "anchor": "^\\| §7\\.7\\.1 sister \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_0/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.3 seed=0 k=4 peak step (k steps)",
+      "anchor": "^\\| §7\\.7\\.1 sister \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_0/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.3 seed=0 k=4 mean39",
+      "anchor": "^\\| §7\\.7\\.1 sister \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_0/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.3 seed=0 k=8 final",
+      "anchor": "^\\| §7\\.9\\.1' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.3 seed=0 k=8 peak",
+      "anchor": "^\\| §7\\.9\\.1' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.3 seed=0 k=8 peak step (k steps)",
+      "anchor": "^\\| §7\\.9\\.1' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.3 seed=0 k=8 mean39",
+      "anchor": "^\\| §7\\.9\\.1' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_0/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.3 seed=0 k=12 final",
+      "anchor": "^\\| §7\\.9\\.2' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.3 seed=0 k=12 peak",
+      "anchor": "^\\| §7\\.9\\.2' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) @",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "max(eval_success_rate)"
+    },
+    {
+      "label": "7.9.3 seed=0 k=12 peak step (k steps)",
+      "anchor": "^\\| §7\\.9\\.2' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ @ \\*{0,2}([0-9]+)k",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "argmax(eval_success_rate, env_step)",
+      "scale": 1000
+    },
+    {
+      "label": "7.9.3 seed=0 k=12 mean39",
+      "anchor": "^\\| §7\\.9\\.2' \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_0/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.4 col2 σ_final 0.064 — 不是 σ_final（勘误 ①上半）",
+      "anchor": "^\\| σ_final \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| k=8: [0-9.]+ → k=12: ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_[04]*/results/final_eval.json"
+      ],
+      "expect": "mismatch",
+      "note": "勘误 ①（§7.9.4 表下 ⚠ 注）：k=12 当时只有 seed {42, 0}，两者 final 同为 0.900，σ_final 精确为 0。此格本就不该由 final 复现出来——它复现了才说明表被改过。"
+    },
+    {
+      "label": "7.9.4 col2 σ_final 0.064 — 实为同两 seed 的 mean39 σ（勘误 ①下半）",
+      "anchor": "^\\| σ_final \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| k=8: [0-9.]+ → k=12: ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_[04]*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)",
+      "note": "勘误 ① 的诊断本身：同一格的 0.064 由这两个 seed 的 mean39 按 ddof=0 复现，与下一行 σ_mean39 第二列同值——重号的痕迹。"
+    },
+    {
+      "label": "7.9.4 col2 「2 seeds」的样本量",
+      "anchor": "^\\| σ_final \\|",
+      "capture": "\\(([0-9]+) seeds\\) \\| k=8:",
+      "stat": "n",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_[04]*/results/final_eval.json"
+      ],
+      "note": "把 seed_[04]* 这个 glob 钉在该列自己印的样本量上：解析出 3 个文件就报错。"
+    },
+    {
+      "label": "7.9.4 col2 σ_final 0.181（k=8 三 seed，ddof=0）",
+      "anchor": "^\\| σ_final \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| k=8: ([0-9.]+) →",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ],
+      "note": "勘误 ②：0.181 复现得出，但要三个 seed——它排在标着「2 seeds」的列里。样本量与列标题的矛盾属表述层，本工具只能证前半句。"
+    },
+    {
+      "label": "7.9.4 col3 σ_final k=8（ddof=1）",
+      "anchor": "^\\| σ_final \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| k=8: ([0-9.]+) →",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.4 col3 σ_final k=12（ddof=1）",
+      "anchor": "^\\| σ_final \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| k=8: [0-9.]+ → k=12: \\*\\*([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.4 col2 σ_mean39 k=8 0.157（三 seed，ddof=0）",
+      "anchor": "^\\| σ_mean39 \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| k=8: ([0-9.]+) →",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)",
+      "note": "勘误 ③：同样是三 seed 的值排在 2-seed 列里。"
+    },
+    {
+      "label": "7.9.4 col2 σ_mean39 k=12 0.064（两 seed，ddof=0）",
+      "anchor": "^\\| σ_mean39 \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\| k=8: [0-9.]+ → k=12: ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_[04]*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.4 col3 σ_mean39 k=8（ddof=1）",
+      "anchor": "^\\| σ_mean39 \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| k=8: ([0-9.]+) →",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.4 col3 σ_mean39 k=12（ddof=1）",
+      "anchor": "^\\| σ_mean39 \\|",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| k=8: [0-9.]+ → k=12: \\*\\*([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.1 F1.1 σ_final = 0.181",
+      "anchor": "^\\*\\*Finding F1\\.1",
+      "capture": "σ_final = ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.1 口径注 ddof=1 为 0.222",
+      "anchor": "^> final 值按 \\*\\*ddof=1\\*\\*",
+      "capture": "是 \\*\\*`([0-9.]+)`\\*\\*",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.1 口径注 一致口径 0.222 → 0.038（ddof=1，左）",
+      "anchor": "^> 故「0\\.181 → 0\\.038」",
+      "capture": "应为 `([0-9.]+) → [0-9.]+`（ddof=1）",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.1 口径注 一致口径 0.222 → 0.038（ddof=1，右）",
+      "anchor": "^> 故「0\\.181 → 0\\.038」",
+      "capture": "应为 `[0-9.]+ → ([0-9.]+)`（ddof=1）",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.1 口径注 一致口径 0.181 → 0.031（ddof=0，右）",
+      "anchor": "^> 故「0\\.181 → 0\\.038」",
+      "capture": "或 `[0-9.]+ → ([0-9.]+)`（ddof=0）",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.2 F2.1 σ_mean39 k=8 三 seed 0.157",
+      "anchor": "^\\*\\*Finding F2\\.1",
+      "capture": "k=8 三 seed σ=([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.2 F2.1 σ_mean39 k=12 两 seed 0.064",
+      "anchor": "^\\*\\*Finding F2\\.1",
+      "capture": "k=12 两 seed σ=([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_[04]*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.4 ⚠ 注 第三列 σ_final 0.222",
+      "anchor": "^> \\*\\*第三列（3-seed、ddof=1）经重算逐位无误\\*\\*",
+      "capture": "σ_final `([0-9.]+) →",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.4 ⚠ 注 第三列 σ_final 0.038",
+      "anchor": "^> \\*\\*第三列（3-seed、ddof=1）经重算逐位无误\\*\\*",
+      "capture": "σ_final `[0-9.]+ → ([0-9.]+)`",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "7.9.4 ⚠ 注 第三列 σ_mean39 0.192",
+      "anchor": "^> \\*\\*第三列（3-seed、ddof=1）经重算逐位无误\\*\\*",
+      "capture": "σ_mean39 `([0-9.]+) →",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.9.4 ⚠ 注 第三列 σ_mean39 0.113",
+      "anchor": "^> \\*\\*第三列（3-seed、ddof=1）经重算逐位无误\\*\\*",
+      "capture": "σ_mean39 `[0-9.]+ → ([0-9.]+)`",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/eval_log.csv"
+      ],
+      "metric": "mean(eval_success_rate)"
+    },
+    {
+      "label": "7.10 s0 seed=0",
+      "anchor": "^\\| s0（10-D",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_0/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s0 seed=7",
+      "anchor": "^\\| s0（10-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_7/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s0 seed=42",
+      "anchor": "^\\| s0（10-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_42/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s0 mean",
+      "anchor": "^\\| s0（10-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s0 std",
+      "anchor": "^\\| s0（10-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s1 seed=0",
+      "anchor": "^\\| s1（12-D",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_0/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s1 seed=7",
+      "anchor": "^\\| s1（12-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_7/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s1 seed=42",
+      "anchor": "^\\| s1（12-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_42/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s1 mean",
+      "anchor": "^\\| s1（12-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_*/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s1 std",
+      "anchor": "^\\| s1（12-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_*/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s2 seed=0",
+      "anchor": "^\\| s2（16-D",
+      "capture": "^\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s2_k4/seed_0/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s2 seed=7",
+      "anchor": "^\\| s2（16-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s2_k4/seed_7/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s2 seed=42",
+      "anchor": "^\\| s2（16-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s2_k4/seed_42/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s2 mean",
+      "anchor": "^\\| s2（16-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s2_k4/seed_*/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 s2 std",
+      "anchor": "^\\| s2（16-D",
+      "capture": "^\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s2_k4/seed_*/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    },
+    {
+      "label": "7.10 gap(s1 − s0)",
+      "anchor": "^gap\\(s1 − s0\\) = ",
+      "capture": "= ([0-9.]+)（约",
+      "stat": "delta",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json",
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_*/results/final_eval.json"
+      ],
+      "section": "^### 7\\.10 "
+    }
+  ]
+}

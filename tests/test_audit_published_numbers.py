@@ -403,6 +403,206 @@ def test_a_mean_takes_only_one_source(tree):
     assert len(errors["spec-error"]) == 1
 
 
+# ------------------------------------------------------------------ CSV sources
+
+EVAL_LOG = (
+    "env_step,eval_success_rate\n"
+    "100,0.2\n"
+    "200,0.9\n"
+    "300,0.5\n"
+    "400,0.9\n"
+)
+
+
+def _csv_claim(**kw) -> dict:
+    claim = dict(MEAN_CLAIM, sources=["cell/test/run.csv"],
+                 metric="mean(eval_success_rate)")
+    claim.update(kw)
+    return claim
+
+
+def assert_reproduced(buckets: dict[str, list]) -> None:
+    """One claim, recomputed and matching -- and nothing routed elsewhere.
+
+    `value-mismatch == []` alone is not that assertion: a claim that died in
+    `spec-error` also leaves it empty, so a broken aggregation dispatch reads as a
+    pass. One mutation run's worth of evidence for writing it out.
+    """
+    assert buckets["ok"] and len(buckets["ok"]) == 1, buckets
+    for name in apn.DEFECT_BUCKETS + ("no-data",):
+        assert buckets[name] == [], f"{name} -> {buckets[name]}"
+
+
+@pytest.fixture()
+def csv_tree(tree):
+    _write(tree, "results/demo/cell/test/run.csv", EVAL_LOG)
+    return tree
+
+
+def test_a_csv_column_is_reduced_to_one_number_per_file(csv_tree):
+    _write(csv_tree, "docs/report.md", "| cell | 0.625 |\n")
+
+    assert_reproduced(run(csv_tree, [_csv_claim()]))
+
+
+def test_a_csv_mean_that_does_not_match_is_flagged(csv_tree):
+    _write(csv_tree, "docs/report.md", "| cell | 0.900 |\n")
+
+    assert len(run(csv_tree, [_csv_claim()])["value-mismatch"]) == 1
+
+
+def test_peak_is_the_column_max(csv_tree):
+    _write(csv_tree, "docs/report.md", "| cell | 0.900 |\n")
+
+    assert_reproduced(run(csv_tree, [_csv_claim(metric="max(eval_success_rate)")]))
+
+
+def test_argmax_reports_first_attainment_not_the_last(csv_tree):
+    """`peak @ 475k` is when the run got there; a plateau ties every later row."""
+    _write(csv_tree, "docs/report.md", "| cell | 200 |\n")
+
+    claim = _csv_claim(metric="argmax(eval_success_rate, env_step)")
+    buckets = run(csv_tree, [claim])
+
+    assert_reproduced(buckets)  # 400 would mean it took the last tie
+
+
+def test_count_gt_counts_the_rows_above_the_threshold(csv_tree):
+    _write(csv_tree, "docs/report.md", "| cell | 4 |\n")
+
+    claim = _csv_claim(metric="count_gt(eval_success_rate, 0)")
+    assert_reproduced(run(csv_tree, [claim]))
+
+    _write(csv_tree, "docs/report.md", "| cell | 2 |\n")
+    claim = _csv_claim(metric="count_gt(eval_success_rate, 0.5)")
+    assert_reproduced(run(csv_tree, [claim]))
+
+
+def test_nrows_counts_the_evaluations(csv_tree):
+    _write(csv_tree, "docs/report.md", "| cell | 4 |\n")
+
+    assert_reproduced(run(csv_tree, [_csv_claim(metric="nrows(eval_success_rate)")]))
+
+
+def test_a_csv_source_read_as_a_plain_key_is_an_error(csv_tree):
+    """Silently reading a `.csv` as JSON would surface as a parse error somewhere far
+    from the spec line that caused it."""
+    errors = run(csv_tree, [_csv_claim(metric="eval_success_rate")])["spec-error"]
+
+    assert len(errors) == 1
+    assert "aggregation" in errors[0][1]
+
+
+def test_a_json_source_read_as_an_aggregation_is_an_error(tree):
+    errors = run(tree, [dict(MEAN_CLAIM, metric="mean(eval_success_rate)")])["spec-error"]
+
+    assert len(errors) == 1
+    assert "JSON key" in errors[0][1]
+
+
+def test_a_missing_csv_column_is_reported(csv_tree):
+    errors = run(csv_tree, [_csv_claim(metric="mean(no_such_column)")])["spec-error"]
+
+    assert len(errors) == 1
+    assert "no_such_column" in errors[0][1]
+
+
+def test_argmax_without_a_second_column_is_rejected(csv_tree):
+    errors = run(csv_tree, [_csv_claim(metric="argmax(eval_success_rate)")])["spec-error"]
+
+    assert len(errors) == 1
+
+
+def test_count_gt_without_a_threshold_is_rejected(csv_tree):
+    errors = run(csv_tree, [_csv_claim(metric="count_gt(eval_success_rate)")])["spec-error"]
+
+    assert len(errors) == 1
+
+
+# ------------------------------------------------------------------ scale
+
+def test_scale_converts_the_unit_before_comparison(csv_tree):
+    """`peak @ 475k` against 475002 steps on disk."""
+    _write(csv_tree, "results/demo/cell/test/run.csv",
+           "env_step,eval_success_rate\n100,0.2\n475002,0.9\n")
+    _write(csv_tree, "docs/report.md", "| cell | 475 |\n")
+
+    claim = _csv_claim(metric="argmax(eval_success_rate, env_step)", scale=1000)
+    assert_reproduced(run(csv_tree, [claim]))
+
+
+def test_without_the_scale_the_same_claim_is_a_mismatch(csv_tree):
+    _write(csv_tree, "results/demo/cell/test/run.csv",
+           "env_step,eval_success_rate\n100,0.2\n475002,0.9\n")
+    _write(csv_tree, "docs/report.md", "| cell | 475 |\n")
+
+    claim = _csv_claim(metric="argmax(eval_success_rate, env_step)")
+    assert len(run(csv_tree, [claim])["value-mismatch"]) == 1
+
+
+def test_scale_is_applied_to_every_seed_before_the_statistic(tree):
+    _seed_files(tree, "results/demo/scaled/test", {"seed_0": 880.0, "seed_42": 890.0})
+    _write(tree, "docs/report.md", "| cell | 0.885 |\n")
+
+    claim = dict(MEAN_CLAIM, sources=["scaled/test/seed_*.json"], scale=1000)
+    assert_reproduced(run(tree, [claim]))
+
+
+def test_a_non_positive_scale_is_rejected(tree):
+    errors = run(tree, [dict(MEAN_CLAIM, scale=0)])["spec-error"]
+
+    assert len(errors) == 1
+
+
+# ------------------------------------------------------------------ declared errata
+
+ERRATUM = {
+    "label": "a figure the report keeps and annotates as wrong",
+    "anchor": r"^\| cell \|",
+    "capture": r"\| ([0-9.]+) \|",
+    "stat": "mean",
+    "sources": ["cell/test/seed_*.json"],
+    "expect": "mismatch",
+    "note": "pins the ⚠ note under the table",
+}
+
+
+def test_a_declared_erratum_passes_while_it_stays_unreproducible(tree):
+    _write(tree, "docs/report.md", "| cell | 0.925 |\n")
+
+    buckets = run(tree, [ERRATUM])
+
+    assert buckets["value-mismatch"] == [], "an erratum is not a value defect"
+    assert buckets["erratum-stale"] == []
+    assert len(buckets["ok"]) == 1
+
+
+def test_an_erratum_that_starts_reproducing_is_a_defect(tree):
+    """The figure now matches its source, so whatever the note says about it is stale.
+
+    Without this the disclosure could be silently outlived by an edit to the table.
+    """
+    buckets = run(tree, [ERRATUM])          # the fixture doc prints the true 0.885
+
+    assert len(buckets["erratum-stale"]) == 1
+    assert "erratum-stale" in apn.DEFECT_BUCKETS, "so it fails --strict"
+
+
+def test_an_erratum_claim_without_a_note_is_rejected(tree):
+    claim = {k: v for k, v in ERRATUM.items() if k != "note"}
+
+    errors = run(tree, [claim])["spec-error"]
+
+    assert len(errors) == 1
+    assert "note" in errors[0][1]
+
+
+def test_an_unknown_expect_value_is_rejected(tree):
+    errors = run(tree, [dict(MEAN_CLAIM, expect="maybe")])["spec-error"]
+
+    assert len(errors) == 1
+
+
 # ------------------------------------------------------------------ CLI and shipped specs
 
 

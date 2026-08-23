@@ -1,9 +1,9 @@
-# 交接：诚信审计固化成 pytest（2026-08-23，第一批 ＋ 第二批进行中）
+# 交接：诚信审计固化成 pytest（2026-08-23，第一批 ＋ 第二批已完成）
 
 承接 [`2026-08-23-tooling-followup.md`](2026-08-23-tooling-followup.md) 的**方向 2**。该文判
 方向 1（skill 效力测试台）推迟、方向 3（环境加固）只剩零碎，本轮只做方向 2。
 
-用户已定的批次顺序：**第一批 = 守卫类 + 引用校验**（本轮），第二批 = 刊值复算，第三批 =
+用户已定的批次顺序：**第一批 = 守卫类 + 引用校验**、**第二批 = 刊值复算**（两批均已完成），第三批 =
 `paper/thesis_ch5/tools/` 全覆盖。
 
 ---
@@ -38,12 +38,12 @@ rev 块核查动作、以及跨仓会话记录。
 
 | # | 审计 | 出处 | 本轮 |
 |---|---|---|---|
-| 6 | 报告刊值 ⇄ `results/` 下逐 seed JSON 逐位复算，四条链 | `48b8d06` ReBRAC／`06ec295` td3bc phase0c／`6380082` arrival_v2／`2a8c311` FQL P2 | ◐ 3/4 已落表，见 §四 |
+| 6 | 报告刊值 ⇄ `results/` 下逐 seed JSON 逐位复算，四条链 | `48b8d06` ReBRAC／`06ec295` td3bc phase0c／`6380082` arrival_v2／`2a8c311` FQL P2 | ✅ 4/4 已落表（320 处刊值），见 §四 |
 | 7 | 全章 ± 离散度口径 90 处归位 | `af6ee64`。`.tex` 侧有 `ch5_dispersion_audit.py`，`docs/*.md` 报告侧无工具 | ✅ `--ddof` 已补上报告侧，见 §四 |
 | 8 | 文档→源码**行号**引用（全仓 42 处） | `2a8c311` 明写「这类引用 check_doc_pointers 验不了，只能实读」 | ✅ 已固化 |
 | 9 | 文档→**函数名**引用 | `a49fb1e`：CLAUDE.md 里的 get_probe_positions 全仓只出现在 CLAUDE.md 自己 | ⚠ 判据待改，见 §四 |
 | 10 | 文档自述横幅 ⇄ 引用它的表格状态栏 | `cce2b2d`：13 行核出 3 行对不上 | ⬜ 未做 |
-| 11 | 刊出读数 ⇄ 评估 manifest 指纹归属 | `ch5_manifest_attribution.py`，3715 份读数零落空 | ⬜ 第二批 |
+| 11 | 刊出读数 ⇄ 评估 manifest 指纹归属 | `ch5_manifest_attribution.py`，3715 份读数零落空 | ⬜ 未动，建议并入第三批（见 §四）|
 | 12 | `benchmarks/` 落库时逐条核（条数／种子连续／区间） | `0dc35a2`，纯手工 | ⬜ 第三批 |
 
 ### 跨仓那条线：已查，无遗漏，别再扫一遍
@@ -56,7 +56,7 @@ rev 块核查动作、以及跨仓会话记录。
 
 ---
 
-## 二、本轮已交付
+## 二、第一批已交付（第二批的交付物见 §四）
 
 | 文件 | 内容 |
 |---|---|
@@ -64,9 +64,9 @@ rev 块核查动作、以及跨仓会话记录。
 | `tests/test_check_doc_code_refs.py` | 29 项 |
 | `tests/test_check_doc_pointers.py` | 32 项。含把 `a507eb3` 那次**手工**故障注入固化下来的 SUSPECT 用例，以及钩子的接线用例 |
 | `tests/test_build_doc_index.py` | 19 项 |
-| `.claude/hooks/doc_pointers.py` | 改成串跑两个 sweep。两者互补是构造出来的：前者验路径在不在，后者验行与名还在不在 |
+| `.claude/hooks/doc_pointers.py` | 改成串跑 sweep（第二批加挂刊值复算后为三个）。互补是构造出来的：第一个验路径在不在，第二个验行与名还在不在，第三个验数还能不能由源算出来 |
 
-合跑 82 项全绿；全仓 `pytest tests/` 245 passed / 4 skipped。运行方式（本机沙箱挡系统
+这四个文件合跑 82 项全绿。两批做完时全仓 `pytest tests/` 为 300 passed ／ 4 skipped。运行方式（本机沙箱挡系统
 temp，必须给 `--basetemp`）：
 
 ```bash
@@ -74,11 +74,11 @@ python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers
     tests/test_build_doc_index.py -q --tb=short --basetemp=<scratchpad>/pytest_tmp
 ```
 
-### 负控是实测的：第一批 40 条 ＋ 第二批 31 条，全部变红
+### 负控是实测的：第一批 40 条 ＋ 第二批 49 条，全部变红
 
 上一轮交接要求「每条检查都要配负控」。做法是对被测工具逐条注入故障、确认对应用例变红。
 下表是第一批的判据本身，shell 脚本是一次性的（含硬编码本机路径，未入库）；第二批
-`audit_published_numbers` 那 31 条同法做过，判据见该脚本与
+`audit_published_numbers` 那 49 条同法做过（扩了 CSV / scale / 勘误三组机制后从 31 条补到 49，旧的 31 条一并重跑），判据见该脚本与
 [`../tracebacks/README.md`](../tracebacks/README.md)。另有 1 次**刻意保持绿**的控制组注入，
 用来隔离钩子的 markdown 门（见表下说明）。
 
@@ -212,30 +212,48 @@ gitignored，另一台机器要手工加，办法写在钩子自己的 docstring
 
 | C 类 | 内容 | 状态 |
 |---|---|---|
-| 6 | 四条数字溯源链做成可重跑命令 | ◐ 工具 ＋ **3/4** 条链落表（FQL P2 35 ＋ td3bc phase0c 57 ＋ ReBRAC 85 = **177 处刊值全部吻合**）。arrival_v2 未落 |
-| 7 | `docs/*.md` 报告侧的 ddof 口径工具化 | ✅ `--ddof` 三份报告合计 **57 处**：55 处 `ddof=0`、2 处 `ddof=1`，且那 2 处是同一个读数（`0.9340 ± 0.0261`，印在两张表里）。**机械复现了 `48b8d06` 手工查出的唯一一处 ddof=1** |
+| 6 | 四条数字溯源链做成可重跑命令 | ✅ **4/4** 条链落表（FQL P2 35 ＋ td3bc phase0c 57 ＋ ReBRAC 85 ＋ arrival_v2 143 = **320 处刊值**，订正 1 格后全部吻合） |
+| 7 | `docs/*.md` 报告侧的 ddof 口径工具化 | ✅ `--ddof` 四份报告合计 **80 处**：63 `ddof=0`、14 `ddof=1`、2 处两套都对得上、1 处 `NEITHER`（是报告自己声明的重号格）。ReBRAC 那 1 处 `ddof=1` 读数机械复现了 `48b8d06` 的头号结论 |
 | 11 | 刊出读数 ⇄ manifest 指纹归属 | ⬜ 未动。工具 `paper/thesis_ch5/tools/ch5_manifest_attribution.py` 已存在，缺的是测试——与第三批第 5 项同源，可能合批 |
 
 已交付：[`../../scripts/audit_published_numbers.py`](../../scripts/audit_published_numbers.py)
-＋ [`../tracebacks/`](../tracebacks/README.md) 下的三份溯源表 ＋ 31 项测试（31 条注入判据全红，
-其中一条注入的是**溯源表数据本身**而非代码）。已挂进 markdown 编辑钩子，串为第三个 sweep。
+＋ [`../tracebacks/`](../tracebacks/README.md) 下的四份溯源表 ＋ 50 项测试（49 条注入判据全红，
+其中两条注入的是**溯源表数据本身**而非代码）。已挂进 markdown 编辑钩子，串为第三个 sweep。
 
 ReBRAC 那份还把该报告 §1 的**口径补注表本身**纳入核对——那张表印了逐种子值与两套口径，于是
 「这份报告只有一处 ddof=1」这句话不再是被信任的，而是被重算出来的。
 
-**arrival_v2 链要先扩工具**：它的源是 `eval_log.csv` 与 `final_eval.json`，现在的
-`read_metric()` 只读 JSON。`6380082` 那轮的主发现是「论文侧已改、报告侧未回填」，属表述层，
-不是本工具能验的；能验的是它逐格核过的 39 次周期评估与 11 个 run 的均值/peak/首达步。
+**arrival_v2 链落表时给工具加了三样**（都各自配了负控）：`.csv` 源与列聚合
+（`mean(...)` / `max(...)` / `argmax(y, x)` / `count_gt(y, thr)` / `nrows(...)`，因为
+mean39 / peak / 首达步 / n_succ 都是对 `eval_log.csv` 一列做的归约）；`scale`，只用于单位换算
+（`peak @ 475k` 对的是 475002 步）；以及 `expect: "mismatch"`——见下。
 
-`offline_data/` 与 `results/` 都是 gitignored 的，脚本一律支持把根指到 Drive 挂载，
-**「本地扫不到」不能写成失败**（`no-data` 桶，不进 `--strict`）。
+**`expect: "mismatch"`：给「报告明知有错、又要留着」的格子用。** §7.9.4 保留了 2026-05-19 的
+中间态列，下面用 ⚠ 注写明其中两格重号。对这种格写普通 claim 会**永远红**，而一条本该红的检查
+很快就没人看。翻过来钉那条**声明**：它必须继续复现不出来，复现出来了才是缺陷（`erratum-stale`
+桶，进 `--strict`）。更有用的是配对：同一格再写一条普通 claim 指向那条注**声称**它其实是什么。
+`0.064` 那格就是——一条证明它不是 σ_final（两 seed 的 final 同为 0.900，σ 精确为 0，判 `NEITHER`），
+一条证明它正是同两 seed 的 mean39 σ（`ddof=0`）。**那条勘误注的诊断本身现在是可重跑的。**
+
+**这条链查出 1 格**：§7.5 `eval_path_length_m` 的 tandem 格原印 `66.99`，原始值 `66.99537`，
+两位小数的正确舍入是 `67.00`——是截断不是舍入。已订正（§7.3 正文同格一并；顺带订正该处
+「四组中最短」，§7.1 的 63.58 更短）。**这不推翻 `6380082`**：那轮逐格核的是 §7.6–§7.9 的
+11 个 run，§7.5 的指标网格不在它范围内。
+
+**两件本工具验不了、已写进 spec 的 `note`**：`6380082` 的头号发现（论文侧已改、报告侧未回填）
+属表述层；OOB 列要 `eval_termination_counts` 的分项除以 `num_eval_episodes`，本工具只读平铺键与
+CSV 列。同类还有 §7.9.4 勘误 ② ③（三 seed 的值排在标着「2 seeds」的列里）——工具能证「这个数
+确实要三个 seed 才算得出来」，样本量与列标题的矛盾仍是人的活。
+
+`offline_data/` 与 `results/`（以及 online 线的 `experiments/`）都是 gitignored 的，脚本一律
+支持把根指到 Drive 挂载，**「本地扫不到」不能写成失败**（`no-data` 桶，不进 `--strict`）。
 
 **第三批 = `paper/thesis_ch5/tools/` 全覆盖**（12 个脚本，其中 6 个需 `main.aux`、5 个需
 `results/`）＋ C 类第 12 项。
 
 ---
 
-## 五、方法论：本轮抓到的六个「测试跑绿但不承重」
+## 五、方法论：本轮抓到的七个「测试跑绿但不承重」
 
 写下来是因为第二、三批还会遇上。
 
@@ -262,3 +280,8 @@ ReBRAC 那份还把该报告 §1 的**口径补注表本身**纳入核对——�
    **注入脚本的每一步都要有独立证据，不能只读最后那个退出码。**（一次遗留疑点：加校验前那轮
    还有一条 `capture failure ignored` 报 GREEN，加校验后重跑为 RED 且确认突变已施加；两次结果
    不一致，未能复现出成因，此处如实记下。）
+7. **断言只盯一个桶，出错的东西落进别的桶时照绿。** 第二批新写的 CSV 用例只断言
+   `buckets["value-mismatch"] == []`——可是一条**在取数阶段就死掉**的 claim 落进 `spec-error`，
+   那个桶同样是空的。注入「聚合分派表里把 `max` 改名」实测 GREEN，抓出来的不是机制没用，是断言
+   指错了地方（与第 4 条同源）。改法是写一个 `assert_reproduced()`：断言 `ok` 恰好一条，**且其余
+   每个桶都为空**。判据：**「没报错」不等于「算对了」——正面断言那条 claim 真的走完了全程。**

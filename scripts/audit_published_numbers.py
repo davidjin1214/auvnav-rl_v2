@@ -46,6 +46,21 @@ same or higher level; `after` and `before` are resolved inside it. Each must its
 resolve to exactly one line, so a scope that has gone ambiguous is an error rather than
 a silent pick.
 
+A source glob may name `.csv` files instead of JSON, for the online-line runs whose
+published figures are aggregates over a training run's periodic evaluations rather than
+one terminal number. `metric` then names the reduction and the column, and the file
+contributes that one number:
+
+    mean(eval_success_rate)              the report's `mean39`
+    max(eval_success_rate)               `peak`
+    argmax(eval_success_rate, env_step)  the step it was first attained at
+    count_gt(eval_success_rate, 0)       `n_succ`
+    nrows(eval_success_rate)             how many evaluations there were
+
+`scale` divides the recomputed value before comparison, and is for unit conversion only
+-- `peak @ 475k` is a report writing 475002 steps in thousands. Anything else it could
+be used for is fudging a figure into agreement, which is the opposite of the point.
+
 Statistics, over the metric read from every JSON a source glob matches:
 
     mean   sd0 (population)   sd1 (sample)   n
@@ -58,6 +73,14 @@ A published figure passes when it is a correct rounding of the recomputed one: t
 must be within half a unit of its own last printed place. Exact string equality would
 fail honest rows -- the FQL report prints -0.027 for an exact -0.0275, and which way
 that rounds is a property of the formatter that produced it, not a defect.
+
+`"expect": "mismatch"` inverts that, for a figure a report knowingly keeps and annotates
+as wrong. `arrival_v2_experiment_report.md` §7.9.4 leaves a superseded 2026-05-19 column
+standing and says underneath which two cells are mis-numbered; a plain claim on those
+cells would sit red forever, and a red that is supposed to be there gets ignored. As an
+erratum claim the same cell asserts the disclosure instead: it must keep failing to
+reproduce, and the day it starts reproducing, the note above it needs re-reading. A
+`note` saying which disclosure is being pinned is required.
 
 `results/` is gitignored, so a clone has nothing to recompute from. Missing data is
 reported as `no-data` and does not fail: point `--root` at a Drive mount to check it.
@@ -74,6 +97,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
 import glob
 import json
 import os
@@ -85,15 +109,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SPEC_DIR = os.path.join(ROOT, "docs", "tracebacks")
 
 STATS = ("mean", "sd0", "sd1", "sd", "seeds", "n", "delta")
+EXPECTS = ("match", "mismatch")
 SPEC_KEYS = {"chain", "doc", "note", "root", "metric", "claims"}
 CLAIM_KEYS = {"label", "anchor", "capture", "stat", "sources", "metric", "note",
-              "section", "after", "before"}
+              "section", "after", "before", "scale", "expect"}
 
 HEADING = re.compile(r"^(#{1,6}) ")
 
+# `mean(col)`, `argmax(col, other)`, `count_gt(col, 0)` -- a reduction over one CSV.
+AGG = re.compile(r"^([a-z_]+)\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:,\s*([^,()\s]+)\s*)?\)$")
+
 # Defects fail --strict. `no-data` does not: a clone legitimately has no results/.
 DEFECT_BUCKETS = ("spec-error", "anchor-missing", "anchor-ambiguous",
-                  "capture-failed", "value-mismatch")
+                  "capture-failed", "value-mismatch", "erratum-stale")
 
 NUM = re.compile(r"[-+−–]?[0-9]*\.?[0-9]+")
 
@@ -155,17 +183,72 @@ def validate(spec: dict) -> None:
             raise SpecError(f"claim {i}: stat {claim['stat']} takes one source")
         if re.compile(claim["capture"]).groups != 1:
             raise SpecError(f"claim {i}: capture must have exactly one group")
+        if claim.get("expect", "match") not in EXPECTS:
+            raise SpecError(f"claim {i}: expect {claim['expect']!r} not one of {list(EXPECTS)}")
+        if claim.get("expect") == "mismatch" and not claim.get("note"):
+            raise SpecError(f"claim {i}: an erratum claim needs a note naming the "
+                            "disclosure it pins")
+        if "scale" in claim and not (isinstance(claim["scale"], (int, float))
+                                     and not isinstance(claim["scale"], bool)
+                                     and claim["scale"] > 0):
+            raise SpecError(f"claim {i}: scale must be a positive number")
 
 
 def read_metric(paths: list[str], metric: str) -> list[float]:
+    """One number per file: a JSON key, or a reduction over a CSV column."""
+    agg = AGG.match(metric)
     values = []
     for path in sorted(paths):
-        with open(path, encoding="utf-8") as fh:
-            payload = json.load(fh)
-        if metric not in payload:
-            raise SpecError(f"{path}: no key {metric!r}")
-        values.append(float(payload[metric]))
+        is_csv = path.lower().endswith(".csv")
+        if is_csv != bool(agg):
+            want = ("an aggregation such as mean(eval_success_rate)" if is_csv
+                    else "a plain JSON key")
+            raise SpecError(f"{path}: metric {metric!r} does not fit this source; "
+                            f"needs {want}")
+        values.append(_reduce_csv(path, agg) if is_csv else _read_json(path, metric))
     return values
+
+
+def _read_json(path: str, metric: str) -> float:
+    with open(path, encoding="utf-8") as fh:
+        payload = json.load(fh)
+    if metric not in payload:
+        raise SpecError(f"{path}: no key {metric!r}")
+    return float(payload[metric])
+
+
+def _reduce_csv(path: str, agg: re.Match) -> float:
+    how, column, arg = agg.group(1), agg.group(2), agg.group(3)
+    with open(path, encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    for needed in (column, arg if how == "argmax" else None):
+        if needed and (not rows or needed not in rows[0]):
+            raise SpecError(f"{path}: no column {needed!r}")
+    if not rows:
+        raise SpecError(f"{path}: no rows")
+    series = [float(r[column]) for r in rows]
+
+    if how == "mean":
+        return st.fmean(series)
+    if how == "max":
+        return max(series)
+    if how == "nrows":
+        return float(len(series))
+    if how == "argmax":
+        if arg is None:
+            raise SpecError(f"argmax needs the column to report: argmax({column}, env_step)")
+        # First attainment: a report's "peak @ 475k" is when the run got there, and a
+        # plateau makes every later row tie.
+        return float(rows[series.index(max(series))][arg])
+    if how == "count_gt":
+        if arg is None:
+            raise SpecError(f"count_gt needs a threshold: count_gt({column}, 0)")
+        try:
+            threshold = float(arg)
+        except ValueError:
+            raise SpecError(f"count_gt threshold {arg!r} is not a number") from None
+        return float(sum(1 for v in series if v > threshold))
+    raise SpecError(f"unknown aggregation {how!r} in metric")
 
 
 def decimals(text: str) -> int:
@@ -350,15 +433,24 @@ def run_spec(spec: dict, data_root: str | None, require_data: bool) -> dict[str,
             continue
 
         metric = claim.get("metric", spec["metric"])
+        scale = claim.get("scale", 1)
         try:
-            values = [read_metric(paths, metric) for paths in groups]
+            values = [[v / scale for v in read_metric(paths, metric)] for paths in groups]
             verdict, shown, detail = evaluate(claim, published, values)
         except (SpecError, ValueError, OSError) as exc:
             buckets["spec-error"].append((where, str(exc)))
             continue
 
-        row = (where, f"{spec['doc']}:{lineno}", claim["stat"], published, shown, detail)
-        buckets["ok" if verdict == "ok" else "value-mismatch"].append(row)
+        expect = claim.get("expect", "match")
+        reproduced = verdict == "ok"
+        row = (where, f"{spec['doc']}:{lineno}", claim["stat"], published, shown, detail,
+               expect)
+        if expect == "mismatch":
+            # The claim is the disclosure, not the figure: it holds while the figure
+            # stays unreproducible. Reproducing it means the doc changed under the note.
+            buckets["ok" if not reproduced else "erratum-stale"].append(row)
+        else:
+            buckets["ok" if reproduced else "value-mismatch"].append(row)
 
     if require_data and buckets["no-data"]:
         buckets["spec-error"].extend(
@@ -382,6 +474,7 @@ LABELS = {
     "anchor-ambiguous": "★ 锚定到多行（锚太松，说不清核的是哪一处）",
     "capture-failed": "★ 锚到了行、取不出数（capture 与该行对不上）",
     "value-mismatch": "★ 刊值与复算不符",
+    "erratum-stale": "★ 已声明的勘误现在复算得出来了（文档改过？那条勘误注需重读）",
     "no-data": "缺数据（results/ 未入库；用 --root 指到 Drive 挂载）",
     "ok": "复算吻合",
 }
@@ -411,12 +504,16 @@ def main() -> int:
     buckets = merge([run_spec(s, args.root, args.require_data) for s in specs])
 
     if args.ddof:
-        rows = [r for r in buckets["ok"] + buckets["value-mismatch"] if r[2] == "sd"]
+        rows = [r for b in ("ok", "value-mismatch", "erratum-stale")
+                for r in buckets[b] if r[2] == "sd"]
         print(f"± 口径判定：{len(rows)} 处")
         print("=" * 96)
-        for _where, at, _stat, published, shown, detail in sorted(rows, key=lambda r: r[1]):
-            print(f"  {at}  ± {published}  -> {shown}    {detail}")
-        return 1 if (args.strict and buckets["value-mismatch"]) else 0
+        for _where, at, _stat, published, shown, detail, expect in sorted(
+                rows, key=lambda r: r[1]):
+            flag = "  ⟨已声明的勘误，本就不该复现⟩" if expect == "mismatch" else ""
+            print(f"  {at}  ± {published}  -> {shown}    {detail}{flag}")
+        return 1 if (args.strict and (buckets["value-mismatch"]
+                                      or buckets["erratum-stale"])) else 0
 
     defects = sum(len(buckets[b]) for b in DEFECT_BUCKETS)
     print(f"溯源表 {len(specs)} 份；核对 {sum(len(v) for v in buckets.values())} 处刊值："
@@ -427,8 +524,8 @@ def main() -> int:
         rows = buckets[name]
         print(f"\n--- {LABELS[name]}：{len(rows)} ---")
         for row in rows:
-            if name == "value-mismatch":
-                where, at, stat, published, shown, detail = row
+            if name in ("value-mismatch", "erratum-stale"):
+                where, at, stat, published, shown, detail, _expect = row
                 tail = f"  ｜{detail}" if detail else ""
                 print(f"  {where}\n        {at}  刊 {stat}={published}  复算 {shown}{tail}")
             elif name == "no-data":
@@ -442,9 +539,10 @@ def main() -> int:
 
     if args.all:
         print(f"\n--- {LABELS['ok']}：{len(buckets['ok'])} ---")
-        for where, at, stat, published, shown, detail in buckets["ok"]:
+        for where, at, stat, published, shown, detail, expect in buckets["ok"]:
             tail = f"  ｜{detail}" if detail else ""
-            print(f"  {at}  {stat}={published}  复算 {shown}{tail}  ({where}){tail and ''}")
+            mark = " [勘误已确认不可复现]" if expect == "mismatch" else ""
+            print(f"  {at}  {stat}={published}  复算 {shown}{tail}{mark}  ({where})")
 
     print("\n⚠ 本脚本只验「刊值能不能由它自称的源重算出来」。那个源是不是**该用**的源，"
           "是人的活——溯源表里的 provenance 规则就是那句人话，改动它要有依据。")

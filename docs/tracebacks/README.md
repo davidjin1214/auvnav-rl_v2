@@ -42,6 +42,20 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 问题才暴露。改成数单元格个数（Stage C 行后面还有 6 格，Stage B 只有 4 格）后唯一。
 同理，别拿刊值本身当锚：那样值一改就变成「锚定不到」，而不是它本该是的「刊值不符」。
 
+## 报告明知有错、又要留着的那格
+
+`arrival_v2_experiment_report.md` §7.9.4 保留了一列 2026-05-19 的中间态主张，下面用 ⚠ 注写明
+其中两格重号（`0.064` 不是 σ_final——那两个 seed 的 final 同为 0.900，σ 精确为 0）。对这种格子
+写一条普通 claim，它会**永远红**；而一条本来就该红的检查，很快就没人看了。
+
+`"expect": "mismatch"` 把断言翻过来：**钉的是那条声明，不是那个数**——它必须继续复现不出来，
+哪天复现出来了，说明表被改过、上面那条注该重读了（进 `erratum-stale` 缺陷桶，`--strict` 会红）。
+写这种 claim 必须带 `note` 说清钉的是哪条声明。
+
+更有用的是配对写法：同一格再写一条普通 claim，指向那条注**声称**它其实是什么。
+§7.9.4 那格的两条就是——一条证明它不是 σ_final，一条证明它正是同两 seed 的 mean39 σ（ddof=0）。
+于是那条勘误注的诊断本身变成可重跑的，而不是被信任的。
+
 ## 缺数据不算失败
 
 `results/` 是 gitignored 的，clone 拿不到。缺文件报 `no-data`、**不进 `--strict`**；
@@ -58,14 +72,29 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 | `fql_succession_p2.json` | [`../fql_succession_p2_results.md`](../fql_succession_p2_results.md) | 35 | 全部吻合 |
 | `td3bc_phase0c.json` | [`../td3bc_phase0c_experiment_report.md`](../td3bc_phase0c_experiment_report.md) | 57 | 全部吻合；23 处 `±` 判定为 `ddof=0` |
 | `rebrac.json` | [`../rebrac_experiment_report.md`](../rebrac_experiment_report.md) | 85 | 全部吻合；覆盖面按 `48b8d06` 的原范围（论文实际引用的那批，非全部 47 处） |
+| `arrival_v2.json` | [`../arrival_v2_experiment_report.md`](../arrival_v2_experiment_report.md) | 143 | 全部吻合（订正 1 格，见下）；§7.5 四向对照表 + §7.9 全部 gate 读数 + §7.10 传感九宫格 |
 
-**全仓 `±` 口径现状**（`--ddof`，三份报告合计 **57 处**）：**55 处 `ddof=0`，2 处 `ddof=1`**，
-而那 2 处是**同一个读数**——`0.9340 ± 0.0261`（Stage D Phase 2 privileged），分别印在
-ReBRAC 报告的口径补注表与四向对比表里。这机械复现了 `48b8d06` 手工查出的那条结论，
-并且现在每次跑都会再验一遍。
+四条链共 **320 处**刊值。
+
+**全仓 `±` 口径现状**（`--ddof`，合计 **80 处**）：**63 处 `ddof=0`、14 处 `ddof=1`、
+2 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是
+上面说的、被自己报告声明为重号的那格**。
+
+其中 `ddof=1` 的 14 处集中在 arrival_v2 §7.9.4 第三列一系（3-seed、报告自己标了 ddof=1）
+与 ReBRAC 的 `0.9340 ± 0.0261`。ReBRAC 那处是**同一个读数**（Stage D Phase 2 privileged）
+印在两张表里，机械复现了 `48b8d06` 手工查出的「本报告只有一处 ddof=1」。
 
 `rebrac.json` 把该报告 §1 的**口径补注表本身**也纳入核对：那张表印了逐种子值与两套口径，
-于是「这份报告只有一处 ddof=1」这句话不再是被信任的，而是被重算出来的。
+于是那句结论不再是被信任的，而是被重算出来的。
 
-arrival_v2 那条链尚未落表：它的源是 `eval_log.csv` 与 `final_eval.json`，读 CSV 的能力
-本脚本还没有——落它之前要先加。
+## 落表时查出来的
+
+**`arrival_v2` §7.5 `eval_path_length_m` 的 tandem 一格**：原印 `66.99`，原始值 `66.99537`，
+两位小数的正确舍入是 `67.00`——差 0.0054 m，是截断不是舍入。已订正（§7.3 正文同格一并）。
+2026-05 那次手工回溯（`6380082`）逐格核的是 §7.6–§7.9 的 11 个 run，§7.5 的指标网格不在其范围内，
+所以这不是推翻它、是它没覆盖到的地方。顺带：§7.3 原写该格「四组中最短」，但 §7.1 single+cross
+的 63.58 更短；已改为「三个 upstream 组中最短」并点名 §7.1。
+
+**这条链有两件本工具验不了的**，写在 spec 的 `note` 里：`6380082` 的头号发现（论文侧已改、
+报告侧未回填）属表述层；OOB 列要 `eval_termination_counts` 的分项除以 `num_eval_episodes`，
+本工具只读平铺键与 CSV 列。

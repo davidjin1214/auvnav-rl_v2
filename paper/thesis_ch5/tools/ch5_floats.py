@@ -20,6 +20,9 @@ History worth knowing before you "fix" anything here (findings §12.4):
     queue; the fix that worked is the float parameter block in main.tex.
   - Do not buy layout by shortening a caption -- most of the long captions are 口径隔离
     声明 patching a CRITICAL finding (spec §0.5.9 (d)).
+  - The first-citation scan was a substring test until 2026-08-23, so any float whose
+    number prefixes a longer one (表 5.1 vs 表 5.10) could be measured against the
+    wrong page. Re-measure before quoting a distance recorded before that date.
 
 Usage:
     python ch5_floats.py            # table of all floats, exit 1 if any exceeds 2
@@ -67,8 +70,12 @@ def main() -> int:
     rows = []
     for key, (num, caption_page) in floats.items():
         kind = "表" if key.startswith("tab:") else "图"
-        hits = sorted({i for i, page in enumerate(pages, 1)
-                       if f"{kind} {num}" in page or f"{kind}{num}" in page})
+        # 表 5.1 is a prefix of 表 5.10..5.19, and 表 5.2 of 表 5.20/5.21. A substring
+        # test dates 表 5.1's first citation to whichever of those pages comes first,
+        # and min() can only move it earlier -- inflating the distance into a false
+        # violation, or hiding a real one when the caption precedes the true citation.
+        cite = re.compile(rf"{kind} ?{re.escape(num)}(?![0-9])")
+        hits = sorted({i for i, page in enumerate(pages, 1) if cite.search(page)})
         first = min(hits) if hits else None
         dist = abs(caption_page - first) if first else None
         rows.append((kind, num, key, caption_page, first, dist))

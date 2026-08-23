@@ -11,7 +11,7 @@
 > [`offline_rl_line_summary.md`](offline_rl_line_summary.md) 与
 > [`online_rl_line_summary.md`](online_rl_line_summary.md)；本文件是**文件地图**，两者角色不同。
 
-共 121 个 markdown 文件。
+共 122 个 markdown 文件。
 
 ## 入口与总纲（3）
 
@@ -184,11 +184,12 @@
 | [`.claude/skills/notebook-from-template/SKILL.md`](../.claude/skills/notebook-from-template/SKILL.md) | notebook-from-template | — |
 | [`.claude/skills/rl-v2-commands/SKILL.md`](../.claude/skills/rl-v2-commands/SKILL.md) | rl_v2 command reference | — |
 
-## 其它（5）
+## 其它（6）
 
 | 文档 | 标题 | 自我标注状态 |
 |---|---|---|
 | [`benchmarks/README.md`](../benchmarks/README.md) | Standard Benchmarks | — |
+| [`docs/handoff/2026-08-23-integrity-audit-pytest.md`](../docs/handoff/2026-08-23-integrity-audit-pytest.md) | 交接：诚信审计固化成 pytest（2026-08-23，第一批） | — |
 | [`docs/handoff/2026-08-23-tooling-followup.md`](../docs/handoff/2026-08-23-tooling-followup.md) | 交接：/insights 报告的后续处置（2026-08-23） | — |
 | [`phnode_full_oc_clean/README.md`](../phnode_full_oc_clean/README.md) | phnode_full — OC clean pretrained checkpoint (seed 45) | — |
 | [`phnode_full_oc_clean/reference_simulator/README.md`](../phnode_full_oc_clean/reference_simulator/README.md) | REMUS 100 reference simulator | — |

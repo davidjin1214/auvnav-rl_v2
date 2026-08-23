@@ -3,7 +3,13 @@
 Two tables in the chapter print their per-seed values next to the mean, so those rows settle
 their own convention with no external source: recompute both standard deviations from the printed
 seeds and see which one the published figure matches. Rows without per-seed values are listed as
-unresolved -- they need the ground-truth report, and this script deliberately does not guess.
+unresolved -- this script deliberately does not guess at them.
+
+Since 2026-08-24 they are no longer only listed. Four traceback chains under
+``docs/tracebacks/`` (``ch5_online``, ``ch5_boundary``, ``ch5_rebrac``, ``ch5_td3bc``) pin those
+rows to the per-seed files they came from, so ``python -m scripts.audit_published_numbers --ddof``
+answers for them. Both layers are wanted: this one needs nothing but the ``.tex`` and so runs in a
+clone, that one needs ``results/`` and ``experiments/`` and settles the rows this one cannot.
 
 Nothing is hard-coded: every number comes out of the ``.tex`` sources at run time, so this stays
 correct if the chapter is edited.
@@ -135,7 +141,8 @@ def main() -> None:
     for r in readings:
         if not r.resolved:
             unresolved[r.file] = unresolved.get(r.file, 0) + 1
-    print("\nno per-seed values in the row -- convention must come from the ground-truth report:")
+    print("\nno per-seed values in the row -- settled by the chapter's traceback chains instead")
+    print("(python -m scripts.audit_published_numbers --ddof, needs results/ and experiments/):")
     for name, count in sorted(unresolved.items()):
         print(f"  {name:18s} {count}")
     print("\nSwitching convention multiplies every sd in a cell by sqrt(n/(n-1)), so within a table")

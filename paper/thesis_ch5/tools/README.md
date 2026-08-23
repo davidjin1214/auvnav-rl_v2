@@ -46,6 +46,14 @@ latexmk -c
 | `ch5_clean_probe_readout.py` | 训练／评估实例重合的抬升量（干净 manifest 补评的差中差） |
 | `ch5_manifest_attribution.py` | 每张表用的是哪批评估实例、对应 `benchmarks/` 下哪个物理文件。判据是**零不可归属**（有读数落空即退出 1），不是等价类的大小 |
 
+`ch5_dispersion_audit.py` 报的「行内不印逐种子值、判不了」那 67 处，现已全部有人管：§5.9 的 12 处
+归上表第二行的 `ch5_sac_ladder_dispersion_check.py`；24 处的同一对 $(\text{mean}, \text{sd})$ 在
+章内别处能自解、可继承；**剩下 31 处自 2026-08-24 起由 [`docs/tracebacks/`](../../../docs/tracebacks/README.md)
+下四条论文侧溯源链回答**（`ch5_online` / `ch5_boundary` / `ch5_rebrac` / `ch5_td3bc`），跑
+`python -m scripts.audit_published_numbers --ddof`。两层都要：这一层只吃 `.tex`，clone 里能跑；
+那一层要 `results/` 与 `experiments/`，但能判定这一层拒答的那些行。
+
+
 常用变体：
 
 ```bash

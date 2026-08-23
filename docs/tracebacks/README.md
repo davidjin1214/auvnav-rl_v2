@@ -73,11 +73,26 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 | `td3bc_phase0c.json` | [`../td3bc_phase0c_experiment_report.md`](../td3bc_phase0c_experiment_report.md) | 57 | 全部吻合；23 处 `±` 判定为 `ddof=0` |
 | `rebrac.json` | [`../rebrac_experiment_report.md`](../rebrac_experiment_report.md) | 85 | 全部吻合；覆盖面按 `48b8d06` 的原范围（论文实际引用的那批，非全部 47 处） |
 | `arrival_v2.json` | [`../arrival_v2_experiment_report.md`](../arrival_v2_experiment_report.md) | 143 | 全部吻合（订正 1 格，见下）；§7.5 四向对照表 + §7.9 全部 gate 读数 + §7.10 传感九宫格 |
+| `online_a0.json` | [`../online_rl_line_summary.md`](../online_rl_line_summary.md) | 24 | 全部吻合；12 处 `±` 判定为 `ddof=0` 11 处、`either` 1 处（该格逐种子同值）|
 
-四条链共 **320 处**刊值。
+五条链共 **344 处**刊值。
 
-**全仓 `±` 口径现状**（`--ddof`，合计 **80 处**）：**63 处 `ddof=0`、14 处 `ddof=1`、
-2 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是
+**`online_a0` 不是那四次手工回溯之一。** 前四条链的授权范围是「把 2026-05 那四次逐格回溯变成
+命令」，在线线的 A0 传感筛选从来不在其中——它不是被声明豁免的，是原本就不在范围内。加它的
+理由是：`ch5_dispersion_audit` 在 `.tex` 侧的未决读数里有 6 处只能追到
+[`../online_rl_line_summary.md`](../online_rl_line_summary.md)，而那份文档此前没有任何机械溯源，
+在线线因此是唯一一条完全靠人记住口径的线。
+
+它的 provenance 规则是**复算出来的，不是从正文读来的**：逐种子值取 `final_eval.json`
+（60 万步终评、30 回合，与 `eval_log.csv` 末行同值），聚合是 mean ± 总体标准差，种子 46/47/50。
+同一批 run 的 `eval_log.csv` 上另外三种归约对全部 24 处刊值**无一对得上**——包括 `max`，
+而该文档正文那句「best per-cell success ≥ 70%」恰好会把人引向 `max`（0.989 对 0.967）。
+两张结果表的表头与行标签完全相同，所以每条 claim 都靠上方那行加粗标记 `after`／`before` 夹住；
+`tests/test_audit_published_numbers.py::test_the_online_a0_chain_is_ambiguous_without_its_table_scope`
+把这层作用域本身当负控钉住：拆掉它，24 条 claim 必须全部退化成「锚定到多行」。
+
+**全仓 `±` 口径现状**（`--ddof`，合计 **92 处**）：**74 处 `ddof=0`、14 处 `ddof=1`、
+3 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是
 上面说的、被自己报告声明为重号的那格**。
 
 其中 `ddof=1` 的 14 处集中在 arrival_v2 §7.9.4 第三列一系（3-seed、报告自己标了 ddof=1）

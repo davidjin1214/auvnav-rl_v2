@@ -1,0 +1,297 @@
+{
+  "chain": "online_a0",
+  "doc": "docs/online_rl_line_summary.md",
+  "note": "Provenance rule, recomputed rather than taken from the prose: each seed contributes the terminal evaluation in final_eval.json (600k steps, 30 episodes, identical to the last row of eval_log.csv), and the published figure is mean +/- population sd over seeds 46/47/50. Three other reductions over eval_log.csv were tried against all 24 figures and every one of them misses: mean over the 60 evaluations (0.573 where 0.967 is published), max (0.989), and -- the tempting one -- max is what the doc's own argument list invites by saying 'best per-cell success >= 70%'. The sd claims re-derive the convention instead of trusting the tables' unqualified 'mean +/- std' header; it comes out ddof=0 in 11 of the 12 cells and `either` in the zero-variance one. This is the first chain for the online line, which the four 2026-05 hand passes never covered.",
+  "root": "experiments/protocol_screen_v2/A0_single_u10_cross_tgt15",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "A0 success rate | efficiency_v2 | s1_k4 mean",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `efficiency_v2` \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | efficiency_v2 | s1_k4 sd",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `efficiency_v2` \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | efficiency_v2 | s0_k4 mean",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){1} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | efficiency_v2 | s0_k4 sd",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){1} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | efficiency_v2 | s2_k4 mean",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){2} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | efficiency_v2 | s2_k4 sd",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){2} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | arrival_v1 | s1_k4 mean",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `arrival_v1` \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "arrival_v1/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | arrival_v1 | s1_k4 sd",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `arrival_v1` \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v1/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | arrival_v1 | s0_k4 mean",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){1} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "arrival_v1/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | arrival_v1 | s0_k4 sd",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){1} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v1/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | arrival_v1 | s2_k4 mean",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){2} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "arrival_v1/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 success rate | arrival_v1 | s2_k4 sd",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（success rate",
+      "before": "^\\*\\*结果（path efficiency",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){2} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v1/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "A0 path efficiency | efficiency_v2 | s1_k4 mean",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `efficiency_v2` \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | efficiency_v2 | s1_k4 sd",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `efficiency_v2` \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | efficiency_v2 | s0_k4 mean",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){1} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | efficiency_v2 | s0_k4 sd",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){1} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | efficiency_v2 | s2_k4 mean",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){2} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | efficiency_v2 | s2_k4 sd",
+      "anchor": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `efficiency_v2` \\|(?:[^|]*\\|){2} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | arrival_v1 | s1_k4 mean",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `arrival_v1` \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "arrival_v1/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | arrival_v1 | s1_k4 sd",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `arrival_v1` \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v1/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | arrival_v1 | s0_k4 mean",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){1} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "arrival_v1/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | arrival_v1 | s0_k4 sd",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){1} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v1/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | arrival_v1 | s2_k4 mean",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){2} \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "arrival_v1/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "A0 path efficiency | arrival_v1 | s2_k4 sd",
+      "anchor": "^\\| `arrival_v1` \\|(?:[^|]*\\|){3}$",
+      "after": "^\\*\\*结果（path efficiency",
+      "before": "^\\*\\*可用于论文的论点",
+      "capture": "^\\| `arrival_v1` \\|(?:[^|]*\\|){2} \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v1/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    }
+  ]
+}

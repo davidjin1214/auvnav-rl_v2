@@ -13,6 +13,7 @@ edited out from under its traceback spec.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -638,3 +639,123 @@ def test_the_shipped_specs_still_anchor_to_their_reports():
         buckets = apn.run_spec(spec, str(REPO_ROOT / "no-such-data-root"), False)
         for name in ("spec-error", "anchor-missing", "anchor-ambiguous", "capture-failed"):
             assert buckets[name] == [], f"{spec['chain']}: {name} -> {buckets[name]}"
+
+
+# ------------------------------------------------------------------ scope bounds
+
+def test_before_alone_bounds_the_search_from_above(tree):
+    """`after` on its own had a test; `before` on its own did not.
+
+    It is the half the *first* of two identical tables depends on -- the last table in a
+    document needs no lower bound, the first needs no upper one, and only one of those
+    two cases was covered.
+    """
+    _write(tree, "docs/report.md", "\n".join([
+        "| cell | 0.885 |", "**second table**", "| cell | 0.810 |", "",
+    ]))
+
+    assert run(tree, [MEAN_CLAIM])["anchor-ambiguous"] != [], "unscoped, it is ambiguous"
+
+    buckets = run(tree, [dict(MEAN_CLAIM, before=r"^\*\*second table\*\*")])
+
+    assert buckets["anchor-ambiguous"] == []
+    assert [r[1] for r in buckets["ok"]] == ["docs/report.md:1"]
+
+
+def test_a_bound_that_matches_nothing_in_scope_is_a_spec_error(tree):
+    """Zero matches and two matches are both "cannot resolve", and only two was tested.
+
+    A bound naming a heading that has since been renamed must not degrade into
+    `anchor-missing`: that bucket reads as a defect against the report, when the thing
+    that broke is the spec.
+    """
+    _write(tree, "docs/report.md", "**top**\n| cell | 0.885 |\n")
+
+    errors = run(tree, [dict(MEAN_CLAIM, after=r"^\*\*renamed\*\*")])["spec-error"]
+
+    assert len(errors) == 1
+    assert "matches 0 lines" in errors[0][1]
+
+
+# ---------------------------------------------------- the shipped online A0 chain
+
+@pytest.fixture()
+def online_a0() -> dict:
+    specs = [s for s in apn.load_specs(apn.SPEC_DIR) if s["chain"] == "online_a0"]
+    assert len(specs) == 1, "the online A0 traceback spec is not installed"
+    return specs[0]
+
+
+def _resolved(spec: dict) -> list[tuple[dict, str]]:
+    """Every claim paired with the figure it captured, resolved without any `results/`.
+
+    Anchoring and capture happen before the data lookup, so a clone gets the same
+    answers here as the machine that holds `experiments/`.
+    """
+    buckets = apn.run_spec(spec, str(REPO_ROOT / "no-such-data-root"), False)
+    records = buckets["no-data"]
+    assert len(records) == len(spec["claims"]), "some claim did not reach the data lookup"
+    for claim, record in zip(spec["claims"], records):
+        assert record[2] == claim["sources"], "claim order and record order diverged"
+    return [(c, r[1]) for c, r in zip(spec["claims"], records)]
+
+
+def test_the_online_a0_chain_pins_the_terminal_evaluation(online_a0):
+    """The provenance rule is `final_eval.json`, and that is the whole finding.
+
+    Three reductions over the same run's `eval_log.csv` were tried when this chain was
+    built and all three miss -- `max` included, which is the one the summary's own
+    argument list invites by saying "best per-cell success >= 70%". A source repointed
+    at the training curve would still recompute *something*, so the shape of the source
+    is the only place that mistake can be caught mechanically.
+    """
+    for claim in online_a0["claims"]:
+        for source in claim["sources"]:
+            assert source.endswith("/final_eval.json"), source
+            assert "eval_log" not in source, source
+        assert "(" not in claim["metric"], "an aggregate belongs to a CSV, not to this chain"
+
+
+def test_the_online_a0_chain_reads_each_cell_once(online_a0):
+    """Both result tables carry the same header and the same two row labels.
+
+    So the failure to guard against is not a missing number -- it is the same cell read
+    twice under two labels, which leaves the count right and half the grid unchecked.
+    Grouping is taken from `metric` and `sources`, never from the label, because the
+    label is the one field a wrong claim would still describe correctly.
+    """
+    seen: dict[tuple[str, str, str], list[str]] = {}
+    for claim, published in _resolved(online_a0):
+        objective, column = claim["sources"][0].split("/")[:2]
+        seen.setdefault((claim["metric"], objective, claim["stat"]), []).append(published)
+        assert column in ("s0_k4", "s1_k4", "s2_k4"), column
+
+    assert len(seen) == 2 * 2 * 2, f"expected four rows x two statistics, got {len(seen)}"
+    for key, values in seen.items():
+        assert len(values) == 3, f"{key}: a row has {len(values)} cells, not three"
+        assert len(set(values)) == 3, f"{key}: two columns captured the same figure {values}"
+
+    for objective in ("efficiency_v2", "arrival_v1"):
+        for stat in ("mean", "sd"):
+            success = set(seen[("eval_success_rate", objective, stat)])
+            efficiency = set(seen[("eval_path_efficiency", objective, stat)])
+            assert not (success & efficiency), (
+                f"{objective} {stat}: the two tables captured a shared figure "
+                f"{success & efficiency} -- one of them is being read twice")
+
+
+def test_the_online_a0_chain_is_ambiguous_without_its_table_scope(online_a0):
+    """The negative control for the scope: strip it and the chain must stop resolving.
+
+    Without this, a claim that had lost its `after`/`before` would still anchor -- onto
+    whichever of the two identical tables comes first -- and every other test here would
+    keep passing.
+    """
+    stripped = dict(online_a0, claims=[
+        {k: v for k, v in claim.items() if k not in ("after", "before")}
+        for claim in online_a0["claims"]
+    ])
+
+    buckets = apn.run_spec(stripped, str(REPO_ROOT / "no-such-data-root"), False)
+
+    assert len(buckets["anchor-ambiguous"]) == len(online_a0["claims"])

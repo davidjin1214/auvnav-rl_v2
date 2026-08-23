@@ -71,11 +71,11 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 |---|---|---|---|
 | `fql_succession_p2.json` | [`../fql_succession_p2_results.md`](../fql_succession_p2_results.md) | 35 | 全部吻合 |
 | `td3bc_phase0c.json` | [`../td3bc_phase0c_experiment_report.md`](../td3bc_phase0c_experiment_report.md) | 57 | 全部吻合；23 处 `±` 判定为 `ddof=0` |
-| `rebrac.json` | [`../rebrac_experiment_report.md`](../rebrac_experiment_report.md) | 85 | 全部吻合；覆盖面按 `48b8d06` 的原范围（论文实际引用的那批，非全部 47 处） |
+| `rebrac.json` | [`../rebrac_experiment_report.md`](../rebrac_experiment_report.md) | 87 | 全部吻合；覆盖面按「第 5 章实际引用的那批」，非全部 47 处。2026-08-24 补上 §7.4 的第三格 $(\beta_1,\beta_2)=(4.0,\,1.0)$——`48b8d06` 只核了那张表加粗的两行，而章节在 `tab:ch5_rebrac_perseed` 的 caption 里引了第三行 |
 | `arrival_v2.json` | [`../arrival_v2_experiment_report.md`](../arrival_v2_experiment_report.md) | 143 | 全部吻合（订正 1 格，见下）；§7.5 四向对照表 + §7.9 全部 gate 读数 + §7.10 传感九宫格 |
 | `online_a0.json` | [`../online_rl_line_summary.md`](../online_rl_line_summary.md) | 24 | 全部吻合；12 处 `±` 判定为 `ddof=0` 11 处、`either` 1 处（该格逐种子同值）|
 
-五条链共 **344 处**刊值。
+五条链共 **346 处**刊值。
 
 **`online_a0` 不是那四次手工回溯之一。** 前四条链的授权范围是「把 2026-05 那四次逐格回溯变成
 命令」，在线线的 A0 传感筛选从来不在其中——它不是被声明豁免的，是原本就不在范围内。加它的
@@ -91,7 +91,7 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 `tests/test_audit_published_numbers.py::test_the_online_a0_chain_is_ambiguous_without_its_table_scope`
 把这层作用域本身当负控钉住：拆掉它，24 条 claim 必须全部退化成「锚定到多行」。
 
-**全仓 `±` 口径现状**（`--ddof`，合计 **92 处**）：**74 处 `ddof=0`、14 处 `ddof=1`、
+**全仓 `±` 口径现状**（`--ddof`，合计 **93 处**）：**75 处 `ddof=0`、14 处 `ddof=1`、
 3 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是
 上面说的、被自己报告声明为重号的那格**。
 

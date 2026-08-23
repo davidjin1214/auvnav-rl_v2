@@ -1,7 +1,7 @@
 {
   "chain": "rebrac",
   "doc": "docs/rebrac_experiment_report.md",
-  "note": "Scope follows 48b8d06 (2026-05): the batch chapter 5 actually cites, not all 47 published readings -- Stage B screening grids, the two Stage C finalists, both Stage D worldcomp tracks, Stage E critic-penalty-off and Stage F LayerNorm-off. Sources are results/offline/rebrac/**/test/seed_*.json. The section-1 dispersion note is itself checked, so its headline finding -- one reading in the whole report written at ddof=1 -- is re-derived rather than trusted.",
+  "note": "Scope follows 48b8d06 (2026-05): the batch chapter 5 actually cites, not all 47 published readings -- Stage B screening grids, all three Stage C formal cells -- the two finalists plus the (4.0, 1.0) alternative that only the perseed table's caption cites, both Stage D worldcomp tracks, Stage E critic-penalty-off and Stage F LayerNorm-off. Sources are results/offline/rebrac/**/test/seed_*.json. The section-1 dispersion note is itself checked, so its headline finding -- one reading in the whole report written at ddof=1 -- is re-derived rather than trusted.",
   "root": "results/offline/rebrac",
   "metric": "eval_success_rate",
   "claims": [
@@ -892,6 +892,26 @@
       "stat": "sd",
       "sources": [
         "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 7\\.4 主结果"
+    },
+    {
+      "label": "stage C formal | crosscomp-2000 (4.0, 1.0) | success mean",
+      "anchor": "^\\| `crosscomp-2000` \\| 4\\.0 \\| 1\\.0 \\|",
+      "capture": "^\\| `crosscomp-2000` \\| 4\\.0 \\| 1\\.0 \\| ([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 7\\.4 主结果"
+    },
+    {
+      "label": "stage C formal | crosscomp-2000 (4.0, 1.0) | success ±",
+      "anchor": "^\\| `crosscomp-2000` \\| 4\\.0 \\| 1\\.0 \\|",
+      "capture": "^\\| `crosscomp-2000` \\| 4\\.0 \\| 1\\.0 \\| [0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
       ],
       "section": "^### 7\\.4 主结果"
     },

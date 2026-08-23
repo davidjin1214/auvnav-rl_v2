@@ -1,10 +1,10 @@
-# 交接：诚信审计固化成 pytest（2026-08-23，第一批 ＋ 第二批已完成）
+# 交接：诚信审计固化成 pytest（2026-08-23 起，三批已全部完成）
 
 承接 [`2026-08-23-tooling-followup.md`](2026-08-23-tooling-followup.md) 的**方向 2**。该文判
 方向 1（skill 效力测试台）推迟、方向 3（环境加固）只剩零碎，本轮只做方向 2。
 
-用户已定的批次顺序：**第一批 = 守卫类 + 引用校验**、**第二批 = 刊值复算**（两批均已完成），第三批 =
-`paper/thesis_ch5/tools/` 全覆盖。
+用户已定的批次顺序：**第一批 = 守卫类 + 引用校验**、**第二批 = 刊值复算**、**第三批 =
+`paper/thesis_ch5/tools/` 全覆盖**。三批均已完成（第三批于 2026-08-24 收尾，交付物见 §五）。
 
 ---
 
@@ -29,7 +29,7 @@ rev 块核查动作、以及跨仓会话记录。
 |---|---|---|---|
 | 3 | [`../../scripts/check_doc_pointers.py`](../../scripts/check_doc_pointers.py)（含 `--verify-declarations`） | 已由 `8222c70` 挂上 hook 自动跑，却零回归保护 | ✅ 已补 |
 | 4 | [`../../scripts/build_doc_index.py`](../../scripts/build_doc_index.py) `--check` | `2d4ba97` 的 worktree 语料翻倍 bug 即出自它 | ✅ 已补 |
-| 5 | [`../../paper/thesis_ch5/tools/`](../../paper/thesis_ch5/tools/README.md) 12 个 `.py` | `grep -rl thesis_ch5 tests/` 零命中 | ⬜ 第三批 |
+| 5 | [`../../paper/thesis_ch5/tools/`](../../paper/thesis_ch5/tools/README.md) 12 个 `.py` | `grep -rl thesis_ch5 tests/` 零命中 | ✅ **12/12**（131 项用例，见 §五）|
 
 第 5 项的前置：门槛类 6 个依赖 `latexmk` 产物 `main.aux`（本机有 MiKTeX，但仓库按约定编译后
 即清中间文件）；证据类 5 个依赖 `results/`（本机 4508 文件／259 MB 在位，clone 为空）。
@@ -43,7 +43,7 @@ rev 块核查动作、以及跨仓会话记录。
 | 8 | 文档→源码**行号**引用（全仓 42 处） | `2a8c311` 明写「这类引用 check_doc_pointers 验不了，只能实读」 | ✅ 已固化 |
 | 9 | 文档→**函数名**引用 | `a49fb1e`：CLAUDE.md 里的 get_probe_positions 全仓只出现在 CLAUDE.md 自己 | ⚠ 判据待改，见 §四 |
 | 10 | 文档自述横幅 ⇄ 引用它的表格状态栏 | `cce2b2d`：13 行核出 3 行对不上 | ⬜ 未做 |
-| 11 | 刊出读数 ⇄ 评估 manifest 指纹归属 | `ch5_manifest_attribution.py`，3715 份读数零落空 | ⬜ 未动，建议并入第三批（见 §四）|
+| 11 | 刊出读数 ⇄ 评估 manifest 指纹归属 | `ch5_manifest_attribution.py`，3715 份读数零落空 | ✅ 已并入第三批（`db0c235`，19 项用例）|
 | 12 | `benchmarks/` 落库时逐条核（条数／种子连续／区间） | `0dc35a2`，纯手工 | ⬜ 第三批 |
 
 ### 跨仓那条线：已查，无遗漏，别再扫一遍
@@ -214,7 +214,7 @@ gitignored，另一台机器要手工加，办法写在钩子自己的 docstring
 |---|---|---|
 | 6 | 四条数字溯源链做成可重跑命令 | ✅ **4/4** 条链落表（FQL P2 35 ＋ td3bc phase0c 57 ＋ ReBRAC 85 ＋ arrival_v2 143 = **320 处刊值**，订正 1 格后全部吻合） |
 | 7 | `docs/*.md` 报告侧的 ddof 口径工具化 | ✅ `--ddof` 四份报告合计 **80 处**：63 `ddof=0`、14 `ddof=1`、2 处两套都对得上、1 处 `NEITHER`（是报告自己声明的重号格）。ReBRAC 那 1 处 `ddof=1` 读数机械复现了 `48b8d06` 的头号结论 |
-| 11 | 刊出读数 ⇄ manifest 指纹归属 | ⬜ 未动。工具 `paper/thesis_ch5/tools/ch5_manifest_attribution.py` 已存在，缺的是测试——与第三批第 5 项同源，可能合批 |
+| 11 | 刊出读数 ⇄ manifest 指纹归属 | ✅ 已随第三批交付（`db0c235`）。钉住的是「报警是 `match == "none"`、不是等价类的大小」与「prefix 是通过」|
 
 已交付：[`../../scripts/audit_published_numbers.py`](../../scripts/audit_published_numbers.py)
 ＋ [`../tracebacks/`](../tracebacks/README.md) 下的四份溯源表 ＋ 50 项测试（49 条注入判据全红，
@@ -248,12 +248,57 @@ CSV 列。同类还有 §7.9.4 勘误 ② ③（三 seed 的值排在标着「2 
 `offline_data/` 与 `results/`（以及 online 线的 `experiments/`）都是 gitignored 的，脚本一律
 支持把根指到 Drive 挂载，**「本地扫不到」不能写成失败**（`no-data` 桶，不进 `--strict`）。
 
-**第三批 = `paper/thesis_ch5/tools/` 全覆盖**（12 个脚本，其中 6 个需 `main.aux`、5 个需
-`results/`）＋ C 类第 12 项。
+**第三批已完成，交付物见 §五。** 依赖面的实测分布与上一轮估的不同：**4 个需 `main.aux`**
+（`ch5_floats` / `ch5_order` / `ch5_refs` / `ch5_check_all`）、**4 个需 `results/`**
+（`ch5_holdout_split_audit` / `ch5_clean_probe_readout` / `ch5_manifest_attribution` /
+`ch5_sac_ladder_dispersion_check`）、其余 4 个只读 `sections/*.tex`。测试一律用夹具合成这两类
+输入，所以**不需要 latexmk、也不需要 `results/` 同步**。
+
+**仍未做**：C 类第 12 项（`benchmarks/` 落库逐条核，出处 `0dc35a2`，纯手工）与 C 类第 10 项
+（文档自述横幅 ⇄ 引用它的表格状态栏，出处 `cce2b2d`，13 行核出 3 行对不上）。两项都未分配批次。
 
 ---
 
-## 五、方法论：本轮抓到的七个「测试跑绿但不承重」
+## 五、第三批已交付（2026-08-24）
+
+`paper/thesis_ch5/tools/` 的 12 个脚本全部落测：**131 项用例、125 条注入判据全红**。
+`pytest tests/` → 431 passed, 4 skipped。七次提交：
+
+| 提交 | 覆盖 | 用例 | 注入 |
+|---|---|---|---|
+| `cc94ba0` | `_ch5_corpus.py` 九条口径 ＋ `ch5_metrics.summarise` | 19 | 20 |
+| `b87910b` | `ch5_floats` / `ch5_order` / `ch5_refs` ＋ `ch5_check_all` 编译门槛 | 26 | 21 |
+| `5344e76` | `ch5_dispersion_audit.py` | 17 | 18 |
+| `8586abf` | `ch5_sac_ladder_dispersion_check.py` | 15 | 15 |
+| `db0c235` | `ch5_manifest_attribution.py`（C 类第 11 项）| 19 | 17 |
+| `65f68ac` | `ch5_holdout_split_audit.py` ＋ `ch5_clean_probe_readout.py` | 18 | 20 |
+| `925d9c4` | `ch5_lexcheck.py` | 17 | 14 |
+
+**测试一律打在夹具上，不打在真章节上。** 唯一碰 `sections/` 的那条只断言结构不变量，
+**不断言任何计数**——版面与计量数字随任意一次文本改动失效（2026-07-08 那句「全部浮动距首引
+0–2 页」被沿用三轮、到 07-28 实测四处越线），spec §0.5.8 本就禁止预设量化目标。写一条
+「198 段」的断言就是把同一个缺陷搬进测试里。`main.aux`、`main.log`、pdftotext 的分页、
+`results/` 逐 seed 读数，全部由夹具合成。
+
+**查出并修掉一个缺陷**（`b87910b`）：`ch5_floats.py` 判首引页用子串包含，而本章 21 张表、
+15 张图，「表 5.1」是「表 5.10…5.19」的前缀。首引取 `min()`，只会把页码往前拽——距离被
+撑大成假越线；标题页排在真首引之前时反而会盖掉真越线。已改为带数字边界的匹配。
+
+**对当前章节零影响，这一条是实测的**：本地 latexmk 构建一次，用 HEAD 版与修后版跑同一套
+产物，36 个浮动逐行 diff 为空。原因有结构性——编号序跟着首引序走时，编号更长的浮动必然
+引用在后，`min()` 取不到它。**是 `ch5_order` 的零逆序判据一直在替 `ch5_floats` 掩着这个
+bug**，也就是说它恰好会在 `ch5_order` 失败时浮出来。
+
+顺带记下本次构建的实际读数（README 里那组停在 2026-07-28 的数字已被超越，**不要引用历史
+值**）：65 页、浮动 36 个、Overfull 2 处（3.13pt／4.31pt，均在 10pt 判据内）、交叉引用
+49 个、禁用词条 88，`ch5_check_all.py` 总判定 PASS。查完即 `latexmk -c`，`main.pdf` 还原
+为已提交版本（重建只差压缩流里的时间戳）。
+
+---
+
+## 六、方法论：三批累计抓到的十个「测试跑绿但不承重」
+
+第 1–7 条来自第一、二批，列在本节；第 8–10 条来自第三批，列在 §七。
 
 写下来是因为第二、三批还会遇上。
 
@@ -285,3 +330,31 @@ CSV 列。同类还有 §7.9.4 勘误 ② ③（三 seed 的值排在标着「2 
    那个桶同样是空的。注入「聚合分派表里把 `max` 改名」实测 GREEN，抓出来的不是机制没用，是断言
    指错了地方（与第 4 条同源）。改法是写一个 `assert_reproduced()`：断言 `ok` 恰好一条，**且其余
    每个桶都为空**。判据：**「没报错」不等于「算对了」——正面断言那条 claim 真的走完了全程。**
+
+
+---
+
+## 七、第三批新增的三条方法论
+
+**8 · 工作副本是 CRLF 时，`sed -i` 让「突变是否落盘」的校验和自检结构性失效。**
+第二批给注入脚本加的第二道自检是「比对文件校验和，没变就报 NOOP」。但 `paper/thesis_ch5/tools/`
+下的源码在工作副本里是 CRLF，而 Git Bash 的 `sed -i` 一律写回 LF——于是**模式匹配不上时校验和
+照样变**。叠加上模式本身写错（反斜杠经「单引号 → `bash -c` → sed BRE」三层，写成了 16 个、
+源码里只有 2 个），一条什么都没改的注入被判成 GREEN，读起来像「机制不承重」。
+改法：指纹先 `tr -d '\r'` 再算。改完当轮就见效——mutate10 的三条引号写错的注入被正确报成
+NOOP 而不是 GREEN。
+
+推论比这条本身更重要：**自检也要有判别输入**。一道「文件变了没」的自检，在一个总会改写整份
+文件的工具面前是恒真的。
+
+**9 · 夹具照着被测常量去建输入时，改那个常量的注入本就不可观测。**
+`ch5_sac_ladder_dispersion_check.py` 用 `XSOURCE` 绑定「正文那句话背后是哪个 run」。夹具原本
+写的是 `seeds(h2h, ladder.XSOURCE, R1)`——注入改 `XSOURCE`，夹具跟着改，照绿。这不是机制不
+承重，是夹具在跟着被测对象走。判据：**绑定是契约，不是夹具参数**（绑错等于把一个数算到别的
+实验头上），所以夹具里把该路径写死。写死一个常量通常是坏味道，这里是例外，理由要写在用例里。
+
+**10 · 对称输入会让不对称的公式看不出来。**
+`welch()` 用 Satterthwaite 自由度。夹具原本给两组同样的离散度、同样的样本量——而**在等方差、
+等 n 时 Satterthwaite 恰好等于 n1+n2−2**，于是「换成合并自由度」这条注入完全不可观测。改成
+两组离散度不同后变红。这是第 4 条（守门机制在干净输入下测不出来）的数值版：**干净不只是
+「没有缺陷」，也包括「太对称」**。

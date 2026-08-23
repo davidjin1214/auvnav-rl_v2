@@ -67,6 +67,43 @@ python tools/ch5_refs.py                                      # 逐条引用 + �
 
 这个机制针对的是一次真实事故：本章禁用词命中绝大多数合规（「相当比例」是量词、「不作等价判断」是否定式、「无差异」六处属 §5.9.1 预登记矩阵判读），每轮重新论证一遍，反而让真命中藏在里面——2026-07-28「§5.7.1 是全章唯一的规则②漏网」这句话被写进四份文档，而支撑它的检索**只穷举了规则②五个词中的一个**（findings §12.9 教训 2）。
 
+## 这些脚本自己有测试
+
+收入时间：2026-08-24。本目录 12 个脚本全部有回归测试，在 `tests/` 下，从仓库根跑：
+
+```bash
+pytest tests/test_ch5_corpus.py tests/test_ch5_build_checks.py \
+       tests/test_ch5_dispersion_audit.py tests/test_ch5_sac_ladder_dispersion.py \
+       tests/test_ch5_manifest_attribution.py tests/test_ch5_evidence_recompute.py \
+       tests/test_ch5_lexcheck.py -q --tb=short
+```
+
+| 测试 | 覆盖 |
+|---|---|
+| `test_ch5_corpus.py` | `_ch5_corpus.py` 九条口径 ＋ `ch5_metrics.summarise` |
+| `test_ch5_build_checks.py` | `ch5_floats` / `ch5_order` / `ch5_refs` ＋ `ch5_check_all` 的编译门槛 |
+| `test_ch5_dispersion_audit.py` | `ch5_dispersion_audit.py`，判定与**拒答**两半 |
+| `test_ch5_sac_ladder_dispersion.py` | `ch5_sac_ladder_dispersion_check.py` |
+| `test_ch5_manifest_attribution.py` | `ch5_manifest_attribution.py` |
+| `test_ch5_evidence_recompute.py` | `ch5_holdout_split_audit.py` ＋ `ch5_clean_probe_readout.py` |
+| `test_ch5_lexcheck.py` | `ch5_lexcheck.py` |
+
+**每条检查都配了故障注入**（判据表在临时目录，用完即弃；实测 125 条全部变红）。
+判据表本身不入库，因为它绑在具体行号上；要重做，照 `tests/` 里每条用例的注释走——
+每条注释都写了「拆掉哪一行会让它红」。
+
+**夹具永远是夹具，不是真章节。** 唯一碰 `sections/` 的那条只断言结构不变量
+（每节有正文段、每段过净字下限、每段至少一句），**不断言任何计数**：版面与计量数字随
+任意一次文本改动失效，spec §0.5.8 本就禁止预设量化目标，写一条「198 段」的断言等于把
+同一个缺陷搬进测试里。`main.aux` 与 `results/` 也一律由夹具合成——要构建才能跑的测试
+等于在 clone 上不跑。
+
+**落测时查出并修掉一个缺陷**（`b87910b`）：`ch5_floats.py` 判首引页用的是子串包含，
+而本章 21 张表、15 张图，「表 5.1」是「表 5.10…5.19」的前缀。已改为带数字边界的匹配。
+对当前章节零影响——实测两版跑同一套构建产物、36 行逐行 diff 为空——因为编号序跟着
+首引序走时更长的编号必然引用在后，`min()` 取不到它。也就是说，**它恰好会在 `ch5_order`
+失败时浮出来**，即最需要 `ch5_floats` 报准的时候。
+
 ## 机器验不了的部分
 
 `ch5_check_all.py` 全 PASS **不等于**本章合格。以下仍是人的活：

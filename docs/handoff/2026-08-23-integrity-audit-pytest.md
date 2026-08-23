@@ -62,11 +62,11 @@ rev 块核查动作、以及跨仓会话记录。
 |---|---|
 | `scripts/check_doc_code_refs.py` | 新校验器。补两类引用：源码行锚与文档声称的函数名——`check_doc_pointers` 在自己的路径解析函数注释里承认这两类它验不了。全仓 156 处引用，1.8 s |
 | `tests/test_check_doc_code_refs.py` | 29 项 |
-| `tests/test_check_doc_pointers.py` | 32 项。含把 `a507eb3` 那次**手工**故障注入固化下来的 SUSPECT 用例，以及钩子的接线用例 |
-| `tests/test_build_doc_index.py` | 19 项 |
+| `tests/test_check_doc_pointers.py` | 33 项。含把 `a507eb3` 那次**手工**故障注入固化下来的 SUSPECT 用例，以及钩子的接线用例 |
+| `tests/test_build_doc_index.py` | 20 项 |
 | `.claude/hooks/doc_pointers.py` | 改成串跑 sweep（第二批加挂刊值复算后为三个）。互补是构造出来的：第一个验路径在不在，第二个验行与名还在不在，第三个验数还能不能由源算出来 |
 
-这四个文件合跑 82 项全绿。两批做完时全仓 `pytest tests/` 为 300 passed ／ 4 skipped。运行方式（本机沙箱挡系统
+表中三份测试合跑 82 项全绿（29 ＋ 33 ＋ 20；钩子的接线用例在第二份里）。两批做完时全仓 `pytest tests/` 为 300 passed ／ 4 skipped。运行方式（本机沙箱挡系统
 temp，必须给 `--basetemp`）：
 
 ```bash

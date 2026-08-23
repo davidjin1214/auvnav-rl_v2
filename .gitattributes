@@ -1,0 +1,11 @@
+# Pin LF in the working copy, not just in the blob.
+#
+# The blobs here are already LF. The problem is the round trip: core.autocrlf
+# is true on the Windows machine, so checkout writes CRLF, and the working copy
+# -- not a clone -- is what gets uploaded to Google Drive and mounted in Colab.
+# Notebooks invoke these launchers directly (`!bash scripts/run_*.sh`), where
+# Linux bash does not forgive the CR that Git Bash silently absorbs.
+#
+# eol=lf makes checkout write LF on every platform, so what reaches Drive is
+# what is in the repository.
+*.sh text eol=lf

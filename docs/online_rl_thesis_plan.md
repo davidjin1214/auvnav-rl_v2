@@ -46,7 +46,7 @@
 
 ### 2.1 物理与代码定义
 
-`privileged_obs` 在 [`auv_nav/env.py:895`](../auv_nav/env.py) 的定义：
+`privileged_obs` 在 [`auv_nav/env.py:947`](../auv_nav/env.py) 的定义：
 
 ```python
 "privileged_obs": equivalent_body[:2].astype(np.float32),  # dim = 2
@@ -305,7 +305,7 @@ flag     = --use-asymmetric-critic
 - 训练能跑完 50k 步、不报错 → ✅ 通过，§3 可以照计划开
 - 报错 → 修代码、再 smoke
 
-**预期**：通过（基于代码读后的判断，env.py:895 无条件发 priv，online 路径在 train_sac.py 收集，sac.py update() 使用），但仍不省略 smoke。
+**预期**：通过（基于代码读后的判断，env.py:947 无条件发 priv，online 路径在 train_sac.py 收集，sac.py update() 使用），但仍不省略 smoke。
 
 ### 5.3 Pre-flight 决策记录
 

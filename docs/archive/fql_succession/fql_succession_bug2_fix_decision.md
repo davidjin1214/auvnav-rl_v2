@@ -14,7 +14,7 @@
 
 CLI `--episodes 100` (`evaluate_offline.py`) 和 `--eval-episodes 100` (`train_offline.py`) 在 `--manifest` 给定时**被静默 override 至 manifest size**。
 
-**根因定位**:[`scripts/train_utils.py:185-213`](../../../scripts/train_utils.py:185) `_resolved_eval_episodes()`
+**根因定位**:[`scripts/train_utils.py:186-216`](../../../scripts/train_utils.py:186) `_resolved_eval_episodes()`
 
 ```python
 def _resolved_eval_episodes(*, reset_options, seed, num_episodes, benchmark_manifest):
@@ -125,7 +125,7 @@ python -m scripts.generate_standard_benchmarks \
 
 ## 5. Acceptance
 
-- [x] Bug 2 根因定位到 `train_utils.py:185` `_resolved_eval_episodes()`
+- [x] Bug 2 根因定位到 `train_utils.py:186` `_resolved_eval_episodes()`
 - [x] (a) vs (b) 决策完成,(a) 选定
 - [x] `generate_standard_benchmarks.py` 加 `--output-name` 落地
 - [x] `benchmarks/single_u10_cross_tgt15_ep100.json` 生成 + 验证

@@ -282,9 +282,9 @@
 
 | Bug | 位置 | 现象 | 修复 |
 |---|---|---|---|
-| start_step 单位混淆 | `train_sac.py:467` | trainer_state 保存 `env_step` 是 global step，主循环 `range` 把它当 per-env 计数器，resume 后 `range` 为空，循环不进入 | 把 `start_step` 在 range 入口处除以 `num_envs` |
+| start_step 单位混淆 | `train_sac.py:480` | trainer_state 保存 `env_step` 是 global step，主循环 `range` 把它当 per-env 计数器，resume 后 `range` 为空，循环不进入 | 把 `start_step` 在 range 入口处除以 `num_envs` |
 | 空跑仍写 trainer_state | `train_sac.py` 主循环出口 | 上一 bug 让循环空过后，`save_training_state(env_step=total_env_steps)` 仍执行，把 trainer_state.env_step 从 600k 错改成 1M（agent / replay 实际未变） | maybe_resume 后加 early-return：`if start_step >= total_env_steps: return` |
-| checkpoint_dir 路径累积错算 | `train_sac.py:164` | trainer_state 里 `checkpoint_dir` 是 save_dir 相对路径，但 line 409 当 cwd 相对路径解释，每次 resume `../` 数翻倍（7 → 13 → 19） | resume 时把相对路径用 `args.resume` 解析成绝对路径再写回 args |
+| checkpoint_dir 路径累积错算 | `train_sac.py:165` | trainer_state 里 `checkpoint_dir` 是 save_dir 相对路径，但 line 415 当 cwd 相对路径解释，每次 resume `../` 数翻倍（7 → 13 → 19） | resume 时把相对路径用 `args.resume` 解析成绝对路径再写回 args |
 
 三个修复合计 17 行 diff，与 reward 设计正交。建议未来加一个 mini regression test（fresh 1k → resume 续到 2k，断言 `trainer_state.env_step` 真的推进且 agent path 可解析），但不阻塞本节结论。
 

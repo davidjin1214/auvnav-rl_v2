@@ -199,7 +199,7 @@
 
 ### 已核实的机制
 
-- 采集：`scripts/collect_offline_data.py:315` → `episode_seed = base_seed + ep`，
+- 采集：`scripts/collect_offline_data.py:316` → `episode_seed = base_seed + ep`，
   `base_seed` 来自 `--seed`（:619）。
 - 评估 manifest 生成：`scripts/generate_standard_benchmarks.py:30` → `seed = manifest_seed + idx`。
 - `benchmarks/single_u10_cross_tgt15_ep100.json`：100 条，种子 **1250..1349**。

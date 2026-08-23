@@ -344,3 +344,58 @@ def test_the_hook_survives_junk_on_stdin():
                           encoding="utf-8", cwd=REPO_ROOT)
 
     assert proc.returncode == 0
+
+
+def _hook_module():
+    """`.claude/hooks/` is not a package, so load the file directly."""
+    import importlib.util
+
+    path = REPO_ROOT / ".claude/hooks/doc_pointers.py"
+    spec = importlib.util.spec_from_file_location("doc_pointers_hook", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_the_hook_runs_the_line_anchor_sweep_as_well_as_the_path_sweep():
+    """Wiring, asserted separately from behaviour.
+
+    The two sweeps check disjoint things -- whether the path exists, and whether the
+    line and the name behind it still do -- so dropping either leaves the other passing
+    and nothing else says so.
+    """
+    modules = [module for module, _marker, _hint in _hook_module().SWEEPS]
+
+    assert modules == ["scripts.check_doc_pointers", "scripts.check_doc_code_refs"]
+
+
+def test_the_defect_filter_keeps_only_the_failing_sections():
+    """Both sweeps print every bucket; only the graded-defect ones belong in stderr."""
+    report = "\n".join([
+        "--- ★ 行号越界（文件没有那么多行）：1 ---",
+        "  docs/a.md:3  -> auv_nav/env.py:9999",
+        "--- 行号偏移（引用方式使然，不判缺陷）：1 ---",
+        "  docs/b.md:4  -> auv_nav/env.py:377",
+    ])
+
+    kept = _hook_module()._defect_section(report, "★")
+
+    assert "env.py:9999" in kept
+    assert "env.py:377" not in kept
+
+
+def test_the_hook_is_quiet_on_this_repo_as_it_stands():
+    """The one case here that reads the live tree, and the point of doing so.
+
+    Both sweeps are at zero right now. If that stops being true the hook starts
+    rejecting every markdown edit in the repo, including edits that have nothing to do
+    with the finding -- better to learn that from a test than from a blocked turn.
+    """
+    hook = REPO_ROOT / ".claude/hooks/doc_pointers.py"
+    payload = '{"tool_input": {"file_path": "docs/DOC_INDEX.md"}}'
+
+    proc = subprocess.run([sys.executable, "-X", "utf8", str(hook)],
+                          input=payload, capture_output=True, text=True,
+                          encoding="utf-8", cwd=REPO_ROOT)
+
+    assert proc.returncode == 0, proc.stderr

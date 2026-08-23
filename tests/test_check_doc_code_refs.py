@@ -119,6 +119,33 @@ def test_the_offset_window_is_adjustable(tree):
     assert bucket(tree, "drift-near", near_window=0) == []
 
 
+def test_one_shared_token_next_door_does_not_downgrade_a_real_drift(tree):
+    """`arrival_v2_experiment_report.md:285`, which hid behind the offset grade.
+
+    The row quotes four identifiers; all four are on the loop it describes, and only the
+    commonest of them, `num_envs`, happens to appear a line from the stale citation.
+    Nearest-by-any-token answered with the neighbour, and a 13-line drift was filed as a
+    one-line offset -- out of `--strict`, and out of sight.
+    """
+    _write(tree, "scripts/train_sac.py", "\n".join([
+        "def train():",                                  # 1
+        "    episode_length = np.zeros(num_envs)",       # 2  one token, adjacent
+        "    episode_idx = start_episode",               # 3  the stale citation
+        "    pad = 0",
+        "    pad = 0",
+        "    pad = 0",
+        "    for env_step in range(start_step // num_envs + 1, total):",  # 7  all four
+    ]))
+    _write(tree, "scripts/x.md",
+           "| 单位混淆 | `train_sac.py:3` | `env_step`、`num_envs`、`range`、`start_step` |")
+
+    drift = bucket(tree, "drift")
+
+    assert [r[2] for r in drift] == [3]
+    assert drift[0][5] == 7, "report the line carrying the whole fragment"
+    assert bucket(tree, "drift-near") == []
+
+
 def test_a_function_name_that_exists_nowhere(tree):
     """CLAUDE.md's `get_probe_positions()`, reconstructed.
 
@@ -132,38 +159,122 @@ def test_a_function_name_that_exists_nowhere(tree):
 
     assert len(missing) == 1
     assert missing[0][1] == "get_probe_positions"
-    assert missing[0][3] == [], "nothing in the tree defines it"
+    assert missing[0][3] == ["auv_nav/flow.py"], "name the file that put it in scope"
 
 
-def test_a_function_that_lives_in_a_different_file(tree):
+def test_a_function_that_lives_in_a_different_file_is_a_known_blind_spot(tree):
+    """The documented limit, asserted so it cannot be lost or re-added by accident.
+
+    Judging *where* a name is defined was built first and then measured: every hit it
+    produced against this repo was a false positive, because a `.py` path beside a
+    `Foo()` is a topic and not an attribution. Existence is what survives the evidence,
+    and this case is the price.
+    """
     _write(tree, "auv_nav/env.py", "class PlanarRemusEnv:\n    pass\n")
     _write(tree, "docs/a.md", "`PlanarRemusEnv()` 在 `auv_nav/flow.py` 里")
 
-    moved = bucket(tree, "symbol-moved")
-
-    assert len(moved) == 1
-    assert moved[0][1] == "PlanarRemusEnv"
-    assert moved[0][3] == ["auv_nav/env.py"], "the report must say where it actually is"
+    assert bucket(tree, "symbol-missing") == []
 
 
-def test_a_dotted_symbol_is_judged_by_its_class_not_its_method(tree):
-    """`FQLAgent.update()` must not be waved through by any `def update` in the file.
+def test_a_symbol_named_beside_a_file_is_not_a_claim_about_that_file(tree):
+    """`fql_succession_p0p1_spec.md:479`, the false positive that forced the rewrite.
 
-    Six unrelated agents here define `update`; matching on the leaf made the claim
-    "FQLAgent lives in train_offline.py" untestable, which is the claim being made.
+    The sentence says the metrics dict must stay compatible with that file's logger.
+    File attribution read it as "FQLAgent lives in train_offline.py" and failed it.
     """
-    _write(tree, "auv_nav/other.py", "class FQLAgent:\n    def update(self):\n        pass\n")
-    _write(tree, "auv_nav/flow.py", "class Something:\n    def update(self):\n        pass\n")
-    _write(tree, "docs/a.md", "`FQLAgent.update()` 在 `auv_nav/flow.py` 里")
+    _write(tree, "auv_nav/fql.py", "class FQLAgent:\n    def update(self):\n        pass\n")
+    _write(tree, "scripts/train_offline.py", "def main():\n    pass\n")
+    _write(tree, "docs/a.md",
+           "`FQLAgent.update()` 返回的 key 要与 `scripts/train_offline.py` 的 logger 兼容")
 
-    assert [r[1] for r in bucket(tree, "symbol-moved")] == ["FQLAgent.update"]
+    assert bucket(tree, "symbol-missing") == []
+
+
+def test_a_dotted_symbol_is_judged_by_its_leaf_once_the_head_is_ours(tree):
+    """`PlanarRemusEnv.compute_flow_at_position()` -- real class, invented method."""
+    _write(tree, "auv_nav/env.py",
+           "class PlanarRemusEnv:\n    def step(self):\n        pass\n")
+    _write(tree, "docs/a.md",
+           "由 `PlanarRemusEnv.compute_flow_at_position()` 采样，喂给 `auv_nav/flow.py`")
+
+    missing = bucket(tree, "symbol-missing")
+
+    assert len(missing) == 1
+    assert missing[0][1] == "PlanarRemusEnv.compute_flow_at_position"
+    assert missing[0][2] == "compute_flow_at_position", "the leaf is what was tested"
+
+
+def test_a_dotted_symbol_whose_head_is_unknown_is_skipped(tree):
+    """An unrecognised head is another package, or an instance attribute.
+
+    `sampler.interpolate()` sitting next to a repo path says nothing about the repo,
+    and reporting `interpolate` as missing would be a guess dressed as a finding.
+    """
+    _write(tree, "docs/a.md", "`auv_nav/flow.py` 里调用 `sampler.interpolate()`")
+
+    assert bucket(tree, "symbol-missing") == []
+
+
+def test_a_module_name_counts_as_a_known_head(tree):
+    _write(tree, "scripts/train_utils.py", "def resolve_episodes():\n    pass\n")
+    _write(tree, "docs/a.md", "`auv_nav/flow.py` 的调用方是 `train_utils.pick_episodes()`")
+
+    assert [r[2] for r in bucket(tree, "symbol-missing")] == ["pick_episodes"]
+
+
+def test_a_deeper_dotted_chain_is_beyond_what_can_be_attributed(tree):
+    _write(tree, "auv_nav/env.py", "class PlanarRemusEnv:\n    pass\n")
+    _write(tree, "docs/a.md",
+           "`auv_nav/flow.py`：`PlanarRemusEnv.backend.last_delta_r_cmd()`")
+
+    assert bucket(tree, "symbol-missing") == []
+
+
+def test_a_symbol_with_no_repo_file_on_the_line_is_not_judged(tree):
+    """The gate. A `name()` in prose naming no source file is as likely to be a shell
+    builtin or a cited paper's notation as it is to be ours."""
+    _write(tree, "docs/a.md", "编译用 `latexmk -silent`，失败再跑一次 `rerunfilecheck()`")
+
+    assert bucket(tree, "symbol-missing") == []
 
 
 def test_third_party_calls_are_not_read_as_claims_about_the_file(tree):
+    """Covered by the unknown-head rule, not by FOREIGN_PREFIX -- `np` is nothing here.
+
+    Kept as the shape a reader expects to see tested; the case that actually needs the
+    prefix list is the collision below.
+    """
     _write(tree, "docs/a.md", "`auv_nav/flow.py` 用的是 `np.zeros()`")
 
     assert bucket(tree, "symbol-missing") == []
-    assert bucket(tree, "symbol-moved") == []
+
+
+def test_a_third_party_alias_beats_a_repo_class_of_the_same_name(tree):
+    """What FOREIGN_PREFIX is for, once the unknown-head rule has taken the easy cases.
+
+    `F.relu()` is torch, whatever else in the repo happens to be called `F`. Without the
+    prefix list the head resolves to that class and `relu` gets reported as missing.
+    """
+    _write(tree, "auv_nav/f.py", "class F:\n    pass\n")
+    _write(tree, "docs/a.md", "`auv_nav/flow.py` 的激活用 `F.relu()`")
+
+    assert bucket(tree, "symbol-missing") == []
+
+
+def test_a_renamed_symbol_may_be_declared_in_the_same_sentence(tree):
+    """The HISTORICAL branch, which nothing exercised until now.
+
+    A plan doc names what the implementer was told to write; the code shipped under a
+    different name. Correcting the plan would rewrite what it planned, so it declares
+    instead -- the same contract `check_doc_pointers` gives an absent path, and it only
+    counts when the real name is given alongside.
+    """
+    _write(tree, "docs/a.md",
+           "让实现者去 `auv_nav/flow.py` 找 `get_probe_positions()`"
+           "（原计划名，落地时定名为 `make_probe_offsets`）")
+
+    assert bucket(tree, "symbol-missing") == []
+    assert [r[1] for r in bucket(tree, "declared")] == ["get_probe_positions"]
 
 
 def test_a_backticked_path_is_not_read_as_the_fragment(tree):

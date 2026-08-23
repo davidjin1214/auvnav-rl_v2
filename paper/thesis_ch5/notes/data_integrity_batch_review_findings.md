@@ -15,7 +15,7 @@
 
 另作的口径实核（非工具覆盖项）：
 
-- `scripts/collect_offline_data.py:315` `episode_seed = base_seed + ep`；两数据集 `metadata.json` 均 `seed=0`、$1000$/$2000$ 回合 → §5.3.5 的连续编号与区间覆盖断言成立；
+- `scripts/collect_offline_data.py:316` `episode_seed = base_seed + ep`；两数据集 `metadata.json` 均 `seed=0`、$1000$/$2000$ 回合 → §5.3.5 的连续编号与区间覆盖断言成立；
 - `benchmarks/single_u10_cross_tgt15_ep100.json` 种子 $1250$–$1349$、`clean_probe/..._s3000.json` 种子 $3000$–$3099$、各 $100$ 条；
 - **未追踪文件 `benchmarks/clean_probe/_repro_check_s1250.json` 是「其余生成参数与主评估集一致」的复现证据**——以种子 $1250$ 重生成，`reset_options` 与主 manifest 逐条一致。建议入库（本轮未擅自 `git add`）。
 - `noisy_support_screen` 的 `validation/`、`test_selected/`、`test_bc_selected/`、`baselines/` 四类 json，其 `eval_episode_results` 全为 seeds $1250$–$1289$、各 $40$ 回合 → §5.6 含噪筛查确为 val≡test，**两个数据规模皆然**；

@@ -52,7 +52,7 @@ Wake `.npy` files actually contain:
 
 NODE is a neural network: behavior outside the training manifold is undefined.
 
-**This is the dominant threat to NODE reliability in the wake task, and swapping `vehicle.py` does not change a single number in this table.** The wake-flow magnitudes come from `wake_data/*.npy` files, which are sampled by `PlanarRemusEnv.compute_flow_at_position()` and fed to the NODE as a conditioning input. Whether `vehicle.py` integrates with one formula or another is irrelevant to the wake-file content.
+**This is the dominant threat to NODE reliability in the wake task, and swapping `vehicle.py` does not change a single number in this table.** The wake-flow magnitudes come from `wake_data/*.npy` files, which are sampled by `FlowSampler.sample_probes_body()` (`auv_nav/flow.py`, called from the env) and fed to the NODE as a conditioning input. Whether `vehicle.py` integrates with one formula or another is irrelevant to the wake-file content.
 
 ### 2.2 Wake current is spatially heterogeneous (Step 1 §2.2)
 

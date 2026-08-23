@@ -11,9 +11,9 @@ file. That leaves two reference forms unverified, and both have already rotted h
                   finding. The path still resolves, so nothing complained.
 
   symbol claims   CLAUDE.md routed readers to `get_probe_positions()` in
-                  `auv_nav/flow.py`. That name has never existed anywhere but in
-                  CLAUDE.md -- the real one is `make_probe_offsets()`. The file
-                  resolved; the function was invented (found 2026-08-17, a49fb1e).
+                  `auv_nav/flow.py`. That name has never existed anywhere in the repo
+                  -- the real one is `make_probe_offsets()`. The file resolved; the
+                  function was invented (found 2026-08-17, a49fb1e).
 
 Both classes were last checked by reading the lines by hand (2a8c311 verified five of
 them in one report). This makes that mechanical.
@@ -28,14 +28,25 @@ What is reported, and why each bucket is separate:
                   fragment's distinctive identifiers appear on the cited line. The
                   report names the nearest line that does carry them, so the fix is
                   mechanical rather than another hand-read.
-  symbol-missing  a `name()` claimed to live in a cited `.py` file, with no `def name`
-                  or `class name` there. Split by whether the name exists elsewhere in
-                  the repo, because "moved" and "never existed" are different defects.
+  symbol-missing  a `name()` written on a line that also names a repo `.py` file, with
+                  no `def name` / `class name` anywhere in the repo. See below for why
+                  the test is repo-wide rather than per-file.
   ambiguous       a bare basename (`fql.py:444`) matching more than one file. Reported,
                   not failed: which one was meant is a human call.
 
-What this canNOT check: whether the cited line is the *right* line for the claim being
-made. A fragment-free citation is only checked for existence and non-blankness.
+Why the symbol test is repo-wide. The first cut read "`Foo()` on the same line as
+`bar.py`" as the claim "Foo is defined in bar.py". Measured against this repo, every
+such hit was a false positive: `FQLAgent.update()` next to `train_offline.py` says the
+metrics dict is compatible with that file's logger, and `PlanarRemusEnv.compute_...()`
+next to `vehicle.py` says swapping that file changes nothing. Co-occurrence is a topic,
+not an attribution, and prose carries no reliable attribution marker. So the `.py` path
+survives only as a *gate* -- it says the sentence is talking about this codebase -- and
+what gets tested is whether the name exists at all.
+
+What this canNOT check, as a direct consequence: a function that *moved*. If the name is
+defined anywhere in the repo, the citation passes even when the doc sends the reader to
+the wrong file. Nor whether the cited line is the *right* line for the claim being made;
+a fragment-free citation is only checked for existence and non-blankness.
 
 Usage:
     python -m scripts.check_doc_code_refs           # triaged report
@@ -213,24 +224,60 @@ def distinctive_tokens(md_line: str, at: int = -1) -> set[str]:
     return tokens
 
 
-def defines_symbol(lines: list[str], symbol: str) -> bool:
-    """Is `symbol` defined here?
+DEFINITION = re.compile(r"^\s*(?:async\s+)?(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)")
 
-    For a dotted `Class.method`, the claim under test is that *the class* lives in this
-    file -- a bare `update` matches a method on six unrelated agents, which says nothing
-    about whether `FQLAgent` is where the doc says it is.
+
+def definition_index(root: str) -> dict[str, list[str]]:
+    """Every `def`/`class` name in the repo -> the `.py` files defining it.
+
+    Methods land here alongside module-level names, which is what makes the dotted case
+    below decidable: `FQLAgent.update()` is cleared by *some* `def update`, because the
+    only thing this tool can honestly test about it is that the method exists. Fixtures
+    under `tests/` count too -- "exists in the repo" is the claim being tested, and
+    carving out directories would be a second closed list to keep in step with SKIP_DIRS.
     """
-    head = symbol.split(".", 1)[0] if "." in symbol else symbol
-    pat = re.compile(rf"^\s*(?:async\s+)?(?:def|class)\s+{re.escape(head)}\b")
-    return any(pat.match(ln) for ln in lines)
+    out: dict[str, list[str]] = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for f in filenames:
+            if not f.endswith(".py"):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, f), root).replace("\\", "/")
+            for ln in read_lines(os.path.join(dirpath, f)):
+                m = DEFINITION.match(ln)
+                if m and rel not in out.setdefault(m.group(1), []):
+                    out[m.group(1)].append(rel)
+    return {k: sorted(v) for k, v in out.items()}
+
+
+def judged_name(symbol: str, defs: dict[str, list[str]],
+                modules: set[str]) -> str | None:
+    """Which part of `symbol` this tool is entitled to test, or None to skip.
+
+    A bare name tests itself. A dotted `A.b` tests the leaf `b`, but only once `A` is
+    known to be ours -- a class/def by that name, or a module `A.py`. When the head is
+    unrecognised the whole thing is somebody else's namespace or an instance variable,
+    and reporting the leaf would be guessing; FOREIGN_PREFIX catches only the handful of
+    third-party roots common enough to be worth naming.
+    """
+    if "." not in symbol:
+        return symbol
+    head, leaf = symbol.split(".", 1)
+    if "." in leaf:  # `a.b.c()` -- more nesting than this tool can attribute
+        return None
+    if head in defs or f"{head}.py" in modules:
+        return leaf
+    return None
 
 
 def scan(root: str, near_window: int = 2) -> dict[str, list[tuple]]:
     index = _source_index(root)
+    defs = definition_index(root)
+    modules = {k for k in index if k.endswith(".py")}
     source_cache: dict[str, list[str]] = {}
     buckets: dict[str, list[tuple]] = {
         "out-of-range": [], "blank-line": [], "drift": [], "drift-near": [],
-        "symbol-missing": [], "symbol-moved": [], "ambiguous": [],
+        "symbol-missing": [], "ambiguous": [],
         "declared": [], "unresolved": [], "clean": [],
     }
 
@@ -310,27 +357,24 @@ def scan(root: str, near_window: int = 2) -> dict[str, list[tuple]]:
                 symbol = m.group(1)
                 if FOREIGN_PREFIX.match(symbol):
                     continue
-                targets = [p for p in seen_paths if p.endswith(".py")]
-                if not targets:
-                    for pm in LINE_REF.finditer(md_line):
-                        targets += [c for c in resolve_ref(pm.group(1), src, root, index)
-                                    if c.endswith(".py")]
-                if not targets:
-                    targets = _bare_py_paths(md_line, src, root, index)
-                if len(targets) != 1:
+                # The gate, not an attribution: a `name()` on a line that names no repo
+                # source file is as likely to be a shell builtin or a cited paper's
+                # notation as it is to be ours.
+                context = sorted(seen_paths | set(_bare_py_paths(md_line, src, root, index)))
+                context = [p for p in context if p.endswith(".py")]
+                if not context:
                     continue
-                target = targets[0]
-                if defines_symbol(lines_of(target), symbol):
-                    buckets["clean"].append((f"{srel}:{lineno}", symbol, 0, target, "symbol"))
+                name = judged_name(symbol, defs, modules)
+                if name is None:
+                    continue
+                where = f"{srel}:{lineno}"
+                if name in defs:
+                    buckets["clean"].append((where, symbol, 0, defs[name][0], "symbol"))
                     continue
                 if HISTORICAL.search(md_line):
-                    buckets["declared"].append(
-                        (f"{srel}:{lineno}", symbol, 0, target))
+                    buckets["declared"].append((where, symbol, 0, context[0]))
                     continue
-                elsewhere = _defined_elsewhere(root, index, symbol, target, lines_of)
-                bucket = "symbol-moved" if elsewhere else "symbol-missing"
-                buckets[bucket].append(
-                    (f"{srel}:{lineno}", symbol, target, elsewhere))
+                buckets["symbol-missing"].append((where, symbol, name, context))
 
     return buckets
 
@@ -347,35 +391,33 @@ def _bare_py_paths(md_line: str, src: str, root: str,
 
 
 def _nearest(lines: list[str], tokens: set[str], start: int) -> int | None:
-    """The line closest to `start` that carries one of the tokens, if any."""
+    """Where the quoted fragment actually is: most tokens matched, then closest.
+
+    Nearest-by-any-token is not good enough, and the failure is not hypothetical. A
+    table row quoting `env_step`, `num_envs`, `range` and `start_step` cited
+    `train_sac.py:467`; the loop it describes is on 480, but `num_envs` alone happens to
+    appear on 466, so "any token" answered 466 and a 13-line drift was filed as a
+    one-line offset -- graded down out of `--strict` and never seen again.
+    """
     best: int | None = None
+    best_score = 0
     for i, ln in enumerate(lines, 1):
-        if any(tok in ln for tok in tokens):
-            if best is None or abs(i - start) < abs(best - start):
-                best = i
+        score = sum(1 for tok in tokens if tok in ln)
+        if score == 0:
+            continue
+        if score > best_score or (score == best_score and best is not None
+                                  and abs(i - start) < abs(best - start)):
+            best, best_score = i, score
     return best
 
 
-def _defined_elsewhere(root: str, index: dict[str, list[str]], symbol: str,
-                       exclude: str, lines_of) -> list[str]:
-    hits = []
-    for paths in index.values():
-        for p in paths:
-            if p == exclude or not p.endswith(".py"):
-                continue
-            if defines_symbol(lines_of(p), symbol):
-                hits.append(p)
-    return sorted(hits)
-
-
-DEFECT_BUCKETS = ("out-of-range", "blank-line", "drift", "symbol-missing", "symbol-moved")
+DEFECT_BUCKETS = ("out-of-range", "blank-line", "drift", "symbol-missing")
 
 LABELS = {
     "out-of-range": "★ 行号越界（文件没有那么多行）",
     "blank-line": "★ 引到空行（目标行存在但是空的）",
     "drift": "★ 行号漂移（同句引用的代码片段远在别处，或已不存在）",
-    "symbol-missing": "★ 函数不存在（全仓也找不到这个定义）",
-    "symbol-moved": "★ 函数不在被引文件里（但仓内别处有定义）",
+    "symbol-missing": "★ 函数名全仓不存在（同句提到了仓内 .py，但这个名字没有任何定义）",
     "drift-near": "行号偏移（片段就在邻近几行；引用方式使然，不判缺陷）",
     "declared": "自述历史引用（引用方在同一句里写明这是当时的名字/行号，并给出真名）",
     "ambiguous": "同名多份（裸文件名匹配到多个路径；哪一份是人的活）",
@@ -405,7 +447,7 @@ def main() -> int:
     print("=" * 96)
 
     for name in ("out-of-range", "blank-line", "drift", "symbol-missing",
-                 "symbol-moved", "drift-near", "declared", "ambiguous", "unresolved"):
+                 "drift-near", "declared", "ambiguous", "unresolved"):
         rows = buckets[name]
         print(f"\n--- {LABELS[name]}：{len(rows)} ---")
         if name == "declared":
@@ -424,10 +466,10 @@ def main() -> int:
             elif name == "out-of-range":
                 where, raw, start, n = row
                 print(f"  {where}  -> {raw}:{start}  （该文件共 {n} 行）")
-            elif name in ("symbol-missing", "symbol-moved"):
-                where, symbol, target, elsewhere = row
-                tail = f"｜仓内定义于 {', '.join(elsewhere)}" if elsewhere else ""
-                print(f"  {where}  -> {symbol}() 声称在 {target} {tail}")
+            elif name == "symbol-missing":
+                where, symbol, judged, context = row
+                tail = f"｜实测的名字 {judged}" if judged != symbol else ""
+                print(f"  {where}  -> {symbol}() ｜同句提到 {', '.join(context)} {tail}")
             elif name == "declared":
                 where, what, start, target = row
                 anchor = f"{what}:{start}" if start else f"{what}()"

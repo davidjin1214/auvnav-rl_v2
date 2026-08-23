@@ -60,22 +60,25 @@ rev 块核查动作、以及跨仓会话记录。
 
 | 文件 | 内容 |
 |---|---|
-| `scripts/check_doc_code_refs.py` | 新校验器。补两类引用：源码行锚与文档声称的函数名——`check_doc_pointers` 在自己的路径解析函数注释里承认这两类它验不了。全仓 153 处引用，1.8 s |
-| `tests/test_check_doc_code_refs.py` | 23 项 |
-| `tests/test_check_doc_pointers.py` | 29 项。含把 `a507eb3` 那次**手工**故障注入固化下来的 SUSPECT 用例 |
+| `scripts/check_doc_code_refs.py` | 新校验器。补两类引用：源码行锚与文档声称的函数名——`check_doc_pointers` 在自己的路径解析函数注释里承认这两类它验不了。全仓 156 处引用，1.8 s |
+| `tests/test_check_doc_code_refs.py` | 29 项 |
+| `tests/test_check_doc_pointers.py` | 32 项。含把 `a507eb3` 那次**手工**故障注入固化下来的 SUSPECT 用例，以及钩子的接线用例 |
 | `tests/test_build_doc_index.py` | 19 项 |
+| `.claude/hooks/doc_pointers.py` | 改成串跑两个 sweep。两者互补是构造出来的：前者验路径在不在，后者验行与名还在不在 |
 
-合跑 71 项全绿。运行方式（本机沙箱挡系统 temp，必须给 `--basetemp`）：
+合跑 82 项全绿；全仓 `pytest tests/` 245 passed / 4 skipped。运行方式（本机沙箱挡系统
+temp，必须给 `--basetemp`）：
 
 ```bash
 python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers.py \
     tests/test_build_doc_index.py -q --tb=short --basetemp=<scratchpad>/pytest_tmp
 ```
 
-### 负控是实测的：24 次故障注入，24 次变红
+### 负控是实测的：39 条注入判据，39 次变红
 
 上一轮交接要求「每条检查都要配负控」。做法是对被测工具逐条注入故障、确认对应用例变红。
-下表是判据本身，shell 脚本是一次性的（含硬编码本机路径，未入库）。
+下表是判据本身，shell 脚本是一次性的（含硬编码本机路径，未入库）。另有 1 次**刻意保持绿**的
+控制组注入，用来隔离钩子的 markdown 门（见表下说明）。
 
 | 被测工具 | 注入的故障 | 应变红的用例 |
 |---|---|---|
@@ -97,12 +100,42 @@ python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers
 | check_doc_code_refs | 取消 路径 span 排除 | `test_a_backticked_path_is_not_read_as_the_fragment` |
 | check_doc_code_refs | 取消 多引用不归属 | `test_several_citations_on_one_line_disable_fragment_attribution` |
 | check_doc_code_refs | 取消 span 邻近约束 | `test_a_fragment_far_along_the_line_is_not_attributed` |
-| check_doc_code_refs | 点号符号退回叶名 | `test_a_dotted_symbol_is_judged_by_its_class_not_its_method` |
 | check_doc_code_refs | 取消 同名消歧 | `test_a_basename_collision_prefers_the_citing_files_own_subtree` |
 | check_doc_code_refs | 偏移一律判缺陷 | `test_a_fragment_one_line_off_is_an_offset_not_rot` |
 | check_doc_code_refs | 空行检查失效 | `test_a_citation_landing_on_a_blank_line` |
 | check_doc_code_refs | 越界检查失效 | `test_line_number_past_the_end_of_the_file` |
 | check_doc_code_refs | `--strict` 不返回 1 | `test_cli_exits_nonzero_only_under_strict` |
+
+**符号判据改写后补跑的 11 条**（旧的「点号符号退回叶名」一条随文件归属一起作废，见 §三）：
+
+| 被测工具 | 注入的故障 | 应变红的用例 |
+|---|---|---|
+| check_doc_code_refs | `_nearest` 退回「任一 token 最近」 | `test_one_shared_token_next_door_does_not_downgrade_a_real_drift` |
+| check_doc_code_refs | 文件归属复活（判定改回「定义须在同现文件里」） | `test_a_function_that_lives_in_a_different_file_is_a_known_blind_spot` |
+| check_doc_code_refs | 同上 | `test_a_symbol_named_beside_a_file_is_not_a_claim_about_that_file` |
+| check_doc_code_refs | 存在性检查恒真 | `test_a_function_name_that_exists_nowhere` |
+| check_doc_code_refs | 点号符号改判头名 | `test_a_dotted_symbol_is_judged_by_its_leaf_once_the_head_is_ours` |
+| check_doc_code_refs | 未知头也判叶名 | `test_a_dotted_symbol_whose_head_is_unknown_is_skipped` |
+| check_doc_code_refs | 模块名不算已知头 | `test_a_module_name_counts_as_a_known_head` |
+| check_doc_code_refs | 多层点号也判 | `test_a_deeper_dotted_chain_is_beyond_what_can_be_attributed` |
+| check_doc_code_refs | 取消「同句须提到仓内 .py」这道门 | `test_a_symbol_with_no_repo_file_on_the_line_is_not_judged` |
+| check_doc_code_refs | 取消第三方前缀表 | `test_a_third_party_alias_beats_a_repo_class_of_the_same_name` |
+| check_doc_code_refs | `HISTORICAL` 永不命中 | `test_a_renamed_symbol_may_be_declared_in_the_same_sentence` |
+| 钩子 | 第二个 sweep 被摘掉 | `test_the_hook_runs_the_line_anchor_sweep_as_well_as_the_path_sweep` |
+| 钩子 | 缺陷段过滤失效 | `test_the_defect_filter_keeps_only_the_failing_sections` |
+| 钩子 | 忽略 sweep 的退出码 | `test_the_hook_is_quiet_on_this_repo_as_it_stands` |
+| 钩子 | 坏 JSON 不再兜住 | `test_the_hook_survives_junk_on_stdin` |
+| 钩子 | markdown 门被拆（**须先制造失败条件**，见下） | `test_the_hook_only_fires_on_markdown` |
+
+**第三方前缀表差点被判成死码。** 新的「未知头则跳过」规则把 `np.zeros()` 一类全接住了，实测
+`FOREIGN_PREFIX` 列的 16 个头在本仓既无定义也无同名模块——照原用例注入，拆掉它仍然全绿。它真正
+承重的场景是**撞名**：仓里若有个类叫 `F`，`F.relu()` 的头就"是我们的"了。用例已改成那个场景，
+注入才变红。删一个「测不出来」的机制之前，先看看是不是用例指错了地方。
+
+**markdown 门也是同一类问题，且它自己测不出来。** 仓库干净时，拆掉门只是让钩子对 `.py` 也跑一遍
+sweep，两个 sweep 都过 → 退 0 → 用例照绿。注入表里这一条因此是**两段式**的：先强制 sweep 报失败
+造出可观测条件，再拆门。控制组（只强制失败、不拆门）实测**保持绿**，拆门后才红——绿的那次证明红
+的那次是门被拆红的，不是强制失败红的。
 
 **两处不可注入、已就地标注**：`.tex`／`.md` 行锚的 CRLF 往返由两个机制共同保证（`main` 里的
 显式归一化 ＋ Python `read_text` 的通用换行转换），拆掉任一个契约仍成立，故该用例钉的是可观测
@@ -111,11 +144,12 @@ python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers
 
 ---
 
-## 三、校验器已抓到、**尚未处置**的 8 处（逐条核过，非工具输出转述）
+## 三、校验器抓到的 9 处——**已全部处置**（逐条核过，非工具输出转述）
 
-`python -m scripts.check_doc_code_refs --strict` 当前退出码 **1**。
+`python -m scripts.check_doc_code_refs --strict` 现在退出码 **0**，缺陷 0；
+`check_doc_pointers --strict --verify-declarations` 同样退 0，真失效 0、SUSPECT 0。
 
-### 5 处代码行锚落在空行——直接改号即可，被引符号都还在
+### 5 处代码行锚落在空行——已按下表改号，被引符号都还在
 
 | 引用方 | 现值 | 应为 | 依据 |
 |---|---|---|---|
@@ -125,43 +159,67 @@ python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers
 | `docs/online_rl_thesis_plan.md` 第 49 行 | `env.py` 895 | **947** | `"privileged_obs": equivalent_body[:2]...` 在 947 |
 | 同上，第 308 行 | `env.py` 895 | **947** | 同上 |
 
-### 3 处符号引用——**先改判据再动文档**，见下节
+### 3 处符号引用——判据改写后，2 真 1 假，均已处置
 
-- `docs/superpowers/plans/2026-04-04-improved-sac.md` 第 621 行：计划文档让实现者去找
-  `auv_nav/env.py` 里的一个方法，而那个名字 **`git log -S` 确认从未在代码里存在过**，落地时
-  定名为 `_build_info`（在 896 行）。与 `a49fb1e` 那条 CLAUDE.md 编函数名同类，是真发现。
-- `docs/archive/fql_succession/fql_succession_p0p1_spec.md` 第 479 行：**假阳性**。原句是
-  「……返回的 metrics dict 必须包含以下 key（与 `train_offline.py` 现有 logger 兼容）」——
-  同现不是归属声明。
-- `docs/auvhamnode_spike/04_swap_vehicle_decision_memo.md` 第 55 行：类名存在于
-  `auv_nav/env.py`，但那个方法名全仓不存在。**归属判错、缺陷判对。**
+判据改写见 §四之前的记录：砍掉「符号与 `.py` 路径同现 ⇒ 声称定义在该文件」，改判**符号在全仓
+是否存在**（裸名判自身；点号 `A.b()` 在 `A` 是仓内类或模块时判叶名 `b`，头名不认识就跳过）。
+代价写进了 docstring：**查不出「函数搬家了」**——名字只要在仓里有定义就放行，哪怕文档把读者指错
+了文件。这个局限本身有用例钉着（`test_a_function_that_lives_in_a_different_file_is_a_known_blind_spot`），
+免得日后无声地被改回去。
 
-### 4 处「行号偏移」——已判为提示、不判缺陷
+- `docs/superpowers/plans/2026-04-04-improved-sac.md` 第 621 行：**真**。计划文档让实现者去找
+  `auv_nav/env.py` 里的一个方法，那名字 **`git log -S` 确认从未在代码里存在过**，落地时定名为
+  `_build_info`（在 896 行）。与 `a49fb1e` 那条 CLAUDE.md 编函数名同类。**处置**：计划文档不改写
+  它当初的计划，改用工具里的 `HISTORICAL` 同句自述（补 "shipped as `_build_info()`, now at L896"），
+  落进「自述历史引用」桶。该分支上一轮尚未实测会 fire，本轮已补用例并注入验红。
+- `docs/archive/fql_succession/fql_succession_p0p1_spec.md` 第 479 行：**假阳性，已随判据消失**。
+  原句是「……返回的 metrics dict 必须包含以下 key（与 `train_offline.py` 现有 logger 兼容）」——
+  同现不是归属声明。这一条现在是回归用例
+  `test_a_symbol_named_beside_a_file_is_not_a_claim_about_that_file`。
+- `docs/auvhamnode_spike/04_swap_vehicle_decision_memo.md` 第 55 行：**真**。`PlanarRemusEnv`
+  在 `auv_nav/env.py` 里，但 `compute_flow_at_position` 全仓无定义（grep 实测 0 命中）。真正
+  的采样口是 `FlowSampler.sample_probes_body()`（`auv_nav/flow.py`，`env.py:844` 调用）。
+  **处置**：这句是对代码的事实描述、不是历史计划，直接改成真名，论断一字未动。
 
-含诚信账本 `docs/data_integrity_open_items.md` 第 202 行引 `collect_offline_data.py` 315 行
-（`5f8228c` 已把它顶到 316，同一引用另在 `paper/thesis_ch5/notes/data_integrity_batch_review_findings.md`
-第 18 行）。这类差 1–2 行的偏移**不进 `--strict`**：文档常引「效果落地的那一行」而在句中引上一行
-的条件，两种写法都诚实。要收紧用 `--near-window 0`。
+### 4 处「行号偏移」——手工复核后，1 处是被误降级的真漂移
+
+偏移桶本身的设计站得住：文档常引「效果落地的那一行」而在句中引上一行的条件，两种写法都诚实，
+所以差 1–2 行**不进 `--strict`**（要收紧用 `--near-window 0`）。唯一经手工复核确认诚实的是
+`docs/environment_design.md:324 → auv_nav/env.py:377`——377 是赋值行，句中引的条件在 376。
+
+但**逐条核这个提示桶，核出了工具自己的一个缺陷**：`_nearest` 原本取「离引用最近的、命中任一
+token 的行」。`docs/arrival_v2_experiment_report.md:285` 引 `train_sac.py:467`，句中引了
+`env_step`、`num_envs`、`range`、`start_step` 四个标识符，四个全在 480 行那条循环上；而最常见
+的 `num_envs` 恰好也出现在 466 行。「任一 token」于是答 466，一处 **13 行的真漂移被判成 1 行
+偏移**——降出 `--strict`，从此不再有人看见。改成**先比命中 token 数、再比距离**后，它正确落进
+缺陷桶并指向 480。已改文档为 480，另两处 `collect_offline_data.py` 315 → **316** 也一并改直
+（`5f8228c` 顶下来的，引的语句本身没变，只是移了位）。
+
+教训写在 §五：**提示桶要手工逐条核**。它不进 `--strict`，所以工具在这里判错不会有任何东西报警。
 
 ---
 
-## 四、下一步（按优先级）
+## 四、下一步
 
-1. **改 `check_doc_code_refs` 的符号判据。** 现在的 Form-B 是「符号与某个 `.py` 路径同现在一行
-   ⇒ 声称定义在该文件」。实测 `symbol-moved` 桶 2 条命中**全是假阳性**——同现推不出归属，散文里
-   也没有可靠的归属标记。按证据砍掉文件归属，改判**「符号在全仓是否存在」**：裸符号判自身，
-   点号符号 `A.b()` 在 `A` 存在时判叶名 `b`。这样三个真类全部命中（两个编造的函数名 ＋ 一个编造的
-   方法名），`FQLAgent.update()` 正确放行。把「查不出『函数搬家了』」写进 docstring 的已知局限。
-   改完**重跑注入表**里 check_doc_code_refs 的 9 条。
-2. **处置 §三 的 8 处。** 5 处按表改号；3 处符号等第 1 步做完再看还剩几条，剩下的用工具里已就位
-   的 `HISTORICAL` 同句自述（闭列表：当时的名字／当时叫／当时的行号／原计划名／落地时定名／
-   后改名为，必须同时写出真名）——该分支**尚未实测会 fire**，动它之前先加用例。
-3. **接线与落库决策。** `.claude/hooks/doc_pointers.py` 现在只跑 `check_doc_pointers --strict`；
-   是否加挂新校验器待定——`--strict` 现仍退 1，接上会即刻变红，须先做完第 2 步。
+上一轮列的三件（改符号判据 / 处置 §三 / 钩子接线）**本轮已全部做完**。钩子现在串跑两个 sweep；
+`.claude/settings.json` 里的那条 PostToolUse 命令指的还是同一个脚本路径，**无需改配置**（该文件
+gitignored，另一台机器要手工加，办法写在钩子自己的 docstring 里）。
+
+**第二批 = 刊值复算**（用户已定顺序）。范围来自 §一 C 类：
+
+1. **C 类第 6 项**：四条数字溯源链，做成可重跑脚本。
+2. **C 类第 7 项**：`docs/*.md` 报告侧的 ddof 口径（ddof=0 vs ddof=1）工具化。
+3. **C 类第 11 项**：manifest 指纹归属。
+
+三件都读 `results/`；`offline_data/` 是 gitignored 的，脚本必须支持 `--data-dir` /
+`--benchmarks-dir` 指到 Drive 挂载，**「本地扫不到」不能写成失败**。
+
+**第三批 = `paper/thesis_ch5/tools/` 全覆盖**（12 个脚本，其中 6 个需 `main.aux`、5 个需
+`results/`）＋ C 类第 12 项。
 
 ---
 
-## 五、方法论：本轮抓到的三个「测试跑绿但不承重」
+## 五、方法论：本轮抓到的五个「测试跑绿但不承重」
 
 写下来是因为第二、三批还会遇上。
 
@@ -174,3 +232,10 @@ python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers
 3. **源注释里的例子可能归错因。** `check_doc_pointers` 的注释把 `jsonl` 不被截断归给尾部守卫，
    实测归因错误（是 alternation 顺序）。**写回归测试前先把注释里的因果实测一遍**，否则测出来的
    是注释而不是代码。
+4. **仓库干净时，「守门」类机制自己测不出来。** 拆掉门，被放进来的东西照样合格，用例照绿。本轮
+   两次：钩子的 markdown 门、第三方前缀表。两种解法都用上了——**两段式注入**（先造出可观测的
+   失败条件，再拆门；并跑一次只造条件、不拆门的控制组，确认红的是门），和**把用例改到该机制真正
+   唯一承重的场景上**（前缀表→撞名）。删一个「测不出来」的机制之前，先确认不是用例指错了地方。
+5. **不进 `--strict` 的提示桶要手工逐条核。** 工具在那里判错不会有任何东西报警。本轮正是逐条核
+   偏移桶时，发现 `_nearest` 把一处 13 行的真漂移降级成了 1 行偏移（§三）。**分级本身要被审，
+   不只是被信任。**

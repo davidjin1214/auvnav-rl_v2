@@ -1,16 +1,22 @@
-"""PostToolUse hook: catch doc-pointer rot at the edit that introduces it.
+"""PostToolUse hook: catch doc-reference rot at the edit that introduces it.
 
-Fires only on markdown edits, then runs the repo-wide sweep in --strict mode,
-which exits non-zero solely on `real` misses -- a link to something that is
-supposed to exist and does not. The other buckets the sweep reports (self-
-declared absences, gitignored artefacts, plan-table forecasts) are legitimate
-and stay silent here.
+Fires only on markdown edits, then runs both repo-wide sweeps in --strict mode:
 
-Baseline at the time of writing: 0 real misses, 888 ms.
+    check_doc_pointers   does the cited path exist
+    check_doc_code_refs  is the cited *line* still that line, and does the cited
+                         function name exist at all
 
-Exit 2 feeds stderr back to the agent. PostToolUse runs after the write, so
-this flags the miss rather than preventing it -- the point is to catch it in
-the same turn instead of in a doc sweep three sessions later.
+They are complementary by construction -- the first strips a trailing `:N`
+before checking, and says so in its own `resolve()`, which is the gap the second
+one fills. Both grade their findings, and only the defect buckets fail --strict:
+self-declared absences, gitignored artefacts, plan-table forecasts, and citations
+that sit a line or two off a quoted fragment are all legitimate and stay silent.
+
+Baseline at the time of writing: 0 findings from either, 888 ms + 1.8 s.
+
+Exit 2 feeds stderr back to the agent. PostToolUse runs after the write, so this
+flags the finding rather than preventing it -- the point is to catch it in the
+same turn instead of in a doc sweep three sessions later.
 
 Wiring it up. `.claude/settings.json` is gitignored, so a clone gets this file
 but not the configuration that runs it, and the other machine needs the entry
@@ -34,6 +40,28 @@ import sys
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TIMEOUT_S = 20  # hook-level timeout is 30s; stay well inside it
 
+# module, the marker that identifies a defect section in its report, and what to
+# do about it. Both sweeps print every bucket; without the marker the hook would
+# hand back ~60 lines of buckets that did not fail.
+SWEEPS = (
+    ("scripts.check_doc_pointers", "真失效",
+     "Declare the absence in the citing sentence, or fix the path."),
+    ("scripts.check_doc_code_refs", "★",
+     "Re-read the cited line and correct the number, or say in the same sentence "
+     "that the name is historical and give the real one."),
+)
+
+
+def _defect_section(stdout, marker):
+    """The report's failing sections only. Sections start with `--- `."""
+    kept, keeping = [], False
+    for line in (stdout or "").splitlines():
+        if line.startswith("--- "):
+            keeping = marker in line
+        if keeping:
+            kept.append(line)
+    return "\n".join(kept) if kept else (stdout or "")[-1500:]
+
 
 def main():
     try:
@@ -45,38 +73,32 @@ def main():
     if not path.replace("\\", "/").lower().endswith(".md"):
         return 0
 
-    try:
-        result = subprocess.run(
-            [sys.executable, "-m", "scripts.check_doc_pointers", "--strict"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=TIMEOUT_S,
+    failed = []
+    for module, marker, hint in SWEEPS:
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", module, "--strict"],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=TIMEOUT_S,
+            )
+        except (OSError, subprocess.SubprocessError):
+            # A hook must never be the reason an edit fails.
+            continue
+        if result.returncode != 0:
+            failed.append((module, _defect_section(result.stdout, marker), hint))
+
+    if not failed:
+        return 0
+
+    for module, detail, hint in failed:
+        sys.stderr.write(
+            "[hook] %s --strict failed after editing %s\n%s\n%s\n"
+            % (module.rsplit(".", 1)[-1], os.path.basename(path), detail, hint)
         )
-    except (OSError, subprocess.SubprocessError):
-        # A hook must never be the reason an edit fails.
-        return 0
-
-    if result.returncode == 0:
-        return 0
-
-    # Keep only the real-miss section; the full sweep prints ~60 lines.
-    lines = (result.stdout or "").splitlines()
-    kept, in_real = [], False
-    for line in lines:
-        if line.startswith("--- "):
-            in_real = "真失效" in line
-        if in_real:
-            kept.append(line)
-
-    detail = "\n".join(kept) if kept else (result.stdout or "")[-1500:]
-    sys.stderr.write(
-        "[hook] check_doc_pointers --strict failed after editing %s\n%s\n"
-        "Declare the absence in the citing sentence, or fix the path.\n"
-        % (os.path.basename(path), detail)
-    )
     return 2
 
 

@@ -618,7 +618,7 @@ Expected: FAILED — `AssertionError: 'privileged_obs' not in info`
 
 - [ ] **Step 4.3: Add privileged_obs to env info**
 
-In `auv_nav/env.py`, locate the `_make_info()` method (around L832). It already computes `equivalent_body = self.last_equivalent_current_body` and includes it under `"equivalent_current_body"`.
+In `auv_nav/env.py`, locate the `_make_info()` method (around L832; that name was the plan's, never the code's — shipped as `_build_info()`, now at L896). It already computes `equivalent_body = self.last_equivalent_current_body` and includes it under `"equivalent_current_body"`.
 
 Find the `return` dict in `_make_info()` (around L865). Add one new key:
 

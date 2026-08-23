@@ -66,6 +66,19 @@ EXPECTED = {
     ("clean", "cross-2000"): 0.870,
 }
 
+# Pinning the means alone left the dispersions unguarded, and one of them had already
+# drifted in a doc that quotes this readout: `docs/data_integrity_open_items.md` printed
+# the clean cross-2000 dispersion as 0.025 where these per-seed values give 0.024495,
+# whose correct three-place rounding is 0.024. The mean was right, so a mean-only
+# expectation could not see it. Found 2026-08-24 by cross-checking the chapter against
+# the report; the chapter had it right.
+EXPECTED_SD = {
+    ("published", "cross-1000"): 0.0214,
+    ("published", "cross-2000"): 0.0299,
+    ("clean", "cross-1000"): 0.0194,
+    ("clean", "cross-2000"): 0.0245,
+}
+
 T_CRIT_95 = {2: 12.706, 3: 4.303, 4: 3.182, 5: 2.776, 6: 2.571}
 
 
@@ -101,6 +114,10 @@ def main() -> None:
             want = EXPECTED[(tag, label)]
             if abs(got - want) > 5e-4:
                 raise SystemExit(f"{tag} {label}: mean {got:.4f} != expected {want:.4f}")
+            sd = math.sqrt(sum((x - got) ** 2 for x in values) / len(values))
+            want_sd = EXPECTED_SD[(tag, label)]
+            if abs(sd - want_sd) > 5e-4:
+                raise SystemExit(f"{tag} {label}: sd {sd:.4f} != expected {want_sd:.4f}")
 
     print("=" * 78)
     print("per-cell success rate (mean +/- population sd, matching the chapter's convention)")

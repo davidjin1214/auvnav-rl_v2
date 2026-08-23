@@ -142,10 +142,14 @@ def test_welch_uses_the_satterthwaite_degrees_of_freedom():
 # =========================================================================== #
 # ch5_clean_probe_readout -- the difference-in-differences
 # =========================================================================== #
-PUB_1000 = [0.90, 0.90, 0.90]
-PUB_2000 = [0.94, 0.94, 0.94]   # flip = +4 pp on the published manifest
-CLN_1000 = [0.86, 0.86, 0.86]
-CLN_2000 = [0.87, 0.87, 0.87]   # flip = +1 pp on the clean manifest -> DiD = 3 pp
+# Means 0.90 / 0.94 / 0.86 / 0.87, so the flip is still +4 pp published, +1 pp clean and
+# the DiD 3 pp. The spreads are deliberately all different: the cells used to carry
+# identical per-seed values, which made every dispersion zero and left the sd guard --
+# and the choice of ddof inside it -- unobservable.
+PUB_1000 = [0.88, 0.90, 0.92]   # population sd 0.016330
+PUB_2000 = [0.93, 0.94, 0.95]   # population sd 0.008165
+CLN_1000 = [0.83, 0.86, 0.89]   # population sd 0.024495
+CLN_2000 = [0.86, 0.87, 0.88]   # population sd 0.008165
 
 
 @pytest.fixture
@@ -160,6 +164,10 @@ def probe_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(probe, "EXPECTED", {
         ("published", "cross-1000"): 0.900, ("published", "cross-2000"): 0.940,
         ("clean", "cross-1000"): 0.860, ("clean", "cross-2000"): 0.870,
+    })
+    monkeypatch.setattr(probe, "EXPECTED_SD", {
+        ("published", "cross-1000"): 0.016330, ("published", "cross-2000"): 0.008165,
+        ("clean", "cross-1000"): 0.024495, ("clean", "cross-2000"): 0.008165,
     })
     for rel, rates in (("pub/1000", PUB_1000), ("pub/2000", PUB_2000),
                        ("cln/1000", CLN_1000), ("cln/2000", CLN_2000)):
@@ -198,6 +206,36 @@ def test_the_frozen_expectation_tolerates_only_fourth_decimal_drift(probe_tree, 
     probe.main()
     monkeypatch.setattr(probe, "EXPECTED", expect(0.9010))
     with pytest.raises(SystemExit):
+        probe.main()
+
+
+def test_a_drifted_dispersion_is_caught_even_when_the_mean_is_right(probe_tree, monkeypatch):
+    """The guard that was missing until 2026-08-24.
+
+    `docs/data_integrity_open_items.md` printed the clean cross-2000 dispersion as 0.025
+    where the per-seed values give 0.024495; the mean was correct, so a mean-only
+    expectation saw nothing and the doc sat one digit away from the chapter.
+    """
+    monkeypatch.setattr(probe, "EXPECTED_SD",
+                        {**probe.EXPECTED_SD, ("clean", "cross-2000"): 0.0300})
+
+    with pytest.raises(SystemExit, match="clean cross-2000: sd"):
+        probe.main()
+
+
+def test_the_dispersion_guard_reads_the_population_convention(probe_tree, monkeypatch):
+    """Sample sd is the natural slip, and on three seeds it is 22% larger.
+
+    The fixture's cells carry three different spreads so this cannot be satisfied by a
+    coincidence in one of them -- with the old all-zero spreads it could not fail at all.
+    """
+    monkeypatch.setattr(probe, "EXPECTED_SD",
+                        {("published", "cross-1000"): 0.020,
+                         ("published", "cross-2000"): 0.010,
+                         ("clean", "cross-1000"): 0.030,
+                         ("clean", "cross-2000"): 0.010})
+
+    with pytest.raises(SystemExit, match="sd"):
         probe.main()
 
 

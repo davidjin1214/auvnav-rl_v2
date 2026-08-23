@@ -1,0 +1,207 @@
+{
+  "chain": "ch5_rebrac",
+  "doc": "paper/thesis_ch5/sections/rebrac.tex",
+  "note": "Chapter 5 section 5.6. Root is `results/offline` because this one file cites both the ReBRAC tree and the TD3+BC tree; the globs resolve to the same files the rebrac and td3bc_phase0c chains read. Two groups have no chain on the report side and were recomputed: the clean-probe supplementary evaluation (published only in docs/data_integrity_open_items.md, whose cross-2000 dispersion was found misprinted in 0993832 -- the chapter had it right) and the TD3+BC worldcomp cell, whose own report has no chain.",
+  "root": "results/offline",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "5.6 prose | TD3+BC crosscomp-1000 mean",
+      "anchor": "^\\\\S\\\\ref\\{subsec:ch5_td3bc_support\\}\\ 把两千回合处的回落确立为可复现的真实效应",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | TD3+BC crosscomp-1000 sd",
+      "anchor": "^\\\\S\\\\ref\\{subsec:ch5_td3bc_support\\}\\ 把两千回合处的回落确立为可复现的真实效应",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | TD3+BC crosscomp-2000 mean",
+      "anchor": "^\\\\S\\\\ref\\{subsec:ch5_td3bc_support\\}\\ 把两千回合处的回落确立为可复现的真实效应",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+)(?:.*?[0-9.]+ \\\\pm [0-9.]+)(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | TD3+BC crosscomp-2000 sd",
+      "anchor": "^\\\\S\\\\ref\\{subsec:ch5_td3bc_support\\}\\ 把两千回合处的回落确立为可复现的真实效应",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+)(?:.*?[0-9.]+ \\\\pm [0-9.]+)(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | clean probe cross-1000 mean",
+      "anchor": "^这一翻转所依据的两个数据格中",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/cross-1000/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | clean probe cross-1000 sd",
+      "anchor": "^这一翻转所依据的两个数据格中",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "rebrac/clean_probe/cross-1000/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | clean probe cross-2000 mean",
+      "anchor": "^这一翻转所依据的两个数据格中",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | clean probe cross-2000 sd",
+      "anchor": "^这一翻转所依据的两个数据格中",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 table | TD3+BC crosscomp-1000 mean",
+      "anchor": "^横流补偿参照（\\$1000\\$\\ 回合）\\ \\&\\ 可部署\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 table | TD3+BC crosscomp-1000 sd",
+      "anchor": "^横流补偿参照（\\$1000\\$\\ 回合）\\ \\&\\ 可部署\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 table | TD3+BC crosscomp-2000 mean",
+      "anchor": "^横流补偿参照（\\$2000\\$\\ 回合）\\ \\&\\ 可部署\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 table | TD3+BC crosscomp-2000 sd",
+      "anchor": "^横流补偿参照（\\$2000\\$\\ 回合）\\ \\&\\ 可部署\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 table | TD3+BC worldcomp deployable mean",
+      "anchor": "^\\\\multirow\\{2\\}\\{\\*\\}\\{\\\\makecell\\[l\\]\\{世界坐标系流速补偿参照\\\\\\\\（\\$1000\\$\\ 回合）\\}\\}\\ \\&\\ 可部署\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "td3bc/phase0c/worldcomp_teacher_gap/deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 table | TD3+BC worldcomp deployable sd",
+      "anchor": "^\\\\multirow\\{2\\}\\{\\*\\}\\{\\\\makecell\\[l\\]\\{世界坐标系流速补偿参照\\\\\\\\（\\$1000\\$\\ 回合）\\}\\}\\ \\&\\ 可部署\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "td3bc/phase0c/worldcomp_teacher_gap/deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | TD3+BC worldcomp deployable mean",
+      "anchor": "^世界坐标系流速补偿参照的一千回合数据把考察从数据规模转向价值网络的信息",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "td3bc/phase0c/worldcomp_teacher_gap/deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 prose | TD3+BC worldcomp deployable sd",
+      "anchor": "^世界坐标系流速补偿参照的一千回合数据把考察从数据规模转向价值网络的信息",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "td3bc/phase0c/worldcomp_teacher_gap/deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 caption | ReBRAC crosscomp-2000 (4.0, 1.0) mean",
+      "anchor": "^\\\\caption\\{正式协议下主线与消融各实验单元的逐种子终检成功率",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 caption | ReBRAC crosscomp-2000 (4.0, 1.0) sd",
+      "anchor": "^\\\\caption\\{正式协议下主线与消融各实验单元的逐种子终检成功率",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 impl | clean probe cross-1000 mean",
+      "anchor": "^两千回合数据上训练与评估任务实例的重合",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/cross-1000/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 impl | clean probe cross-1000 sd",
+      "anchor": "^两千回合数据上训练与评估任务实例的重合",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "rebrac/clean_probe/cross-1000/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 impl | clean probe cross-2000 mean",
+      "anchor": "^两千回合数据上训练与评估任务实例的重合",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.6 impl | clean probe cross-2000 sd",
+      "anchor": "^两千回合数据上训练与评估任务实例的重合",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    }
+  ]
+}

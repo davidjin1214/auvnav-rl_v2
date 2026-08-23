@@ -1,0 +1,63 @@
+{
+  "chain": "ch5_boundary",
+  "doc": "paper/thesis_ch5/sections/boundary.tex",
+  "note": "Chapter 5 section 5.8 quotes two cells of the section 5.5 ladder -- the cross-line comparison the section is built on. They are pinned here to the same files rather than to section 5.5's rendering of them, so that editing one place and not the other shows up. Root equals the arrival_v2 chain's root, so the globs are byte-identical to that chain's for the k=4 cell (section 7.10) and follow the same shape for k=12, which no report publishes.",
+  "root": "experiments/arrival_v2_prototype",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "5.8 table | online SAC k=4 mean",
+      "anchor": "^在线标准\\ SAC，\\$k=4\\$（三种子）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.8 table | online SAC k=4 sd",
+      "anchor": "^在线标准\\ SAC，\\$k=4\\$（三种子）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.8 prose | online SAC k=4 mean",
+      "anchor": "^表中的次序本身构成一个发现",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.8 prose | online SAC k=4 sd",
+      "anchor": "^表中的次序本身构成一个发现",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.8 prose | online SAC k=12 mean",
+      "anchor": "^在线一侧的证据同时划定了这一边界的适用范围",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.8 prose | online SAC k=12 sd",
+      "anchor": "^在线一侧的证据同时划定了这一边界的适用范围",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    }
+  ]
+}

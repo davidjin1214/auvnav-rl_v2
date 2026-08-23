@@ -1,6 +1,7 @@
 # `docs/tracebacks/` — 刊值溯源表
 
-> 收入时间：2026-08-23。每份 `.json` 把一份报告的「这个数从哪来」写成可执行的形式，由
+> 收入时间：2026-08-23。每份 `.json` 把一份文档（实验报告，或论文第 5 章的一个 section）
+> 的「这个数从哪来」写成可执行的形式，由
 > [`../../scripts/audit_published_numbers.py`](../../scripts/audit_published_numbers.py) 重跑。
 
 ## 为什么需要它
@@ -67,7 +68,7 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 
 ## 覆盖范围
 
-| 表 | 报告 | 刊值数 | 状态 |
+| 表 | 文档 | 刊值数 | 状态 |
 |---|---|---|---|
 | `fql_succession_p2.json` | [`../fql_succession_p2_results.md`](../fql_succession_p2_results.md) | 35 | 全部吻合 |
 | `td3bc_phase0c.json` | [`../td3bc_phase0c_experiment_report.md`](../td3bc_phase0c_experiment_report.md) | 57 | 全部吻合；23 处 `±` 判定为 `ddof=0` |
@@ -75,7 +76,12 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 | `arrival_v2.json` | [`../arrival_v2_experiment_report.md`](../arrival_v2_experiment_report.md) | 143 | 全部吻合（订正 1 格，见下）；§7.5 四向对照表 + §7.9 全部 gate 读数 + §7.10 传感九宫格 |
 | `online_a0.json` | [`../online_rl_line_summary.md`](../online_rl_line_summary.md) | 24 | 全部吻合；12 处 `±` 判定为 `ddof=0` 11 处、`either` 1 处（该格逐种子同值）|
 
-五条链共 **346 处**刊值。
+| `ch5_online.json` | [`../../paper/thesis_ch5/sections/online.tex`](../../paper/thesis_ch5/sections/online.tex) | 20 | 全部吻合；§5.5 两张表——传感三配置（与 `online_a0` 同一批文件）＋ 瓶颈 k 阶梯四行 |
+| `ch5_boundary.json` | [`../../paper/thesis_ch5/sections/boundary.tex`](../../paper/thesis_ch5/sections/boundary.tex) | 6 | 全部吻合；§5.8 引的 k 阶梯两格，与 §5.5 各自独立指向同一批文件 |
+| `ch5_rebrac.json` | [`../../paper/thesis_ch5/sections/rebrac.tex`](../../paper/thesis_ch5/sections/rebrac.tex) | 22 | 全部吻合；§5.6 的 TD3+BC 对照格、干净集补充终检两格、以及 caption 里那格 $(\beta_1,\beta_2)=(4.0,\,1.0)$ |
+| `ch5_td3bc.json` | [`../../paper/thesis_ch5/sections/td3bc.tex`](../../paper/thesis_ch5/sections/td3bc.tex) | 14 | 全部吻合；§5.4 数据规模表六格＋ teacher-gap 表的可部署格 |
+
+九条链共 **408 处**刊值——五条钉报告侧，四条钉论文第 5 章。
 
 **`online_a0` 不是那四次手工回溯之一。** 前四条链的授权范围是「把 2026-05 那四次逐格回溯变成
 命令」，在线线的 A0 传感筛选从来不在其中——它不是被声明豁免的，是原本就不在范围内。加它的
@@ -91,9 +97,10 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 `tests/test_audit_published_numbers.py::test_the_online_a0_chain_is_ambiguous_without_its_table_scope`
 把这层作用域本身当负控钉住：拆掉它，24 条 claim 必须全部退化成「锚定到多行」。
 
-**全仓 `±` 口径现状**（`--ddof`，合计 **93 处**）：**75 处 `ddof=0`、14 处 `ddof=1`、
-3 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是
-上面说的、被自己报告声明为重号的那格**。
+**全仓 `±` 口径现状**（`--ddof`，合计 **124 处**）：**99 处 `ddof=0`、20 处 `ddof=1`、
+4 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是
+下面说的、被自己报告声明为重号的那格**。
+拆开看：`docs/*.md` 侧 93 处（75／14／3／1），论文 `.tex` 侧 31 处（24／6／1／0）。
 
 其中 `ddof=1` 的 14 处集中在 arrival_v2 §7.9.4 第三列一系（3-seed、报告自己标了 ddof=1）
 与 ReBRAC 的 `0.9340 ± 0.0261`。ReBRAC 那处是**同一个读数**（Stage D Phase 2 privileged）
@@ -101,6 +108,51 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 
 `rebrac.json` 把该报告 §1 的**口径补注表本身**也纳入核对：那张表印了逐种子值与两套口径，
 于是那句结论不再是被信任的，而是被重算出来的。
+
+## 论文第 5 章那四条链（2026-08-24）
+
+前五条钉的是报告侧。论文侧的 `\pm` 由
+[`../../paper/thesis_ch5/tools/ch5_dispersion_audit.py`](../../paper/thesis_ch5/tools/ch5_dispersion_audit.py)
+判，但它只能判「同一行里印了逐种子值」的行；**31 处不印**，它如实报「需要 ground-truth 报告」
+而不猜。这四条链就是把那 31 处也指回逐种子文件。
+
+**不继承判定。** 那 31 处里有 21 处的同一格在报告侧已有 `--ddof` 结论，本可以照抄。没有照抄：
+两侧各写各的 claim、各自指向同一批 `results/`／`experiments/` 文件。理由是
+[`0993832`](../data_integrity_open_items.md) 那次——报告侧印 `0.870 ± 0.025`、论文侧印
+`0.870 ± 0.024`，逐种子复算是后者对。**两侧会漂，照抄会把漂掉的一侧固化成「一致」。**
+
+**为什么是四条而不是一条。** 一份 spec 只有一个 `doc` 和一个 `root`。31 处分布在四个 section
+文件里，所以四是下限；每条的 `root` 取该文件全部源的最近公共祖先，其中两条因此比对应报告链的根
+高一层（`results/offline` 对 `results/offline/rebrac`、`experiments` 对
+`experiments/arrival_v2_prototype`）。glob **字符串**因而带一段前缀之差，落到的**文件相同**——
+这一条由 `tests/test_audit_published_numbers.py::test_the_chapter_chains_read_the_files_the_reports_read`
+按仓库相对路径机械核对，无需 `results/`，clone 里照跑。
+
+**取数按「完整的数值格」走，不按 `\pm` 计数。** 章内一行最多印四格（§5.6 有一句把 2×2 对照的四个
+数全写在一行），`capture` 因此写成「跳过 N 个 `数 \pm 数` 完整格」。这层不能改成数 `\pm` 出现次数：
+`tab:ch5_rebrac_perseed` 的 caption 正文里有一个「均值 $\pm$ 跨随机种子标准差」的**裸 `\pm`**，
+数出现次数会在那里错一格。
+
+**跨侧对照的结果：17 格两侧都刊，17 格口径一致，0 处相左。** 另有 3 格只在论文侧有 claim——
+干净集补充终检两格与 TD3+BC 的 teacher-gap 那格，它们的娘家文档
+（[`../data_integrity_open_items.md`](../data_integrity_open_items.md) 与
+`docs/td3bc_worldcomp_teacher_gap_experiment_report.md`）都没有链。
+
+**三处 provenance 规则是复算出来的，不是读来的**：k 阶梯的 k=8／k=12 两行（任何报告都没印过）、
+TD3+BC 的 `0.858 ± 0.080`（被 ReBRAC 报告引作对照，但娘家报告无链）、以及干净集两格。k 阶梯
+四行的规则一致：逐种子 `final_eval.json`，聚合 mean ± 标准差；同一批 run 的 `eval_log.csv` 上
+`mean`／`max`／`last` 三种归约**无一对得上**（k=12 的 `max` 给 0.90，刊值是 0.88）。
+
+**顺带纠一处此前的判读。** 2026-08-24 早些时候记过「`arrival_v2_experiment_report.md` 同一段里
+`σ_final` 一处 ddof=0、一处 ddof=1，属未披露的口径混用」。按文件对照后看清了：该报告
+**自己在紧接的两行里就披露了这件事**，并写出两套自洽的配对（`0.222 → 0.038` 按 ddof=1，
+`0.181 → 0.031` 按 ddof=0），且指明 §7.9.4 第三列用的是前者。论文侧 k 阶梯整条用 ddof=1，
+与 §7.10 表头自述的口径、与该报告推荐的自洽配对都一致。**报告侧没有待办。**
+
+**这四条链的一处覆盖边界**（实测，非推断）：`capture` 的格序号若**成对**滑到同一行上
+**没有被任何 claim 钉住**的那一格，data-free 的测试全部保持绿——`§5.6` 那句四格里只钉了两格，
+正是这种行。抓到它的是数据侧的复算（`--strict` 报 `value-mismatch`）。所以这两层不是冗余：
+clone 上只有前一层，有数据的机器上才两层都在。
 
 ## 落表时查出来的
 

@@ -13,6 +13,7 @@ edited out from under its traceback spec.
 from __future__ import annotations
 
 import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -759,3 +760,164 @@ def test_the_online_a0_chain_is_ambiguous_without_its_table_scope(online_a0):
     buckets = apn.run_spec(stripped, str(REPO_ROOT / "no-such-data-root"), False)
 
     assert len(buckets["anchor-ambiguous"]) == len(online_a0["claims"])
+
+
+# ------------------------------------------------ the shipped chapter-5 chains
+
+CH5_CHAINS = ("ch5_online", "ch5_boundary", "ch5_rebrac", "ch5_td3bc")
+
+# One published `mean \pm sd` cell in a `.tex` line. Digits on both sides are what tells
+# it from the bare `$\pm$` a table caption writes when it says "mean $\pm$ sd" in prose.
+PM_CELL = re.compile(r"[0-9.]+ \\pm [0-9.]+")
+
+# The prefix a capture repeats once per cell it has to walk past, verbatim as generated.
+CELL_SKIP = r"(?:.*?[0-9.]+ \\pm [0-9.]+)"
+
+# Chapter sources with no report-side counterpart, and why. Every other source must be a
+# file some report chain also reads; adding to this list is how a new uncovered cell gets
+# declared rather than slipping in.
+UNSHARED_WITH_THE_REPORTS = {
+    "experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/"
+    "s0_k8/seed_*/results/final_eval.json":
+        "the k=8 ladder row is published in no report; rule recomputed",
+    "experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/"
+    "s0_k12/seed_*/results/final_eval.json":
+        "the k=12 ladder row is published in no report; rule recomputed",
+    "results/offline/rebrac/clean_probe/cross-1000/seed_*.json":
+        "the clean-probe supplementary evaluation is published only in "
+        "docs/data_integrity_open_items.md, which has no chain",
+    "results/offline/rebrac/clean_probe/cross-2000/seed_*.json":
+        "as cross-1000; this is the cell 0993832 found misprinted on the report side",
+    "results/offline/td3bc/phase0c/worldcomp_teacher_gap/deployable_final/"
+    "worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/"
+    "seed_*.json":
+        "quoted into the ReBRAC report as a comparison, but its own report "
+        "(docs/td3bc_worldcomp_teacher_gap_experiment_report.md) has no chain",
+}
+
+
+@pytest.fixture()
+def chapter_chains() -> list[dict]:
+    specs = [s for s in apn.load_specs(apn.SPEC_DIR) if s["chain"] in CH5_CHAINS]
+    assert len(specs) == len(CH5_CHAINS), "the chapter-5 traceback specs are not installed"
+    return specs
+
+
+def _anchored(spec: dict) -> list[tuple[dict, str, str]]:
+    """(claim, its one anchored line, the figure it captured) -- no `results/` needed."""
+    lines = (REPO_ROOT / spec["doc"]).read_text(encoding="utf-8").split("\n")
+    out = []
+    for claim in spec["claims"]:
+        hits = [ln for ln in lines if re.search(claim["anchor"], ln)]
+        assert len(hits) == 1, f"{spec['chain']} :: {claim['label']}: {len(hits)} lines"
+        found = re.search(claim["capture"], hits[0])
+        assert found, f"{spec['chain']} :: {claim['label']}: capture missed"
+        out.append((claim, hits[0], found))
+    return out
+
+
+def _repo_relative_sources(spec: dict) -> list[str]:
+    return [posixpath.normpath(f"{spec['root']}/{source}")
+            for claim in spec["claims"] for source in claim["sources"]]
+
+
+def test_the_chapter_chains_capture_one_whole_published_cell(chapter_chains):
+    r"""A capture must land inside one `mean \pm sd` cell, and its pair on the same one.
+
+    The chapter puts up to four cells on a line -- `rebrac.tex` section 5.6 has a
+    sentence carrying all four figures of a two-by-two comparison -- so the failure to
+    guard is not a missing number but a mean read off one cell and its dispersion off the
+    next. Anchoring on the character offset rather than on the captured text is
+    deliberate: two cells on a line can print the same figure, and matching by text would
+    call that agreement.
+
+    `rebrac.tex`'s per-seed table caption is what makes this load-bearing: it says "mean
+    $\pm$ cross-seed sd" in prose before quoting a figure, so any scheme that counted
+    `\pm` occurrences instead of complete numeric cells would be off by one there.
+    """
+    for spec in chapter_chains:
+        by_anchor: dict[tuple[str, str], dict[str, set[int]]] = {}
+        for claim, line, found in _anchored(spec):
+            spans = [m.span() for m in PM_CELL.finditer(line)]
+            index = [i for i, (lo, hi) in enumerate(spans) if lo <= found.start(1) < hi]
+            where = f"{spec['chain']} :: {claim['label']}"
+            assert len(index) == 1, f"{where}: capture landed outside a published cell"
+            seen = by_anchor.setdefault((claim["anchor"], claim.get("metric", "")), {})
+            taken = seen.setdefault(claim["stat"], set())
+            assert index[0] not in taken, f"{where}: two claims read cell {index[0]}"
+            taken.add(index[0])
+
+        for (anchor, _metric), stats in by_anchor.items():
+            assert stats.get("mean") == stats.get("sd"), (
+                f"{spec['chain']}: {anchor} reads means from cells {stats.get('mean')} "
+                f"but dispersions from {stats.get('sd')}")
+
+
+def test_the_chapter_captures_depend_on_the_cell_they_count_to(chapter_chains):
+    """The negative control for the cell index: drop it and the figure must change.
+
+    Every capture past the first cell is a prefix repeated once per cell walked over.
+    Strip the prefix and the claim reads the line's first cell instead; if that came back
+    with the same figure, the index would be carrying no weight and a slip in it would be
+    invisible to every other test here.
+    """
+    checked = 0
+    for spec in chapter_chains:
+        for claim, line, found in _anchored(spec):
+            stripped = claim["capture"]
+            while stripped.startswith(CELL_SKIP):
+                stripped = stripped[len(CELL_SKIP):]
+            if stripped == claim["capture"]:
+                continue
+            checked += 1
+            first = re.search(stripped, line)
+            assert first, f"{claim['label']}: the index-0 form matched nothing"
+            assert first.group(1) != found.group(1), (
+                f"{spec['chain']} :: {claim['label']}: reading the first cell gives the "
+                f"same figure {found.group(1)}, so the cell index proves nothing")
+    assert checked >= 8, f"only {checked} claims walk past a cell; the control is thin"
+
+
+def test_the_chapter_chains_read_the_files_the_reports_read(chapter_chains):
+    """The two sides must resolve to the same per-seed files, not merely to equal figures.
+
+    That is the property that makes a cross-side comparison mean anything: a chapter
+    reading pinned to a different run would still recompute, and would still agree
+    whenever the two runs happen to round the same way. It is checked as path arithmetic
+    so it holds in a clone, where none of those files exist.
+
+    Roots differ by a prefix -- `results/offline` against `results/offline/rebrac` -- so
+    the comparison is on the repo-relative path, not on the glob as written.
+    """
+    reports = {source
+               for spec in apn.load_specs(apn.SPEC_DIR) if spec["chain"] not in CH5_CHAINS
+               for source in _repo_relative_sources(spec)}
+    assert reports, "no report-side chains found to compare against"
+
+    for spec in chapter_chains:
+        for source in _repo_relative_sources(spec):
+            assert source in reports or source in UNSHARED_WITH_THE_REPORTS, (
+                f"{spec['chain']}: {source} is read by no report chain and is not "
+                f"declared in UNSHARED_WITH_THE_REPORTS")
+
+    used = {source for spec in chapter_chains for source in _repo_relative_sources(spec)}
+    stale = set(UNSHARED_WITH_THE_REPORTS) - used
+    assert not stale, f"declared as unshared but no longer cited: {sorted(stale)}"
+
+
+def test_the_chapter_ladder_is_pinned_to_the_terminal_evaluation(chapter_chains):
+    """The ladder's rule was recomputed, not read: it is `final_eval.json`, per seed.
+
+    No report publishes the k=8 and k=12 rows, so nothing else records what those figures
+    mean. Every reduction over the same runs' `eval_log.csv` was tried and all of them
+    miss -- `max` gives 0.90 where 0.88 is published for k=12 -- but a source repointed at
+    the training curve would still recompute *something*, so the shape of the source is
+    where that mistake has to be caught.
+    """
+    ladder = [source
+              for spec in chapter_chains for source in _repo_relative_sources(spec)
+              if "sac_vanilla/" in source]
+    assert len(ladder) >= 14, f"only {len(ladder)} ladder sources found"
+    for source in ladder:
+        assert source.endswith("/results/final_eval.json"), source
+        assert "eval_log" not in source, source

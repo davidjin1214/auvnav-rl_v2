@@ -1,0 +1,135 @@
+{
+  "chain": "ch5_td3bc",
+  "doc": "paper/thesis_ch5/sections/td3bc.tex",
+  "note": "Chapter 5 section 5.4. Root equals the td3bc_phase0c chain's root, so the six data scale globs are byte-identical to that chain's. The worldcomp cell is the seventh and has no chain on the report side; its rule was recomputed, and it is the same cell section 5.6 quotes, pinned there too so the two chapter sites cannot drift apart silently.",
+  "root": "results/offline/td3bc/phase0c",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "5.4 table | 500 | TD3+BC mean",
+      "anchor": "^\\$500\\$\\ \\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 500 | TD3+BC sd",
+      "anchor": "^\\$500\\$\\ \\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p5/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 500 | pure BC mean",
+      "anchor": "^\\$500\\$\\ \\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_bc_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 500 | pure BC sd",
+      "anchor": "^\\$500\\$\\ \\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_bc_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 1000 | TD3+BC mean",
+      "anchor": "^\\$1000\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 1000 | TD3+BC sd",
+      "anchor": "^\\$1000\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 1000 | pure BC mean",
+      "anchor": "^\\$1000\\$\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_bc_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 1000 | pure BC sd",
+      "anchor": "^\\$1000\\$\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_bc_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 2000 | TD3+BC mean",
+      "anchor": "^\\$2000\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 2000 | TD3+BC sd",
+      "anchor": "^\\$2000\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 2000 | pure BC mean",
+      "anchor": "^\\$2000\\$\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_bc_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | 2000 | pure BC sd",
+      "anchor": "^\\$2000\\$\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "stage_c_bc_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_bc_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | worldcomp deployable mean",
+      "anchor": "^可部署协议\\ \\&\\ 单点观测\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_teacher_gap/deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "5.4 table | worldcomp deployable sd",
+      "anchor": "^可部署协议\\ \\&\\ 单点观测\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "worldcomp_teacher_gap/deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    }
+  ]
+}

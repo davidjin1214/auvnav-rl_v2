@@ -1,0 +1,195 @@
+{
+  "chain": "ch5_online",
+  "doc": "paper/thesis_ch5/sections/online.tex",
+  "note": "Chapter 5 section 5.5, both of its tables. The sensor-screen table is the same six cells the online_a0 chain pins on the line-summary side; the bottleneck ladder is not published in any report, so its rule was recomputed: per-seed final_eval.json, aggregated as mean and sd, and no reduction over eval_log.csv (mean, max, last) reproduces any of the three s0 rows. Root is `experiments` rather than either sub-tree because this one file cites both; the globs below resolve to the same files the online_a0 and arrival_v2 chains read.",
+  "root": "experiments",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "5.5 sensor | s0 | success mean",
+      "anchor": "^\\$s_0\\$（可部署，单点\\ DVL）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 sensor | s0 | success sd",
+      "anchor": "^\\$s_0\\$（可部署，单点\\ DVL）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 sensor | s0 | path efficiency mean",
+      "anchor": "^\\$s_0\\$（可部署，单点\\ DVL）\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "5.5 sensor | s0 | path efficiency sd",
+      "anchor": "^\\$s_0\\$（可部署，单点\\ DVL）\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s0_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "5.5 sensor | s1 | success mean",
+      "anchor": "^\\$s_1\\$（\\$\\+\\$\\ 短程\\ ADCP，参照上界）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 sensor | s1 | success sd",
+      "anchor": "^\\$s_1\\$（\\$\\+\\$\\ 短程\\ ADCP，参照上界）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 sensor | s1 | path efficiency mean",
+      "anchor": "^\\$s_1\\$（\\$\\+\\$\\ 短程\\ ADCP，参照上界）\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "5.5 sensor | s1 | path efficiency sd",
+      "anchor": "^\\$s_1\\$（\\$\\+\\$\\ 短程\\ ADCP，参照上界）\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s1_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "5.5 sensor | s2 | success mean",
+      "anchor": "^\\$s_2\\$（\\$\\+\\$\\ 长程\\ ADCP，参照上界）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 sensor | s2 | success sd",
+      "anchor": "^\\$s_2\\$（\\$\\+\\$\\ 长程\\ ADCP，参照上界）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 sensor | s2 | path efficiency mean",
+      "anchor": "^\\$s_2\\$（\\$\\+\\$\\ 长程\\ ADCP，参照上界）\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "5.5 sensor | s2 | path efficiency sd",
+      "anchor": "^\\$s_2\\$（\\$\\+\\$\\ 长程\\ ADCP，参照上界）\\ \\&",
+      "capture": "(?:.*?[0-9.]+ \\\\pm [0-9.]+).*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "protocol_screen_v2/A0_single_u10_cross_tgt15/efficiency_v2/s2_k4/seed_*/final_eval.json"
+      ],
+      "metric": "eval_path_efficiency"
+    },
+    {
+      "label": "5.5 ladder | s0 k=4 mean",
+      "anchor": "^可部署\\ \\$s_0\\$，\\$k=4\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 ladder | s0 k=4 sd",
+      "anchor": "^可部署\\ \\$s_0\\$，\\$k=4\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k4/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 ladder | s0 k=8 mean",
+      "anchor": "^可部署\\ \\$s_0\\$，\\$k=8\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 ladder | s0 k=8 sd",
+      "anchor": "^可部署\\ \\$s_0\\$，\\$k=8\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k8/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 ladder | s0 k=12 mean",
+      "anchor": "^可部署\\ \\$s_0\\$，\\$k=12\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 ladder | s0 k=12 sd",
+      "anchor": "^可部署\\ \\$s_0\\$，\\$k=12\\$\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s0_k12/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 ladder | s1 k=4 mean",
+      "anchor": "^空间参照\\ \\$s_1\\$，\\$k=4\\$（参照上界）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?([0-9.]+) \\\\pm",
+      "stat": "mean",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_*/results/final_eval.json"
+      ]
+    },
+    {
+      "label": "5.5 ladder | s1 k=4 sd",
+      "anchor": "^空间参照\\ \\$s_1\\$，\\$k=4\\$（参照上界）\\ \\&",
+      "capture": ".*?\\$(?:\\\\mathbf\\{)?[0-9.]+ \\\\pm ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/s1_k4/seed_*/results/final_eval.json"
+      ]
+    }
+  ]
+}

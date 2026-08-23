@@ -1,0 +1,979 @@
+{
+  "chain": "rebrac",
+  "doc": "docs/rebrac_experiment_report.md",
+  "note": "Scope follows 48b8d06 (2026-05): the batch chapter 5 actually cites, not all 47 published readings -- Stage B screening grids, the two Stage C finalists, both Stage D worldcomp tracks, Stage E critic-penalty-off and Stage F LayerNorm-off. Sources are results/offline/rebrac/**/test/seed_*.json. The section-1 dispersion note is itself checked, so its headline finding -- one reading in the whole report written at ddof=1 -- is re-derived rather than trusted.",
+  "root": "results/offline/rebrac",
+  "metric": "eval_success_rate",
+  "claims": [
+    {
+      "label": "dispersion note | Stage C crosscomp-1000 | published mean",
+      "anchor": "（Stage C crosscomp-1000）",
+      "capture": "`\\*{0,2}`?([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-1000 | published ±",
+      "anchor": "（Stage C crosscomp-1000）",
+      "capture": "± ([0-9.]+)`",
+      "stat": "sd",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-1000 | per-seed column",
+      "anchor": "（Stage C crosscomp-1000）",
+      "capture": "（Stage C crosscomp-1000）\\*{0,2} \\| ([0-9./]+) \\|",
+      "stat": "seeds",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-1000 | ddof=0 column",
+      "anchor": "（Stage C crosscomp-1000）",
+      "capture": "（Stage C crosscomp-1000）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd0",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-1000 | ddof=1 column",
+      "anchor": "（Stage C crosscomp-1000）",
+      "capture": "（Stage C crosscomp-1000）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}[0-9.]+\\*{0,2} \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd1",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-2000 | published mean",
+      "anchor": "（Stage C crosscomp-2000）",
+      "capture": "`\\*{0,2}`?([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-2000 | published ±",
+      "anchor": "（Stage C crosscomp-2000）",
+      "capture": "± ([0-9.]+)`",
+      "stat": "sd",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-2000 | per-seed column",
+      "anchor": "（Stage C crosscomp-2000）",
+      "capture": "（Stage C crosscomp-2000）\\*{0,2} \\| ([0-9./]+) \\|",
+      "stat": "seeds",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-2000 | ddof=0 column",
+      "anchor": "（Stage C crosscomp-2000）",
+      "capture": "（Stage C crosscomp-2000）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd0",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage C crosscomp-2000 | ddof=1 column",
+      "anchor": "（Stage C crosscomp-2000）",
+      "capture": "（Stage C crosscomp-2000）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}[0-9.]+\\*{0,2} \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd1",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage E beta2=0 | published mean",
+      "anchor": "（Stage E β2=0）",
+      "capture": "`\\*{0,2}`?([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "stage_e_critic_penalty_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_0p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage E beta2=0 | published ±",
+      "anchor": "（Stage E β2=0）",
+      "capture": "± ([0-9.]+)`",
+      "stat": "sd",
+      "sources": [
+        "stage_e_critic_penalty_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_0p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage E beta2=0 | per-seed column",
+      "anchor": "（Stage E β2=0）",
+      "capture": "（Stage E β2=0）\\*{0,2} \\| ([0-9./]+) \\|",
+      "stat": "seeds",
+      "sources": [
+        "stage_e_critic_penalty_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_0p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage E beta2=0 | ddof=0 column",
+      "anchor": "（Stage E β2=0）",
+      "capture": "（Stage E β2=0）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd0",
+      "sources": [
+        "stage_e_critic_penalty_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_0p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage E beta2=0 | ddof=1 column",
+      "anchor": "（Stage E β2=0）",
+      "capture": "（Stage E β2=0）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}[0-9.]+\\*{0,2} \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd1",
+      "sources": [
+        "stage_e_critic_penalty_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_0p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 1 deployable | published mean",
+      "anchor": "（Stage D Phase 1 deployable）",
+      "capture": "`\\*{0,2}`?([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 1 deployable | published ±",
+      "anchor": "（Stage D Phase 1 deployable）",
+      "capture": "± ([0-9.]+)`",
+      "stat": "sd",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 1 deployable | per-seed column",
+      "anchor": "（Stage D Phase 1 deployable）",
+      "capture": "（Stage D Phase 1 deployable）\\*{0,2} \\| ([0-9./]+) \\|",
+      "stat": "seeds",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 1 deployable | ddof=0 column",
+      "anchor": "（Stage D Phase 1 deployable）",
+      "capture": "（Stage D Phase 1 deployable）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd0",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 1 deployable | ddof=1 column",
+      "anchor": "（Stage D Phase 1 deployable）",
+      "capture": "（Stage D Phase 1 deployable）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}[0-9.]+\\*{0,2} \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd1",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 2 privileged | published mean",
+      "anchor": "（Stage D Phase 2 privileged，rev\\.8）",
+      "capture": "`\\*{0,2}`?([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 2 privileged | published ±",
+      "anchor": "（Stage D Phase 2 privileged，rev\\.8）",
+      "capture": "± ([0-9.]+)`",
+      "stat": "sd",
+      "sources": [
+        "worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 2 privileged | per-seed column",
+      "anchor": "（Stage D Phase 2 privileged，rev\\.8）",
+      "capture": "（Stage D Phase 2 privileged，rev\\.8）\\*{0,2} \\| ([0-9./]+) \\|",
+      "stat": "seeds",
+      "sources": [
+        "worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 2 privileged | ddof=0 column",
+      "anchor": "（Stage D Phase 2 privileged，rev\\.8）",
+      "capture": "（Stage D Phase 2 privileged，rev\\.8）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd0",
+      "sources": [
+        "worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "dispersion note | Stage D Phase 2 privileged | ddof=1 column",
+      "anchor": "（Stage D Phase 2 privileged，rev\\.8）",
+      "capture": "（Stage D Phase 2 privileged，rev\\.8）\\*{0,2} \\| [0-9./]+ \\| \\*{0,2}[0-9.]+\\*{0,2} \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd1",
+      "sources": [
+        "worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^## 1\\. 报告概述"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=2.0 | success mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=2.0 | success ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=2.0 | return mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=2.0 | return ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=2.0 | success mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=2.0 | success ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=2.0 | return mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=2.0 | return ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=1.0 | success mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=1.0 | success ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=1.0 | return mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=4.0 b2=1.0 | return ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=1.0 | success mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=1.0 | success ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=1.0 | return mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=2.0 b2=1.0 | return ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=2.0 | success mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=2.0 | success ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=2.0 | return mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=2.0 | return ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=1.0 | success mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=1.0 | success ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=1.0 | return mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-1000 | b1=1.0 b2=1.0 | return ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-1000`\\*\\*",
+      "before": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=2.0 | success mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=2.0 | success ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=2.0 | return mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=2.0 | return ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=2.0 | success mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=2.0 | success ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=2.0 | return mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=2.0 | return ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=1.0 | success mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=1.0 | success ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=1.0 | return mean",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=4.0 b2=1.0 | return ±",
+      "anchor": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}4\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=1.0 | success mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=1.0 | success ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=1.0 | return mean",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=2.0 b2=1.0 | return ±",
+      "anchor": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_2p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=2.0 | success mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=2.0 | success ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=2.0 | return mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=2.0 | return ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}2\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=1.0 | success mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=1.0 | success ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_success_rate"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=1.0 | return mean",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| ([−-][0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage B screen | crosscomp-2000 | b1=1.0 b2=1.0 | return ±",
+      "anchor": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|",
+      "capture": "^\\| \\*{0,2}1\\.0\\*{0,2} \\| \\*{0,2}1\\.0\\*{0,2} \\|[^|]+\\| [−-][0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "screening/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_1p0__criticb_1p0/test/seed_*.json"
+      ],
+      "section": "^### 6\\.3 主结果",
+      "after": "^\\*\\*`crosscomp-2000`\\*\\*",
+      "metric": "eval_return"
+    },
+    {
+      "label": "stage C formal | crosscomp-1000 | success mean",
+      "anchor": "^\\| `crosscomp-1000` \\| \\*\\*4\\.0\\*\\* \\|",
+      "capture": "^\\| `crosscomp-1000` \\| \\*\\*4\\.0\\*\\* \\|[^|]+\\| \\*\\*([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 7\\.4 主结果"
+    },
+    {
+      "label": "stage C formal | crosscomp-1000 | success ±",
+      "anchor": "^\\| `crosscomp-1000` \\| \\*\\*4\\.0\\*\\* \\|",
+      "capture": "^\\| `crosscomp-1000` \\| \\*\\*4\\.0\\*\\* \\|[^|]+\\| \\*\\*[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 7\\.4 主结果"
+    },
+    {
+      "label": "stage C formal | crosscomp-2000 | success mean",
+      "anchor": "^\\| `crosscomp-2000` \\| \\*\\*4\\.0\\*\\* \\|",
+      "capture": "^\\| `crosscomp-2000` \\| \\*\\*4\\.0\\*\\* \\|[^|]+\\| \\*\\*([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 7\\.4 主结果"
+    },
+    {
+      "label": "stage C formal | crosscomp-2000 | success ±",
+      "anchor": "^\\| `crosscomp-2000` \\| \\*\\*4\\.0\\*\\* \\|",
+      "capture": "^\\| `crosscomp-2000` \\| \\*\\*4\\.0\\*\\* \\|[^|]+\\| \\*\\*[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^### 7\\.4 主结果"
+    },
+    {
+      "label": "stage D Phase 1 | success mean",
+      "anchor": "^\\| `worldcomp-1000` \\| 4\\.0 \\| 2\\.0 \\|",
+      "capture": "^\\| `worldcomp-1000` \\| 4\\.0 \\| 2\\.0 \\| \\*\\*([0-9.]+) ±",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.10\\.3 主结果"
+    },
+    {
+      "label": "stage D Phase 1 | success ±",
+      "anchor": "^\\| `worldcomp-1000` \\| 4\\.0 \\| 2\\.0 \\|",
+      "capture": "^\\| `worldcomp-1000` \\| 4\\.0 \\| 2\\.0 \\| \\*\\*[0-9.]+ ± ([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.10\\.3 主结果"
+    },
+    {
+      "label": "stage D four-way | Phase 1 deployable | mean",
+      "anchor": "^\\| ReBRAC worldcomp deployable Phase 1",
+      "capture": "^\\| ReBRAC worldcomp deployable Phase 1[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.12\\.5 与 Phase 1"
+    },
+    {
+      "label": "stage D four-way | Phase 1 deployable | std",
+      "anchor": "^\\| ReBRAC worldcomp deployable Phase 1",
+      "capture": "^\\| ReBRAC worldcomp deployable Phase 1[^|]*\\| \\*{0,2}[0-9.]+\\*{0,2} \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "worldcomp_teacher_gap/deployable/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.12\\.5 与 Phase 1"
+    },
+    {
+      "label": "stage D four-way | Phase 2 privileged | mean",
+      "anchor": "^\\| ReBRAC worldcomp privileged-critic Phase 2",
+      "capture": "^\\| ReBRAC worldcomp privileged-critic Phase 2[^|]*\\| \\*{0,2}([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.12\\.5 与 Phase 1"
+    },
+    {
+      "label": "stage D four-way | Phase 2 privileged | std",
+      "anchor": "^\\| ReBRAC worldcomp privileged-critic Phase 2",
+      "capture": "^\\| ReBRAC worldcomp privileged-critic Phase 2[^|]*\\| \\*{0,2}[0-9.]+\\*{0,2} \\| \\*{0,2}([0-9.]+)",
+      "stat": "sd",
+      "sources": [
+        "worldcomp_teacher_gap/privileged_critic/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.12\\.5 与 Phase 1"
+    },
+    {
+      "label": "stage F | LN-off mean",
+      "anchor": "^\\| mean_test_success_rate \\|",
+      "capture": "^\\| mean_test_success_rate \\| \\*\\*([0-9.]+)\\*\\*",
+      "stat": "mean",
+      "sources": [
+        "critic_ln_off/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.15\\.3 主结果"
+    },
+    {
+      "label": "stage F | the 5-seed baseline it is compared with",
+      "anchor": "^\\| mean_test_success_rate \\|",
+      "capture": "^\\| mean_test_success_rate \\| \\*\\*[0-9.]+\\*\\* \\| ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "section": "^#### 7\\.15\\.3 主结果"
+    }
+  ]
+}

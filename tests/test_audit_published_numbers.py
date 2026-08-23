@@ -242,6 +242,69 @@ def test_an_anchor_matching_two_lines_is_a_defect(tree):
     assert ambiguous[0][2] == [1, 2], "say which lines, so the anchor can be tightened"
 
 
+def test_a_section_bound_separates_two_identical_rows(tree):
+    """The ReBRAC screening grids: the same row under two dataset headings.
+
+    Nothing in the row says which grid it belongs to; only the heading above it does.
+    Without the bound the anchor matches both and the sweep refuses to pick.
+    """
+    _seed_files(tree, "results/demo/other/test", {"seed_0": 0.80, "seed_42": 0.82})
+    _write(tree, "docs/report.md", "\n".join([
+        "**dataset A**", "| cell | 0.885 |",
+        "**dataset B**", "| cell | 0.810 |", "",
+    ]))
+
+    assert run(tree, [MEAN_CLAIM])["anchor-ambiguous"] != [], "unscoped, it is ambiguous"
+
+    buckets = run(tree, [
+        dict(MEAN_CLAIM, label="A", after=r"^\*\*dataset A\*\*", before=r"^\*\*dataset B\*\*"),
+        dict(MEAN_CLAIM, label="B", after=r"^\*\*dataset B\*\*",
+             sources=["other/test/seed_*.json"]),
+    ])
+
+    assert buckets["anchor-ambiguous"] == []
+    assert [r[1] for r in buckets["ok"]] == ["docs/report.md:2", "docs/report.md:4"]
+
+
+def test_a_section_runs_to_the_next_heading_of_the_same_level(tree):
+    """The ReBRAC shape: the same bold dataset marker under two different sections.
+
+    Scoping to the section first is what lets `after` stay unambiguous; a subsection
+    inside must not end the section, or the rows below it fall out of scope.
+    """
+    _seed_files(tree, "results/demo/other/test", {"seed_0": 0.80, "seed_42": 0.82})
+    _write(tree, "docs/report.md", "\n".join([
+        "### 6.3 screen", "**dataset A**", "#### 6.3.1 aside", "| cell | 0.885 |",
+        "### 6.4 per-seed", "**dataset A**", "| cell | 0.810 |", "",
+    ]))
+    scoped = dict(MEAN_CLAIM, section=r"^### 6\.3 ", after=r"^\*\*dataset A\*\*")
+
+    assert run(tree, [MEAN_CLAIM])["anchor-ambiguous"] != [], "unscoped, it is ambiguous"
+
+    buckets = run(tree, [scoped])
+
+    assert buckets["spec-error"] == []
+    assert [r[1] for r in buckets["ok"]] == ["docs/report.md:4"]
+
+
+def test_a_section_that_is_not_a_heading_is_rejected(tree):
+    _write(tree, "docs/report.md", "**dataset A**\n| cell | 0.885 |\n")
+
+    errors = run(tree, [dict(MEAN_CLAIM, section=r"^\*\*dataset A\*\*")])["spec-error"]
+
+    assert len(errors) == 1
+    assert "no heading" in errors[0][1]
+
+
+def test_a_section_bound_that_is_itself_ambiguous_is_an_error(tree):
+    _write(tree, "docs/report.md", "**heading**\n| cell | 0.885 |\n**heading**\n")
+
+    errors = run(tree, [dict(MEAN_CLAIM, after=r"^\*\*heading\*\*")])["spec-error"]
+
+    assert len(errors) == 1
+    assert "matches 2 lines" in errors[0][1]
+
+
 def test_a_capture_that_misses_on_the_anchored_line_is_a_defect(tree):
     _write(tree, "docs/report.md", "| cell | n/a |\n")
 

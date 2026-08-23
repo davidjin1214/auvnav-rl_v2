@@ -1,4 +1,4 @@
-# 交接：诚信审计固化成 pytest（2026-08-23，第一批）
+# 交接：诚信审计固化成 pytest（2026-08-23，第一批 ＋ 第二批进行中）
 
 承接 [`2026-08-23-tooling-followup.md`](2026-08-23-tooling-followup.md) 的**方向 2**。该文判
 方向 1（skill 效力测试台）推迟、方向 3（环境加固）只剩零碎，本轮只做方向 2。
@@ -38,8 +38,8 @@ rev 块核查动作、以及跨仓会话记录。
 
 | # | 审计 | 出处 | 本轮 |
 |---|---|---|---|
-| 6 | 报告刊值 ⇄ `results/` 下逐 seed JSON 逐位复算，四条链 | `48b8d06` ReBRAC／`06ec295` td3bc phase0c／`6380082` arrival_v2／`2a8c311` FQL P2 | ⬜ 第二批 |
-| 7 | 全章 ± 离散度口径 90 处归位 | `af6ee64`。`.tex` 侧有 `ch5_dispersion_audit.py`，`docs/*.md` 报告侧无工具 | ⬜ 第二批 |
+| 6 | 报告刊值 ⇄ `results/` 下逐 seed JSON 逐位复算，四条链 | `48b8d06` ReBRAC／`06ec295` td3bc phase0c／`6380082` arrival_v2／`2a8c311` FQL P2 | ◐ 3/4 已落表，见 §四 |
+| 7 | 全章 ± 离散度口径 90 处归位 | `af6ee64`。`.tex` 侧有 `ch5_dispersion_audit.py`，`docs/*.md` 报告侧无工具 | ✅ `--ddof` 已补上报告侧，见 §四 |
 | 8 | 文档→源码**行号**引用（全仓 42 处） | `2a8c311` 明写「这类引用 check_doc_pointers 验不了，只能实读」 | ✅ 已固化 |
 | 9 | 文档→**函数名**引用 | `a49fb1e`：CLAUDE.md 里的 get_probe_positions 全仓只出现在 CLAUDE.md 自己 | ⚠ 判据待改，见 §四 |
 | 10 | 文档自述横幅 ⇄ 引用它的表格状态栏 | `cce2b2d`：13 行核出 3 行对不上 | ⬜ 未做 |
@@ -74,11 +74,13 @@ python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers
     tests/test_build_doc_index.py -q --tb=short --basetemp=<scratchpad>/pytest_tmp
 ```
 
-### 负控是实测的：39 条注入判据，39 次变红
+### 负控是实测的：第一批 40 条 ＋ 第二批 31 条，全部变红
 
 上一轮交接要求「每条检查都要配负控」。做法是对被测工具逐条注入故障、确认对应用例变红。
-下表是判据本身，shell 脚本是一次性的（含硬编码本机路径，未入库）。另有 1 次**刻意保持绿**的
-控制组注入，用来隔离钩子的 markdown 门（见表下说明）。
+下表是第一批的判据本身，shell 脚本是一次性的（含硬编码本机路径，未入库）；第二批
+`audit_published_numbers` 那 31 条同法做过，判据见该脚本与
+[`../tracebacks/README.md`](../tracebacks/README.md)。另有 1 次**刻意保持绿**的控制组注入，
+用来隔离钩子的 markdown 门（见表下说明）。
 
 | 被测工具 | 注入的故障 | 应变红的用例 |
 |---|---|---|
@@ -121,7 +123,8 @@ python -m pytest tests/test_check_doc_code_refs.py tests/test_check_doc_pointers
 | check_doc_code_refs | 取消「同句须提到仓内 .py」这道门 | `test_a_symbol_with_no_repo_file_on_the_line_is_not_judged` |
 | check_doc_code_refs | 取消第三方前缀表 | `test_a_third_party_alias_beats_a_repo_class_of_the_same_name` |
 | check_doc_code_refs | `HISTORICAL` 永不命中 | `test_a_renamed_symbol_may_be_declared_in_the_same_sentence` |
-| 钩子 | 第二个 sweep 被摘掉 | `test_the_hook_runs_the_line_anchor_sweep_as_well_as_the_path_sweep` |
+| 钩子 | 第二个 sweep 被摘掉 | `test_the_hook_runs_every_sweep_not_only_the_path_one` |
+| 钩子 | 第三个 sweep 被摘掉（第二批加挂后补） | 同上 |
 | 钩子 | 缺陷段过滤失效 | `test_the_defect_filter_keeps_only_the_failing_sections` |
 | 钩子 | 忽略 sweep 的退出码 | `test_the_hook_is_quiet_on_this_repo_as_it_stands` |
 | 钩子 | 坏 JSON 不再兜住 | `test_the_hook_survives_junk_on_stdin` |
@@ -209,20 +212,20 @@ gitignored，另一台机器要手工加，办法写在钩子自己的 docstring
 
 | C 类 | 内容 | 状态 |
 |---|---|---|
-| 6 | 四条数字溯源链做成可重跑命令 | ◐ 工具 ＋ 2/4 条链落表（FQL P2 35 处、td3bc phase0c 57 处，全部吻合）。ReBRAC 与 arrival_v2 未落 |
-| 7 | `docs/*.md` 报告侧的 ddof 口径工具化 | ◐ `--ddof` 已就位；td3bc 那 23 处机械判定为 `ddof=0`。ReBRAC 那处已知的 `ddof=1` 混入要等第 6 项的 ReBRAC 链 |
+| 6 | 四条数字溯源链做成可重跑命令 | ◐ 工具 ＋ **3/4** 条链落表（FQL P2 35 ＋ td3bc phase0c 57 ＋ ReBRAC 85 = **177 处刊值全部吻合**）。arrival_v2 未落 |
+| 7 | `docs/*.md` 报告侧的 ddof 口径工具化 | ✅ `--ddof` 三份报告合计 **57 处**：55 处 `ddof=0`、2 处 `ddof=1`，且那 2 处是同一个读数（`0.9340 ± 0.0261`，印在两张表里）。**机械复现了 `48b8d06` 手工查出的唯一一处 ddof=1** |
 | 11 | 刊出读数 ⇄ manifest 指纹归属 | ⬜ 未动。工具 `paper/thesis_ch5/tools/ch5_manifest_attribution.py` 已存在，缺的是测试——与第三批第 5 项同源，可能合批 |
 
 已交付：[`../../scripts/audit_published_numbers.py`](../../scripts/audit_published_numbers.py)
-＋ [`../tracebacks/`](../tracebacks/README.md) 下的溯源表 ＋ 27 项测试（26 条注入判据全红，
+＋ [`../tracebacks/`](../tracebacks/README.md) 下的三份溯源表 ＋ 31 项测试（31 条注入判据全红，
 其中一条注入的是**溯源表数据本身**而非代码）。已挂进 markdown 编辑钩子，串为第三个 sweep。
 
-**ReBRAC 链的两个已知难点**（落表前先读 `48b8d06` 的提交正文）：一是它只核过「论文实际引用的
-那批」而非全部 47 处，溯源表要如实只覆盖同一批；二是 rev.8 那格 `0.9340 ± 0.0261` 是全报告唯一
-的 `ddof=1`，`--ddof` 应当把它单独判出来——**那正是这条链的验收点**。
+ReBRAC 那份还把该报告 §1 的**口径补注表本身**纳入核对——那张表印了逐种子值与两套口径，于是
+「这份报告只有一处 ddof=1」这句话不再是被信任的，而是被重算出来的。
 
 **arrival_v2 链要先扩工具**：它的源是 `eval_log.csv` 与 `final_eval.json`，现在的
-`read_metric()` 只读 JSON。
+`read_metric()` 只读 JSON。`6380082` 那轮的主发现是「论文侧已改、报告侧未回填」，属表述层，
+不是本工具能验的；能验的是它逐格核过的 39 次周期评估与 11 个 run 的均值/peak/首达步。
 
 `offline_data/` 与 `results/` 都是 gitignored 的，脚本一律支持把根指到 Drive 挂载，
 **「本地扫不到」不能写成失败**（`no-data` 桶，不进 `--strict`）。
@@ -232,7 +235,7 @@ gitignored，另一台机器要手工加，办法写在钩子自己的 docstring
 
 ---
 
-## 五、方法论：本轮抓到的五个「测试跑绿但不承重」
+## 五、方法论：本轮抓到的六个「测试跑绿但不承重」
 
 写下来是因为第二、三批还会遇上。
 
@@ -252,3 +255,10 @@ gitignored，另一台机器要手工加，办法写在钩子自己的 docstring
 5. **不进 `--strict` 的提示桶要手工逐条核。** 工具在那里判错不会有任何东西报警。本轮正是逐条核
    偏移桶时，发现 `_nearest` 把一处 13 行的真漂移降级成了 1 行偏移（§三）。**分级本身要被审，
    不只是被信任。**
+6. **一条什么都没改的注入，读起来和「测试没抓住」一模一样。** `sed` 匹配不上时静默留下原文，
+   用例照过，表上是 GREEN。而**改动被测源码正是让旧注入失配的原因**——第二批扩了
+   `audit_published_numbers` 的定位逻辑后，一条旧 sed 就此变成空操作。注入脚本已加校验：
+   施加后比对文件校验和，没变就报 `NOOP` 而不是 GREEN。与第 2 条（测试 ID 写错也退非零）同源：
+   **注入脚本的每一步都要有独立证据，不能只读最后那个退出码。**（一次遗留疑点：加校验前那轮
+   还有一条 `capture failure ignored` 报 GREEN，加校验后重跑为 RED 且确认突变已施加；两次结果
+   不一致，未能复现出成因，此处如实记下。）

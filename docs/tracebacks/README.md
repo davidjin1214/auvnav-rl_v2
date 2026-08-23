@@ -57,6 +57,15 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 |---|---|---|---|
 | `fql_succession_p2.json` | [`../fql_succession_p2_results.md`](../fql_succession_p2_results.md) | 35 | 全部吻合 |
 | `td3bc_phase0c.json` | [`../td3bc_phase0c_experiment_report.md`](../td3bc_phase0c_experiment_report.md) | 57 | 全部吻合；23 处 `±` 判定为 `ddof=0` |
+| `rebrac.json` | [`../rebrac_experiment_report.md`](../rebrac_experiment_report.md) | 85 | 全部吻合；覆盖面按 `48b8d06` 的原范围（论文实际引用的那批，非全部 47 处） |
 
-ReBRAC 与 arrival_v2 两条链尚未落表。arrival_v2 那条的源是 `eval_log.csv` 与
-`final_eval.json`，读 CSV 的能力本脚本还没有——落它之前要先加。
+**全仓 `±` 口径现状**（`--ddof`，三份报告合计 **57 处**）：**55 处 `ddof=0`，2 处 `ddof=1`**，
+而那 2 处是**同一个读数**——`0.9340 ± 0.0261`（Stage D Phase 2 privileged），分别印在
+ReBRAC 报告的口径补注表与四向对比表里。这机械复现了 `48b8d06` 手工查出的那条结论，
+并且现在每次跑都会再验一遍。
+
+`rebrac.json` 把该报告 §1 的**口径补注表本身**也纳入核对：那张表印了逐种子值与两套口径，
+于是「这份报告只有一处 ddof=1」这句话不再是被信任的，而是被重算出来的。
+
+arrival_v2 那条链尚未落表：它的源是 `eval_log.csv` 与 `final_eval.json`，读 CSV 的能力
+本脚本还没有——落它之前要先加。

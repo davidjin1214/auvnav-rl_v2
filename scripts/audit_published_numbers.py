@@ -39,6 +39,13 @@ needs re-checking anyway. `capture` reads the published figure off that line, so
 figure is transcribed into the spec: transcribe it and the spec keeps passing after the
 doc changes, which is the one failure this tool exists to prevent.
 
+Optional `section` / `after` / `before` narrow the search, for the case where two tables
+in the same report have rows that are identical line by line and only what sits above
+them says which is which. `section` takes a heading and runs to the next heading of the
+same or higher level; `after` and `before` are resolved inside it. Each must itself
+resolve to exactly one line, so a scope that has gone ambiguous is an error rather than
+a silent pick.
+
 Statistics, over the metric read from every JSON a source glob matches:
 
     mean   sd0 (population)   sd1 (sample)   n
@@ -79,7 +86,10 @@ SPEC_DIR = os.path.join(ROOT, "docs", "tracebacks")
 
 STATS = ("mean", "sd0", "sd1", "sd", "seeds", "n", "delta")
 SPEC_KEYS = {"chain", "doc", "note", "root", "metric", "claims"}
-CLAIM_KEYS = {"label", "anchor", "capture", "stat", "sources", "metric", "note"}
+CLAIM_KEYS = {"label", "anchor", "capture", "stat", "sources", "metric", "note",
+              "section", "after", "before"}
+
+HEADING = re.compile(r"^(#{1,6}) ")
 
 # Defects fail --strict. `no-data` does not: a clone legitimately has no results/.
 DEFECT_BUCKETS = ("spec-error", "anchor-missing", "anchor-ambiguous",
@@ -233,6 +243,59 @@ def _seeds_verdict(published: str, values: list[float]) -> tuple[str, str, str]:
     return "ok", ", ".join(f"{v:g}" for v in sorted(values)), ""
 
 
+def _region(doc_lines: list[str], claim: dict) -> tuple[int, int]:
+    """Line bounds, exclusive, that `anchor` is searched within.
+
+    A report can hold two tables whose rows are indistinguishable line by line -- the
+    ReBRAC screening grids repeat `| **4.0** | **2.0** |` under one dataset heading and
+    then the other. Nothing in the row settles which grid it is; the heading above it
+    does. `after`/`before` name those headings, and each must resolve to exactly one
+    line, so a scope that has itself gone ambiguous is an error and not a silent pick.
+    """
+    lo, hi = 0, len(doc_lines) + 1
+    if "section" in claim:
+        lo, hi = _section(doc_lines, claim["section"])
+    for key in ("after", "before"):
+        pattern = claim.get(key)
+        if pattern is None:
+            continue
+        hits = [i for i, ln in enumerate(doc_lines, 1)
+                if lo < i < hi and re.search(pattern, ln)]
+        if len(hits) != 1:
+            raise SpecError(
+                f"{key} {pattern!r} matches {len(hits)} lines in scope, need exactly 1")
+        if key == "after":
+            lo = hits[0]
+        else:
+            hi = hits[0]
+    if lo >= hi:
+        raise SpecError(f"empty scope: lower bound {lo}, upper bound {hi}")
+    return lo, hi
+
+
+def _section(doc_lines: list[str], pattern: str) -> tuple[int, int]:
+    """A heading's body: from the heading to the next one of the same or higher level.
+
+    Markdown levels do the bounding, so a section stays itself when subsections are
+    added under it. `after`/`before` are then resolved inside -- which is what makes
+    them usable at all in a report whose bold dataset markers repeat under every
+    section that tabulates the same two datasets.
+    """
+    hits = [(i, HEADING.match(ln)) for i, ln in enumerate(doc_lines, 1)
+            if re.search(pattern, ln)]
+    if len(hits) != 1:
+        raise SpecError(f"section {pattern!r} matches {len(hits)} lines, need exactly 1")
+    start, head = hits[0]
+    if head is None:
+        raise SpecError(f"section {pattern!r} matched line {start}, which is no heading")
+    level = len(head.group(1))
+    for i, ln in enumerate(doc_lines[start:], start + 1):
+        nxt = HEADING.match(ln)
+        if nxt and len(nxt.group(1)) <= level:
+            return start, i
+    return start, len(doc_lines) + 1
+
+
 def run_spec(spec: dict, data_root: str | None, require_data: bool) -> dict[str, list]:
     buckets: dict[str, list] = {b: [] for b in DEFECT_BUCKETS}
     buckets["no-data"] = []
@@ -255,8 +318,13 @@ def run_spec(spec: dict, data_root: str | None, require_data: bool) -> dict[str,
 
     for claim in spec["claims"]:
         where = f"{spec['chain']} :: {claim['label']}"
+        try:
+            lo, hi = _region(doc_lines, claim)
+        except SpecError as exc:
+            buckets["spec-error"].append((where, str(exc)))
+            continue
         hits = [(i, ln) for i, ln in enumerate(doc_lines, 1)
-                if re.search(claim["anchor"], ln)]
+                if lo < i < hi and re.search(claim["anchor"], ln)]
         if not hits:
             buckets["anchor-missing"].append((where, claim["anchor"]))
             continue

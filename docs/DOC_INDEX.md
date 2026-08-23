@@ -189,7 +189,7 @@
 | 文档 | 标题 | 自我标注状态 |
 |---|---|---|
 | [`benchmarks/README.md`](../benchmarks/README.md) | Standard Benchmarks | — |
-| [`docs/handoff/2026-08-23-integrity-audit-pytest.md`](../docs/handoff/2026-08-23-integrity-audit-pytest.md) | 交接：诚信审计固化成 pytest（2026-08-23，第一批） | — |
+| [`docs/handoff/2026-08-23-integrity-audit-pytest.md`](../docs/handoff/2026-08-23-integrity-audit-pytest.md) | 交接：诚信审计固化成 pytest（2026-08-23，第一批 ＋ 第二批进行中） | — |
 | [`docs/handoff/2026-08-23-tooling-followup.md`](../docs/handoff/2026-08-23-tooling-followup.md) | 交接：/insights 报告的后续处置（2026-08-23） | — |
 | [`docs/tracebacks/README.md`](../docs/tracebacks/README.md) | `docs/tracebacks/` — 刊值溯源表 | — |
 | [`phnode_full_oc_clean/README.md`](../phnode_full_oc_clean/README.md) | phnode_full — OC clean pretrained checkpoint (seed 45) | — |

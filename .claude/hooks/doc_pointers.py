@@ -18,7 +18,8 @@ buckets fail --strict: self-declared absences, gitignored artefacts, plan-table
 forecasts, citations a line or two off a quoted fragment, and readings whose
 `results/` is not on this machine are all legitimate and stay silent.
 
-Baseline at the time of writing: 0 findings from any, 888 ms + 1.8 s + 0.6 s.
+Baseline at the time of writing: 0 findings from any, 1.5 s + 2.1 s + 1.3 s (the last one
+grew when the arrival_v2 chain landed -- it reads 39-row CSVs, not only terminal JSON).
 
 Exit 2 feeds stderr back to the agent. PostToolUse runs after the write, so this
 flags the finding rather than preventing it -- the point is to catch it in the

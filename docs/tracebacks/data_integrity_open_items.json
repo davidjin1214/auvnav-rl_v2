@@ -1,0 +1,352 @@
+{
+  "chain": "data_integrity_open_items",
+  "doc": "docs/data_integrity_open_items.md",
+  "root": "results/offline",
+  "metric": "eval_success_rate",
+  "note": "Provenance rule recomputed on 2026-08-24, not read off paper/thesis_ch5/tools/ch5_clean_probe_readout.py, which is the tool this document tells the reader to recompute with and is also the tool whose mean-only frozen expectation let a dispersion drift through (0993832). 已刊 cells come from rebrac/formal/<dataset>/actorb_4p0__criticb_2p0/test/seed_*.json and 干净集 cells from rebrac/clean_probe/cross-*/seed_*.json, five seeds each, dispersion ddof=0 -- distinguishable on the cross-1000 row, where ddof=1 would print 0.024 against the published 0.021. 位移 and 翻转 cells are differences of those means in percentage points (scale 0.01); the 采集器基线 row is two single-file readouts of the analytic collector, which has no seeds. The §5.7 quotations read TD3+BC from td3bc/phase0c/stage_c_final/. Deliberately not covered: every t / SE / 95% CI (not statistics this tool computes), the difference-in-differences +0.80 pp (four sources, delta takes two), 0.000505 (a distance to a wrong value), and items 2/3/5, whose sources are offline_data/ and benchmarks/.",
+  "claims": [
+    {
+      "label": "影响面 | ReBRAC-Q cross-2000 mean",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^\\*\\*影响面（限本条）\\*\\*",
+      "capture": "ReBRAC-Q \\$([0-9.]+)\\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "影响面 | ReBRAC-Q cross-2000 sd",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^\\*\\*影响面（限本条）\\*\\*",
+      "capture": "ReBRAC-Q \\$[0-9.]+\\\\pm([0-9.]+)\\$",
+      "stat": "sd",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "影响面 | TD3+BC cross-2000 mean",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^TD3\\+BC .*数据规模退化的翻转",
+      "capture": "^TD3\\+BC \\$([0-9.]+)\\\\pm",
+      "stat": "mean",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "影响面 | TD3+BC cross-2000 sd",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^TD3\\+BC .*数据规模退化的翻转",
+      "capture": "^TD3\\+BC \\$[0-9.]+\\\\pm([0-9.]+)\\$",
+      "stat": "sd",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json"
+      ]
+    },
+    {
+      "label": "影响面 | flip high end quoted",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^TD3\\+BC .*数据规模退化的翻转",
+      "capture": "翻转」（\\$([0-9.]+)\\$ 对",
+      "stat": "mean",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "影响面 | flip low end quoted",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^TD3\\+BC .*数据规模退化的翻转",
+      "capture": "回合的 \\$([0-9.]+)\\$",
+      "stat": "mean",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "影响面 | flip magnitude",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^这一格上，\\*\\*最脆弱的是",
+      "capture": "只有 \\$([-+]?[0-9.]+)\\$pp",
+      "stat": "delta",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json",
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "δ表 | cross-1000 已刊 mean",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-1000 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*\\$([-+]?[0-9.]+)\\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-1000 已刊 sd",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-1000 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*\\$[-+]?[0-9.]+\\\\pm([0-9.]+)\\$",
+      "stat": "sd",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-1000 干净集 mean",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-1000 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*\\$([-+]?[0-9.]+)\\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/cross-1000/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-1000 干净集 sd",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-1000 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*\\$[-+]?[0-9.]+\\\\pm([0-9.]+)\\$",
+      "stat": "sd",
+      "sources": [
+        "rebrac/clean_probe/cross-1000/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-1000 位移 pp",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-1000 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*\\$([-+]?[0-9.]+)\\$",
+      "stat": "delta",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json",
+        "rebrac/clean_probe/cross-1000/seed_*.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "δ表 | cross-2000 已刊 mean",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-2000 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*\\$([-+]?[0-9.]+)\\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-2000 已刊 sd",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-2000 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*\\$[-+]?[0-9.]+\\\\pm([0-9.]+)\\$",
+      "stat": "sd",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-2000 干净集 mean",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-2000 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*\\$([-+]?[0-9.]+)\\\\pm",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-2000 干净集 sd",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-2000 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*\\$[-+]?[0-9.]+\\\\pm([0-9.]+)\\$",
+      "stat": "sd",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "δ表 | cross-2000 位移 pp",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| ReBRAC-Q cross-2000 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*\\$([-+]?[0-9.]+)\\$",
+      "stat": "delta",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json",
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "δ表 | 翻转 已刊 pp",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| \\*\\*翻转（2000 ",
+      "capture": "(?:[^|]*\\|){2}\\s*\\*\\*\\$([-+]?[0-9.]+)\\$",
+      "stat": "delta",
+      "sources": [
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json",
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "δ表 | 翻转 干净集 pp",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| \\*\\*翻转（2000 ",
+      "capture": "(?:[^|]*\\|){3}\\s*\\*\\*\\$([-+]?[0-9.]+)\\$",
+      "stat": "delta",
+      "sources": [
+        "rebrac/clean_probe/cross-1000/seed_*.json",
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "δ表 | 采集器基线 已刊",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| 采集器基线（解析式",
+      "capture": "(?:[^|]*\\|){2}\\s*\\$([-+]?[0-9.]+)\\$",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/baselines/crosscomp_published.json"
+      ]
+    },
+    {
+      "label": "δ表 | 采集器基线 干净集",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| 采集器基线（解析式",
+      "capture": "(?:[^|]*\\|){3}\\s*\\$([-+]?[0-9.]+)\\$",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/baselines/crosscomp_clean_s3000.json"
+      ]
+    },
+    {
+      "label": "δ表 | 采集器基线 位移 pp",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| 采集器基线（解析式",
+      "capture": "(?:[^|]*\\|){4}\\s*\\$([-+]?[0-9.]+)\\$",
+      "stat": "delta",
+      "sources": [
+        "rebrac/clean_probe/baselines/crosscomp_published.json",
+        "rebrac/clean_probe/baselines/crosscomp_clean_s3000.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "δ表 | 采集器基线 回合数",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\| 采集器基线（解析式",
+      "capture": "n=([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "rebrac/clean_probe/baselines/crosscomp_clean_s3000.json"
+      ],
+      "metric": "num_eval_episodes"
+    },
+    {
+      "label": "订正 | 原印的错值（勘误）",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^> \\*\\*2026-08-24 订正\\*\\*",
+      "capture": "原印 \\$\\\\pm([0-9.]+)\\$",
+      "stat": "sd0",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ],
+      "expect": "mismatch",
+      "note": "pins the 2026-08-24 订正 in this same blockquote: the clean cross-2000 dispersion was printed as 0.025 where the per-seed population sd is 0.024495, whose correct three-place rounding is 0.024. The gap is 0.000505 against a half-unit budget of 0.0005, so this must keep failing; the day it reproduces, the 订正 is describing a readout that no longer exists."
+    },
+    {
+      "label": "订正 | 错值复述（勘误）",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "与真值相差.*可接受舍入范围",
+      "capture": "^> \\$([0-9.]+)\\$ 与真值相差",
+      "stat": "sd0",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ],
+      "expect": "mismatch",
+      "note": "pins the 2026-08-24 订正 in this same blockquote: the clean cross-2000 dispersion was printed as 0.025 where the per-seed population sd is 0.024495, whose correct three-place rounding is 0.024. The gap is 0.000505 against a half-unit budget of 0.0005, so this must keep failing; the day it reproduces, the 订正 is describing a readout that no longer exists. Restated on its own line; a fix that touched only the first mention would leave this one standing."
+    },
+    {
+      "label": "订正 | 逐种子值",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^> \\$\\[.*的总体标准差为",
+      "capture": "\\$\\[([0-9., \\\\]+)\\]\\$",
+      "stat": "seeds",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "订正 | 总体标准差全精度",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^> \\$\\[.*的总体标准差为",
+      "capture": "总体标准差为 \\$([0-9.]+)\\$",
+      "stat": "sd0",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "订正 | 总体标准差三位",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^> \\$\\[.*的总体标准差为",
+      "capture": "三位舍入为 \\$([0-9.]+)\\$",
+      "stat": "sd0",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "订正 | 论文侧一直印的值",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "一直印的就是",
+      "capture": "一直印的就是 \\$([0-9.]+)\\$",
+      "stat": "sd0",
+      "sources": [
+        "rebrac/clean_probe/cross-2000/seed_*.json"
+      ]
+    },
+    {
+      "label": "不利事实 2 | 抽样难度位移",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^\\s+偏移，实测",
+      "capture": "实测 \\$([-+]?[0-9.]+)\\$ pp",
+      "stat": "delta",
+      "sources": [
+        "rebrac/clean_probe/baselines/crosscomp_published.json",
+        "rebrac/clean_probe/baselines/crosscomp_clean_s3000.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "不利事实 3 | cross-1000 基线差距",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "^3\\. \\*\\*本次只补评了",
+      "capture": "基线差距（\\$([0-9.]+)\\$",
+      "stat": "delta",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/test_selected/alpha_0p25/seed_*.json",
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "scale": 0.01
+    },
+    {
+      "label": "不利事实 3 | cross-2000 基线差距",
+      "section": "^### ✅ 污染幅度",
+      "anchor": "pp）\\*\\*不能\\*\\*在干净集上重述",
+      "capture": "^\\s+\\$([0-9.]+)\\$ pp）",
+      "stat": "delta",
+      "sources": [
+        "td3bc/phase0c/stage_c_final/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/test_selected/alpha_0p15/seed_*.json",
+        "rebrac/formal/crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/actorb_4p0__criticb_2p0/test/seed_*.json"
+      ],
+      "scale": 0.01
+    }
+  ]
+}

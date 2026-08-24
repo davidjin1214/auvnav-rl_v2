@@ -776,19 +776,17 @@ CELL_SKIP = r"(?:.*?[0-9.]+ \\pm [0-9.]+)"
 # Chapter sources with no report-side counterpart, and why. Every other source must be a
 # file some report chain also reads; adding to this list is how a new uncovered cell gets
 # declared rather than slipping in.
-UNSHARED_WITH_THE_REPORTS = {
-    "experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/"
-    "s0_k8/seed_*/results/final_eval.json":
-        "the k=8 ladder row is published in no report; rule recomputed",
-    "experiments/arrival_v2_prototype/single_u15_cross_tgt15/arrival_v2/sac_vanilla/"
-    "s0_k12/seed_*/results/final_eval.json":
-        "the k=12 ladder row is published in no report; rule recomputed",
-    "results/offline/rebrac/clean_probe/cross-1000/seed_*.json":
-        "the clean-probe supplementary evaluation is published only in "
-        "docs/data_integrity_open_items.md, which has no chain",
-    "results/offline/rebrac/clean_probe/cross-2000/seed_*.json":
-        "as cross-1000; this is the cell 0993832 found misprinted on the report side",
-}
+#
+# Empty as of 2026-08-24, and both ways it emptied are worth keeping. The two clean-probe
+# entries went when `data_integrity_open_items` was built, which is what a declaration
+# retiring correctly looks like. The two k-ladder entries were instead found *dead* by
+# `covered` below: the arrival_v2 chain reads those exact `final_eval.json` globs for the
+# section 7.9 dispersions, so the `or` never reached the declaration. What they recorded --
+# that no report publishes the ladder's own success-rate cells -- is true and load-bearing,
+# but it is a statement about a published cell, and this table keys on a file. That fact
+# lives in `test_the_chapter_ladder_is_pinned_to_the_terminal_evaluation`, which is the
+# test it actually justifies.
+UNSHARED_WITH_THE_REPORTS: dict[str, str] = {}
 
 
 @pytest.fixture()
@@ -799,11 +797,20 @@ def chapter_chains() -> list[dict]:
 
 
 def _anchored(spec: dict) -> list[tuple[dict, str, str]]:
-    """(claim, its one anchored line, the figure it captured) -- no `results/` needed."""
+    """(claim, its one anchored line, the figure it captured) -- no `results/` needed.
+
+    The anchor is resolved inside the claim's own `section`/`after`/`before` scope, via
+    the tool's own `_region`, because that is what the tool does. Searching the whole
+    document instead makes an anchor that is unique in its section look ambiguous -- the
+    worldcomp report has two screening tables whose `| 0.1 |` rows are identical, and only
+    the heading above them says which is which.
+    """
     lines = (REPO_ROOT / spec["doc"]).read_text(encoding="utf-8").split("\n")
     out = []
     for claim in spec["claims"]:
-        hits = [ln for ln in lines if re.search(claim["anchor"], ln)]
+        lo, hi = apn._region(lines, claim)
+        hits = [ln for i, ln in enumerate(lines, 1)
+                if lo < i < hi and re.search(claim["anchor"], ln)]
         assert len(hits) == 1, f"{spec['chain']} :: {claim['label']}: {len(hits)} lines"
         found = re.search(claim["capture"], hits[0])
         assert found, f"{spec['chain']} :: {claim['label']}: capture missed"
@@ -899,6 +906,14 @@ def test_the_chapter_chains_read_the_files_the_reports_read(chapter_chains):
     stale = set(UNSHARED_WITH_THE_REPORTS) - used
     assert not stale, f"declared as unshared but no longer cited: {sorted(stale)}"
 
+    # The other direction, and the one a new report chain makes false: a source declared
+    # unshared that some report chain now does read. The `or` above short-circuits on the
+    # declaration, so nothing else would ever revisit it -- `data_integrity_open_items`
+    # is exactly the chain that turned two of these entries false.
+    covered = set(UNSHARED_WITH_THE_REPORTS) & reports
+    assert not covered, (
+        f"declared as read by no report chain, but one reads them: {sorted(covered)}")
+
 
 def test_the_chapter_ladder_is_pinned_to_the_terminal_evaluation(chapter_chains):
     """The ladder's rule was recomputed, not read: it is `final_eval.json`, per seed.
@@ -936,6 +951,7 @@ SPEC_GENERATORS = {
     "rebrac.json": "gen_rebrac_spec.py",
     "td3bc_phase0c.json": "gen_td3bc_spec.py",
     "td3bc_worldcomp_teacher_gap.json": "gen_worldcomp_spec.py",
+    "data_integrity_open_items.json": "gen_data_integrity_spec.py",
     "ch5_online.json": "gen_ch5_specs.py",
     "ch5_boundary.json": "gen_ch5_specs.py",
     "ch5_rebrac.json": "gen_ch5_specs.py",
@@ -977,6 +993,101 @@ def test_every_committed_spec_can_be_regenerated(tmp_path):
             f"move the edit into the generator")
 
 
+# ------------------------------------- the shipped report-side markdown-table chains
+
+# Two report chains read markdown tables by counting cells, the way the chapter chains
+# count `mean \pm sd` cells in a `.tex` line. Nothing but the anchor sweep looked at them.
+REPORT_TABLE_CHAINS = ("td3bc_worldcomp_teacher_gap", "data_integrity_open_items")
+
+# The prefix such a capture opens with, verbatim as generated: `(?:[^|]*\|){N}`, where N
+# counts the pipes walked past -- the empty cell before the leading pipe, the anchor's own
+# cell, and then one per column.
+MD_CELL_SKIP = re.compile(r"^\(\?:\[\^\|\]\*\\\|\)\{(\d+)\}")
+
+MD_NUMBER = re.compile(r"-?[0-9]+(?:\.[0-9]+)?")
+
+
+@pytest.fixture()
+def table_chains() -> list[dict]:
+    specs = [s for s in apn.load_specs(apn.SPEC_DIR) if s["chain"] in REPORT_TABLE_CHAINS]
+    assert len(specs) == len(REPORT_TABLE_CHAINS), "the table-reading chains are not installed"
+    return specs
+
+
+def _md_cells(claim: dict, line: str) -> tuple[int, list[str]] | None:
+    """(index of the cell this claim's skip count names, the line split on pipes)."""
+    skip = MD_CELL_SKIP.match(claim["capture"])
+    if skip is None:
+        return None
+    return int(skip.group(1)), line.split("|")
+
+
+def test_the_report_table_chains_index_a_cell_that_carries_weight(table_chains):
+    """The negative control for the cell index: a neighbour must not print the same figure.
+
+    A slipped count is caught by the recomputation, but only where `results/` is present.
+    In a clone the count is unchecked, and the case that makes it uncheckable *anywhere*
+    is a row whose adjacent cells hold the same number -- then the index proves nothing
+    and a slip is invisible on both sides. This is the test that says the rows these two
+    chains read are not like that.
+
+    `checked` is asserted from below for the same reason the chapter version is: a claim
+    that loses its skip prefix silently drops out of the control, so hollowing it out has
+    to fail as loudly as breaking it.
+    """
+    checked = 0
+    for spec in table_chains:
+        for claim, line, found in _anchored(spec):
+            split = _md_cells(claim, line)
+            if split is None:
+                continue
+            index, cells = split
+            assert 0 <= index < len(cells), (
+                f"{spec['chain']} :: {claim['label']}: cell {index} is off the row")
+            checked += 1
+            figure = float(apn._norm(found.group(1)))
+            for step in (-1, 1):
+                near = index + step
+                if not 0 <= near < len(cells):
+                    continue
+                clash = [t for t in MD_NUMBER.findall(cells[near])
+                         if abs(float(t) - figure) < 1e-12]
+                assert not clash, (
+                    f"{spec['chain']} :: {claim['label']}: cell {near} also prints "
+                    f"{clash[0]}, so the index {index} proves nothing")
+    assert checked >= 45, f"only {checked} claims count cells; the control is thin"
+
+
+def test_no_two_report_table_claims_read_the_same_cell_of_a_row(table_chains):
+    """One published cell, one claim. Two claims on one cell is an index that slipped.
+
+    Keyed by the metric as well as the statistic, because a row legitimately reads two
+    different metrics out of two different columns -- the worldcomp screening rows take a
+    success rate and a return off the same anchor, and those are not duplicates.
+
+    The boundary this shares with the chapter chains, measured rather than assumed: a
+    *pair* of indices sliding together onto a cell no claim pins stays green here, and
+    only the recomputation sees it. The two layers are not redundant -- a clone has only
+    this one.
+    """
+    for spec in table_chains:
+        seen: dict[tuple[str, str, str, str], set[int]] = {}
+        for claim, line, _found in _anchored(spec):
+            split = _md_cells(claim, line)
+            if split is None:
+                continue
+            index, _cells = split
+            # The section is part of the key: the worldcomp report's two screening
+            # tables carry the same `| 0.1 |` anchor, and only the heading separates them.
+            key = (claim.get("section", ""), claim["anchor"],
+                   claim.get("metric", ""), claim["stat"])
+            taken = seen.setdefault(key, set())
+            assert index not in taken, (
+                f"{spec['chain']} :: {claim['label']}: cell {index} is already read by "
+                f"another {claim['stat']} claim on this row")
+            taken.add(index)
+
+
 def test_every_spec_declares_whether_it_has_a_generator(tmp_path):
     """A new spec arriving with no generator is the failure this line already had once.
 
@@ -992,3 +1103,29 @@ def test_every_spec_declares_whether_it_has_a_generator(tmp_path):
     assert not (set(SPEC_GENERATORS) & set(UNGENERATED_SPECS))
     for name, generator in SPEC_GENERATORS.items():
         assert (GEN_DIR / generator).exists(), f"{name} names a missing generator"
+
+
+def test_a_spec_declared_ungenerated_is_not_emitted_by_any_generator(tmp_path):
+    """A false `UNGENERATED_SPECS` entry silences its own alarm, so it is cross-checked.
+
+    The same failure `check_doc_pointers` has with 自述缺席 declarations: the escape hatch
+    is only as good as the claim it rests on, and nothing re-reads that claim. Move a spec
+    into this table by mistake -- or leave it there after writing its generator -- and
+    `test_every_spec_declares_whether_it_has_a_generator` goes on passing while the spec is
+    no longer hand-maintained at all.
+    """
+    # Every generator in the tree, not the declared ones: a false declaration is exactly
+    # the case where the generator has been dropped from SPEC_GENERATORS, so grading the
+    # declared set is grading the mutation's own story. Measured -- with the declared set
+    # the injection that moves a spec into UNGENERATED_SPECS stays green.
+    for generator in sorted(p.name for p in GEN_DIR.glob("gen_*.py")):
+        proc = subprocess.run([sys.executable, "-X", "utf8", str(GEN_DIR / generator),
+                               str(tmp_path)],
+                              capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", cwd=REPO_ROOT)
+        assert proc.returncode == 0, f"{generator}: {proc.stderr[-800:]}"
+
+    emitted = {p.name for p in tmp_path.glob("*.json")}
+    overlap = emitted & set(UNGENERATED_SPECS)
+    assert not overlap, (
+        f"declared as having no generator, but one writes it: {sorted(overlap)}")

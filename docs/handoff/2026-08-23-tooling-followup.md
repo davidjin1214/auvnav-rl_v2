@@ -67,8 +67,17 @@ CRLF 修复；权限规则清理。
    逐个 `git diff` 比对，不可 checkout 覆盖。
 3. 全局 `CLAUDE.md` 两机不能共用同一版本（首段是「本机环境（Windows 11 副机）」），
    需拆分或分支。
-4. 项目 `.claude/settings.json` 仍 gitignored，所以 [`.claude/hooks/doc_pointers.py`](../../.claude/hooks/doc_pointers.py)
-   在 clone 或另一台机器上**不会自动生效**，挂载方法写在该脚本的 docstring 里。
+4. ~~项目 `.claude/settings.json` 仍 gitignored，所以 [`.claude/hooks/doc_pointers.py`](../../.claude/hooks/doc_pointers.py)
+   在 clone 或另一台机器上**不会自动生效**，挂载方法写在该脚本的 docstring 里。~~
+   → ✅ **已闭环 2026-08-24**：走「拆一份可提交的」路子——**只有 `hooks` 段**进库，落为
+   `.claude/settings.hooks.json`；`settings.json` 仍 gitignored（`permissions` 是本机的，
+   与全局 `CLAUDE.md` 两机不能共用是同一个理由，见本节第 3 条）。装法一条命令：
+   `python .claude/install_hooks.py`（`--check` 未装则退出 1）。合并只动 `hooks` 键、
+   其余键原样保留；本机那份若与库里不一致则打印两边并**拒绝覆盖**，除非 `--force`
+   ——本机的可能才是新的那份，脚本无从判断。10 项测试在
+   [`../../tests/test_install_hooks.py`](../../tests/test_install_hooks.py)，其中三项钉的
+   是**配置本身**：JSON 合法且只含 `hooks`、它点名的 hook 脚本都还在、里面没有本机绝对
+   路径（有的话会在另一台机器上装得干干净净然后永不触发）。
 
 ## 四、一个方法论提醒
 

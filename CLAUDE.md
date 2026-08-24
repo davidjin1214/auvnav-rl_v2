@@ -21,6 +21,8 @@ Training runs on **Google Colab Pro / L4 GPU** with the codebase mounted from Go
 
 **Local Python env.** Local smoke tests and analysis scripts run in the `mytorch1` conda environment; Colab supplies its own runtime.
 
+**Hooks need one command in a fresh clone.** `.claude/settings.json` is gitignored (per-machine `permissions`), so the hook *scripts* are tracked but the wiring that runs them was not until 2026-08-24. The wiring now lives in `.claude/settings.hooks.json`; install it with `python .claude/install_hooks.py` (`--check` exits 1 when it is missing). Until that runs, `.claude/hooks/doc_pointers.py` — the five-sweep markdown gate — simply never fires, silently.
+
 ## Common Commands
 
 Full CLI reference (training/eval/offline-collection invocations, sweep launcher table, `[skip]`-resume semantics) lives in the `rl-v2-commands` skill — see [`.claude/skills/rl-v2-commands/SKILL.md`](.claude/skills/rl-v2-commands/SKILL.md).

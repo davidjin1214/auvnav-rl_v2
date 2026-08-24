@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=$(command -v python3 || command -v python) || exit 0; \"$p\" -X utf8 -c 'import sys,json,re; d=json.load(sys.stdin); f=d.get(\"tool_input\",{}).get(\"file_path\",\"\").replace(\"\\\\\",\"/\"); (print(f\"[hook] BLOCKED: {f} is a Colab-produced artifact — regenerate via notebook, do not hand-edit\", file=sys.stderr) or sys.exit(2)) if re.search(r\"_completed\\.ipynb$|/experiments/|/checkpoints/|/offline_data/(?!.*\\.md$)\", f) else None'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=$(command -v python3 || command -v python) || exit 0; \"$p\" -X utf8 -c 'import sys,json,re,subprocess,os,shutil; d=json.load(sys.stdin); f=d.get(\"tool_input\",{}).get(\"file_path\",\"\").replace(\"\\\\\",\"/\"); m=re.search(r\"/scripts/(run_|summarize_)[^/]*\\.sh$\", f); b=shutil.which(\"bash\"); sys.exit(0) if not m or not os.path.exists(f) or not b else (lambda r: (print(f\"[hook] bash -n failed on {f}:\\n{r.stderr}\", file=sys.stderr) or sys.exit(2)) if r.returncode!=0 else sys.exit(0))(subprocess.run([b,\"-n\",f], capture_output=True, text=True))'",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/doc_pointers.py\"; [ -f \"$s\" ] || exit 0; p=$(command -v python3 || command -v python) || exit 0; \"$p\" -X utf8 \"$s\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

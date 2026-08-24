@@ -36,19 +36,19 @@ Exit 2 feeds stderr back to the agent. PostToolUse runs after the write, so this
 flags the finding rather than preventing it -- the point is to catch it in the
 same turn instead of in a doc sweep three sessions later.
 
-Wiring it up. `.claude/settings.json` is gitignored, so a clone gets this file
-but not the configuration that runs it, and the other machine needs the entry
-added by hand. Append to the existing PostToolUse "Edit|Write|MultiEdit" hooks
-array:
+Wiring it up. `.claude/settings.json` is gitignored -- it carries per-machine
+`permissions` -- so a clone gets this file but not the configuration that runs
+it. Since 2026-08-24 the wiring itself is tracked, in `.claude/settings.hooks.json`,
+and installing it is one command:
 
-    {
-      "type": "command",
-      "command": "s=\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/doc_pointers.py\"; [ -f \"$s\" ] || exit 0; p=$(command -v python3 || command -v python) || exit 0; \"$p\" -X utf8 \"$s\"",
-      "timeout": 30
-    }
+    python .claude/install_hooks.py          # merge into settings.json
+    python .claude/install_hooks.py --check  # exit 1 if it is not installed
 
-The `[ -f ]` guard makes a missing script a no-op rather than a failed hook,
-and CLAUDE_PROJECT_DIR falls back to the working directory when unset.
+That merges only the `hooks` key and leaves every other key alone; a hooks block
+that diverged locally is printed and left in place unless you pass --force. The
+entry for this script lives in that file; its `[ -f ]` guard makes a missing
+script a no-op rather than a failed hook, and CLAUDE_PROJECT_DIR falls back to
+the working directory when unset.
 """
 import json
 import os

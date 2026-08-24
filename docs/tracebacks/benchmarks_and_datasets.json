@@ -1,0 +1,185 @@
+{
+  "chain": "benchmarks_and_datasets",
+  "doc": "docs/data_integrity_open_items.md",
+  "root": "offline_data",
+  "metric": "num_transitions",
+  "note": "The offline_data/ half of docs/data_integrity_open_items.md, split off from data_integrity_open_items.json because a spec carries one root and that one is rooted at results/offline. Every claim reads a collection run's own metadata.json: §1's quoted four-field block, §2's 本机实测 column plus the mean_episode_length each cell shows its arithmetic from, the two noisy-variant counts that rule out hypothesis (b), §4's collector success_rate, and §5's seed and num_episodes for the noisy 2000-episode set. Deliberately not covered: the upper end of every `seeds 0..1999` (seed + num_episodes - 1 is an expression over two metrics, and both operands are pinned separately); the 100/100 intersection counts (audit_seed_overlap's range and identity passes); every benchmarks/ manifest fact including §3 entirely (check_benchmark_manifests R3, which reads the manifest and can also check counts this tool has no source for); the paper-side ~2.4e5 column, which is the figure with no source and therefore the finding; 0.928, a results/ readout under another root; and the prose dataset counts, which are dated snapshots of a gitignored directory that has since grown.",
+  "claims": [
+    {
+      "label": "§1 核实块 | seed",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^\"seed\": .*\"num_transitions\"",
+      "capture": "\"seed\": ([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/metadata.json"
+      ],
+      "metric": "seed"
+    },
+    {
+      "label": "§1 核实块 | num_episodes",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^\"seed\": .*\"num_transitions\"",
+      "capture": "\"num_episodes\": ([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/metadata.json"
+      ],
+      "metric": "num_episodes"
+    },
+    {
+      "label": "§1 核实块 | num_transitions",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^\"seed\": .*\"num_transitions\"",
+      "capture": "\"num_transitions\": ([0-9]+)",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/metadata.json"
+      ],
+      "metric": "num_transitions"
+    },
+    {
+      "label": "§1 核实块 | success_rate",
+      "section": "^### ✅ 核实结论（2026-08-09）：\\*\\*`base_seed`",
+      "anchor": "^\"seed\": .*\"num_transitions\"",
+      "capture": "\"success_rate\": ([0-9.]+)",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/metadata.json"
+      ],
+      "metric": "success_rate"
+    },
+    {
+      "label": "§2 表 | crosscomp-1000 num_transitions",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^\\| `crosscomp-1000` \\|",
+      "capture": "\\*\\*([0-9,]+)\\*\\*",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/metadata.json"
+      ],
+      "metric": "num_transitions"
+    },
+    {
+      "label": "§2 表 | crosscomp-1000 mean_episode_length",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^\\| `crosscomp-1000` \\|",
+      "capture": "（= (?:`mean_episode_length` )?([0-9.]+) ×",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/metadata.json"
+      ],
+      "metric": "mean_episode_length"
+    },
+    {
+      "label": "§2 表 | crosscomp-2000 num_transitions",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^\\| `crosscomp-2000` \\|",
+      "capture": "\\*\\*([0-9,]+)\\*\\*",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/metadata.json"
+      ],
+      "metric": "num_transitions"
+    },
+    {
+      "label": "§2 表 | crosscomp-2000 mean_episode_length",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^\\| `crosscomp-2000` \\|",
+      "capture": "（= (?:`mean_episode_length` )?([0-9.]+) ×",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep2000/metadata.json"
+      ],
+      "metric": "mean_episode_length"
+    },
+    {
+      "label": "§2 表 | worldcomp-1000 num_transitions",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^\\| `worldcomp-1000` \\|",
+      "capture": "\\*\\*([0-9,]+)\\*\\*",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/metadata.json"
+      ],
+      "metric": "num_transitions"
+    },
+    {
+      "label": "§2 表 | worldcomp-1000 mean_episode_length",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^\\| `worldcomp-1000` \\|",
+      "capture": "（= (?:`mean_episode_length` )?([0-9.]+) ×",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/metadata.json"
+      ],
+      "metric": "mean_episode_length"
+    },
+    {
+      "label": "§2 排除 (b) | 加噪 1000 num_transitions",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^   \\| `crosscomp_\\.\\.\\._noise0p05clip0p15_ep1000` \\|",
+      "capture": "\\*\\*([0-9,]+)\\*\\*",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep1000/metadata.json"
+      ],
+      "metric": "num_transitions"
+    },
+    {
+      "label": "§2 排除 (b) | 加噪 2000 num_transitions",
+      "section": "^## 2\\. `paper` Table 1 的 transitions",
+      "anchor": "^   \\| `crosscomp_\\.\\.\\._noise0p05clip0p15_ep2000` \\|",
+      "capture": "\\*\\*([0-9,]+)\\*\\*",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000/metadata.json"
+      ],
+      "metric": "num_transitions"
+    },
+    {
+      "label": "§4 | 采集策略 success_rate",
+      "section": "^## 4\\. 一条不算缺陷但会被问到的",
+      "anchor": "^`offline_data/worldcomp_\\.\\.\\._ep1000/metadata\\.json`",
+      "capture": "\\*\\*([0-9.]+)\\*\\*",
+      "stat": "mean",
+      "sources": [
+        "worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_ep1000/metadata.json"
+      ],
+      "metric": "success_rate"
+    },
+    {
+      "label": "§5 核实块 | 含噪 2000 起始种子",
+      "section": "^### ✅ 核实结论（2026-08-16 Drive 侧探针）",
+      "anchor": "^dataset : crosscomp_.*seeds [0-9]+\\.\\.[0-9]+$",
+      "capture": "seeds ([0-9]+)\\.\\.",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000/metadata.json"
+      ],
+      "metric": "seed"
+    },
+    {
+      "label": "§5 正文 | 含噪 2000 起始种子（复述）",
+      "section": "^### ✅ 核实结论（2026-08-16 Drive 侧探针）",
+      "anchor": "^`seed=[0-9]+`、[0-9]+ 回合 → 训练区间",
+      "capture": "`seed=([0-9]+)`",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000/metadata.json"
+      ],
+      "metric": "seed"
+    },
+    {
+      "label": "§5 正文 | 含噪 2000 回合数",
+      "section": "^### ✅ 核实结论（2026-08-16 Drive 侧探针）",
+      "anchor": "^`seed=[0-9]+`、[0-9]+ 回合 → 训练区间",
+      "capture": "、([0-9]+) 回合",
+      "stat": "mean",
+      "sources": [
+        "crosscomp_s0_h4_efficiency_v2_re150_u10cross_fixdone_noise0p05clip0p15_ep2000/metadata.json"
+      ],
+      "metric": "num_episodes"
+    }
+  ]
+}

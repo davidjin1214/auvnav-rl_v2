@@ -137,7 +137,14 @@ DASHES = str.maketrans({"−": "-", "–": "-", "—": "-"})
 
 
 def _norm(text: str) -> str:
-    return text.translate(DASHES).replace(" ", "")
+    """A published figure as typeset -> something `float()` accepts.
+
+    The comma is a thousands separator here, not a decimal point: transition counts are
+    the only six-figure numbers these documents print and they print them `152,683`.
+    Nothing in this corpus writes a decimal comma, and a claim whose capture straddled two
+    numbers would already be caught by the space-stripping that has always been here.
+    """
+    return text.translate(DASHES).replace(" ", "").replace(",", "")
 
 
 class SpecError(Exception):

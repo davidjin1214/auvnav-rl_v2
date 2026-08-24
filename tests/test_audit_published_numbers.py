@@ -131,6 +131,28 @@ def test_a_typeset_minus_sign_is_still_a_number(tree):
     assert len(buckets["ok"]) == 1
 
 
+def test_a_thousands_separator_is_still_a_number(tree):
+    """`152,683` is how the transition counts are printed, and `float()` rejects it.
+
+    The negative control is the pair: with the comma stripped the figure must reproduce,
+    and one thousand away from the true value it must not. Only asserting the first half
+    would pass just as well if the comparison had quietly stopped happening.
+    """
+    _seed_files(tree, "results/demo/big/test", {"seed_0": 152683}, metric="num_transitions")
+    claim = {
+        "label": "transitions", "anchor": r"^\| transitions \|",
+        "capture": r"\*\*([0-9,]+)\*\*", "stat": "mean",
+        "sources": ["big/test/seed_*.json"], "metric": "num_transitions",
+    }
+
+    _write(tree, "docs/report.md", "| transitions | **152,683** |\n")
+    assert run(tree, [claim])["value-mismatch"] == []
+    assert len(run(tree, [claim])["ok"]) == 1
+
+    _write(tree, "docs/report.md", "| transitions | **153,683** |\n")
+    assert run(tree, [claim])["value-mismatch"] != []
+
+
 def test_delta_is_the_second_source_minus_the_first(tree):
     _seed_files(tree, "results/demo/other/test", {"seed_0": 0.80, "seed_42": 0.83})
     _write(tree, "docs/report.md", "| delta | +0.070 |\n")
@@ -952,6 +974,7 @@ SPEC_GENERATORS = {
     "td3bc_phase0c.json": "gen_td3bc_spec.py",
     "td3bc_worldcomp_teacher_gap.json": "gen_worldcomp_spec.py",
     "data_integrity_open_items.json": "gen_data_integrity_spec.py",
+    "benchmarks_and_datasets.json": "gen_benchmarks_datasets_spec.py",
     "ch5_online.json": "gen_ch5_specs.py",
     "ch5_boundary.json": "gen_ch5_specs.py",
     "ch5_rebrac.json": "gen_ch5_specs.py",

@@ -203,14 +203,84 @@ def test_triage_buckets(raw, line, heading, expected):
     assert cdp.triage("docs/src.md", raw, line, heading) == expected
 
 
-def test_an_artifact_path_is_not_a_defect_on_a_fresh_clone(repo, capsys):
-    """The five data directories are gitignored; absent here is by design."""
+def test_a_path_on_the_fallback_list_is_not_a_defect(repo, capsys):
+    """`results/` is one of ARTIFACT_DIR's five names, so this holds with or without git.
+
+    Renamed 2026-08-24. It was `..._on_a_fresh_clone`, which claimed more than it checked:
+    the fixture picked its path *from* the hardcoded list, so it could only ever prove the
+    list works -- and the clone case, where the list was the whole problem, stayed untested
+    until the hook first ran in one. See the case below.
+    """
     _write(repo, "docs/a.md", "读数在 `results/offline/rebrac/test_result.json`")
 
     code, out = run_sweep(["--strict"], capsys)
 
     assert real_misses(out) == 0
     assert code == 0
+
+
+# ------------------------------------------------- the artifact bucket follows .gitignore
+
+
+def test_a_gitignored_directory_outside_the_fallback_list_is_an_artifact(repo, git_repo,
+                                                                        capsys):
+    """The bucket must follow .gitignore, not the five names written into ARTIFACT_DIR.
+
+    Regression for 2026-08-24: the first time the hook ran in a fresh clone it put 103
+    references into `real` and --strict blocked the edit. Every one of them sat under
+    `experiments/`, `docs/offline_mbrl_plan/` or `phnode_full_oc_clean/` -- all gitignored,
+    none on the list. It could not surface on a full working copy, where those directories
+    are present and a resolved target never reaches triage at all.
+    """
+    _write(repo, ".gitignore", "experiments/\n")
+    _write(repo, "docs/a.md", "跑法见 `experiments/run_x/summary.json`")
+
+    code, out = run_sweep(["--strict"], capsys)
+
+    assert real_misses(out) == 0
+    assert code == 0
+
+
+def test_a_missing_directory_is_matched_by_a_directory_rule(repo, git_repo):
+    """`foo/` matches directories only, and git cannot tell a *missing* path is one.
+
+    Asked bare it answers "not ignored"; asked as `foo/` it answers "ignored". This was the
+    last of the 103 still keeping --strict red on a clone.
+    """
+    _write(repo, ".gitignore", "phnode/\n")
+
+    assert cdp.gitignored(["phnode"]) == {"phnode"}
+
+
+def test_every_path_in_a_batch_is_answered_not_only_the_last(repo, git_repo):
+    r"""Regression for the Windows text-mode trap.
+
+    With `text=True` the `\n` separators went out as `\r\n`; git saw a trailing `\r` on
+    every path except the last, decided each needed quoting, and answered `"a/x.json\r"`.
+    The caller matched none of those and read it as "only the last one is ignored" -- a
+    fail-open that looks exactly like a correct negative.
+    """
+    _write(repo, ".gitignore", "a/\nb/\nc/\n")
+
+    got = cdp.gitignored(["a/x.json", "b/x.json", "c/x.json"])
+
+    assert got == {"a/x.json", "b/x.json", "c/x.json"}
+
+
+def test_a_path_outside_the_repo_does_not_sink_the_whole_batch(repo, git_repo):
+    """One bad input used to void every answer: git exits 128 on an outside path and the
+    batch came back empty, which reads as "none of these 154 are ignored"."""
+    _write(repo, ".gitignore", "a/\n")
+
+    assert cdp.gitignored(["../elsewhere/x.md", "a/x.json"]) == {"a/x.json"}
+
+
+def test_a_tree_without_git_falls_back_to_the_hardcoded_list(repo):
+    """No git (or not a checkout) must leave triage on the fallback, not wide open."""
+    assert cdp.gitignored(["results/x.json"]) == set()      # `repo` is not a git tree
+    assert cdp.triage("docs/s.md", "results/x.json", "见 `results/x.json`", "# t") == "artifact"
+    assert cdp.triage("docs/s.md", "experiments/x.json", "见 `experiments/x.json`",
+                      "# t") == "real"
 
 
 # ------------------------------------------------------- the self-declaration bucket

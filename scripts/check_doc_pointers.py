@@ -32,7 +32,10 @@ Unresolvable pointers are triaged, because most are not defects:
             visible note a reader sees, not a separate machine-only list that could
             drift away from it. Verify before writing one -- `git log
             --diff-filter=A -- <path>` distinguishes never-built from moved.
-  artifact  under a gitignored产物 dir; absent on this machine by design
+  artifact  gitignored; absent on this machine by design. Decided by asking git
+            (`gitignored()`), not by a list of directory names -- a list was what
+            this used to be, and it was five names short of .gitignore in a way
+            that only a fresh clone could reveal.
   example   an <angle>/glob/foo stand-in rather than a real path. No source
             directory is exempt -- .claude/agents/ and .claude/skills/ are
             walked like any other doc.
@@ -89,6 +92,10 @@ BARE = re.compile(
 )
 HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.M)
 
+# Fallback only: `gitignored()` answers this question properly. Kept for the case where git
+# is not available (or this tree is not a checkout), where the old hand-written list is
+# better than treating every artefact path as a live failure. Every entry here is also
+# covered by .gitignore, so with git present this regex changes nothing.
 ARTIFACT_DIR = re.compile(
     r"(?:^|/)(results|offline_data|wake_data|checkpoints|figures)/")
 # No source directory is exempt. `.claude/` used to be: agents and skills were
@@ -205,7 +212,56 @@ def declared_never(src: str, lines: list[str]) -> set[str]:
     return out
 
 
-def triage(src: str, raw: str, line: str, heading: str) -> str:
+def gitignored(rels: list[str]) -> set[str]:
+    """Which of these repo-relative paths do this tree's ignore rules cover?
+
+    One `git check-ignore --stdin` for the whole batch, so this costs one subprocess rather
+    than one per miss. `--no-index` keeps the answer a property of the rules alone.
+
+    Why ask git instead of listing the directories: `ARTIFACT_DIR` was exactly that list, and
+    it named five directories while .gitignore covered more. The gap could not show up on a
+    full working copy -- an ignored directory that is *present* never reaches triage at all,
+    because the target exists -- and surfaced only on 2026-08-24, the first time the hook ran
+    in a fresh clone: 103 references into `experiments/`, `docs/offline_mbrl_plan/` and
+    `phnode_full_oc_clean/` landed in `real`, and --strict would have blocked the first
+    markdown edit on any newly set-up machine. Asking git means this tracks .gitignore
+    instead of drifting from it.
+
+    Returns an empty set when git cannot answer (missing binary, not a checkout), which
+    leaves `triage` on the ARTIFACT_DIR fallback rather than silently calling everything live.
+    """
+    # Paths outside the repo (an absolute link `rel()`s into `../..`, or another drive) make
+    # git exit 128 for the whole batch -- "is outside repository" -- and the failure reads as
+    # "none of these 154 are ignored" rather than as one bad input. Drop them here: they are
+    # the `abs` bucket's business anyway, and it is decided before this ever matters.
+    rels = [p for p in rels if not p.startswith("../") and not re.match(r"^[A-Za-z]:", p)]
+    if not rels:
+        return set()
+    try:
+        # -z and bytes on both sides, not text mode: on Windows `text=True` rewrites the
+        # `\n` separators into `\r\n` on the way in, git then sees a trailing `\r` as part of
+        # each path, decides the name needs quoting, and answers `"experiments/foo.json\r"`
+        # for every line but the last (which has no separator after it). That reads as "git
+        # says only one of them is ignored" and is wrong in the direction that fails open.
+        # Each path is asked twice, bare and with a trailing slash: a `foo/` rule matches
+        # directories only, and for a path that does not exist git cannot tell that it is
+        # one -- `phnode_full_oc_clean` answers "not ignored" while `phnode_full_oc_clean/`
+        # answers "ignored". The slashed form can in principle over-match a *file* whose
+        # name equals an ignored directory's; that would move one miss from `real` to
+        # `artifact`, which is the harmless direction.
+        probes = [p + suffix for p in rels for suffix in ("", "/")]
+        r = subprocess.run(["git", "-C", ROOT, "check-ignore", "-z", "--stdin", "--no-index"],
+                           input="\0".join(probes).encode("utf-8"), capture_output=True)
+    except OSError:
+        return set()
+    # 0 = at least one ignored, 1 = none of them; anything else means git could not answer.
+    if r.returncode not in (0, 1):
+        return set()
+    return {p.decode("utf-8", "replace").replace("\\", "/").rstrip("/")
+            for p in r.stdout.split(b"\0") if p}
+
+
+def triage(src: str, raw: str, line: str, heading: str, ignored: bool = False) -> str:
     if raw.startswith("/") or re.match(r"^[A-Za-z]:", raw):
         return "abs"
     if PLACEHOLDER.search(raw):
@@ -213,7 +269,7 @@ def triage(src: str, raw: str, line: str, heading: str) -> str:
     if line.lstrip().startswith("|") and (PLAN_ROW.search(line.rstrip())
                                           or PLAN_HEADING.search(heading)):
         return "plan"
-    if ARTIFACT_DIR.search("/" + raw):
+    if ignored or ARTIFACT_DIR.search("/" + raw):
         return "artifact"
     return "real"
 
@@ -341,6 +397,7 @@ def main() -> int:
                                 "example": [], "abs": []}
     bad_anchor: list[tuple[str, int, str]] = []
     cited: set[str] = set()
+    pending: list[tuple] = []
     total = 0
 
     for src in files:
@@ -365,9 +422,10 @@ def main() -> int:
                 total += 1
                 target = (src if raw.startswith("#") else resolve(raw, kind, src))
                 if not os.path.exists(target):
-                    bucket = ("never" if target in never
-                              else triage(rel(src), raw, line, heading))
-                    buckets[bucket].append((rel(src), lineno, raw, kind))
+                    # Bucketed after the walk: `artifact` is settled by asking git about
+                    # every missing target in one call (see `gitignored`).
+                    pending.append((src, lineno, raw, kind, line, heading,
+                                    target, target in never))
                     continue
                 cited.add(rel(target))
                 anchor = raw.partition("#")[2]
@@ -376,6 +434,12 @@ def main() -> int:
                         anchor_cache[target] = anchors_of(target)
                     if slug(anchor) not in anchor_cache[target]:
                         bad_anchor.append((rel(src), lineno, raw))
+
+    ignored = gitignored(sorted({rel(row[6]) for row in pending}))
+    for src, lineno, raw, kind, line, heading, target, is_never in pending:
+        bucket = ("never" if is_never
+                  else triage(rel(src), raw, line, heading, rel(target) in ignored))
+        buckets[bucket].append((rel(src), lineno, raw, kind))
 
     miss = sum(len(v) for v in buckets.values())
     print(f"扫描 {len(files)} 个 markdown；解析到 {total} 个仓内指针")

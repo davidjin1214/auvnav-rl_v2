@@ -360,17 +360,19 @@ def _hook_module():
 def test_the_hook_runs_every_sweep_not_only_the_path_one():
     """Wiring, asserted separately from behaviour.
 
-    The four sweeps check disjoint things -- whether the path exists, whether the line
-    and the name behind it still do, whether a published figure still recomputes, and
-    whether a table's status cell still agrees with the doc it is about -- so dropping
-    any one leaves the others passing and nothing else says so.
+    The five sweeps check disjoint things -- whether the path exists, whether the line
+    and the name behind it still do, whether a published figure still recomputes, whether
+    a table's status cell still agrees with the doc it is about, and whether a quoted
+    episode count or seed range still agrees with the manifest -- so dropping any one
+    leaves the others passing and nothing else says so.
     """
     modules = [module for module, _marker, _hint in _hook_module().SWEEPS]
 
     assert modules == ["scripts.check_doc_pointers",
                        "scripts.check_doc_code_refs",
                        "scripts.audit_published_numbers",
-                       "scripts.check_status_claims"]
+                       "scripts.check_status_claims",
+                       "scripts.check_benchmark_manifests"]
 
 
 def test_the_defect_filter_keeps_only_the_failing_sections():

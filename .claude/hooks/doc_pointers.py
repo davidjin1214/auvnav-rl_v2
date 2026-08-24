@@ -1,14 +1,16 @@
 """PostToolUse hook: catch doc-reference rot at the edit that introduces it.
 
-Fires only on markdown edits, then runs four repo-wide sweeps in --strict mode:
+Fires only on markdown edits, then runs five repo-wide sweeps in --strict mode:
 
-    check_doc_pointers       does the cited path exist
-    check_doc_code_refs      is the cited *line* still that line, and does the
-                             cited function name exist at all
-    audit_published_numbers  can a published figure still be recomputed from the
-                             per-seed JSON its report says it came from
-    check_status_claims      does a table's status cell still agree with the banner
-                             of the document that row is about
+    check_doc_pointers        does the cited path exist
+    check_doc_code_refs       is the cited *line* still that line, and does the
+                              cited function name exist at all
+    audit_published_numbers   can a published figure still be recomputed from the
+                              per-seed JSON its report says it came from
+    check_status_claims       does a table's status cell still agree with the banner
+                              of the document that row is about
+    check_benchmark_manifests does a line quoting an evaluation manifest's episode
+                              count or seed range still agree with the manifest
 
 The first two are complementary by construction -- check_doc_pointers strips a
 trailing `:N` before checking, and says so in its own `resolve()`, which is the
@@ -17,15 +19,18 @@ citation resolves, but whether a number is still true. Editing a report is
 exactly when its traceback spec stops pointing at the figure it covers, and this
 says so in the same turn. The fourth is the same idea for prose state rather than
 numbers: editing a doc's banner is exactly when the tables citing it go stale,
-and nothing else in this set reads a status cell. All four grade their findings,
-and only the defect buckets fail --strict: self-declared absences, gitignored
-artefacts, plan-table forecasts, citations a line or two off a quoted fragment,
-readings whose `results/` is not on this machine, and tables a doc freezes on
-purpose are all legitimate and stay silent.
+and nothing else in this set reads a status cell. The fifth covers the one class
+of figure the third cannot: an episode count or a seed range is a property of a
+`benchmarks/` manifest, not a metric inside a readout, so no traceback spec has a
+source for it. All five grade their findings, and only the defect buckets fail
+--strict: self-declared absences, gitignored artefacts, plan-table forecasts,
+citations a line or two off a quoted fragment, readings whose `results/` is not on
+this machine, last-bit float differences between manifests, and tables a doc
+freezes on purpose are all legitimate and stay silent.
 
-Baseline at the time of writing: 0 findings from any, 1.5 s + 2.1 s + 1.3 s + 0.6 s (the
-third grew when the arrival_v2 chain landed -- it reads 39-row CSVs, not only terminal
-JSON).
+Baseline at the time of writing: 0 findings from any, 1.5 s + 2.1 s + 1.3 s + 0.6 s +
+0.8 s (the third grew when the arrival_v2 chain landed -- it reads 39-row CSVs, not only
+terminal JSON).
 
 Exit 2 feeds stderr back to the agent. PostToolUse runs after the write, so this
 flags the finding rather than preventing it -- the point is to catch it in the
@@ -70,6 +75,11 @@ SWEEPS = (
      "A table's status cell disagrees with the banner of the document it is about, or "
      "holds a forecast (TBD / a batch name) where a state belongs. Read what the cited "
      "doc says now; if the table is frozen on purpose, say so in the prose above it."),
+    ("scripts.check_benchmark_manifests", "★",
+     "A line quoting an evaluation manifest's episode count or seed range no longer "
+     "matches the manifest, or the manifests under benchmarks/ stopped constraining each "
+     "other. Read the manifest, not the other document that quotes it; if the figure is "
+     "a planned or historical value being kept on purpose, date the note on that line."),
 )
 
 

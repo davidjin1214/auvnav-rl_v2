@@ -27,6 +27,44 @@ conda run -n mytorch1 python -m scripts.evaluate \
 
 The benchmark catalog itself is defined in `scripts/benchmark_catalog.py`.
 
+## Checking this directory
+
+`python -m scripts.check_benchmark_manifests` re-runs, over all 24 files, the acceptance pass
+`0dc35a2` did by hand over 13 of them: seeds contiguous, `episode_id` index matching position,
+a path that declares a count holding it, the first seed being the one the generator would have
+used, every shorter manifest nesting into the longest of its task configuration, and every
+episode count or seed range a document prints agreeing with the file. `--strict` exits 1 on a
+defect; the markdown edit hook runs it that way.
+
+Two things it reports without failing, both measured rather than assumed:
+
+- **Last-bit float differences between manifests generated months apart.** Three pairs here
+  differ by up to `2.7e-15` rad in `initial_heading` and are otherwise the same instance --
+  a property of the formatter, nine orders of magnitude below any real difference. The
+  largest is `clean_probe/_repro_check_s1250.json` against `single_u10_cross_tgt15_ep100.json`,
+  which is the pair the `clean_probe/` note above calls "reproduces episode for episode": true
+  within that tolerance, and not true under exact equality.
+- **A count a document keeps on purpose**, declared and dated on the line that prints it.
+
+### `single_u10_upstream_tgt15.json` was truncated and has been restored (2026-08-24)
+
+`bd00950` (2026-04-23, "代码整理，不知道是啥") replaced the 30-episode manifest frozen by
+`9b96a7d` with a 2-episode file generated the day before. It went unnoticed for four months
+because nothing catches it at run time: `train_utils._resolved_eval_episodes` returns the
+manifest's episodes and **ignores `--eval-episodes`**, so `flow_factor_v1` and `study_core_v1`
+-- both of which resolve this path and both of which declare `eval_episodes: 30` -- would have
+evaluated that cell on 2 episodes and recorded it without complaint.
+
+Restored from `9b96a7d`. Nothing is lost by doing so and nothing else changes:
+
+- the 2 surviving episodes are **byte-identical** to the first 2 of the 30;
+- only `created_at` differed (2026-04-13, the protocol freeze, against 2026-04-22);
+- no readout under `results/` or `experiments/` names this manifest -- the two committed
+  `suite_manifest.json` files both used `single_u15_upstream_tgt15.json`;
+- the seed range 1400..1429 it brings back is a subset of the 1400..1499 the `c1_reward_ablation`
+  and `offline_rebrac_broad` upstream manifests already carry, so the contamination
+  enumeration is unchanged: 22 OVERLAP lines, the same 22 `0dc35a2` recorded.
+
 ## `clean_probe/`
 
 Manifests for the item-(1) supplementary final evaluation (`docs/data_integrity_open_items.md`),

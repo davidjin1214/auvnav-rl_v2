@@ -137,7 +137,7 @@
 - [ ] **§3.1 Task and dynamics**（半段）：REMUS-100 6-DOF underwater vehicle；wake field 是预生成的 `wake_v8 Re150` flow；task = cross-stream navigation, target speed 1.5 m/s。**素材**：environment_design.md。
 - [ ] **§3.2 Observation: deployable s0**（1 段）：base 8 channels（surge/sway/yaw/orientation/goal）+ 1 probe @ (0,0)（DVL water-track 单点）= **10-D**；history length 4。**强调"deployable" 严格 = 真实 REMUS-100 sensor**。
 - [ ] **§3.3 Privileged observation (critic-only)**（半段）：`privileged_obs ∈ ℝ²` = body-frame `[u_eq, v_eq]` from EquivalentCurrentModel（hull-integral effective flow）；只有 privileged-critic 协议下 critic 看见，actor 永远只看 deployable。**素材**：CLAUDE.md "Asymmetric Critic with privileged hull-integral flow"；environment_design.md。
-- [ ] **§3.4 Reward and termination**（半段）：`efficiency_v2` reward = progress + success - safety_cost；timeout / 达标 / 失败 终止条件；evaluation = `single_u10_cross_tgt15.json` manifest（100 episodes）。**素材**：environment_design.md。
+- [ ] **§3.4 Reward and termination**（半段）：`efficiency_v2` reward = progress + success - safety_cost；timeout / 达标 / 失败 终止条件；evaluation = `single_u10_cross_tgt15.json` manifest（100 episodes）（2026-08-24 注：括注的 100 是起草当时的计划值，该文件实为 30 回合；100 回合的 `benchmarks/single_u10_cross_tgt15_ep100.json` 由 `ffa20cc`（2026-05-20）才生成，落差即 `docs/archive/fql_succession/fql_succession_bug2_fix_decision.md` 记的 Bug 2。原文保留）。**素材**：environment_design.md。
 - [ ] **§3.5 Datasets**（半段）：worldcomp / crosscomp = baseline policies 收集；1000 / 2000 episodes 是两个 budget；明示 dataset 分布与 evaluation manifest 一致。**素材**：plan §4，CLAUDE.md。
 
 #### 关键概念图

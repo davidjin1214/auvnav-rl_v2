@@ -425,30 +425,35 @@ data-free 的四条测试全部保持绿，只有数据侧复算报 `value-misma
 
 ### 这条线现在还欠什么（2026-08-24 收盘）
 
-审计考古 12 项里剩一项（第 10 项已于 2026-08-24 交付，见 §八），另有一件是九条链累积下来的旧账：
+审计考古 12 项里剩一项。生成器旧账已于 2026-08-24 了结（`46a27df`），下面记的是它的**现状**
+与由此新欠下的一小笔文档账。
 
 | 欠项 | 出处／规模 | 说明 |
 |---|---|---|
 | C 类第 **12** 项 | `0dc35a2` | `benchmarks/` 落库逐条核（条数／种子连续／区间）。纯手工，**未分配批次** |
-| **九条链、四百余条 claim，一条都不可重新生成** | `docs/tracebacks/*.json` | 见下 |
+| 第 **七** 条链 | `docs/data_integrity_open_items.md` | 干净集表两行（约 8 处，写成 `$0.862\pm0.019$` 的 LaTeX 形）。用户已批准建，未开工 |
+| 三处计数已过期 | 见下 | 落完第六条链后没回头改 |
+| 第 6 条链与生成器入库**没配注入判据** | — | 只跑了 `--strict` 与用例，没做逐条拆机制判红 |
 
-**生成器不入库这件事，规模已经够大了。** 九份 spec 的 claim 全是脚本批量产出的
-（`online_a0` 是 2×2×3 的规则网格，论文侧四条是 22 个锚 × 每锚 1–4 格），生成器一律只留在
-当轮会话的 scratchpad 里，**会话一结束路径就失联**。后果不是「表坏了」——表是自足的、`--strict`
-照跑；后果是**下一个要扩表的人只能手改 JSON**，而手改正是这批表最怕的（一个格序号错一位，
-`ch5_*` 那四条要靠 `..._capture_one_whole_published_cell` 才拦得住，`online_a0` 那条要靠
-`..._reads_each_cell_once`）。
+**生成器旧账（已了结，记录成因）。** `2532666` 曾写「九条链、四百余条 claim 一条都不可重新生成」，
+那句需要更正：五份生成器其实还在当轮 scratchpad 里，逐个重跑后**都逐字节复现了已提交的 JSON**。
+趁窗口未关收进了 [`_gen/`](../tracebacks/README.md)，覆盖 **8/9 条链**；`fql_succession_p2.json`
+那 35 条确无生成器，在 `tests/test_audit_published_numbers.py` 的 `UNGENERATED_SPECS` 里如实声明。
+`test_every_committed_spec_can_be_regenerated` 重跑每份并逐字节比对——**手改 JSON 会当场变红**，
+这是让生成器变成承重件而不是历史备注的那一条。原来的三个选项与「倾向 (b)」就此作废：(a) 成立的
+前提是生成器还找得回来，而当时以为找不回来。
 
-三个选项，**未拍板**：(a) 把生成器收进仓（`scripts/` 或 `docs/tracebacks/_gen/`），代价是多四五份
-一次性脚本要维护；(b) 不收，但把每条 spec 的 `note` 补上「这张表的 claim 是按什么规则批量生成的」，
-让手改的人至少知道规则；(c) 维持现状，接受手改。**倾向 (b)**——它成本最低，且和「刊值不抄进表里」
-同一个思路：把规则写进表，而不是把产物锁在工具里。
+**过期计数（现算命令见本文件头注）。** 落第六条链 `td3bc_worldcomp_teacher_gap`（36 处）之后：
+[`../tracebacks/README.md`](../tracebacks/README.md) 与 [`../../CLAUDE.md`](../../CLAUDE.md) 的
+溯源表行仍写「九条链、408 处」，现为**十条链、444 处**；README 也还没写 `_gen/` 的契约
+（`python docs/tracebacks/_gen/gen_*.py [out_dir]`，改生成器别改 JSON）与 `metric` 现在支持的
+点号路径（`best.eval_success_rate`）。
 
-**另两格只有单侧钉住**（不是欠项，是已知状态）：`0.858 ± 0.080` 与干净集两格现在只有论文侧有
-claim，娘家文档 `docs/td3bc_worldcomp_teacher_gap_experiment_report.md` 与
-[`../data_integrity_open_items.md`](../data_integrity_open_items.md) 整份无链。已在
-`tests/test_audit_published_numbers.py` 的 `UNSHARED_WITH_THE_REPORTS` 里逐条声明并附理由，
-新增一条无对应的源会被那条用例拦下。要不要给这两份文档建第六、第七条报告链，同样未拍板。
+**单侧钉住的格：只剩干净集两格。** `0.858 ± 0.080` 的娘家
+`docs/td3bc_worldcomp_teacher_gap_experiment_report.md` 已有第六条链，那条声明已从
+`UNSHARED_WITH_THE_REPORTS` 撤下；该表现在只剩 k=8／k=12 两条（无报告刊过）与干净集两条。
+干净集那两条正对着 `0993832` 那个洞：`ch5_clean_probe_readout.py` 的冻结期望**只钉均值**，
+而印错的恰好是标准差——第七条链要补的就是这一侧。
 
 ## 五、第三批已交付（2026-08-24）
 

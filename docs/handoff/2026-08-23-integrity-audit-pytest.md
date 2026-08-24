@@ -425,35 +425,64 @@ data-free 的四条测试全部保持绿，只有数据侧复算报 `value-misma
 
 ### 这条线现在还欠什么（2026-08-24 收盘）
 
-审计考古 12 项里剩一项。生成器旧账已于 2026-08-24 了结（`46a27df`），下面记的是它的**现状**
-与由此新欠下的一小笔文档账。
+审计考古 12 项里**只剩第 12 项**。第七条链、第 6/7 条链与生成器入库的注入判据、三处过期计数，
+都在 2026-08-24 当轮收掉了；下面记的是剩下那一项，与收的过程中新查出来的两件事。
 
 | 欠项 | 出处／规模 | 说明 |
 |---|---|---|
-| C 类第 **12** 项 | `0dc35a2` | `benchmarks/` 落库逐条核（条数／种子连续／区间）。纯手工，**未分配批次** |
-| 第 **七** 条链 | `docs/data_integrity_open_items.md` | 干净集表两行（约 8 处，写成 `$0.862\pm0.019$` 的 LaTeX 形）。用户已批准建，未开工 |
-| 三处计数已过期 | 见下 | 落完第六条链后没回头改 |
-| 第 6 条链与生成器入库**没配注入判据** | — | 只跑了 `--strict` 与用例，没做逐条拆机制判红 |
+| C 类第 **12** 项 | `0dc35a2` | `benchmarks/` 落库逐条核（条数／种子连续／区间）。纯手工，**未分配批次**——12 项里唯一剩下的 |
 
-**生成器旧账（已了结，记录成因）。** `2532666` 曾写「九条链、四百余条 claim 一条都不可重新生成」，
-那句需要更正：五份生成器其实还在当轮 scratchpad 里，逐个重跑后**都逐字节复现了已提交的 JSON**。
-趁窗口未关收进了 [`_gen/`](../tracebacks/README.md)，覆盖 **8/9 条链**；`fql_succession_p2.json`
-那 35 条确无生成器，在 `tests/test_audit_published_numbers.py` 的 `UNGENERATED_SPECS` 里如实声明。
-`test_every_committed_spec_can_be_regenerated` 重跑每份并逐字节比对——**手改 JSON 会当场变红**，
-这是让生成器变成承重件而不是历史备注的那一条。原来的三个选项与「倾向 (b)」就此作废：(a) 成立的
-前提是生成器还找得回来，而当时以为找不回来。
+**第七条链已交付。** [`docs/tracebacks/data_integrity_open_items.json`](../tracebacks/data_integrity_open_items.json)，
+**32 处**刊值，由 `_gen/gen_data_integrity_spec.py` 生成。覆盖 ①-c 干净集读数整段：四格
+均值与离散度、两格位移、翻转两格、采集器基线三格加回合数，以及 2026-08-24 那条订正块。
+provenance 规则**是复算确立的，不是从 `ch5_clean_probe_readout.py` 读来的**——那支工具正是
+`0993832` 里因为只钉均值而漏掉离散度漂移的那一支，照抄它的路径等于继承它的盲点。
+已刊列出自 `rebrac/formal/<dataset>/actorb_4p0__criticb_2p0/test/seed_*.json`，干净集列出自
+`rebrac/clean_probe/cross-*/seed_*.json`，各五种子、`ddof=0`（cross-1000 那行两套口径可分：
+`ddof=1` 会给 0.024，刊的是 0.021）。
 
-**过期计数（现算命令见本文件头注）。** 落第六条链 `td3bc_worldcomp_teacher_gap`（36 处）之后：
-[`../tracebacks/README.md`](../tracebacks/README.md) 与 [`../../CLAUDE.md`](../../CLAUDE.md) 的
-溯源表行仍写「九条链、408 处」，现为**十条链、444 处**；README 也还没写 `_gen/` 的契约
-（`python docs/tracebacks/_gen/gen_*.py [out_dir]`，改生成器别改 JSON）与 `metric` 现在支持的
-点号路径（`best.eval_success_rate`）。
+**其中两条是勘误 claim**，钉的是订正块本身：`$\pm0.025$` 必须继续复算不出来。它的余量是
+**0.000505 对半个末位 0.0005**——全仓最薄的一处，而这正是要的：逐种子读数哪天重生成、哪怕只
+挪一点点，这条勘误就会翻，订正注也就该重读。工具明确留在链外的：全部 t／SE／95% CI（不是本
+工具算得出的统计量）、差中差 `+0.80` pp（要四个源，`delta` 只收两个）、`0.000505` 本身
+（它是「到一个错值的距离」，不是任何东西的复算），以及 §2／§3／§5——那几节的源在
+`offline_data/` 与 `benchmarks/`，是另一族 provenance，正对着还没做的第 12 项。
 
-**单侧钉住的格：只剩干净集两格。** `0.858 ± 0.080` 的娘家
-`docs/td3bc_worldcomp_teacher_gap_experiment_report.md` 已有第六条链，那条声明已从
-`UNSHARED_WITH_THE_REPORTS` 撤下；该表现在只剩 k=8／k=12 两条（无报告刊过）与干净集两条。
-干净集那两条正对着 `0993832` 那个洞：`ch5_clean_probe_readout.py` 的冻结期望**只钉均值**，
-而印错的恰好是标准差——第七条链要补的就是这一侧。
+**注入判据补齐：17 条，全部对着各自那一条指名检查变红**（脚本在会话 scratchpad，见 §四末）。
+分两层判，因为这两条链本来就有两层守：
+
+| 检查 | 钉住什么 | 注入 |
+|---|---|---|
+| `test_every_committed_spec_can_be_regenerated` | 手改 JSON、生成器不认 `out_dir` | 2 |
+| `test_every_spec_declares_whether_it_has_a_generator` | 漏登记、登记指向不存在的生成器 | 2 |
+| `test_a_spec_declared_ungenerated_is_not_emitted_by_any_generator`（新） | 假的「无生成器」声明 | 1 |
+| `test_no_two_report_table_claims_read_the_same_cell_of_a_row`（新） | 同一行两条 claim 读同一格 | 2 |
+| `test_the_report_table_chains_index_a_cell_that_carries_weight`（新） | 相邻格印同一个数（格序号从此不承重）、受控名单被摘空 | 2 |
+| 既有 `..._shipped_specs_still_anchor_to_their_reports` | 锚点改到文档里找不到 | 1 |
+| 既有 `..._read_the_files_the_reports_read` | 源改指另一格、复活一条已失效的 UNSHARED 声明 | 2 |
+| （数据侧 `--strict`） | 刊值被改、勘误开始能复现、delta 源对调、去掉 pp 换算、第 6 条链格序号滑一格 | 5 |
+
+**两条负控头一轮没变红，两次都是「被第二个机制兜住」——第 12 条方法论又中一次。**
+一条是假声明那条：新测试原本只跑 `SPEC_GENERATORS` 里登记的生成器，而假声明恰恰是把生成器
+从那张表里摘掉，于是它根本不会被跑到。改成跑 `_gen/` 下**全部** `gen_*.py`。另一条是
+`_anchored` 这个测试辅助函数：它按全文匹配锚点，而工具是在 `section` 作用域内匹配；worldcomp
+报告两张筛选表的 `| 0.1 |` 行一模一样，新测试一挂上就报「锚定到两行」。改成复用工具自己的
+`apn._region`。
+
+**顺带查出两条早就够不着的声明。** `UNSHARED_WITH_THE_REPORTS` 里 k 阶梯的
+`s0_k8`／`s0_k12` 两条，理由写的是「任何报告都没印过这两行」——那句是真的，但那张表的判据是
+**文件**有没有被报告链读到，而 `arrival_v2` 链为了 §7.9 的 σ_final 一直在读同样两个 glob，
+`or` 在第一个分支就短路，两条声明从来没有被求值过。已撤下，那张表现在是空的；反向核对
+（被声明为「没有报告读」而其实有报告读的要报错）加进了 `..._read_the_files_the_reports_read`。
+**一条永远够不着的声明和一条错的声明一样危险**：它读起来比它能承担的更强。
+
+**过期计数已改。** [`../tracebacks/README.md`](../tracebacks/README.md) 与
+[`../../CLAUDE.md`](../../CLAUDE.md) 现写**十一条链、476 处**；README 新增「表是生成出来的」
+一节写明 `_gen/` 的契约（`python docs/tracebacks/_gen/gen_*.py [out_dir]`，改生成器别改 JSON），
+`metric` 的点号路径（`best.eval_success_rate`）写进了脚本 docstring——字段语义的唯一权威处
+在那里，README 自己那条规矩就是「别在这里复制一份口径」。`--ddof` 合计由 124 变 130。
+
+**单侧钉住的格：清零。** 两份娘家文档都有链之后，论文侧不再有任何源是报告侧读不到的。
 
 ## 五、第三批已交付（2026-08-24）
 

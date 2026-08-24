@@ -46,6 +46,12 @@ same or higher level; `after` and `before` are resolved inside it. Each must its
 resolve to exactly one line, so a scope that has gone ambiguous is an error rather than
 a silent pick.
 
+`metric` may be a dotted path, for a readout that nests its figures rather than
+keeping them flat: `best.eval_success_rate` reaches into `selected_checkpoint.json`'s
+record of the checkpoint it chose, which is the only place the worldcomp screening tables
+can be recomputed from. The flat key is tried first, so a readout whose key legitimately
+contains a dot still wins.
+
 A source glob may name `.csv` files instead of JSON, for the online-line runs whose
 published figures are aggregates over a training run's periodic evaluations rather than
 one terminal number. `metric` then names the reduction and the column, and the file

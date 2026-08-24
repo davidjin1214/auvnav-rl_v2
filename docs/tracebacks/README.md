@@ -75,13 +75,15 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 | `rebrac.json` | [`../rebrac_experiment_report.md`](../rebrac_experiment_report.md) | 87 | 全部吻合；覆盖面按「第 5 章实际引用的那批」，非全部 47 处。2026-08-24 补上 §7.4 的第三格 $(\beta_1,\beta_2)=(4.0,\,1.0)$——`48b8d06` 只核了那张表加粗的两行，而章节在 `tab:ch5_rebrac_perseed` 的 caption 里引了第三行 |
 | `arrival_v2.json` | [`../arrival_v2_experiment_report.md`](../arrival_v2_experiment_report.md) | 143 | 全部吻合（订正 1 格，见下）；§7.5 四向对照表 + §7.9 全部 gate 读数 + §7.10 传感九宫格 |
 | `online_a0.json` | [`../online_rl_line_summary.md`](../online_rl_line_summary.md) | 24 | 全部吻合；12 处 `±` 判定为 `ddof=0` 11 处、`either` 1 处（该格逐种子同值）|
+| `td3bc_worldcomp_teacher_gap.json` | [`../td3bc_worldcomp_teacher_gap_experiment_report.md`](../td3bc_worldcomp_teacher_gap_experiment_report.md) | 36 | 全部吻合；§4.1／§4.2 筛选表、§5.1 正式表、§5.4 轨迹表。provenance 规则复算确立，见该表 `note` |
+| `data_integrity_open_items.json` | [`../data_integrity_open_items.md`](../data_integrity_open_items.md) | 32 | 全部吻合（含 2 条勘误 claim）；①-c 干净集读数整段——四格均值与离散度、位移、翻转、采集器基线、以及 2026-08-24 订正块 |
 
 | `ch5_online.json` | [`../../paper/thesis_ch5/sections/online.tex`](../../paper/thesis_ch5/sections/online.tex) | 20 | 全部吻合；§5.5 两张表——传感三配置（与 `online_a0` 同一批文件）＋ 瓶颈 k 阶梯四行 |
 | `ch5_boundary.json` | [`../../paper/thesis_ch5/sections/boundary.tex`](../../paper/thesis_ch5/sections/boundary.tex) | 6 | 全部吻合；§5.8 引的 k 阶梯两格，与 §5.5 各自独立指向同一批文件 |
 | `ch5_rebrac.json` | [`../../paper/thesis_ch5/sections/rebrac.tex`](../../paper/thesis_ch5/sections/rebrac.tex) | 22 | 全部吻合；§5.6 的 TD3+BC 对照格、干净集补充终检两格、以及 caption 里那格 $(\beta_1,\beta_2)=(4.0,\,1.0)$ |
 | `ch5_td3bc.json` | [`../../paper/thesis_ch5/sections/td3bc.tex`](../../paper/thesis_ch5/sections/td3bc.tex) | 14 | 全部吻合；§5.4 数据规模表六格＋ teacher-gap 表的可部署格 |
 
-九条链共 **408 处**刊值——五条钉报告侧，四条钉论文第 5 章。
+十一条链共 **476 处**刊值——七条钉报告侧，四条钉论文第 5 章。
 
 **`online_a0` 不是那四次手工回溯之一。** 前四条链的授权范围是「把 2026-05 那四次逐格回溯变成
 命令」，在线线的 A0 传感筛选从来不在其中——它不是被声明豁免的，是原本就不在范围内。加它的
@@ -97,10 +99,10 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 `tests/test_audit_published_numbers.py::test_the_online_a0_chain_is_ambiguous_without_its_table_scope`
 把这层作用域本身当负控钉住：拆掉它，24 条 claim 必须全部退化成「锚定到多行」。
 
-**全仓 `±` 口径现状**（`--ddof`，合计 **124 处**）：**99 处 `ddof=0`、20 处 `ddof=1`、
+**全仓 `±` 口径现状**（`--ddof`，合计 **130 处**）：**105 处 `ddof=0`、20 处 `ddof=1`、
 4 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是
 下面说的、被自己报告声明为重号的那格**。
-拆开看：`docs/*.md` 侧 93 处（75／14／3／1），论文 `.tex` 侧 31 处（24／6／1／0）。
+拆开看：`docs/*.md` 侧 99 处（81／14／3／1），论文 `.tex` 侧 31 处（24／6／1／0）。
 
 其中 `ddof=1` 的 14 处集中在 arrival_v2 §7.9.4 第三列一系（3-seed、报告自己标了 ddof=1）
 与 ReBRAC 的 `0.9340 ± 0.0261`。ReBRAC 那处是**同一个读数**（Stage D Phase 2 privileged）
@@ -109,9 +111,41 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 `rebrac.json` 把该报告 §1 的**口径补注表本身**也纳入核对：那张表印了逐种子值与两套口径，
 于是那句结论不再是被信任的，而是被重算出来的。
 
+## 表是生成出来的，不是手写的
+
+每份 `.json` 由 [`_gen/`](_gen/) 下的一支生成器写出，**改表就是改生成器**：
+
+```bash
+python docs/tracebacks/_gen/gen_data_integrity_spec.py            # 覆盖已提交的那份
+python docs/tracebacks/_gen/gen_data_integrity_spec.py /tmp/out   # 写到别处，不动仓里的
+```
+
+| 生成器 | 写出 |
+|---|---|
+| `gen_arrival_spec.py` / `gen_online_a0_spec.py` / `gen_rebrac_spec.py` / `gen_td3bc_spec.py` | 对应的四份报告侧表 |
+| `gen_worldcomp_spec.py` / `gen_data_integrity_spec.py` | 第六、第七条报告侧链 |
+| `gen_ch5_specs.py` | 论文第 5 章那四份 |
+
+`fql_succession_p2.json` **没有生成器**（当轮的脚本没留下），它那 35 条要扩仍得手改 JSON。
+这件事不是靠记住的：`tests/test_audit_published_numbers.py::test_every_spec_declares_whether_it_has_a_generator`
+要求每份表要么登记生成器、要么在 `UNGENERATED_SPECS` 里写明理由，两边都没有就报错。
+
+**为什么值得把生成器收进来。** 一条 claim 的 `anchor`／`capture` 是正则，手写正则跨几十条
+必然漂；生成器让「跳过几个单元格」这类偏移由表头算出来而不是数字符数出来。
+`test_every_committed_spec_can_be_regenerated` 逐份重跑并逐字节比对（行尾归一化后），
+所以手改 JSON 会当场变红——生成器因此是承重件，不是历史备注。
+
+**生成器里的自检必须用工具的语义。** `gen_worldcomp_spec.py` 头一版把 `anchor + capture`
+拼起来验证，而工具是先用 `anchor` 定位到行、再把 `capture` **单独**套在整行上；两种语义差两格，
+36 条里 28 条列错位却在生成期全绿，跑 `--strict` 才暴露。现在两支表格型生成器的 `_verify`
+都只用 `re.search(capture, line)`。
+
+**写文件一律 `newline="\n"`。** 否则同一支生成器在 Windows 写 CRLF、在 macOS 写 LF，
+而 `core.autocrlf=true` 让 `git status` 看不出这件事。
+
 ## 论文第 5 章那四条链（2026-08-24）
 
-前五条钉的是报告侧。论文侧的 `\pm` 由
+报告侧那七条钉的是报告。论文侧的 `\pm` 由
 [`../../paper/thesis_ch5/tools/ch5_dispersion_audit.py`](../../paper/thesis_ch5/tools/ch5_dispersion_audit.py)
 判，但它只能判「同一行里印了逐种子值」的行；**31 处不印**，它如实报「需要 ground-truth 报告」
 而不猜。这四条链就是把那 31 处也指回逐种子文件。
@@ -133,10 +167,17 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 `tab:ch5_rebrac_perseed` 的 caption 正文里有一个「均值 $\pm$ 跨随机种子标准差」的**裸 `\pm`**，
 数出现次数会在那里错一格。
 
-**跨侧对照的结果：17 格两侧都刊，17 格口径一致，0 处相左。** 另有 3 格只在论文侧有 claim——
-干净集补充终检两格与 TD3+BC 的 teacher-gap 那格，它们的娘家文档
-（[`../data_integrity_open_items.md`](../data_integrity_open_items.md) 与
-`docs/td3bc_worldcomp_teacher_gap_experiment_report.md`）都没有链。
+**跨侧对照的结果：17 格两侧都刊，17 格口径一致，0 处相左。** 落表当时另有 3 格只在论文侧
+有 claim——干净集补充终检两格与 TD3+BC 的 teacher-gap 那格，因为它们的娘家文档当时都没有链。
+2026-08-24 把那两份文档的链补上（上表末两行）之后，**论文侧不再有任何源是报告侧读不到的**，
+`tests/test_audit_published_numbers.py` 里的 `UNSHARED_WITH_THE_REPORTS` 因此清空。
+
+顺带查出两条早就失效的声明：k 阶梯的 `s0_k8`／`s0_k12` 两个 `final_eval.json` 一直登记在那张
+豁免表里，理由写的是「任何报告都没印过这两行」——那句是真的，但豁免表的判据是**文件**有没有被
+报告链读到，而 `arrival_v2` 链为了 §7.9 的 σ_final 一直在读同样两个 glob。两条声明因此从来没
+被求值过（`or` 在第一个分支就短路了）。**一条永远够不着的声明和一条错的声明一样危险**：它读起来
+比它能承担的更强。现由 `..._read_the_files_the_reports_read` 反向核对——被声明为「没有报告读」
+而其实有报告读的，报错。
 
 **三处 provenance 规则是复算出来的，不是读来的**：k 阶梯的 k=8／k=12 两行（任何报告都没印过）、
 TD3+BC 的 `0.858 ± 0.080`（被 ReBRAC 报告引作对照，但娘家报告无链）、以及干净集两格。k 阶梯

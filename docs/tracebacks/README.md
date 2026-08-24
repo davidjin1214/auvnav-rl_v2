@@ -77,13 +77,14 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 | `online_a0.json` | [`../online_rl_line_summary.md`](../online_rl_line_summary.md) | 24 | 全部吻合；12 处 `±` 判定为 `ddof=0` 11 处、`either` 1 处（该格逐种子同值）|
 | `td3bc_worldcomp_teacher_gap.json` | [`../td3bc_worldcomp_teacher_gap_experiment_report.md`](../td3bc_worldcomp_teacher_gap_experiment_report.md) | 36 | 全部吻合；§4.1／§4.2 筛选表、§5.1 正式表、§5.4 轨迹表。provenance 规则复算确立，见该表 `note` |
 | `data_integrity_open_items.json` | [`../data_integrity_open_items.md`](../data_integrity_open_items.md) | 32 | 全部吻合（含 2 条勘误 claim）；①-c 干净集读数整段——四格均值与离散度、位移、翻转、采集器基线、以及 2026-08-24 订正块 |
+| `benchmarks_and_datasets.json` | [`../data_integrity_open_items.md`](../data_integrity_open_items.md) | 16 | 全部吻合；**同一份文档的另一族 provenance**——源在 `offline_data/` 而非 `results/`，故另起一条（一份 spec 只有一个 `root`）。§1 引用的四字段 metadata 块、§2「本机实测」列与排除 (b) 的两个加噪读数、§4 采集器 `success_rate`、§5 含噪 2000 的种子与回合数 |
 
 | `ch5_online.json` | [`../../paper/thesis_ch5/sections/online.tex`](../../paper/thesis_ch5/sections/online.tex) | 20 | 全部吻合；§5.5 两张表——传感三配置（与 `online_a0` 同一批文件）＋ 瓶颈 k 阶梯四行 |
 | `ch5_boundary.json` | [`../../paper/thesis_ch5/sections/boundary.tex`](../../paper/thesis_ch5/sections/boundary.tex) | 6 | 全部吻合；§5.8 引的 k 阶梯两格，与 §5.5 各自独立指向同一批文件 |
 | `ch5_rebrac.json` | [`../../paper/thesis_ch5/sections/rebrac.tex`](../../paper/thesis_ch5/sections/rebrac.tex) | 22 | 全部吻合；§5.6 的 TD3+BC 对照格、干净集补充终检两格、以及 caption 里那格 $(\beta_1,\beta_2)=(4.0,\,1.0)$ |
 | `ch5_td3bc.json` | [`../../paper/thesis_ch5/sections/td3bc.tex`](../../paper/thesis_ch5/sections/td3bc.tex) | 14 | 全部吻合；§5.4 数据规模表六格＋ teacher-gap 表的可部署格 |
 
-十一条链共 **476 处**刊值——七条钉报告侧，四条钉论文第 5 章。
+十二条链共 **492 处**刊值——八条钉报告侧，四条钉论文第 5 章。
 
 **`online_a0` 不是那四次手工回溯之一。** 前四条链的授权范围是「把 2026-05 那四次逐格回溯变成
 命令」，在线线的 A0 传感筛选从来不在其中——它不是被声明豁免的，是原本就不在范围内。加它的
@@ -124,6 +125,7 @@ python docs/tracebacks/_gen/gen_data_integrity_spec.py /tmp/out   # 写到别处
 |---|---|
 | `gen_arrival_spec.py` / `gen_online_a0_spec.py` / `gen_rebrac_spec.py` / `gen_td3bc_spec.py` | 对应的四份报告侧表 |
 | `gen_worldcomp_spec.py` / `gen_data_integrity_spec.py` | 第六、第七条报告侧链 |
+| `gen_benchmarks_datasets_spec.py` | 第十二条链（`offline_data/` 那一族）|
 | `gen_ch5_specs.py` | 论文第 5 章那四份 |
 
 `fql_succession_p2.json` **没有生成器**（当轮的脚本没留下），它那 35 条要扩仍得手改 JSON。
@@ -142,6 +144,24 @@ python docs/tracebacks/_gen/gen_data_integrity_spec.py /tmp/out   # 写到别处
 
 **写文件一律 `newline="\n"`。** 否则同一支生成器在 Windows 写 CRLF、在 macOS 写 LF，
 而 `core.autocrlf=true` 让 `git status` 看不出这件事。
+
+## 同一份文档，两条链：`root` 只有一个（2026-08-24）
+
+[`../data_integrity_open_items.md`](../data_integrity_open_items.md) 被两条链钉着，不是冗余，
+是被 spec 的形状逼出来的：**一份 spec 只有一个 `root`**，而这份文档同时印两族数字。
+
+| 链 | `root` | 印的是什么 |
+|---|---|---|
+| `data_integrity_open_items.json` | `results/offline` | 模型的刊出成功率——逐 seed 评估读数的均值与离散度 |
+| `benchmarks_and_datasets.json` | `offline_data` | 采集这一侧的自述——`num_transitions` / `mean_episode_length` / `seed` / `num_episodes` / 采集策略的 `success_rate` |
+
+分开还有一个实际好处：`--root` 可以把其中一族指到 Drive 挂载，不必把另一族一起拖过去。
+
+**这份文档的第三族数字不在任何链里，是另一支工具的活。** §3 整节、以及散落各处的
+「100 条，种子 1250..1349」，说的是 `benchmarks/` 下某份 manifest 的条数与种子区间——那不是某个
+读数里的一个 metric，本工具没有源可取。它们由
+[`../../scripts/check_benchmark_manifests.py`](../../scripts/check_benchmark_manifests.py)
+的 R3 核：那支工具直接读 manifest，因而连本工具取不到数的那些格也一并能核。
 
 ## 论文第 5 章那四条链（2026-08-24）
 

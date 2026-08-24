@@ -49,7 +49,7 @@ rev 块核查动作、以及跨仓会话记录。
 | 9 | 文档→**函数名**引用 | `a49fb1e`：CLAUDE.md 里的 get_probe_positions 全仓只出现在 CLAUDE.md 自己 | ✅ 判据已改写、3 处已处置，见 §三 |
 | 10 | 文档自述横幅 ⇄ 引用它的表格状态栏 | `cce2b2d`：13 行核出 3 行对不上 | ✅ 已固化为 `check_status_claims.py`，见 §八 |
 | 11 | 刊出读数 ⇄ 评估 manifest 指纹归属 | `ch5_manifest_attribution.py`，3715 份读数零落空 | ✅ 已并入第三批（`db0c235`，19 项用例）|
-| 12 | `benchmarks/` 落库时逐条核（条数／种子连续／区间） | `0dc35a2`，纯手工 | ⬜ 未做，**未分配批次**（第三批 `925d9c4` 收尾时未含它）|
+| 12 | `benchmarks/` 落库时逐条核（条数／种子连续／区间） | `0dc35a2`，纯手工 | ✅ 已固化为 `check_benchmark_manifests.py`，并与 §2／§3／§5 并作一批，见 §九 |
 
 **这张表自己漂过两处状态栏，两处都正是第 10 项要查的那个毛病**（2026-08-24 核出并已改）：
 
@@ -368,8 +368,9 @@ gate 读数用的是哪套，宜单独一轮。
 不入库；它们只调 `ch5_dispersion_audit.collect()` 与 `ch5_sac_ladder_dispersion_check` 的两个
 常量，重写一遍比找回来便宜。
 
-**仍未做**：C 类第 12 项（`benchmarks/` 落库逐条核，出处 `0dc35a2`，纯手工），未分配批次。
-（同段原先并列的第 10 项已于 2026-08-24 交付，见 §八。）
+~~**仍未做**：C 类第 12 项（`benchmarks/` 落库逐条核，出处 `0dc35a2`，纯手工），未分配批次。~~
+⚠ **2026-08-24 已交付，见 §九**；删划线保留只为留痕。
+（同段原先并列的第 10 项亦已于同日交付，见 §八。）
 
 ---
 
@@ -425,7 +426,8 @@ data-free 的四条测试全部保持绿，只有数据侧复算报 `value-misma
 
 ### 这条线现在还欠什么（2026-08-24 收盘）
 
-审计考古 12 项里**只剩第 12 项**。第七条链、第 6/7 条链与生成器入库的注入判据、三处过期计数，
+⚠ **本小节写于第 12 项交付之前，其「只剩第 12 项」现已过期——12 项已全部交付，见 §九。**
+以下保留原文。审计考古 12 项里**只剩第 12 项**。第七条链、第 6/7 条链与生成器入库的注入判据、三处过期计数，
 都在 2026-08-24 当轮收掉了；下面记的是剩下那一项，与收的过程中新查出来的两件事。
 
 | 欠项 | 出处／规模 | 说明 |
@@ -707,3 +709,121 @@ paper_writing_index 那行——独立投稿 2026-06-02 撤销后已无 §experi
 脚本报告打到一半崩掉、hook 把崩溃读成了发现。三个既有 sweep 都在 `main()` 头上
 `sys.stdout.reconfigure(encoding="utf-8")`，新的漏了。**判据：凡是会被 hook 或 CI 用管道抓的
 脚本，都要有一条真的走子进程管道的用例**，本仓这条是 `test_the_report_survives_a_non_utf8_stdout_pipe`。
+
+
+---
+
+## 九、C 类第 12 项已交付（2026-08-24）——12 项至此全部收口
+
+范围按用户指定：第 12 项（`benchmarks/` 落库逐条核）＋
+[`../data_integrity_open_items.md`](../data_integrity_open_items.md) 明确留在第七条链之外的
+§2／§3／§5，合为一批，理由是同一族 provenance——源在 `benchmarks/` 与 `offline_data/`。
+
+**做完之后这三族分了家，分法是被工具形状逼出来的、不是设计出来的**：
+
+| 族 | 谁核 | 为什么不能合 |
+|---|---|---|
+| `results/` 逐 seed 读数 | 第七条链 `data_integrity_open_items.json` | — |
+| `offline_data/` 采集侧 metadata | **新的第十二条链** `benchmarks_and_datasets.json` | 一份 spec 只有一个 `root` |
+| `benchmarks/` 清单的条数与种子区间 | **新工具** `check_benchmark_manifests.py` | 那不是任何读数里的一个 metric，`audit_published_numbers` 没有源可取 |
+
+### 交付物
+
+| 文件 | 内容 |
+|---|---|
+| `scripts/check_benchmark_manifests.py` | 新校验器，四条规则，0.8 s 扫 24 份清单 ＋ 全仓 markdown |
+| `tests/test_check_benchmark_manifests.py` | 28 项用例 |
+| `docs/tracebacks/benchmarks_and_datasets.json` ＋ `_gen/gen_benchmarks_datasets_spec.py` | 第十二条链，16 处刊值 |
+| `tests/test_audit_published_numbers.py` | ＋1 项（千分位逗号）、新链登记进 `SPEC_GENERATORS` |
+| `scripts/audit_published_numbers.py` | `_norm` 现在也去掉千分位逗号——转移条数是这批文档里唯一的六位数，印作 `152,683` |
+| `tests/test_check_doc_pointers.py` | 钩子接线用例扩到五个 sweep |
+| `.claude/hooks/doc_pointers.py` | 挂成第 5 个 sweep |
+| `benchmarks/README.md` | 新增「Checking this directory」一节 ＋ 截断修复记录 |
+| [`../data_integrity_open_items.md`](../data_integrity_open_items.md) §2 | 按实况闭合（下详） |
+| `paper/archive/rebrac_standalone/outline.md` | 一处计划值加日期声明 |
+
+负控 **34 条，全部对着各自那一条指名检查变红**（脚本在会话 scratchpad，见本节末）。
+分两层判：`pytest` 用例 id，与两支 sweep 的缺陷桶（`bucket_probe2.py` 逐桶计数）。
+
+### 四条规则，以及为什么是四条
+
+`0dc35a2` 的提交信息把验收写成了散文：「落库前逐个核过——条数与目录名相符、种子连续、其中
+**8 个**与审计打印的区间逐条对上、val_40 确为 test_100 的前缀」。那次是手工、只核了 13 份里的
+13 份，另外 11 份没人看过，且没留下能再跑的东西。四条规则就是把那句话变成命令，外加一条它
+没想到、但正是本轮抓到缺陷的那条。
+
+- **R1 结构自洽**：种子连续；`episode_id` 序号与位置相符（这一对正是
+  `ch5_manifest_attribution.py` 拿 3715 份读数做归属的指纹）；路径声称的条数（`{val,test}_{N}/`
+  目录或 `_ep{N}` 文件名）必须成立；首个种子等于生成器会用的那个——`BENCHMARK_SPECS[key]
+  .manifest_seed`，或者文件名带 `_s{N}` 重播种标记时等于 `N`。**标记不是豁免，是把期望挪个位置**：
+  `clean_probe/..._s3000.json` 照样被核，只是核的是 3000。
+- **R2 族内嵌套**：同一任务配置（流场／几何／目标速度，就是 `audit_seed_overlap` 判「两者可比」
+  用的那个三元组）＋同一起始种子的清单必须嵌套，短的是最长那份的开头一段。这是「每个 val_40 都是
+  同级 test_100 的前缀」的机器形式，也顺带覆盖了 epoch_probe 那对「test 与 val 是同一个集合」。
+- **R3 文档所印**：markdown 里印了某份清单的条数或种子区间的行，必须与文件相符。`{a,b}` 会展开，
+  末尾 `dir/...` 解析到该目录下唯一那份——**这两样不是锦上添花**：`benchmarks/README.md` 的种子区间表
+  与 `data_integrity_open_items.md` 里引的那段 OVERLAP 打印，恰恰全是这么写的，不支持就等于静默漏掉
+  第 12 项要核的「区间」那一半。现判 29 行文档。
+- **R4 协议同规模**：`benchmarks/<key>.json` 那 8 份 catalog 默认清单是同一个因子设计的各格，
+  `BENCHMARK_GROUPS` 横着叉它们、`run_suite` 解析的就是这几个路径，所以条数必须一致。
+
+### 查出四件事
+
+**一 · `benchmarks/single_u10_upstream_tgt15.json` 被截断了四个月（R4，已修）。**
+`bd00950`（2026-04-23，提交信息原文「代码整理，不知道是啥」）把 `9b96a7d` 冻的 30 回合清单换成了
+前一天生成的 2 回合文件。八份默认清单里七份 30、它 2。**运行期抓不到**：给了 manifest 之后
+`train_utils._resolved_eval_episodes` 返回清单里的 episode、**完全无视 `--eval-episodes`**，
+于是声明 `eval_episodes: 30` 的 `flow_factor_v1` 与 `study_core_v1` 会在那一格上评 2 个回合、
+照常记账。已从 `9b96a7d` 恢复，判据逐条核过：现存那 2 条与 30 条的前 2 条**逐字节相同**、
+只有 `created_at` 不同、`results/`／`experiments/` 无一份读数指名它（两份 `suite_manifest.json`
+用的都是 `single_u15_upstream_tgt15.json`）、恢复后污染面枚举**仍是 22 处**，与 `0dc35a2` 记的一致。
+
+**二 · 第 ② 条早就该销号了，欠的是账本这一侧（已闭合）。**
+§2 一直写着「两种可能，未确认是哪一种」。实况是：论文侧 `setup.tex` **rev.3（2026-06-18）**
+就判原值「系无源误推」并改成了实测的 1.5e5／3.0e5／1.0e5，现行 §5.3.m 印的正是这三个数。
+本轮另外两件补上：`crosscomp-2000` 那格的「无数据集」已过期（2026-08-09 就取回了，实测 304,967，
+比值 1.57× 与 1000 回合那格**同值**，坐实「整列同一个每回合步数线性外推」）；假设 (b) 可以排除了
+——加噪变体现已在位，156,882／313,719，离论文那一列比 deterministic 版更远。
+成因与 2026-08-17 那条订正同类：**处置写在论文侧的 rev 块里，账本这一侧没人回来改状态。**
+
+**三 · `paper/archive/rebrac_standalone/outline.md` 把 30 回合的清单写成了 100 回合（已声明）。**
+那是起草当时的计划值，100 回合的 `_ep100.json` 要到 `ffa20cc`（2026-05-20）才生成，落差正是
+`fql_succession_bug2_fix_decision.md` 记的 Bug 2。归档件不改原文，按本仓惯例在同一行加日期声明。
+
+**四 · 三对清单之间存在浮点末位差（不判缺陷，已记录）。** 最大 `2.7e-15` rad，全在
+`initial_heading` 上。其中一对正是 README 那句「`_repro_check_s1250.json` 逐条复现
+`single_u10_cross_tgt15_ep100.json`」——**在容差内为真，按精确相等为假**。R2 因此分三档判：
+逐条相同 / 末位差（提示）/ 真差异（缺陷），两侧各配一条负控。
+
+### 本轮新添的三条方法论（接 §六、§七、§八）
+
+**14 · 夹具从被测常量算出来，和夹具照着被测常量建输入是同一个坑。**
+§七第 9 条记的是「夹具照着 `XSOURCE` 去建输入」。本轮撞到它的算术版：
+`test_a_figure_far_along_the_line_is_not_attributed` 的填充写成 `'x' * (cbm.FIGURE_WINDOW + 5)`，
+把窗口从 40 改到 500 时填充跟着变成 505，注入完全不可观测、报 GREEN。改成写死 60，
+并补一条 `assert cbm.FIGURE_WINDOW < 60`——**写死一个数就要有东西在它失效时喊一声**。
+
+**15 · 两道门守着同一个用例时，负控打在哪一道要先算清楚。**
+「取数必须在路径之后」这条门的负控原本用了一行长句，图与路径相距 43 字符——而窗口是 40。
+把方向判据拆掉之后窗口仍然拦着，用例照绿。这不是机制不承重，是**注入打在了被另一道门遮住的位置**。
+改法是把用例的输入缩短到窗口之内，让那一格只剩方向判据把守。与 §六第 1 条同源，
+但那条说的是「拆哪个都被另一个兜住」，这条是「同一道拆对了，输入却落在另一道的射程里」。
+
+**16 · 一条只数缺陷个数的断言，分不出「少查了一半」。**
+花括号展开的负控（只展开第一项）头一轮报 GREEN：用例断言「1 处不符」，而截断展开之后
+**仍然是 1 处不符**——错的那半边还在，对的那半边没被查而已。改成同时断言对的那半边落进 `ok`。
+与 §六第 7 条同源：**「报了该报的」不等于「查了该查的」，正面断言覆盖面。**
+
+### 注入脚本在哪（同机、稍后可用；换机器就没了）
+
+```
+C:\Users\jinxiang\AppData\Local\Temp\claude\D--Codes-rl-v2\889c680d-4a61-4824-a8fe-00a1ab958694\scratchpad\
+    mutate_benchmarks.py   本轮 34 条；两种判据层：pytest 用例 id，与两支 sweep 的缺陷桶
+    bucket_probe2.py       按模块名跑一支 sweep、按桶计数输出 JSON，供 sweep 层判红
+```
+
+比 §四末那支 `mutate_chains.py` 多一样：`buckets()` 一次跑**两支**工具、桶名加 `apn:`／`cbm:`
+前缀，因为这一批的 sweep 层横跨两个工具。sweep 层的注入一律改**真文档的一行**，
+**不动 `benchmarks/` 下任何文件**——那些是证据本身。
+
+「要不要把注入器收进 `scripts/`」这个决定仍未拍板；本轮是第五次重写它。

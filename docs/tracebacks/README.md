@@ -99,6 +99,10 @@ python -m scripts.audit_published_numbers --root /path/to/drive/results/fql_succ
 两张结果表的表头与行标签完全相同，所以每条 claim 都靠上方那行加粗标记 `after`／`before` 夹住；
 `tests/test_audit_published_numbers.py::test_the_online_a0_chain_is_ambiguous_without_its_table_scope`
 把这层作用域本身当负控钉住：拆掉它，24 条 claim 必须全部退化成「锚定到多行」。
+这类负控现在是可重跑的，不再是一次性的手工注入——本族链的那批（17 行）在
+`scripts/mutations/tracebacks_chains.py`，跑法是
+`python -m scripts.mutation_probe tracebacks_chains`（引擎与写法见
+[`../../scripts/mutation_probe.py`](../../scripts/mutation_probe.py) 的 docstring）。
 
 **全仓 `±` 口径现状**（`--ddof`，合计 **130 处**）：**105 处 `ddof=0`、20 处 `ddof=1`、
 4 处两套口径都对得上（`either`，因为该格离散度本身接近 0）、1 处 `NEITHER` 且那 1 处正是

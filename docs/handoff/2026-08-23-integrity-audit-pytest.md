@@ -368,8 +368,8 @@ gate 读数用的是哪套，宜单独一轮。
 不入库；它们只调 `ch5_dispersion_audit.collect()` 与 `ch5_sac_ladder_dispersion_check` 的两个
 常量，重写一遍比找回来便宜。
 
-**仍未做**：C 类第 12 项（`benchmarks/` 落库逐条核，出处 `0dc35a2`，纯手工）与 C 类第 10 项
-（文档自述横幅 ⇄ 引用它的表格状态栏，出处 `cce2b2d`，13 行核出 3 行对不上）。两项都未分配批次。
+**仍未做**：C 类第 12 项（`benchmarks/` 落库逐条核，出处 `0dc35a2`，纯手工），未分配批次。
+（同段原先并列的第 10 项已于 2026-08-24 交付，见 §八。）
 
 ---
 
@@ -483,6 +483,24 @@ provenance 规则**是复算确立的，不是从 `ch5_clean_probe_readout.py` �
 在那里，README 自己那条规矩就是「别在这里复制一份口径」。`--ddof` 合计由 124 变 130。
 
 **单侧钉住的格：清零。** 两份娘家文档都有链之后，论文侧不再有任何源是报告侧读不到的。
+
+**注入脚本在哪（同机、稍后可用；换机器就没了）。** 本机绝对路径：
+
+```
+C:\Users\jinxiang\AppData\Local\Temp\claude\D--Codes-rl-v2\1caf0b2d-afc5-4232-b554-9bd191702036\scratchpad\
+    mutate_chains.py     本轮 17 条（溯源链 + 生成器入库）；两种判据层：pytest 用例 id，与
+                         audit_published_numbers 的缺陷桶（配 bucket_probe.py 逐桶计数）
+    mutate_status.py     上一轮 21 条（check_status_claims / build_doc_index）
+    bucket_probe.py      把全部 spec 跑一遍、按桶计数输出 JSON，供 sweep 层判红
+```
+
+`mutate_chains.py` 比之前几支多两样，下一批照它改：edit 支持 `("claim", 表, 标签, 键, 值)`
+直接改 spec 的某条 claim（比字面替换稳，JSON 重排后格式与生成器一致），以及一行可以带多处
+edit（假声明那条要同时动两张表才构造得出来）。
+
+**这件事本身值得注意**：审计固化做了四批，注入脚本重写了四遍，每一支都随会话消失——而这条线的
+立论恰恰是「每次都没留下能再跑一遍的东西」。要不要把它收进 `scripts/` 或 `tests/` 变成一支
+带参数的通用注入器，是一个还没拍板的决定，规模上已经够了。
 
 ## 五、第三批已交付（2026-08-24）
 

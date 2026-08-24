@@ -212,9 +212,20 @@ def read_metric(paths: list[str], metric: str) -> list[float]:
 def _read_json(path: str, metric: str) -> float:
     with open(path, encoding="utf-8") as fh:
         payload = json.load(fh)
-    if metric not in payload:
+    if metric in payload:
+        return float(payload[metric])
+    if "." not in metric:
         raise SpecError(f"{path}: no key {metric!r}")
-    return float(payload[metric])
+    # A dotted path, for readouts that nest their figures. `selected_checkpoint.json`
+    # keeps the chosen checkpoint's own metrics under `best`, which is the only place the
+    # worldcomp screening tables can be recomputed from. Tried only after the flat key
+    # misses, so a readout whose key legitimately contains a dot still wins.
+    node = payload
+    for part in metric.split("."):
+        if not isinstance(node, dict) or part not in node:
+            raise SpecError(f"{path}: no key {metric!r}")
+        node = node[part]
+    return float(node)
 
 
 def _reduce_csv(path: str, agg: re.Match) -> float:

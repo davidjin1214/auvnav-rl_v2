@@ -788,11 +788,6 @@ UNSHARED_WITH_THE_REPORTS = {
         "docs/data_integrity_open_items.md, which has no chain",
     "results/offline/rebrac/clean_probe/cross-2000/seed_*.json":
         "as cross-1000; this is the cell 0993832 found misprinted on the report side",
-    "results/offline/td3bc/phase0c/worldcomp_teacher_gap/deployable_final/"
-    "worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/"
-    "seed_*.json":
-        "quoted into the ReBRAC report as a comparison, but its own report "
-        "(docs/td3bc_worldcomp_teacher_gap_experiment_report.md) has no chain",
 }
 
 
@@ -921,3 +916,79 @@ def test_the_chapter_ladder_is_pinned_to_the_terminal_evaluation(chapter_chains)
     for source in ladder:
         assert source.endswith("/results/final_eval.json"), source
         assert "eval_log" not in source, source
+
+
+# ------------------------------------------------------- the specs and their generators
+#
+# Every spec here was emitted by a script, because hand-typing positional capture regexes
+# is how a table ends up quietly checking the wrong column. Until 2026-08-24 those scripts
+# lived only in the session scratchpad that produced them, so the tables were unextendable
+# the moment the session ended. They now sit in `docs/tracebacks/_gen/`, and these two
+# tests are what keeps them honest: the first proves each one still emits exactly what is
+# committed, the second stops a new spec from arriving without one.
+
+GEN_DIR = REPO_ROOT / "docs/tracebacks/_gen"
+
+# spec file -> the generator that writes it. One generator may write several specs.
+SPEC_GENERATORS = {
+    "arrival_v2.json": "gen_arrival_spec.py",
+    "online_a0.json": "gen_online_a0_spec.py",
+    "rebrac.json": "gen_rebrac_spec.py",
+    "td3bc_phase0c.json": "gen_td3bc_spec.py",
+    "td3bc_worldcomp_teacher_gap.json": "gen_worldcomp_spec.py",
+    "ch5_online.json": "gen_ch5_specs.py",
+    "ch5_boundary.json": "gen_ch5_specs.py",
+    "ch5_rebrac.json": "gen_ch5_specs.py",
+    "ch5_td3bc.json": "gen_ch5_specs.py",
+}
+
+# A spec with no generator must be declared, with the reason -- the same discipline
+# UNSHARED_WITH_THE_REPORTS applies to a source no report reads.
+UNGENERATED_SPECS = {
+    "fql_succession_p2.json":
+        "emitted in the session that landed 2a8c311 and not recovered when the other five "
+        "generators were; its 35 claims stand, but extending this one still means editing "
+        "the JSON by hand.",
+}
+
+
+def test_every_committed_spec_can_be_regenerated(tmp_path):
+    """Byte for byte, from the generator alone.
+
+    This is what makes the generator load-bearing rather than a historical note: edit a
+    spec by hand and this goes red, so the edit has to go into the generator instead.
+
+    Compared with line endings normalised on purpose. `core.autocrlf` is true on the
+    Windows machine, so a checked-out spec is CRLF while a freshly written one is LF --
+    `git status` hides that difference and a raw byte comparison would fail on it alone.
+    """
+    for name, generator in sorted(SPEC_GENERATORS.items()):
+        proc = subprocess.run([sys.executable, "-X", "utf8", str(GEN_DIR / generator),
+                               str(tmp_path)],
+                              capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", cwd=REPO_ROOT)
+        assert proc.returncode == 0, f"{generator}: {proc.stderr[-800:]}"
+
+        regenerated = tmp_path / name
+        assert regenerated.exists(), f"{generator} did not write {name}"
+        committed = (Path(apn.SPEC_DIR) / name).read_text(encoding="utf-8").replace("\r\n", "\n")
+        assert regenerated.read_text(encoding="utf-8").replace("\r\n", "\n") == committed, (
+            f"{name} differs from what {generator} emits -- if the spec was hand-edited, "
+            f"move the edit into the generator")
+
+
+def test_every_spec_declares_whether_it_has_a_generator(tmp_path):
+    """A new spec arriving with no generator is the failure this line already had once.
+
+    Nothing else notices: the sweep passes, `--strict` passes, and the gap only surfaces
+    the next time somebody needs to extend the table and finds no way in but the JSON.
+    """
+    shipped = {p.name for p in Path(apn.SPEC_DIR).glob("*.json")}
+    accounted = set(SPEC_GENERATORS) | set(UNGENERATED_SPECS)
+
+    assert shipped == accounted, (
+        f"undeclared: {sorted(shipped - accounted)} | "
+        f"declared but absent: {sorted(accounted - shipped)}")
+    assert not (set(SPEC_GENERATORS) & set(UNGENERATED_SPECS))
+    for name, generator in SPEC_GENERATORS.items():
+        assert (GEN_DIR / generator).exists(), f"{name} names a missing generator"

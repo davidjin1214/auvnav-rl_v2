@@ -1,0 +1,405 @@
+{
+  "chain": "td3bc_worldcomp_teacher_gap",
+  "doc": "docs/td3bc_worldcomp_teacher_gap_experiment_report.md",
+  "root": "results/offline/td3bc/phase0c/worldcomp_teacher_gap",
+  "metric": "eval_success_rate",
+  "note": "Provenance rule recomputed on 2026-08-24, not read off the prose, which states none. Screening tables come from selection/alpha_*/seed_*/selected_checkpoint.json under the nested key best.eval_success_rate (two seeds, ddof=0); validation/ holds no per-seed files and test_selected/ exists only for the selected alpha, so it reproduces the alpha=0 row by coincidence and cannot supply the other three. The formal table and the trajectory table come from test_selected/alpha_*/seed_*.json (five seeds, ddof=0), and the baseline row from a single baselines/ file. For the deployable protocol test_bc_selected/alpha_0p0 holds the identical files, because the selected alpha is 0.0; the spec cites test_selected because that is what the table's 协议 column means.",
+  "claims": [
+    {
+      "label": "deployable_screen alpha=0.0 val success",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.0 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p0/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.0 val success sd",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.0 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p0/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.0 val return",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.0 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_return",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p0/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.1 val success",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.1 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p1/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.1 val success sd",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.1 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p1/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.1 val return",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.1 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_return",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p1/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.25 val success",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.25 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p25/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.25 val success sd",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.25 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p25/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.25 val return",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.25 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_return",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p25/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.5 val success",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.5 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p5/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.5 val success sd",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.5 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p5/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable_screen alpha=0.5 val return",
+      "section": "4.1 Deployable screening",
+      "anchor": "^\\| 0\\.5 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_return",
+      "sources": [
+        "deployable_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p5/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "privileged_screen alpha=0.1 val success",
+      "section": "4.2 Privileged-critic screening",
+      "anchor": "^\\| 0\\.1 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "privileged_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p1/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "privileged_screen alpha=0.1 val success sd",
+      "section": "4.2 Privileged-critic screening",
+      "anchor": "^\\| 0\\.1 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "privileged_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p1/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "privileged_screen alpha=0.1 val return",
+      "section": "4.2 Privileged-critic screening",
+      "anchor": "^\\| 0\\.1 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_return",
+      "sources": [
+        "privileged_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p1/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "privileged_screen alpha=0.25 val success",
+      "section": "4.2 Privileged-critic screening",
+      "anchor": "^\\| 0\\.25 \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "privileged_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p25/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "privileged_screen alpha=0.25 val success sd",
+      "section": "4.2 Privileged-critic screening",
+      "anchor": "^\\| 0\\.25 \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "best.eval_success_rate",
+      "sources": [
+        "privileged_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p25/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "privileged_screen alpha=0.25 val return",
+      "section": "4.2 Privileged-critic screening",
+      "anchor": "^\\| 0\\.25 \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "best.eval_return",
+      "sources": [
+        "privileged_screen/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/selection/alpha_0p25/seed_*/selected_checkpoint.json"
+      ]
+    },
+    {
+      "label": "deployable success",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| deployable \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_success_rate",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "deployable success sd",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| deployable \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "eval_success_rate",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "deployable return",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| deployable \\|",
+      "capture": "(?:[^|]*\\|){5}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_return",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "deployable safety cost",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| deployable \\|",
+      "capture": "(?:[^|]*\\|){6}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_safety_cost",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "deployable time",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| deployable \\|",
+      "capture": "(?:[^|]*\\|){7}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_time_s",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "privileged-critic success",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| privileged\\-critic \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_success_rate",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    },
+    {
+      "label": "privileged-critic success sd",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| privileged\\-critic \\|",
+      "capture": "(?:[^|]*\\|){4}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "sd0",
+      "metric": "eval_success_rate",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    },
+    {
+      "label": "privileged-critic return",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| privileged\\-critic \\|",
+      "capture": "(?:[^|]*\\|){5}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_return",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    },
+    {
+      "label": "privileged-critic safety cost",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| privileged\\-critic \\|",
+      "capture": "(?:[^|]*\\|){6}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_safety_cost",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    },
+    {
+      "label": "privileged-critic time",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| privileged\\-critic \\|",
+      "capture": "(?:[^|]*\\|){7}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_time_s",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    },
+    {
+      "label": "worldcomp baseline success",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| worldcomp\\ baseline \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_success_rate",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/baselines/worldcomp_test_eval.json"
+      ]
+    },
+    {
+      "label": "worldcomp baseline return",
+      "section": "5.1 正式主结果",
+      "anchor": "^\\| worldcomp\\ baseline \\|",
+      "capture": "(?:[^|]*\\|){5}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_return",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/baselines/worldcomp_test_eval.json"
+      ]
+    },
+    {
+      "label": "progress ratio deployable",
+      "section": "5.4 轨迹质量指标",
+      "anchor": "^\\| progress\\ ratio \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_progress_ratio",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "progress ratio privileged-critic",
+      "section": "5.4 轨迹质量指标",
+      "anchor": "^\\| progress\\ ratio \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_progress_ratio",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    },
+    {
+      "label": "path efficiency deployable",
+      "section": "5.4 轨迹质量指标",
+      "anchor": "^\\| path\\ efficiency \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_path_efficiency",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "path efficiency privileged-critic",
+      "section": "5.4 轨迹质量指标",
+      "anchor": "^\\| path\\ efficiency \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_path_efficiency",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    },
+    {
+      "label": "mean path length (m) deployable",
+      "section": "5.4 轨迹质量指标",
+      "anchor": "^\\| mean\\ path\\ length\\ \\(m\\) \\|",
+      "capture": "(?:[^|]*\\|){2}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_path_length_m",
+      "sources": [
+        "deployable_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p0/seed_*.json"
+      ]
+    },
+    {
+      "label": "mean path length (m) privileged-critic",
+      "section": "5.4 轨迹质量指标",
+      "anchor": "^\\| mean\\ path\\ length\\ \\(m\\) \\|",
+      "capture": "(?:[^|]*\\|){3}\\s*(-?[0-9.]+)\\s*[ |]",
+      "stat": "mean",
+      "metric": "eval_path_length_m",
+      "sources": [
+        "privileged_final/worldcomp_s0_h4_efficiency_v2_re150_u10cross_fixdone/test_selected/alpha_0p1/seed_*.json"
+      ]
+    }
+  ]
+}

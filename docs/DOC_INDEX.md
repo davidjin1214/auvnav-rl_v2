@@ -37,7 +37,7 @@
 | [`docs/fql_e_uni_anchor_dataset_card.md`](fql_e_uni_anchor_dataset_card.md) | FQL E-uni Paper Anchor Dataset — Card | — |
 | [`docs/fql_pytorch_port_design.md`](fql_pytorch_port_design.md) | `auv_nav/fql.py` — PyTorch Port Design Doc | — |
 | [`docs/fql_succession_p2_collection_log.md`](fql_succession_p2_collection_log.md) | FQL Succession P2 — Sprint 0 Collection Log | — |
-| [`docs/fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) | FQL Succession — P2 Main Comparison Spec | SUPERSEDED 2026-05-20 |
+| [`docs/fql_succession_p2_main_spec.md`](fql_succession_p2_main_spec.md) | FQL Succession — P2 Main Comparison Spec | CLOSED 2026-05-23 |
 | [`docs/fql_succession_p2_mechanism_diagnostic.md`](fql_succession_p2_mechanism_diagnostic.md) | FQL Succession P2 — Mechanism Diagnostic (option C) | — |
 | [`docs/fql_succession_p2_results.md`](fql_succession_p2_results.md) | FQL Succession P2 — Results & Verdict | — |
 | [`docs/fql_succession_p2_xbench_spec.md`](fql_succession_p2_xbench_spec.md) | FQL Succession P2 — Cross-Benchmark Confirmation Spec (`single_u15_cross`) | — |
@@ -46,22 +46,22 @@
 | [`docs/offline_rl_implementation_plan.md`](offline_rl_implementation_plan.md) | 离线强化学习实现方案与计划 | DEPRECATED 2026-05-08 |
 | [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) | Offline RL 线总结报告 | — |
 | [`docs/offline_rl_quick_validation.md`](offline_rl_quick_validation.md) | 离线 RL 快速验证方案 | — |
-| [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) | Online RL 线总结报告 | CANCELLED 2026-07-28 |
+| [`docs/online_rl_line_summary.md`](online_rl_line_summary.md) | Online RL 线总结报告 | — |
 | [`docs/online_rl_thesis_plan.md`](online_rl_thesis_plan.md) | Online RL Thesis 实验计划【DEPRECATED】 | DEPRECATED 2026-05-06 |
 | [`docs/online_sac_reward_redesign.md`](online_sac_reward_redesign.md) | Online SAC Reward Redesign Note【SHELVED / v6 Pre-Integration Spec】 | — |
 | [`docs/rebrac_broad_validation_report.md`](rebrac_broad_validation_report.md) | ReBRAC 广验报告：跨数据质量 / 传感器 / 任务三轴的 Probe-then-Deepen | SUPERSEDED 2026-05-18 |
-| [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) | ReBRAC Broad Validation v2 — Cross-Only Spotlight under `arrival_v2` | SUPERSEDED 2026-05-04 |
+| [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) | ReBRAC Broad Validation v2 — Cross-Only Spotlight under `arrival_v2` | — |
 | [`docs/rebrac_broad_validation_v2_report.md`](rebrac_broad_validation_v2_report.md) | ReBRAC Broad Validation v2 — Experimental Report | — |
 | [`docs/rebrac_broad_validation_v2_seed43_supplement_plan.md`](rebrac_broad_validation_v2_seed43_supplement_plan.md) | ReBRAC Broad Validation v2 — 补种子（seed 43）Supplement Plan | — |
 | [`docs/rebrac_c1_s1_followup_report.md`](rebrac_c1_s1_followup_report.md) | ReBRAC C1-s1 Sensor-Upgrade Follow-up — Standalone Report | SUPERSEDED 2026-05-18 |
-| [`docs/rebrac_experiment_plan.md`](rebrac_experiment_plan.md) | ReBRAC 实验计划 | DEPRECATED 2026-05-08 |
+| [`docs/rebrac_experiment_plan.md`](rebrac_experiment_plan.md) | ReBRAC 实验计划 | — |
 | [`docs/rebrac_experiment_report.md`](rebrac_experiment_report.md) | ReBRAC 实验报告 | — |
 | [`docs/rebrac_line_overview.md`](rebrac_line_overview.md) | ReBRAC 线总览（贯通 TD3+BC 前置 ↔ ReBRAC 主线 ↔ FQL succession） | — |
-| [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) | ReBRAC 主线总结、专家分析与下一步建议 | SUPERSEDED |
+| [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) | ReBRAC 主线总结、专家分析与下一步建议 | — |
 | [`docs/rebrac_method_section_draft.md`](rebrac_method_section_draft.md) | Method Section Draft — Q-normalized dual-penalty TD3+BC variant | — |
 | [`docs/rebrac_paper_writing_index.md`](rebrac_paper_writing_index.md) | ReBRAC Paper 写作文档索引 | — |
 | [`docs/rebrac_statistical_test_followup.md`](rebrac_statistical_test_followup.md) | ReBRAC Phase 1 deployable vs TD3BC privileged-critic — Statistical test follow-up | — |
-| [`docs/rlpd_design.md`](rlpd_design.md) | RLPD：利用离线数据加速 AUV 流场导航策略学习 | DEPRECATED 2026-05-08 |
+| [`docs/rlpd_design.md`](rlpd_design.md) | RLPD：利用离线数据加速 AUV 流场导航策略学习 | — |
 | [`docs/SAC_improvements_survey.md`](SAC_improvements_survey.md) | SAC 改进算法研究综述 | — |
 | [`docs/systematic_improved_sac_experiment_plan.md`](systematic_improved_sac_experiment_plan.md) | 改进 SAC 的系统实验方案【DEPRECATED】 | DEPRECATED 2026-04-26 |
 | [`docs/systematic_improved_sac_experiment_report.md`](systematic_improved_sac_experiment_report.md) | 改进 SAC 的系统实验报告【DEPRECATED】 | DEPRECATED 2026-04-26 |

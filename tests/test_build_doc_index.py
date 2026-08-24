@@ -138,6 +138,87 @@ def test_the_first_matching_pattern_wins():
     assert status(head) == "SUPERSEDED 2026-05-18"
 
 
+# ------------------------------------------------------- banners about OTHER documents
+#
+# A 2026-08-24 pass over all 35 labelled docs found five whose banner keyword belonged to
+# a document they cite, not to themselves -- every one of them turning a live doc dead in
+# the published index. Blockquote scoping cannot catch these: the keyword really is in
+# the banner. Three separate signals reject them, one test each, plus the positive
+# control that each mechanism must not swallow.
+
+
+def test_a_banner_quoting_another_documents_state_is_not_this_documents_status():
+    """`rebrac_experiment_plan.md` and `rlpd_design.md` both open by telling the reader
+    to read `offline_rl_implementation_plan.md` first, and both inherited its DEPRECATED
+    banner for as long as the index has existed."""
+    head = ("# ReBRAC 实验计划\n\n"
+            "> 当前前提：请先阅读 [offline_rl_implementation_plan.md](./offline_rl_implementation_plan.md)"
+            "（**⚠ 已 DEPRECATED 2026-05-08**，仅作历史阶梯参考）\n")
+
+    assert status(head) == "—"
+
+
+def test_a_keyword_after_a_link_on_the_same_line_is_not_a_banner():
+    """The isolating case for the link signal alone.
+
+    The real shape above is caught three times over -- it is long, parenthesised AND
+    preceded by a link -- so on its own it grades nothing. Here the prefix is 13 stripped
+    characters with balanced parentheses, and only the link can reject it.
+    """
+    assert status("# 标题\n\n> 见 [`p.md`](p.md) **DEPRECATED 2026-05-08**\n") == "—"
+
+
+def test_a_keyword_inside_a_parenthetical_aside_is_not_a_banner():
+    """"**取代的 v1 文档**（已加 SUPERSEDED banner）" is a plan listing what IT replaced.
+    The plan's own status is `✅ PASS`; it read SUPERSEDED. The prefix here is short
+    enough to clear the length budget, so the unclosed parenthesis is what decides it."""
+    head = "# v2 Plan\n\n> **取代的 v1 文档**（已加 SUPERSEDED banner）：\n"
+
+    assert status(head) == "—"
+
+
+def test_a_keyword_buried_mid_sentence_is_not_a_banner():
+    """"v1 广验全套（…）已 **SUPERSEDED by v2 plan**" is a rev.4 review saying what
+    happened to the v1 experiments it cites. A doc states its own status at the head of
+    a line; a keyword this far in is qualifying a clause."""
+    head = ("# ReBRAC 主线 review\n\n"
+            "> **⚠ 2026-05-18 update**：v1 广验全套（含 §3.5 引用的两份报告）已 **SUPERSEDED by v2 plan**\n")
+
+    assert status(head) == "—"
+
+
+@pytest.mark.parametrize("lead", ["**状态**：", "**Status**: ", "**⚠️ 此文档已 ", "📦 "])
+def test_a_status_label_still_reaches_its_own_keyword(lead):
+    """The positive control for the length budget: this is how a banner in this repo
+    actually reaches its keyword, and none of the four may be rejected."""
+    assert status(f"# 标题\n\n> {lead}**CLOSED** 2026-05-23\n") == "CLOSED 2026-05-23"
+
+
+def test_a_self_declaration_later_in_the_banner_still_registers():
+    """`fql_succession_p2_main_spec.md` declares `**状态**：**CLOSED (2026-05-23)**` and
+    then, further down the same blockquote, notes that its own hypothetical sections are
+    marked SUPERSEDED. Rejection is per occurrence, so the first line still decides."""
+    head = ("# P2 Spec\n\n"
+            "> **状态**：**CLOSED (2026-05-23)** —— 12-run 主矩阵闭环。\n"
+            "> 本 spec 以下章节为历史设计记录，假设性内容已逐节标注 SUPERSEDED/RESOLVED。\n")
+
+    assert status(head) == "CLOSED 2026-05-23"
+
+
+def test_status_of_is_unchanged_by_whether_lines_carry_newlines():
+    """`head_of` yields lines with their "\\n"; a caller that split on it does not.
+
+    Without normalising, the whole blockquote presents as one line, every banner after
+    the first inherits the prefix of the ones before it, and the guard above misfires.
+    """
+    lines = ["# 标题\n",
+             "> 前序：离线-在线 RL 综述见 [`survey.md`](survey.md)，其中第三部分最相关\n",
+             "> **DEPRECATED** 2026-05-06\n"]
+
+    assert bdi.status_of(lines) == "DEPRECATED 2026-05-06"
+    assert bdi.status_of([ln.rstrip("\n") for ln in lines]) == "DEPRECATED 2026-05-06"
+
+
 def test_a_doc_with_no_banner_reads_as_unlabelled_not_as_active(repo):
     """`—` means "did not label itself". Deciding a doc is still current is human work."""
     _write(repo, "docs/a.md", "# 标题\n\n正文。\n")

@@ -97,6 +97,41 @@ def title_of(lines: list[str], fallback: str) -> str:
     return fallback
 
 
+# Markup and glyphs that may sit between the start of a banner line and its keyword
+# without making the keyword any less of a self-declaration.
+BANNER_NOISE = re.compile(r"[>*`#\s\-—–:：]|⚠️|[⚠📦📍✅❌⏸🟡🔴✔]")
+# How much prose may precede the keyword before it stops reading as a declaration. The
+# five known misreads sat 17, 22, 30, 55 and 74 stripped characters in; every one of the
+# 30 correct banners sat within 11 -- the label forms this repo actually uses ("**状态**：",
+# "**Status**: ", "**⚠️ 此文档已 ", "📦 ") all reduce to 6 characters or fewer once the
+# markup is stripped. 20 leaves room without reaching any of the misreads.
+SELF_DECL_BUDGET = 20
+
+
+def _self_declared(head: str, kw_start: int) -> bool:
+    """Is the keyword at `kw_start` a claim about THIS doc, or about one it cites?
+
+    Three signals, each drawn from a real misread found on 2026-08-24:
+
+    1. a markdown link or an `.md` filename earlier on the line -- the keyword is
+       qualifying that document, not this one (`rebrac_experiment_plan.md` and
+       `rlpd_design.md` both inherited offline_rl_implementation_plan's DEPRECATED);
+    2. an unclosed parenthesis -- a keyword inside an aside is describing something
+       else ("**取代的 v1 文档**（已加 SUPERSEDED banner）" made a PASSING plan SUPERSEDED);
+    3. more than `SELF_DECL_BUDGET` characters of prose in front of it -- a doc states
+       its own status at the head of a line, so a keyword buried mid-sentence is
+       qualifying a clause ("v1 广验全套（…）已 **SUPERSEDED by v2 plan**" made an active
+       rev.4 review SUPERSEDED; "假设性内容已逐节标注 SUPERSEDED/RESOLVED" overrode a
+       spec's own "**状态**：**CLOSED (2026-05-23)**").
+    """
+    prefix = head[head.rfind("\n", 0, kw_start) + 1 : kw_start]
+    if "](" in prefix or re.search(r"[A-Za-z0-9_\-]\.md\b", prefix):
+        return False
+    if prefix.count("（") > prefix.count("）") or prefix.count("(") > prefix.count(")"):
+        return False
+    return len(BANNER_NOISE.sub("", prefix)) <= SELF_DECL_BUDGET
+
+
 def status_of(lines: list[str]) -> str:
     """Read the doc's own banner only.
 
@@ -105,6 +140,12 @@ def status_of(lines: list[str]) -> str:
     instead misreads a doc that merely *mentions* another line's state -- CLAUDE.md and
     README.md both got tagged PAUSED that way, because they describe the paused
     AUVHamNODE line in running prose. Under-reporting is the safe direction here.
+
+    Tight scoping to the blockquote is not by itself enough, because a banner routinely
+    quotes *another* document's state inside it -- "read X first (**DEPRECATED
+    2026-05-08**)", "the v1 docs it replaces (SUPERSEDED banner added)". A 2026-08-24
+    audit of all 35 labelled docs found five such misreads, every one of them turning a
+    live doc dead in the generated index. `_self_declared()` is the guard; see there.
     """
     seen_h1 = False
     quote: list[str] = []
@@ -117,7 +158,10 @@ def status_of(lines: list[str]) -> str:
             quote.append(ln)
         elif quote and ln.strip():
             break  # blockquote ended at real prose
-    head = "".join(quote)
+    # Keep the line breaks: `_self_declared` locates the start of the banner line, and a
+    # caller that hands over lines already stripped of "\n" would otherwise present the
+    # whole blockquote as one line and defeat the guard.
+    head = "".join(ln if ln.endswith("\n") else ln + "\n" for ln in quote)
     if not head:
         return "—"
     for label, pat in STATUS_PATTERNS:
@@ -139,6 +183,8 @@ def status_of(lines: list[str]) -> str:
                 and (tail.count("/") >= 2 or re.search(r"\.\w+$", tail))
             )
             if looks_like_path:
+                continue
+            if not _self_declared(head, kw_start):
                 continue
             # require emphasis or a warning glyph adjacent -- plain prose mentions don't count
             ctx = head[max(0, m.start() - 4) : m.end() + 4]

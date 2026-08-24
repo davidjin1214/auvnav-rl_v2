@@ -1,25 +1,31 @@
 """PostToolUse hook: catch doc-reference rot at the edit that introduces it.
 
-Fires only on markdown edits, then runs three repo-wide sweeps in --strict mode:
+Fires only on markdown edits, then runs four repo-wide sweeps in --strict mode:
 
     check_doc_pointers       does the cited path exist
     check_doc_code_refs      is the cited *line* still that line, and does the
                              cited function name exist at all
     audit_published_numbers  can a published figure still be recomputed from the
                              per-seed JSON its report says it came from
+    check_status_claims      does a table's status cell still agree with the banner
+                             of the document that row is about
 
 The first two are complementary by construction -- check_doc_pointers strips a
 trailing `:N` before checking, and says so in its own `resolve()`, which is the
 gap the second fills. The third checks a different thing again: not whether a
 citation resolves, but whether a number is still true. Editing a report is
 exactly when its traceback spec stops pointing at the figure it covers, and this
-says so in the same turn. All three grade their findings, and only the defect
-buckets fail --strict: self-declared absences, gitignored artefacts, plan-table
-forecasts, citations a line or two off a quoted fragment, and readings whose
-`results/` is not on this machine are all legitimate and stay silent.
+says so in the same turn. The fourth is the same idea for prose state rather than
+numbers: editing a doc's banner is exactly when the tables citing it go stale,
+and nothing else in this set reads a status cell. All four grade their findings,
+and only the defect buckets fail --strict: self-declared absences, gitignored
+artefacts, plan-table forecasts, citations a line or two off a quoted fragment,
+readings whose `results/` is not on this machine, and tables a doc freezes on
+purpose are all legitimate and stay silent.
 
-Baseline at the time of writing: 0 findings from any, 1.5 s + 2.1 s + 1.3 s (the last one
-grew when the arrival_v2 chain landed -- it reads 39-row CSVs, not only terminal JSON).
+Baseline at the time of writing: 0 findings from any, 1.5 s + 2.1 s + 1.3 s + 0.6 s (the
+third grew when the arrival_v2 chain landed -- it reads 39-row CSVs, not only terminal
+JSON).
 
 Exit 2 feeds stderr back to the agent. PostToolUse runs after the write, so this
 flags the finding rather than preventing it -- the point is to catch it in the
@@ -60,6 +66,10 @@ SWEEPS = (
      "A traceback spec under docs/tracebacks/ no longer finds the figure it checks, "
      "or the figure no longer matches its per-seed source. Re-point the spec only "
      "after reading why the report changed."),
+    ("scripts.check_status_claims", "★",
+     "A table's status cell disagrees with the banner of the document it is about, or "
+     "holds a forecast (TBD / a batch name) where a state belongs. Read what the cited "
+     "doc says now; if the table is frozen on purpose, say so in the prose above it."),
 )
 
 

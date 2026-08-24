@@ -300,13 +300,17 @@ Paper §discussion 应明写：ReBRAC 的 BC penalty 在 `s0_obs` 与 dataset ac
 
 ### 7.1 本 report 触发的下游修改
 
+> **📍 2026-08-24 状态栏订正**：下表 Status 列原本五行全写 `TBD`。那是**起草本表时的预告**，五项
+> 落地后没人回来改这一格——预告不像错误的状态，它永远不会自己变成假的，所以也不会被读出来。
+> 逐项复核后按实况改写；**修改列一字未动**，只改状态列并在必要处注明与原计划不同之处。
+
 | 文档 | 修改 | 状态 |
 |---|---|---|
-| [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) | §10 状态更新："PASS — completed 2026-05-19, actor-fundamental ceiling confirmed"；§12 执行检查清单逐项打勾 | **TBD** |
-| [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) | §3.3 broad validation 段落由 "v2 active" → "v2 PASS"；新增 §3.3 sub-bullet 总结 ceiling finding | **TBD** |
-| [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) | §3.5 顶层 pointer 由 "v2 plan rev.3 in-progress" → "v2 PASS report" | **TBD** |
-| [`docs/rebrac_paper_writing_index.md`](rebrac_paper_writing_index.md) | §experiments appendix 入口添加本 report；§discussion ceiling decomposition 入口添加本 report §5 | **TBD** |
-| `auv_paper/` (LaTeX) — §experiments appendix + §discussion §robustness 1 段 | 起草中 | **TBD** |
+| [`docs/rebrac_broad_validation_v2_plan.md`](rebrac_broad_validation_v2_plan.md) | §10 状态更新："PASS — completed 2026-05-19, actor-fundamental ceiling confirmed"；§12 执行检查清单逐项打勾 | ✅ 已落地（该 plan 顶部横幅现写 `✅ PASS — 首轮 completed 2026-05-19，三种子收口 2026-07-12`；§12 逐项 `[x]`）|
+| [`docs/offline_rl_line_summary.md`](offline_rl_line_summary.md) | §3.3 broad validation 段落由 "v2 active" → "v2 PASS"；新增 §3.3 sub-bullet 总结 ceiling finding | ✅ 已落地（§5.2 表内本 report 行现写 **active（3-seed 收口 2026-07-12）**，并载 N0 / N2' 两读数）|
+| [`docs/rebrac_mainline_review.md`](rebrac_mainline_review.md) | §3.5 顶层 pointer 由 "v2 plan rev.3 in-progress" → "v2 PASS report" | ✅ 已落地（该文 §3.5 标题现写「rev.3 新增 2026-05-07；v2 PASS 2026-05-19」，正文 update 块指向本 report）|
+| [`docs/rebrac_paper_writing_index.md`](rebrac_paper_writing_index.md) | §experiments appendix 入口添加本 report；§discussion ceiling decomposition 入口添加本 report §5 | ✅ 已落地，**但形式与左栏不同**：独立投稿 2026-06-02 撤销后已无 §experiments／§discussion 之分，改由该文头注把 §N.5（现论文 §5.8）指向本 report §3–§5 + §4.5；2026-08-17 又补了一条 v1／v2 消歧 |
+| `auv_paper/` (LaTeX) — §experiments appendix + §discussion §robustness 1 段 | 起草中 | ✅ 已落地，**但去向已变更**：`auv_paper/` 是起草本表时的**原计划名**，从未创建；LaTeX 实际长在 `paper/`，独立投稿撤销后于 `e6b729d`（2026-08-16）归档进 [`paper/archive/rebrac_standalone/`](../paper/archive/rebrac_standalone/outline.md)。本 report 的素材现落在论文第 5 章 §5.8（`paper/thesis_ch5/sections/boundary.tex`，N0 `0.878 ± 0.051` 即引本文）|
 
 ### 7.2 Raw output 留痕
 
